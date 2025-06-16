@@ -22,6 +22,7 @@ export default {
         heading: ['Poppins', 'Inter', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         mono: ['Fira Code', 'JetBrains Mono', 'monospace'],
+        heading1: ['Space Grotesk', 'sans-serif'],
       },
     },
   },
