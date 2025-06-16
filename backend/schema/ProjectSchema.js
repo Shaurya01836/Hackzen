@@ -17,4 +17,4 @@ const ProjectSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = ProjectSchema;
+module.exports = { ProjectSchema };
