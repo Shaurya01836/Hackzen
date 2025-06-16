@@ -1,5 +1,7 @@
+const { model } = require('mongoose');
 
-const mongoose = require('mongoose');
-const teamSchema = require('../schema/Team.schema');
+const { TeamSchema } = require('../schema/TeamSchema');
 
-module.exports = mongoose.model('Team', teamSchema);
+const TeamModel = new model("team", TeamSchema);
+
+module.exports = { TeamModel };

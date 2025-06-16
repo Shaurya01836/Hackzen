@@ -1,7 +1,6 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const { Schema } = require('mongoose');
 
-const projectSchema = new Schema({
+const ProjectSchema = new Schema({
   title: { type: String, required: true },
   description: String,
   repoLink: { type: String, required: true },
@@ -18,4 +17,4 @@ const projectSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = projectSchema;
+module.exports = ProjectSchema;

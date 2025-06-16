@@ -1,4 +1,7 @@
-const mongoose = require('mongoose');
-const hackathonSchema = require('../schema/Hackathon.schema');
+const { model } = require('mongoose');
 
-module.exports = mongoose.model('Hackathon', hackathonSchema);
+const { HackathonSchema } = require('../schema/HackathonSchema');
+
+const HackathonModel = new model("user", HackathonSchema);
+
+module.exports = { HackathonModel };

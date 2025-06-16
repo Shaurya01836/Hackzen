@@ -1,7 +1,6 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const { Schema } = require('mongoose');
 
-const hackathonSchema = new Schema({
+const HackathonSchema = new Schema({
   title: { type: String, required: true },
   description: String,
   startDate: { type: Date, required: true },
@@ -22,4 +21,4 @@ const hackathonSchema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = hackathonSchema;
+module.exports = HackathonSchema;
