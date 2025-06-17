@@ -27,7 +27,7 @@ import { Button } from "../AdimPage/components/ui/button"
 import { Badge } from "../AdimPage/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../AdimPage/components/ui/avatar"
 import { Switch } from "../AdimPage/components/ui/switch"
-import { Input } from "../AdimPage//components/ui/input"
+import { Input } from "../AdimPage/components/ui/input"
 import { Label } from "../AdimPage/components/ui/label"
 import { Textarea } from "../AdimPage/components/ui/textarea"
 
