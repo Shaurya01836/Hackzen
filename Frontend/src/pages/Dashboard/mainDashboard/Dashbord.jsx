@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Eye,
   CheckCircle,
+  Search
 } from "lucide-react"
 import {
   Sidebar,
@@ -45,91 +46,140 @@ import { Progress } from "../AdimPage/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "../AdimPage/components/ui/avatar"
 import { Separator } from "../AdimPage/components/ui/separator"
 import { ProfileSection } from "./ProfileSection"
-
-const participantMenuItems = [
-  { title: "My Hackathons", icon: Trophy, href: "#" },
-  { title: "Explore Hackathons", icon: Plus , href: "#" },
-  { title: "My Submissions", icon: FileText, href: "#" },
-  { title: "Chat Rooms", icon: MessageSquare, href: "#" },
-  { title: "My Portfolio", icon: User, href: "#" }
-]
-
-const organizerMenuItems = [
-  { title: "Created Hackathons", icon: Plus, href: "#" },
-  { title: "Participant Overview", icon: Users, href: "#" },
-  { title: "Review Submissions", icon: Eye, href: "#" },
-  { title: "Announcements", icon: MessageSquare, href: "#" },
-  { title: "Organizer Tools", icon: Settings, href: "#" }
-]
-
-const hackathons = [
-  {
-    name: "Poornima HIS",
-    status: "Live",
-    deadline: "2 days left",
-    participants: 156
-  },
-  {
-    name: "JECRC Marathon",
-    status: "Closed",
-    deadline: "Ended",
-    participants: 89
-  },
-  {
-    name: "Skit Smart hackathon 2k25",
-    status: "Upcoming",
-    deadline: "5 days to start",
-    participants: 234
-  }
-]
-
-const Explorehackathons = [
-  {
-    name: "Walmart Sparkthon",
-    status: "Live",
-    deadline: "19 days left",
-    participants: 156
-  },
-  {
-    name: "Rajasthan Police Hackathon",
-    status: "Live",
-    deadline: "56 days left",
-    participants: 89
-  },
-  {
-    name: "SIH-2K26",
-    status: "Upcoming",
-    deadline: "90 days to start",
-    participants: 234
-  }
-]
-
-const submissions = [
-  {
-    name: "Smart City Dashboard",
-    github: "github.com/user/smart-city",
-    youtube: "youtube.com/watch?v=abc",
-    status: "Judged",
-    score: 85
-  },
-  {
-    name: "AI Chatbot Assistant",
-    github: "github.com/user/ai-chatbot",
-    youtube: "",
-    status: "Submitted",
-    score: null
-  }
-]
-
-const chatRooms = [
-  { name: "AI Challenge General", members: 45, active: true },
-  { name: "Web3 Builders", members: 23, active: false },
-  { name: "Mobile Dev Help", members: 67, active: true }
-]
+import { MyHackathons } from "./sections/Myhackthon"
+import { MySubmissions } from "./sections/MySubmissions"
+import { ChatRooms } from "./sections/Chat-rooms"
+import { MyPortfolio } from "./sections/Myportfolio"
+import { CreatedHackathons } from "./sections/Created-hackathons"
+import { ParticipantOverview } from "./sections/ParticipantOverview"
+import { ReviewSubmissions } from "./sections/ReviewSubmissions"
+import { Announcements } from "./sections/Announcements"
+import { OrganizerTools } from "./sections/OrganizerTools"
+import { ExploreHackathons } from "./sections/ExploreHackathon"
 
 export default function HackZenDashboard() {
   const [activeRole, setActiveRole] = useState("participant")
   const [currentView, setCurrentView] = useState("dashboard")
+
+  const participantMenuItems = [
+    {
+      title: "My Hackathons",
+      icon: Trophy,
+      href: "#",
+      onClick: () => setCurrentView("my-hackathons"),
+      key: "my-hackathons"
+    },
+    {
+      title: "My Submissions",
+      icon: FileText,
+      href: "#",
+      onClick: () => setCurrentView("my-submissions"),
+      key: "my-submissions"
+    },
+    {
+      title: "Chat Rooms",
+      icon: MessageSquare,
+      href: "#",
+      onClick: () => setCurrentView("chat-rooms"),
+      key: "chat-rooms"
+    },
+    {
+      title: "My Portfolio",
+      icon: User,
+      href: "#",
+      onClick: () => setCurrentView("my-portfolio"),
+      key: "my-portfolio"
+    },
+    {
+      title: "Explore Hackathons",
+      icon: Search,
+      href: "#",
+      onClick: () => setCurrentView("explore-hackathons"),
+      key: "explore-hackathons"
+    }
+  ]
+
+  const organizerMenuItems = [
+    {
+      title: "Created Hackathons",
+      icon: Plus,
+      href: "#",
+      onClick: () => setCurrentView("created-hackathons"),
+      key: "created-hackathons"
+    },
+    {
+      title: "Participant Overview",
+      icon: Users,
+      href: "#",
+      onClick: () => setCurrentView("participant-overview"),
+      key: "participant-overview"
+    },
+    {
+      title: "Review Submissions",
+      icon: Eye,
+      href: "#",
+      onClick: () => setCurrentView("review-submissions"),
+      key: "review-submissions"
+    },
+    {
+      title: "Announcements",
+      icon: MessageSquare,
+      href: "#",
+      onClick: () => setCurrentView("announcements"),
+      key: "announcements"
+    },
+    {
+      title: "Organizer Tools",
+      icon: Settings,
+      href: "#",
+      onClick: () => setCurrentView("organizer-tools"),
+      key: "organizer-tools"
+    }
+  ]
+
+  const hackathons = [
+    {
+      name: "AI Innovation Challenge",
+      status: "Live",
+      deadline: "2 days left",
+      participants: 156
+    },
+    {
+      name: "Web3 Builder Fest",
+      status: "Closed",
+      deadline: "Ended",
+      participants: 89
+    },
+    {
+      name: "Mobile App Marathon",
+      status: "Upcoming",
+      deadline: "5 days to start",
+      participants: 234
+    }
+  ]
+
+  const submissions = [
+    {
+      name: "Smart City Dashboard",
+      github: "github.com/user/smart-city",
+      youtube: "youtube.com/watch?v=abc",
+      status: "Judged",
+      score: 85
+    },
+    {
+      name: "AI Chatbot Assistant",
+      github: "github.com/user/ai-chatbot",
+      youtube: "",
+      status: "Submitted",
+      score: null
+    }
+  ]
+
+  const chatRooms = [
+    { name: "AI Challenge General", members: 45, active: true },
+    { name: "Web3 Builders", members: 23, active: false },
+    { name: "Mobile Dev Help", members: 67, active: true }
+  ]
 
   return (
     <SidebarProvider>
@@ -169,12 +219,15 @@ export default function HackZenDashboard() {
                     <SidebarMenuButton
                       asChild
                       className="hover:bg-indigo-50 hover:text-indigo-700"
-                      isActive={activeRole === "participant"}
+                      isActive={currentView === item.key}
                     >
-                      <a href={item.href} className="flex items-center gap-3">
+                      <button
+                        onClick={item.onClick}
+                        className="flex items-center gap-3 w-full text-left"
+                      >
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -194,12 +247,15 @@ export default function HackZenDashboard() {
                     <SidebarMenuButton
                       asChild
                       className="hover:bg-purple-50 hover:text-purple-700"
-                      isActive={activeRole === "organizer"}
+                      isActive={currentView === item.key}
                     >
-                      <a href={item.href} className="flex items-center gap-3">
+                      <button
+                        onClick={item.onClick}
+                        className="flex items-center gap-3 w-full text-left"
+                      >
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
-                      </a>
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -245,7 +301,7 @@ export default function HackZenDashboard() {
                 <Button
                   variant={activeRole === "participant" ? "default" : "outline"}
                   onClick={() => setActiveRole("participant")}
-                  className="flex items-center gap-2 "
+                  className="flex items-center gap-2"
                 >
                   <User className="w-4 h-4" />
                   Participant View
@@ -272,7 +328,7 @@ export default function HackZenDashboard() {
                         </h2>
 
                         {/* My Hackathons */}
-                        <Card className="m-7 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                        <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Trophy className="w-5 h-5 text-indigo-600" />
@@ -462,52 +518,6 @@ export default function HackZenDashboard() {
                           </div>
                         </CardContent>
                       </Card>
-
-                      {/* Explore Hackathons */}
-                      <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Award className="w-5 h-5 text-indigo-600" />
-                            Explore Hackathons
-                          </CardTitle>
-                          <CardDescription>
-                            You can Participate and Change the world
-                          </CardDescription>
-                        </CardHeader>
-                            <CardContent className="space-y-3">
-                            {Explorehackathons.map((hackathon, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                              >
-                                <div>
-                                  <p className="font-medium">
-                                    {hackathon.name}
-                                  </p>
-                                  <p className="text-sm text-gray-500">
-                                    {hackathon.deadline}
-                                  </p>
-                                </div>
-                                <Badge
-                                  variant={
-                                    hackathon.status === "Live"
-                                      ? "default"
-                                      : hackathon.status === "Closed"
-                                      ? "secondary"
-                                      : "outline"
-                                  }
-                                  className={
-                                    hackathon.status === "Live"
-                                      ? "bg-green-500"
-                                      : ""
-                                  }
-                                >
-                                  {hackathon.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </CardContent> 
-                      </Card>
                     </div>
                   </>
                 )}
@@ -568,7 +578,7 @@ export default function HackZenDashboard() {
                         </Card>
 
                         {/* Review Queue */}
-                        <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                        <Card className="m-6 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Eye className="w-5 h-5 text-purple-600" />
@@ -769,16 +779,35 @@ export default function HackZenDashboard() {
               </div>
             </div>
           </>
-        ) : (
+        ) : currentView === "profile" ? (
           <ProfileSection
             userName="John Doe"
             userEmail="john@example.com"
             userAvatar="/placeholder.svg?height=96&width=96"
             onBack={() => setCurrentView("dashboard")}
           />
-        )}
+        ) : currentView === "my-hackathons" ? (
+          <MyHackathons onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "my-submissions" ? (
+          <MySubmissions onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "chat-rooms" ? (
+          <ChatRooms onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "my-portfolio" ? (
+          <MyPortfolio onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "explore-hackathons" ? (
+          <ExploreHackathons onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "created-hackathons" ? (
+          <CreatedHackathons onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "participant-overview" ? (
+          <ParticipantOverview onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "review-submissions" ? (
+          <ReviewSubmissions onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "announcements" ? (
+          <Announcements onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "organizer-tools" ? (
+          <OrganizerTools onBack={() => setCurrentView("dashboard")} />
+        ) : null}
       </SidebarInset>
     </SidebarProvider>
   )
 }
-

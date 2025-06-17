@@ -5,7 +5,8 @@ import NotFound from "./pages/Notfound";
 import Page from "./pages/Dashboard/AdimPage/AdminPanel";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
+import DashboardPage from "./pages/Dashboard/mainDashboard/Page";
+// import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
 // import other pages as needed
 
 function App() {
@@ -16,7 +17,8 @@ function App() {
       <Route path="/admin" element={<Page />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={<Dashboard />} />
+      {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+      <Route path="/dashboard" element={<DashboardPage />} />
       {/* Add other routes like:
       <Route path="/dashboard" element={<Dashboard />} />
       */}
