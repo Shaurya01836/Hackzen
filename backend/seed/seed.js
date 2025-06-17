@@ -58,19 +58,19 @@ await Promise.all([
 ]);
 
 // Generate and insert dummy data
-const users = generateUsers(2);
-const teams = generateTeams(users, 2);
-const projects = generateProjects(teams, users, 2);
-const scores = generateScores(projects, users, 2);
-const histories = generateSubmissionHistories(projects, 2);
-const invites = generateTeamInvites(teams, users, 2);
-const plans = generatePlans(users, 2);
-const badges = generateBadges(2);
-const hackathons = generateHackathons(users, 2);
-const chatRooms = generateChatRooms(hackathons, teams, 2);
-const messages = generateMessages(chatRooms, users, 2);
-const announcements = generateAnnouncements(hackathons, users, 2);
-const notifications = generateNotifications(users, 2);
+const users = generateUsers(10);
+const teams = generateTeams(users, 5);
+const projects = generateProjects(teams, users, 5);
+const scores = generateScores(projects, users, 5);
+const histories = generateSubmissionHistories(projects, 5);
+const invites = generateTeamInvites(teams, users, 5);
+const plans = generatePlans(users, 3);
+const badges = generateBadges(5);
+const hackathons = generateHackathons(users, 5);
+const chatRooms = generateChatRooms(hackathons, teams, 5);
+const messages = generateMessages(chatRooms, users, 10);
+const announcements = generateAnnouncements(hackathons, users, 5);
+const notifications = generateNotifications(users, 5);
 
 await mongoose.connection.db.dropCollection('users').catch(err => {
   if (err.code !== 26) throw err; // 26 = NamespaceNotFound = collection didn't exist yet
