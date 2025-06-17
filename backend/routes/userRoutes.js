@@ -6,6 +6,7 @@ const { protect, isAdmin } = require('../middleware/authMiddleware');
 
 // GitHub OAuth Routes FIRST
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get(
   '/github/callback',
@@ -16,6 +17,17 @@ router.get(
   (req, res) => {
     // Redirect after successful GitHub login
     res.redirect('http://localhost:5173/dashboard');
+  }
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/login',
+    session: true
+  }),
+  (req, res) => {
+    res.redirect('http://localhost:5173/dashboard'); // or your frontend route
   }
 );
 
