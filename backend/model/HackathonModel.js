@@ -1,7 +1,5 @@
-const { model } = require('mongoose');
+const mongoose = require('mongoose');
+const HackathonSchema = require('../schema/HackathonSchema');
 
-const { HackathonSchema } = require('../schema/HackathonSchema');
-
-const HackathonModel = new model("user", HackathonSchema);
-
-module.exports = { HackathonModel };
+const Hackathon = mongoose.models.Hackathon || mongoose.model('Hackathon', HackathonSchema);
+module.exports = Hackathon;
