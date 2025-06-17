@@ -1,7 +1,5 @@
-const { model } = require('mongoose');
-
+const mongoose = require('mongoose');
 const { NotificationSchema } = require('../schema/NotificationSchema');
 
-const NotificationModel = new model("user", NotificationSchema);
-
-module.exports = { NotificationModel };
+const Notification = mongoose.models.Notification || mongoose.model('Notification', NotificationSchema);
+module.exports = Notification;

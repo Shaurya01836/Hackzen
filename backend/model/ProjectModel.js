@@ -1,7 +1,5 @@
-const { model } = require('mongoose');
-
+const mongoose = require('mongoose');
 const { ProjectSchema } = require('../schema/ProjectSchema');
 
-const ProjectModel = new model("user", ProjectSchema);
-
-module.exports = { ProjectModel };
+const Project = mongoose.models.Project || mongoose.model('Project', ProjectSchema);
+module.exports = Project;

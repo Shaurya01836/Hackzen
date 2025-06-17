@@ -1,19 +1,22 @@
-require('dotenv').config();
+require('dotenv').config({ path: '../.env' });
+
+console.log("Loaded MONGO_URL:", process.env.MONGO_URL);
+
 const mongoose = require('mongoose');
 
-const User = require('../models/UserModel');
-const Team = require('../models/TeamModel');
-const Project = require('../models/ProjectModel');
-const Score = require('../models/ScoreModel');
-const SubmissionHistory = require('../models/SubmissionHistoryModel');
-const TeamInvite = require('../models/TeamInviteModel');
-const Plan = require('../models/PlanModel');
-const Badge = require("../models/BadgeModel");
-const ChatRoom = require("../models/ChatRoomModel");
-const Hackathon = require("../models/HackathonModel");
-const Message = require("../models/MessageModel");
-const Announcement = require("../models/AnnouncementModel");
-const Notification = require("../models/NotificationModel");
+const User = require('../model/UserModel');
+const Team = require('../model/TeamModel');
+const Project = require('../model/ProjectModel');
+const Score = require('../model/ScoreModel');
+const SubmissionHistory = require('../model/SubmissionHistoryModel');
+const TeamInvite = require('../model/TeamInviteModel');
+const Plan = require('../model/PlanModel');
+const Badge = require("../model/BadgeModel");
+const ChatRoom = require("../model/ChatRoomModel");
+const Hackathon = require("../model/HackathonModel");
+const Message = require("../model/MessageModel");
+const Announcement = require("../model/AnnouncementModel");
+const Notification = require("../model/NotificationModel");
 
 const {
 generateUsers,
@@ -29,11 +32,11 @@ generateHackathons,
 generateMessages,
 generateAnnouncements,
 generateNotifications
-} = require('../data/generateDummy');
+} = require('../data/data.js');
 
 const seedDatabase = async () => {
 try {
-await mongoose.connect(process.env.MONGO_URI);
+await mongoose.connect(process.env.MONGO_URL);
 console.log("✅ MongoDB connected");
 
 
@@ -64,10 +67,15 @@ const invites = generateTeamInvites(teams, users, 5);
 const plans = generatePlans(users, 3);
 const badges = generateBadges(5);
 const hackathons = generateHackathons(users, 5);
-const chatRooms = generateChatRooms(hackathons, [], 5);
+const chatRooms = generateChatRooms(hackathons, teams, 5);
 const messages = generateMessages(chatRooms, users, 10);
 const announcements = generateAnnouncements(hackathons, users, 5);
 const notifications = generateNotifications(users, 5);
+
+await mongoose.connection.db.dropCollection('users').catch(err => {
+  if (err.code !== 26) throw err; // 26 = NamespaceNotFound = collection didn't exist yet
+});
+
 
 await User.insertMany(users);
 await Team.insertMany(teams);

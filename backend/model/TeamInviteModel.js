@@ -1,7 +1,5 @@
-const { model } = require('mongoose');
-
+const mongoose = require('mongoose');
 const { TeamInviteSchema } = require('../schema/TeamInviteSchema');
 
-const TeamInviteModel = new model("user", TeamInviteSchema);
-
-module.exports = { TeamInviteModel };
+const TeamInvite = mongoose.models.TeamInvite || mongoose.model('TeamInvite', TeamInviteSchema);
+module.exports = TeamInvite;

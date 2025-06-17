@@ -1,7 +1,5 @@
-const { model } = require('mongoose');
-
+const mongoose = require('mongoose');
 const { SubmissionHistorySchema } = require('../schema/SubmissionHistorySchema');
 
-const SubmissionHistoryModel = new model("user", SubmissionHistorySchema);
-
-module.exports = { SubmissionHistoryModel };
+const SubmissionHistory = mongoose.models.SubmissionHistory || mongoose.model('SubmissionHistory', SubmissionHistorySchema);
+module.exports = SubmissionHistory;
