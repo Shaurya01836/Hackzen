@@ -44,7 +44,7 @@ import { Badge } from "../AdimPage/components/ui/badge"
 import { Progress } from "../AdimPage/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "../AdimPage/components/ui/avatar"
 import { Separator } from "../AdimPage/components/ui/separator"
-import { ProfileSection } from "./Profile-section"
+import { ProfileSection } from "./ProfileSection"
 
 const participantMenuItems = [
   { title: "My Hackathons", icon: Trophy, href: "#" },
