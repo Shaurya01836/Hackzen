@@ -21,7 +21,7 @@ function Navbar() {
         </div>
 
         <div className="hidden md:flex gap-6">
-          {["Home", "Hackathons", "More", "About"].map((text, index) => (
+          {["Home", "Hackathons", "More", "About", "Login", "Register"].map((text, index) => (
             <Link
               key={index}
               to={`/${text.toLowerCase()}`}

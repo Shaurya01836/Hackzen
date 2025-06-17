@@ -34,7 +34,7 @@ function Footer() {
           </p>
 
           <div className="flex items-center gap-4">
-            {[Dribbble, Instagram, Linkedin, Github].map((Icon, i) => (
+            {[ Instagram, Linkedin, Github].map((Icon, i) => (
               <span
                 key={i}
                 className="w-10 h-10 border border-gray-500 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition"
@@ -72,7 +72,7 @@ function Footer() {
         <div className="w-full md:w-1/3">
           <div className="mb-6">
             <p className="text-sm text-gray-400 mb-1">DROP US A LINE</p>
-            <p className="text-lg font-semibold text-white">inquiry@halo-lab.com</p>
+            <p className="text-lg font-semibold text-white">hackzen.dev@gmail.com</p>
           </div>
           <div>
             <p className="text-sm text-gray-400 mb-1">CALL US</p>
@@ -82,7 +82,7 @@ function Footer() {
                 alt="WhatsApp"
                 className="w-5 h-5"
               />
-              <p className="text-lg font-semibold text-white">+1 (213) 337-8573</p>
+              <p className="text-lg font-semibold text-white">+1 (000) 337-8573</p>
             </div>
           </div>
         </div>

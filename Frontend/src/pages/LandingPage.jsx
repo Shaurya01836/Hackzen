@@ -5,6 +5,7 @@ import LogoCloud from "../components/sections/LogoCloud";
 import CtaSection from "../components/sections/CtaSection";
 import FeaturedHackCards from "../components/common/FeaturedHackCards";
 import Footer from "../components/layout/Footer";
+import MilestoneStats from "../components/sections/MilestoneStats";
 
 // const hackathonData = [
 //   {
@@ -39,6 +40,7 @@ function LandingPage() {
       <Navbar />
       <Header />
       <LogoCloud />
+      <MilestoneStats />
       <CtaSection />
 
       {/*     
