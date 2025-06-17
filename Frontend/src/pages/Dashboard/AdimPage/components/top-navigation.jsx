@@ -44,7 +44,7 @@ export function TopNavigation() {
               <div className="space-y-3">
                 <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
                   <p className="text-sm text-white">New hackathon submission received</p>
-                  <p className="text-xs text-gray-400 mt-1">2 minutes ago</p>
+                  <p className="text-xs text-gray-400 mt-1">3 minutes ago</p>
                 </div>
                 <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
                   <p className="text-sm text-white">User reported inappropriate content</p>
