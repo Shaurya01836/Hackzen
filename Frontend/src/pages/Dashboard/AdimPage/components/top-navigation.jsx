@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Search, Bell, User, Moon, Sun } from "lucide-react"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
@@ -14,7 +13,6 @@ import {
 } from "./ui/dropdown-menu"
 
 export function TopNavigation() {
-  const [isDarkMode, setIsDarkMode] = useState(true)
 
   return (
     <header className="h-16 bg-black/20 backdrop-blur-xl border-b border-purple-500/20 flex items-center justify-between px-6">
@@ -29,15 +27,6 @@ export function TopNavigation() {
 
       {/* Right Section */}
       <div className="flex items-center space-x-4">
-        {/* Theme Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="text-gray-400 hover:text-white hover:bg-white/5"
-        >
-          {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </Button>
 
         {/* Notifications */}
         <DropdownMenu>
