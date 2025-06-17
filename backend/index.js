@@ -1,15 +1,26 @@
 require("dotenv").config();
 
 const express = require("express");
+const session = require('express-session');
+const passport = require('passport');
+require('./config/passport'); 
 const mongoose = require("mongoose");
 const app = express();
 
 // Import route files
 const hackathonRoutes = require('./routes/hackathonRoutes');
-const userRoutes = require('./routes/userRoutes'); // teammate's route
+const userRoutes = require('./routes/userRoutes');
 
 // App middleware
 app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Mount API routes
 app.use('/api/hackathons', hackathonRoutes);
