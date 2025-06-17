@@ -37,3 +37,6 @@ export default {
   },
   plugins: [],
 };
+
+
+// bg-[#0D0D2B]
