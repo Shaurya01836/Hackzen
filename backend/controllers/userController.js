@@ -10,7 +10,7 @@ const generateToken = (user) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { name, email, password, authProvider, githubUsername } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
@@ -22,8 +22,7 @@ exports.registerUser = async (req, res) => {
       name,
       email,
       passwordHash,
-      authProvider,
-      githubUsername,
+      authProvider: 'email',
     });
 
     res.status(201).json({

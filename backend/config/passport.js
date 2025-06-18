@@ -3,9 +3,7 @@ const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/UserModel');
 
-// ==========================
-// 🔐 GitHub Strategy
-// ==========================
+// GitHub Strategy
 passport.use(
   new GitHubStrategy(
     {
@@ -36,9 +34,8 @@ passport.use(
   )
 );
 
-// ==========================
-// 🔐 Google Strategy
-// ==========================
+
+// Google Strategy
 passport.use(
   new GoogleStrategy(
     {
