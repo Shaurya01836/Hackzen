@@ -165,7 +165,7 @@ export function MyPortfolio({ onBack }) {
           {/* Stats Overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <CardContent className="p-4 text-center">
+              <CardContent className="pt-5 text-center">
                 <Trophy className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-indigo-600">
                   {totalHackathons}
@@ -174,14 +174,14 @@ export function MyPortfolio({ onBack }) {
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4 text-center">
+              <CardContent className="pt-5 text-center">
                 <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-green-600">{totalWins}</p>
                 <p className="text-sm text-gray-600">Wins</p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4 text-center">
+              <CardContent className="pt-5 text-center">
                 <Star className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-yellow-600">
                   {totalBadges}
@@ -190,7 +190,7 @@ export function MyPortfolio({ onBack }) {
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4 text-center">
+              <CardContent className="pt-5 text-center">
                 <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                 <p className="text-2xl font-bold text-purple-600">
                   #{currentRank}
@@ -206,7 +206,7 @@ export function MyPortfolio({ onBack }) {
               <CardTitle>Featured Projects</CardTitle>
               <CardDescription>Your best hackathon submissions</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-4">
               {projects.map(project => (
                 <div key={project.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-3">
@@ -303,7 +303,7 @@ export function MyPortfolio({ onBack }) {
               <CardTitle className="text-lg">Recent Achievements</CardTitle>
               <CardDescription>Your latest badges and awards</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               {achievements.map(achievement => (
                 <div
                   key={achievement.id}
@@ -333,7 +333,7 @@ export function MyPortfolio({ onBack }) {
               <CardTitle className="text-lg">Activity Timeline</CardTitle>
               <CardDescription>Your recent hackathon activity</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -365,7 +365,7 @@ export function MyPortfolio({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Portfolio Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="pt-4 space-y-2">
               <Button variant="outline" className="w-full justify-start">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Share Portfolio

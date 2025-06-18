@@ -318,7 +318,7 @@ export default function HackZenDashboard() {
               </div>
 
               {/* Main Content Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
                 {/* Participant Panel */}
                 {activeRole === "participant" && (
                   <>
@@ -727,16 +727,15 @@ export default function HackZenDashboard() {
                         Submissions Trend
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="h-24 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-end justify-center">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-green-600">
-                            +23%
-                          </p>
-                          <p className="text-sm text-gray-600">This month</p>
-                        </div>
-                      </div>
-                    </CardContent>
+                 <CardContent>
+                  <div className="h-24 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">+23%</p>
+                    <p className="text-sm text-gray-600">This month</p>
+                  </div>
+                  </div>
+                 </CardContent>
+
                   </Card>
 
                   <Card className="hover:shadow-lg transition-shadow">
@@ -747,7 +746,7 @@ export default function HackZenDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-24 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-end justify-center">
+                      <div className="h-24 bg-gradient-to-r from-blue-100 to-cyan-100 rounded-lg flex items-center justify-center">
                         <div className="text-center">
                           <p className="text-2xl font-bold text-blue-600">
                             +156
@@ -766,7 +765,7 @@ export default function HackZenDashboard() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-24 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg flex items-end justify-center">
+                      <div className="h-24 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg flex items-center justify-center">
                         <div className="text-center">
                           <p className="text-2xl font-bold text-yellow-600">
                             8

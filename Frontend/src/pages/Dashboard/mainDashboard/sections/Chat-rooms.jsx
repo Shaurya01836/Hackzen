@@ -147,7 +147,7 @@ export function ChatRooms({ onBack }) {
                 className="hover:shadow-md transition-shadow cursor-pointer"
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="p-8 flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
                       <div className="flex items-center gap-2">
                         <Hash className="w-5 h-5 text-gray-500" />
@@ -214,7 +214,7 @@ export function ChatRooms({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Chat Overview</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Total Rooms</span>
                 <span className="font-medium">{chatRooms.length}</span>
@@ -242,7 +242,7 @@ export function ChatRooms({ onBack }) {
                 Latest activity across all rooms
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               {recentMessages.map(message => (
                 <div key={message.id} className="flex items-start gap-3">
                   <Avatar className="w-8 h-8">
@@ -273,7 +273,7 @@ export function ChatRooms({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="pt-5 space-y-2">
               <Button variant="outline" className="w-full justify-start">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Create New Room

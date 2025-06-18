@@ -101,7 +101,7 @@ export function MySubmissions({ onBack }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-4 space-y-4">
         <p className="text-sm text-gray-600">{submission.description}</p>
 
         <div className="flex flex-wrap gap-1">
@@ -191,7 +191,7 @@ export function MySubmissions({ onBack }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-500" />
               <div>
@@ -202,7 +202,7 @@ export function MySubmissions({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-green-500" />
               <div>
@@ -213,7 +213,7 @@ export function MySubmissions({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Upload className="w-8 h-8 text-yellow-500" />
               <div>
