@@ -2,7 +2,7 @@
 
 import { Search, Bell, User, Moon, Sun } from "lucide-react"
 import { Input } from "./ui/input"
-import { Button } from "./ui/button"
+import { Button } from "./ui/AdminButton"
 import { Badge } from "./ui/badge"
 import {
   DropdownMenu,

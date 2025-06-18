@@ -15,7 +15,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuSubContent,
   ContextMenuRadioGroup,
-} from "./YourContextMenuFile" // adjust the import path
+} from "./YourContextMenuFile" // adjust this path
 
 export default function DemoContextMenu() {
   const [checked, setChecked] = useState(true)
@@ -25,56 +25,89 @@ export default function DemoContextMenu() {
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <ContextMenu>
         <ContextMenuTrigger>
-          <div className="p-6 bg-white rounded-md shadow-md cursor-context-menu select-none">
+          <div className="p-6 bg-white rounded-lg shadow-md cursor-pointer select-none border border-gray-200 hover:shadow-lg transition">
             Right click (or long press) here
           </div>
         </ContextMenuTrigger>
 
-        <ContextMenuContent className="w-56">
-          <ContextMenuLabel inset>Actions</ContextMenuLabel>
+        <ContextMenuContent className="w-56 bg-white text-gray-800 border border-gray-200 shadow-lg rounded-md">
+          <ContextMenuLabel inset className="text-xs uppercase text-gray-500 px-2 py-1">
+            Actions
+          </ContextMenuLabel>
 
-          <ContextMenuItem onSelect={() => alert("New File")}>
+          <ContextMenuItem
+            onSelect={() => alert("New File")}
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+          >
             New File
             <ContextMenuShortcut>⌘N</ContextMenuShortcut>
           </ContextMenuItem>
 
-          <ContextMenuItem onSelect={() => alert("Save")}>
+          <ContextMenuItem
+            onSelect={() => alert("Save")}
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+          >
             Save As...
             <ContextMenuShortcut>⌘S</ContextMenuShortcut>
           </ContextMenuItem>
 
-          <ContextMenuSeparator />
+          <ContextMenuSeparator className="my-1 border-t border-gray-100" />
 
           <ContextMenuCheckboxItem
             checked={checked}
             onCheckedChange={(checked) => setChecked(checked)}
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
           >
             Show Hidden Files
           </ContextMenuCheckboxItem>
 
-          <ContextMenuSeparator />
+          <ContextMenuSeparator className="my-1 border-t border-gray-100" />
 
-          <ContextMenuLabel inset>Fruits</ContextMenuLabel>
+          <ContextMenuLabel inset className="text-xs uppercase text-gray-500 px-2 py-1">
+            Fruits
+          </ContextMenuLabel>
+
           <ContextMenuRadioGroup
             value={radioValue}
-            onValueChange={(value) => setRadioValue(value)}
+            onValueChange={setRadioValue}
           >
-            <ContextMenuRadioItem value="apple">Apple</ContextMenuRadioItem>
-            <ContextMenuRadioItem value="banana">Banana</ContextMenuRadioItem>
-            <ContextMenuRadioItem value="orange">Orange</ContextMenuRadioItem>
+            <ContextMenuRadioItem
+              value="apple"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+            >
+              Apple
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem
+              value="banana"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+            >
+              Banana
+            </ContextMenuRadioItem>
+            <ContextMenuRadioItem
+              value="orange"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+            >
+              Orange
+            </ContextMenuRadioItem>
           </ContextMenuRadioGroup>
 
-          <ContextMenuSeparator />
+          <ContextMenuSeparator className="my-1 border-t border-gray-100" />
 
           <ContextMenuSub>
-            <ContextMenuSubTrigger inset>
+            <ContextMenuSubTrigger inset className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer">
               More Options
             </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuItem onSelect={() => alert("Settings")}>
+            <ContextMenuSubContent className="bg-white border border-gray-200 shadow-md rounded-md">
+              <ContextMenuItem
+                onSelect={() => alert("Settings")}
+                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+              >
                 Settings
               </ContextMenuItem>
-              <ContextMenuItem onSelect={() => alert("Help")}>
+              <ContextMenuItem
+                onSelect={() => alert("Help")}
+                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
+              >
                 Help
               </ContextMenuItem>
             </ContextMenuSubContent>

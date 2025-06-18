@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import { Button } from "./ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
+import { Button } from "./ui/AdminButton"
 import { Input } from "./ui/input"
 import { Textarea } from "./ui/textarea"
 import { Badge } from "./ui/badge"
