@@ -319,7 +319,7 @@ export function CreateHackathon({ onBack }) {
                     >
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                       {categories.map(category => (
                         <SelectItem key={category} value={category}>
                           {category}
@@ -345,7 +345,7 @@ export function CreateHackathon({ onBack }) {
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                       <SelectItem value="Beginner">Beginner</SelectItem>
                       <SelectItem value="Intermediate">Intermediate</SelectItem>
                       <SelectItem value="Advanced">Advanced</SelectItem>
@@ -694,7 +694,7 @@ export function CreateHackathon({ onBack }) {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                     <SelectItem value="upcoming">Upcoming</SelectItem>
                     <SelectItem value="ongoing">Ongoing</SelectItem>
                     <SelectItem value="ended">Ended</SelectItem>
