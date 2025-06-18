@@ -18,8 +18,10 @@ const teamInviteRoutes = require('./routes/teamInviteRoutes');
 const submissionHistoryRoutes = require('./routes/submissionHistoryRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const chatRoomRoutes = require('./routes/chatRoomRoutes');
-const messageRoutes = require('./routes/messageRoutes');
+const scoreRoutes = require('./routes/scoreRoutes');
+const badgeRoutes = require('./routes/badgeRoutes');
+
+
 
 // Middleware
 app.use(express.json());
@@ -41,8 +43,8 @@ app.use('/api/team-invites', teamInviteRoutes);
 app.use('/api/submissions', submissionHistoryRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/chatrooms', chatRoomRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/scores', scoreRoutes);
+app.use('/api/badges', badgeRoutes);
 
 // MongoDB URI and port
 const PORT = process.env.PORT || 3000;
@@ -63,11 +65,11 @@ socketHandler(io);
 // Connect to MongoDB and start the server
 mongoose.connect(uri)
   .then(() => {
-    console.log("✅ DB connected");
+    console.log("DB connected");
     server.listen(PORT, () => {
-      console.log(`🚀 Server + Socket.IO running on http://localhost:${PORT}`);
+      console.log(`Server + Socket.IO running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ DB connection error:", err.message);
+    console.error("DB connection error:", err.message);
   });

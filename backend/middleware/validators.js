@@ -36,3 +36,27 @@ exports.validateNotificationInput = (req, res, next) => {
 
   next();
 };
+
+exports.validateScoreInput = (req, res, next) => {
+  const { project, criteria, score } = req.body;
+
+  if (!project || !criteria || typeof score !== 'number') {
+    return res.status(400).json({ message: 'project, criteria and numeric score are required' });
+  }
+
+  if (score < 0 || score > 10) {
+    return res.status(400).json({ message: 'Score must be between 0 and 10' });
+  }
+
+  next();
+};
+
+exports.validateBadgeInput = (req, res, next) => {
+  const { name, description, iconUrl, criteria } = req.body;
+
+  if (!name || !description || !iconUrl || !criteria) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  next();
+};
