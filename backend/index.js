@@ -3,8 +3,11 @@ require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
-require("./config/passport"); // Your GitHub OAuth config
+require("./config/passport");
 const mongoose = require("mongoose");
+const http = require("http"); // ✅ for socket.io support
+const { Server } = require("socket.io");
+const socketHandler = require("./config/socket"); // ✅ create this next
 const app = express();
 
 // Import route files
@@ -15,9 +18,8 @@ const teamInviteRoutes = require('./routes/teamInviteRoutes');
 const submissionHistoryRoutes = require('./routes/submissionHistoryRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-
-
-
+const chatRoomRoutes = require('./routes/chatRoomRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 
 // Middleware
 app.use(express.json());
@@ -39,19 +41,33 @@ app.use('/api/team-invites', teamInviteRoutes);
 app.use('/api/submissions', submissionHistoryRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/chatrooms', chatRoomRoutes);
+app.use('/api/messages', messageRoutes);
 
 // MongoDB URI and port
 const PORT = process.env.PORT || 3000;
 const uri = process.env.MONGO_URL;
 
-// Connect DB first, then start server
+// Create HTTP server and socket.io instance
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Allow frontend to connect — restrict in prod
+    methods: ['GET', 'POST']
+  }
+});
+
+// Attach socket logic
+socketHandler(io);
+
+// Connect to MongoDB and start the server
 mongoose.connect(uri)
   .then(() => {
-    console.log("DB connected");
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+    console.log("✅ DB connected");
+    server.listen(PORT, () => {
+      console.log(`🚀 Server + Socket.IO running on http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("DB connection error:", err.message);
+    console.error("❌ DB connection error:", err.message);
   });

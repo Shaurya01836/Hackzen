@@ -31,14 +31,13 @@ router.get(
   }
 );
 
-// Public Routes
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 router.get('/', userController.getAllUsers);
 
-// Protected Routes
 router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
-router.get('/:id', userController.getUserById); // 🟡 Dynamic route LAST
+router.patch('/:id/role', protect, isAdmin, userController.changeUserRole); // ✅ new
+router.get('/:id', userController.getUserById); // 🟡 Keep this last
 
 module.exports = router;

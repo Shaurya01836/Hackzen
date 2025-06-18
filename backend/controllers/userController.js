@@ -9,6 +9,7 @@ const generateToken = (user) => {
   });
 };
 
+// Register a new user (email only flow)
 exports.registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -18,15 +19,23 @@ exports.registerUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const isAdminEmail = email === 'admin@stpi.dev';
+
     const newUser = await User.create({
       name,
       email,
       passwordHash,
       authProvider: 'email',
+      role: isAdminEmail ? 'admin' : undefined // default handled by schema
     });
 
     res.status(201).json({
-      user: newUser,
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role
+      },
       token: generateToken(newUser)
     });
   } catch (err) {
@@ -34,6 +43,7 @@ exports.registerUser = async (req, res) => {
   }
 };
 
+// Login user
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -44,7 +54,12 @@ exports.loginUser = async (req, res) => {
     }
 
     res.json({
-      user,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
       token: generateToken(user)
     });
   } catch (err) {
@@ -52,6 +67,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-passwordHash');
@@ -61,6 +77,7 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+// Get user by ID
 exports.getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate('badges hackathonsJoined projects');
@@ -72,6 +89,7 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+// Update user
 exports.updateUser = async (req, res) => {
   try {
     const updates = req.body;
@@ -84,10 +102,33 @@ exports.updateUser = async (req, res) => {
   }
 };
 
+// Delete user
 exports.deleteUser = async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Change user role (admin only)
+exports.changeUserRole = async (req, res) => {
+  try {
+    const { newRole } = req.body;
+    const validRoles = ['participant', 'organizer', 'mentor', 'judge', 'admin'];
+
+    if (!validRoles.includes(newRole)) {
+      return res.status(400).json({ message: 'Invalid role specified' });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.role = newRole;
+    await user.save();
+
+    res.json({ message: `User role updated to ${newRole}`, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,4 +1,5 @@
 const Hackathon = require('../model/HackathonModel');
+const ChatRoom = require('../model/ChatRoomModel');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -15,6 +16,12 @@ exports.createHackathon = async (req, res) => {
       startDate,
       endDate,
       organizer: req.user.id
+    });
+
+    // ✅ Auto-create general chat room
+    await ChatRoom.create({
+      hackathon: newHackathon._id,
+      type: 'general'
     });
 
     res.status(201).json(newHackathon);
