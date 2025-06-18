@@ -20,6 +20,19 @@ function Navbar() {
   const [showRegister, setShowRegister] = useState(false);
   const { user, logout } = useAuth(); // ✅ get auth
 
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:3000/api/users/logout", {
+        method: "GET",
+        credentials: "include"
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      logout(); // clear localStorage + context
+    }
+  };
+
   return (
     <div className="relative">
       {(showLogin || showRegister) && (
@@ -77,7 +90,7 @@ function Navbar() {
                   {user.name}
                 </span>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="px-4 py-2 bg-red-600 text-white rounded-3xl font-semibold flex gap-3 items-center"
                 >
                   Logout <LogOut className="w-5 h-5" />
@@ -125,7 +138,7 @@ function Navbar() {
               </>
             ) : (
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 className="text-left text-red-600 font-medium"
               >
                 Logout

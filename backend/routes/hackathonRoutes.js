@@ -7,12 +7,15 @@ const {
   updateHackathon,
   deleteHackathon
 } = require('../controllers/hackathonController');
-const { protect } = require('../middleware/authMiddleware');
+const { protect, isOrganizerOrAdmin } = require('../middleware/authMiddleware');
 
-router.post('/', protect, createHackathon);
+// 🛡️ Organizer or Admin required to create/update/delete
+router.post('/', protect, isOrganizerOrAdmin, createHackathon);
+router.put('/:id', protect, isOrganizerOrAdmin, updateHackathon);
+router.delete('/:id', protect, isOrganizerOrAdmin, deleteHackathon);
+
+// 🆓 Public routes
 router.get('/', getAllHackathons);
 router.get('/:id', getHackathonById);
-router.put('/:id', protect, updateHackathon);
-router.delete('/:id', protect, deleteHackathon);
 
 module.exports = router;

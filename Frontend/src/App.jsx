@@ -8,7 +8,7 @@ import Register from "./pages/Register";
 import DashboardPage from "./pages/Dashboard/mainDashboard/Page";
 // import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
 // import other pages as needed
-
+import OAuthSuccess from "./pages/OAuthSuccess"; // ✅ Import the new OAuthSuccess page
 function App() {
   return (
     <Routes>
@@ -17,6 +17,7 @@ function App() {
       <Route path="/admin" element={<Page />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+            <Route path="/oauth-success" element={<OAuthSuccess />} /> {/* ✅ Add this */}
       {/* <Route path="/dashboard" element={<Dashboard />} /> */}
       <Route path="/dashboard" element={<DashboardPage />} />
       {/* Add other routes like:
