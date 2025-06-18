@@ -5,24 +5,28 @@ import {
   GitGraphIcon,
   Menu,
   X,
-  LogIn, UserPlus
+  LogIn,
+  UserPlus,
+  LogOut
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext"; // ✅ auth
 import LoginModal from "../LoginModal";
 import RegisterModal from "../RegisterModal";
+
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const { user, logout } = useAuth(); // ✅ get auth
 
   return (
     <div className="relative">
-      {/* Blur overlay when modal is open */}
       {(showLogin || showRegister) && (
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
 
-      <nav className=" bg-white px-6 py-4">
+      <nav className="bg-white px-6 py-4">
         <div className="w-full px-6 py-4 flex items-center justify-between border-y-2">
           <div className="flex items-center gap-2">
             <GitGraphIcon className="w-6 h-6 text-[#1b0c3f] hover:rotate-90 transition-all duration-200 ease-in-out" />
@@ -43,37 +47,45 @@ function Navbar() {
             ))}
           </div>
 
-          {/* Login & Register Modals */}
           {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
           {showRegister && (
             <RegisterModal onClose={() => setShowRegister(false)} />
           )}
 
-          {/* Right-side buttons */}
           <div className="hidden md:flex gap-4 items-center">
-            <BellIcon className="w-6 h-6 text-[#1b0c3f] hover:bg-[#1b0c3f] hover:text-white transition-all duration-150 ease-in-out hover:rounded-xl hover:p-1 hover:scale-150" />
-            <User2Icon className="w-6 h-6 text-[#1b0c3f] hover:bg-[#1b0c3f] hover:text-white transition-all duration-150 ease-in-out hover:rounded-xl hover:p-1 hover:scale-150" />
-{/* Login Button */}
-<button
-  onClick={() => setShowLogin(true)}
-  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center hover:skew-x-6 hover:scale-105 transition-all duration-200 ease-in-out"
->
-  Login
-  <LogIn className="w-6 h-6 bg-white rounded-full text-[#1b0c3f] p-1 hover:bg-[#1b0c3f] hover:text-white hover:border-2 transition-all duration-200" />
-</button>
+            <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
+            <User2Icon className="w-6 h-6 text-[#1b0c3f]" />
 
-{/* Register Button */}
-<button
-  onClick={() => setShowRegister(true)}
-  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center hover:skew-x-6 hover:scale-105 transition-all duration-200 ease-in-out"
->
-  Register
-  <UserPlus className="w-6 h-6 bg-white rounded-full text-[#1b0c3f] p-1 hover:bg-[#1b0c3f] hover:text-white hover:border-2 transition-all duration-200" />
-</button>
-
+            {!user ? (
+              <>
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center"
+                >
+                  Login <LogIn className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={() => setShowRegister(true)}
+                  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center"
+                >
+                  Register <UserPlus className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-sm text-[#1b0c3f] font-medium">
+                  {user.name}
+                </span>
+                <button
+                  onClick={logout}
+                  className="px-4 py-2 bg-red-600 text-white rounded-3xl font-semibold flex gap-3 items-center"
+                >
+                  Logout <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
 
-          {/* Mobile Hamburger */}
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? (
@@ -85,36 +97,40 @@ function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
         {isOpen && (
           <div className="md:hidden flex flex-col gap-4 pb-4">
-            <Link
-              to="/"
-              className="text-gray-800 hover:text-indigo-600 font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              to="/hackathons"
-              className="text-gray-800 hover:text-indigo-600 font-medium"
-            >
-              Hackathons
-            </Link>
-            <Link
-              to="/more"
-              className="text-gray-800 hover:text-indigo-600 font-medium"
-            >
-              More
-            </Link>
-            <Link
-              to="/about"
-              className="text-gray-800 hover:text-indigo-600 font-medium"
-            >
-              About
-            </Link>
-            <div>
-              <BellIcon className="w-6 h-6 text-indigo-600" />
-            </div>
+            {["Home", "Hackathons", "More", "About"].map((text, index) => (
+              <Link
+                key={index}
+                to={`/${text.toLowerCase()}`}
+                className="text-gray-800 hover:text-indigo-600 font-medium"
+              >
+                {text}
+              </Link>
+            ))}
+            {!user ? (
+              <>
+                <button
+                  onClick={() => setShowLogin(true)}
+                  className="text-left text-indigo-600"
+                >
+                  Login
+                </button>
+                <button
+                  onClick={() => setShowRegister(true)}
+                  className="text-left text-indigo-600"
+                >
+                  Register
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={logout}
+                className="text-left text-red-600 font-medium"
+              >
+                Logout
+              </button>
+            )}
           </div>
         )}
       </nav>

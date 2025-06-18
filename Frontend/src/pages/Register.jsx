@@ -8,10 +8,7 @@ function Register() {
   const [form, setForm] = useState({
     name: "",
     email: "",
-    password: "",
-    githubUsername: "",
-    profileImage: "",
-    skills: ""
+    password: ""
   });
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
@@ -31,10 +28,7 @@ function Register() {
       const res = await axios.post("http://localhost:3000/api/users/register", {
         name: form.name,
         email: form.email,
-        password: form.password,
-        githubUsername: form.githubUsername,
-        profileImage: form.profileImage,
-        skills: form.skills.split(",").map(skill => skill.trim())
+        password: form.password
       });
 
       // Store token and user info
@@ -57,7 +51,7 @@ function Register() {
   };
 
   return (
-    <div className="bg-white px-10 py-10 rounded-2xl shadow-xl w-full max-w-4xl text-black space-y-6 max-h-[90vh] overflow-y-auto scroll-container">
+    <div className="bg-white px-10 py-10 rounded-2xl shadow-xl w-full max-w-2xl text-black space-y-6 max-h-[90vh] overflow-y-auto scroll-container">
       <h2 className="text-3xl font-bold text-center">Create Your Account</h2>
       <p className="text-center text-sm text-gray-600">Join the community</p>
 
@@ -80,15 +74,15 @@ function Register() {
       </div>
 
       <div className="text-center text-gray-500 text-sm">
-        — or sign up with details —
+        — or sign up with email —
       </div>
 
       {/* Registration Form */}
-      <form onSubmit={handleRegister} className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <form onSubmit={handleRegister} className="space-y-4">
         {errorMsg && (
-          <div className="col-span-2 text-red-600 text-sm font-medium">{errorMsg}</div>
+          <div className="text-red-600 text-sm font-medium">{errorMsg}</div>
         )}
-        <div className="col-span-2">
+        <div>
           <label className="block text-sm font-medium mb-1">Name*</label>
           <input
             type="text"
@@ -125,41 +119,6 @@ function Register() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">GitHub Username</label>
-          <input
-            type="text"
-            name="githubUsername"
-            value={form.githubUsername}
-            onChange={handleChange}
-            placeholder="your-github-username"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b0c3f]"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Profile Image URL</label>
-          <input
-            type="url"
-            name="profileImage"
-            value={form.profileImage}
-            onChange={handleChange}
-            placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b0c3f]"
-          />
-        </div>
-        <div className="col-span-2">
-          <label className="block text-sm font-medium mb-1">Skills*</label>
-          <input
-            type="text"
-            name="skills"
-            value={form.skills}
-            onChange={handleChange}
-            placeholder="React, Node.js, MongoDB"
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1b0c3f]"
-          />
-        </div>
-
-        <div className="col-span-2">
           <button
             type="submit"
             className="w-full bg-[#1b0c3f] hover:bg-[#2a1364] text-white font-semibold py-2 rounded-lg transition"
