@@ -76,9 +76,9 @@ mongoose.connect(uri)
   .then(() => {
     console.log("✅ DB connected");
     server.listen(PORT, () => {
-      console.log(`🚀 Server + Socket.IO running at http://localhost:${PORT}`);
+      console.log(`Server + Socket.IO running at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ DB connection error:", err.message);
+    console.error("DB connection error:", err.message);
   });
