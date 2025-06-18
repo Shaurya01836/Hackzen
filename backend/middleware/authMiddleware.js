@@ -1,26 +1,22 @@
 const jwt = require('jsonwebtoken');
 const User = require('../model/UserModel'); // Make sure this path is correct
 
+// ✅ Protect any route (requires valid token)
 const protect = async (req, res, next) => {
   let token;
 
   if (req.headers.authorization?.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-
-      // Verify token using JWT secret
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Find the user based on the ID in the token
       const user = await User.findById(decoded.id).select('-passwordHash');
-
       if (!user) {
         return res.status(401).json({ message: 'User not found, invalid token' });
       }
 
-      req.user = user; // Attach user to request for use in controllers
+      req.user = user;
       next();
-
     } catch (err) {
       console.error('JWT verification failed:', err.message);
       return res.status(401).json({ message: 'Not authorized, token failed' });
@@ -30,6 +26,7 @@ const protect = async (req, res, next) => {
   }
 };
 
+// ✅ Admin-only access
 const isAdmin = (req, res, next) => {
   if (req.user?.role === 'admin') {
     next();
@@ -38,5 +35,14 @@ const isAdmin = (req, res, next) => {
   }
 };
 
+// ✅ Organizer or Admin access
+const isOrganizerOrAdmin = (req, res, next) => {
+  const role = req.user?.role;
+  if (role === 'organizer' || role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied: Organizer or Admins only' });
+  }
+};
 
-module.exports = { protect, isAdmin };
+module.exports = { protect, isAdmin, isOrganizerOrAdmin };
