@@ -95,7 +95,7 @@ const hackathons = [
   }
 ]
 
-export function CreatedHackathons({ onBack }) {
+export function CreatedHackathons({ onBack, onCreateNew }) {
   const liveHackathons = hackathons.filter(h => h.status === "Live")
   const completedHackathons = hackathons.filter(h => h.status === "Completed")
   const draftHackathons = hackathons.filter(h => h.status === "Draft")
@@ -268,7 +268,10 @@ export function CreatedHackathons({ onBack }) {
             </p>
           </div>
         </div>
-        <Button className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600">
+        <Button
+          className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600"
+          onClick={onCreateNew}
+        >
           <Plus className="w-4 h-4" />
           Create New Hackathon
         </Button>

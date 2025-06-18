@@ -56,6 +56,7 @@ import { ReviewSubmissions } from "./sections/ReviewSubmissions"
 import { Announcements } from "./sections/Announcements"
 import { OrganizerTools } from "./sections/OrganizerTools"
 import { ExploreHackathons } from "./sections/ExploreHackathon"
+import { CreateHackathon } from "./sections/Create-hackathon"
 
 export default function HackZenDashboard() {
   const [activeRole, setActiveRole] = useState("participant")
@@ -374,7 +375,7 @@ export default function HackZenDashboard() {
                         </Card>
 
                         {/* My Submissions */}
-                        <Card className="m-6 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                        <Card className="m-7 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <FileText className="w-5 h-5 text-indigo-600" />
@@ -578,7 +579,7 @@ export default function HackZenDashboard() {
                         </Card>
 
                         {/* Review Queue */}
-                        <Card className="m-6 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                        <Card className="m-7 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Eye className="w-5 h-5 text-purple-600" />
@@ -797,7 +798,10 @@ export default function HackZenDashboard() {
         ) : currentView === "explore-hackathons" ? (
           <ExploreHackathons onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "created-hackathons" ? (
-          <CreatedHackathons onBack={() => setCurrentView("dashboard")} />
+          <CreatedHackathons
+            onBack={() => setCurrentView("dashboard")}
+            onCreateNew={() => setCurrentView("create-hackathon")}
+          />
         ) : currentView === "participant-overview" ? (
           <ParticipantOverview onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "review-submissions" ? (
@@ -806,6 +810,10 @@ export default function HackZenDashboard() {
           <Announcements onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "organizer-tools" ? (
           <OrganizerTools onBack={() => setCurrentView("dashboard")} />
+        ) : currentView === "create-hackathon" ? (
+          <CreateHackathon
+            onBack={() => setCurrentView("created-hackathons")}
+          />
         ) : null}
       </SidebarInset>
     </SidebarProvider>
