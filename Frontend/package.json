@@ -21,6 +21,7 @@
     "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "class-variance-authority": "^0.7.1",
     "express": "^5.1.0",
