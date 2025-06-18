@@ -12,7 +12,7 @@ const logos = [
 
 function LogoCloud() {
   return (
-    <section className=" py-10 px-6">
+    <section className=" py-10 px-6 ">
       <div className="max-w-7xl mx-auto text-center">
         <p className="text-gray-600 text-sm md:text-base mb-6 font-semibold">
           Trusted by the world's leading organizations

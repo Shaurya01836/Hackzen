@@ -55,7 +55,7 @@ const FAQCard = ({ title, icon: Icon, data }) => {
   };
 
   return (
-    <div className="bg-white text-black rounded-3xl p-8 shadow-2xl">
+    <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black rounded-3xl p-8 shadow-2xl">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold">{title}</h2>
         <Icon className="w-12 h-12 p-2 border-2 border-gray-500 rounded-full hover:rotate-45 hover:bg-black hover:text-white transition-all duration-300 ease-in-out" />

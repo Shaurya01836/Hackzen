@@ -6,52 +6,63 @@ import CtaSection from "../components/sections/CtaSection";
 import FeaturedHackCards from "../components/common/FeaturedHackCards";
 import Footer from "../components/layout/Footer";
 import MilestoneStats from "../components/sections/MilestoneStats";
+import JoinCommunity from "../components/sections/JoinCommunity";
 
-// const hackathonData = [
-//   {
-//     name: "HackVerse 2025",
-//     image: "https://deerhack-25.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2Fba9cde4f36b4400f8772bc30edaee5ee%2Fassets%2Fcover%2F777.png&w=1440&q=100",
-//     description: "Innovate, compete and win prizes worth $10,000.",
-//     date: "July 15 - 17",
-//     location: "Online",
-//     sponsored: true,
-//   },
-//   {
-//     name: "DevSprint 2.0",
-//     image: "https://deerhack-25.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2Fba9cde4f36b4400f8772bc30edaee5ee%2Fassets%2Fcover%2F777.png&w=1440&q=100",
-//     description: "36 hours of intense coding with real-world problems.",
-//     date: "Aug 5 - 7",
-//     location: "Bangalore",
-//     sponsored: false,
-//   },
-//   {
-//     name: "TechTrek 3.0",
-//     image: "https://deerhack-25.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2Fba9cde4f36b4400f8772bc30edaee5ee%2Fassets%2Fcover%2F777.png&w=1440&q=100",
-//     description: "Code your way through AI, Blockchain, and more.",
-//     date: "Sep 12 - 14",
-//     location: "Mumbai",
-//     sponsored: true,
-//   },
-// ];
+const hackathonData = [
+  {
+    name: "DevSprint 2.0",
+    image:
+      "https://wwdc25.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2Fb256802eda714e8f8603db20d8cd7860%2Fassets%2Fcover%2F54.png&w=1440&q=100",
+    description: "36 hours of intense coding with real-world problems.",
+    date: "Aug 5 - 7",
+    location: "Bangalore",
+    sponsored: false,
+  },
+  {
+    name: "HackVerse 2025",
+    image:
+      "https://hackverse2025.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2F25faa754a83d4170985ab5cd7a88f8e7%2Fassets%2Fcover%2F152.png&w=1440&q=100",
+    description: "Innovate, compete and win prizes worth $10,000.",
+    date: "July 15 - 17",
+    location: "Online",
+    sponsored: true,
+    top: true,
+  },
+  {
+    name: "DevSprint 2.0",
+    image:
+      "https://wwdc25.devfolio.co/_next/image?url=https%3A%2F%2Fassets.devfolio.co%2Fhackathons%2Fb256802eda714e8f8603db20d8cd7860%2Fassets%2Fcover%2F54.png&w=1440&q=100",
+    description: "36 hours of intense coding with real-world problems.",
+    date: "Aug 5 - 7",
+    location: "Bangalore",
+    sponsored: false,
+  },
+];
 
 function LandingPage() {
   return (
     <>
       <Navbar />
-      <Header />
-      <LogoCloud />
-      <MilestoneStats />
-      <CtaSection />
 
-      {/*     
-      <section className="py-16 ">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-4xl sm:text-5xl font-heading1 font-bold mb-10 text-center">
-            Featured Hackathons
-          </h2>
-          <FeaturedHackCards hackathons={hackathonData} />
-        </div>
-      </section> */}
+      {/* Full Gradient Wrapper until MilestoneStats */}
+      <section className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+        <Header />
+        <LogoCloud />
+
+        <section className="pt-16">
+          <div className="max-w-6xl mx-auto px-4">
+            <h2 className="text-4xl sm:text-5xl font-heading1 font-bold mb-10 text-center">
+              Featured Hackathons
+            </h2>
+            <FeaturedHackCards hackathons={hackathonData} />
+          </div>
+        </section>
+
+        <MilestoneStats />
+        <JoinCommunity />
+      </section>
+
+      <CtaSection />
 
       <Footer />
     </>

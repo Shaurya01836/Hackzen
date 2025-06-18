@@ -39,7 +39,7 @@ function Navbar() {
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
 
-      <nav className="bg-white px-6 py-4">
+      <nav className=" px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between border-y-2">
           <div className="flex items-center gap-2">
             <GitGraphIcon className="w-6 h-6 text-[#1b0c3f] hover:rotate-90 transition-all duration-200 ease-in-out" />
