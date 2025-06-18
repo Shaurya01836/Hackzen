@@ -9,31 +9,45 @@ exports.createHackathon = async (req, res) => {
       description,
       startDate,
       endDate,
-      mode,
-      prizeAmount,
-      prizeCurrency,
-      prizeBreakdown
+      registrationDeadline,
+      submissionDeadline,
+      maxParticipants,
+      status,
+      category,
+      difficulty,
+      location,
+      prizePool,
+      problemStatements,
+      requirements,
+      perks,
+      tags
     } = req.body;
-
-    if (!title || !description || !startDate || !endDate) {
-      return res.status(400).json({ message: "Title, description, startDate, and endDate are required" });
-    }
 
     const newHackathon = await Hackathon.create({
       title,
       description,
       startDate,
       endDate,
+      registrationDeadline,
+      submissionDeadline,
+      maxParticipants,
+      status,
+      category,
+      difficultyLevel: difficulty,
+      location,
       organizer: req.user.id,
-      mode: mode || 'online',
       prizePool: {
-        amount: prizeAmount || 0,
-        currency: prizeCurrency || 'USD',
-        breakdown: prizeBreakdown || ''
-      }
+        amount: parseInt(prizePool?.replace(/[^\d]/g, '')) || 0,
+        currency: 'USD',
+        breakdown: prizePool || ''
+      },
+      problemStatements,
+      requirements,
+      perks,
+      tags
     });
 
-    // ✅ Auto-create general chat room
+    // Optional: Create a general chat room
     await ChatRoom.create({
       hackathon: newHackathon._id,
       type: 'general'
@@ -45,6 +59,7 @@ exports.createHackathon = async (req, res) => {
     res.status(500).json({ message: 'Server error creating hackathon' });
   }
 };
+
 
 // ✅ Get all hackathons
 exports.getAllHackathons = async (req, res) => {

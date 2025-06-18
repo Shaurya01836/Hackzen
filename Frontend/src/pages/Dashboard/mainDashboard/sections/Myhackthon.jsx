@@ -111,7 +111,7 @@ export function MyHackathons({ onBack }) {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-4 space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-gray-500" />

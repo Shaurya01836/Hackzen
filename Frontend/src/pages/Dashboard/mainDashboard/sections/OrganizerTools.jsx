@@ -182,7 +182,7 @@ export function OrganizerTools({ onBack }) {
                 Key metrics across all your events
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
                   <p className="text-2xl font-bold text-blue-600">
@@ -244,14 +244,14 @@ export function OrganizerTools({ onBack }) {
               <TabsTrigger value="management">Management</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="data" className="space-y-4">
+            <TabsContent value="data" className="pt-4 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {groupedActions["Data Management"]?.map(action => (
                   <Card
                     key={action.action}
                     className="hover:shadow-lg transition-shadow cursor-pointer"
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
                         <action.icon className="w-8 h-8 text-purple-600 mt-1" />
                         <div className="flex-1">
@@ -280,7 +280,7 @@ export function OrganizerTools({ onBack }) {
                     key={action.action}
                     className="hover:shadow-lg transition-shadow cursor-pointer"
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
                         <action.icon className="w-8 h-8 text-purple-600 mt-1" />
                         <div className="flex-1">
@@ -309,7 +309,7 @@ export function OrganizerTools({ onBack }) {
                     key={action.action}
                     className="hover:shadow-lg transition-shadow cursor-pointer"
                   >
-                    <CardContent className="p-4">
+                    <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
                         <action.icon className="w-8 h-8 text-purple-600 mt-1" />
                         <div className="flex-1">
@@ -342,7 +342,7 @@ export function OrganizerTools({ onBack }) {
                       key={action.action}
                       className="hover:shadow-lg transition-shadow cursor-pointer"
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="pt-4">
                         <div className="flex items-start gap-3">
                           <action.icon className="w-8 h-8 text-purple-600 mt-1" />
                           <div className="flex-1">
@@ -376,7 +376,7 @@ export function OrganizerTools({ onBack }) {
                 Latest events across your hackathons
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               {recentActivity.map(activity => (
                 <div
                   key={activity.id}
@@ -401,7 +401,7 @@ export function OrganizerTools({ onBack }) {
               <CardTitle className="text-lg">System Status</CardTitle>
               <CardDescription>Platform health and performance</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Platform Status</span>
                 <Badge className="bg-green-500">Operational</Badge>
@@ -429,7 +429,7 @@ export function OrganizerTools({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Today's Summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">New Registrations</span>
                 <span className="font-medium">23</span>

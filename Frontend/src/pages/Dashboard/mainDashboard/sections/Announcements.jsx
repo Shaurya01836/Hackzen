@@ -133,7 +133,7 @@ export function Announcements({ onBack }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-4 space-y-4">
         <p className="text-sm text-gray-600">{announcement.content}</p>
 
         {announcement.status === "Sent" && (
@@ -309,7 +309,7 @@ export function Announcements({ onBack }) {
               <CardTitle className="text-lg">Quick Announcement</CardTitle>
               <CardDescription>Send a message to participants</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div>
                 <Label htmlFor="title">Title</Label>
                 <Input id="title" placeholder="Announcement title..." />
@@ -321,7 +321,7 @@ export function Announcements({ onBack }) {
                   <SelectTrigger>
                     <SelectValue placeholder="Select hackathon" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                     <SelectItem value="all">All Events</SelectItem>
                     <SelectItem value="ai-challenge">
                       AI Innovation Challenge
@@ -340,7 +340,7 @@ export function Announcements({ onBack }) {
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                     <SelectItem value="high">High</SelectItem>
                     <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
@@ -374,7 +374,7 @@ export function Announcements({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Announcement Stats</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-4 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Total Sent</span>
                 <span className="font-medium">{sentAnnouncements.length}</span>

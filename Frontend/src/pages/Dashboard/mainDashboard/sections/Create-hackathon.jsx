@@ -115,40 +115,43 @@ export function CreateHackathon({ onBack }) {
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = async (isDraft = false) => {
-    if (!isDraft && !validateForm()) {
-      return
-    }
+ const handleSubmit = async (isDraft = false) => {
+  if (!isDraft && !validateForm()) return;
 
-    setIsSubmitting(true)
+  setIsSubmitting(true);
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+  try {
+    const token = localStorage.getItem("token"); // Assuming you store JWT locally
 
-      // Here you would typically send the data to your backend
-      console.log("Hackathon data:", {
+    const response = await fetch("http://localhost:3000/api/hackathons", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
         ...formData,
+        difficulty: formData.difficulty,
         problemStatements: formData.problemStatements.filter(ps => ps.trim()),
-        requirements: formData.requirements.filter(req => req.trim()),
-        perks: formData.perks.filter(perk => perk.trim()),
-        isDraft
+        requirements: formData.requirements.filter(r => r.trim()),
+        perks: formData.perks.filter(p => p.trim()),
+        tags: formData.tags,
+        status: isDraft ? "draft" : formData.status
       })
+    });
 
-      // Show success message and redirect
-      alert(
-        isDraft
-          ? "Hackathon saved as draft!"
-          : "Hackathon created successfully!"
-      )
-      onBack()
-    } catch (error) {
-      console.error("Error creating hackathon:", error)
-      alert("Error creating hackathon. Please try again.")
-    } finally {
-      setIsSubmitting(false)
-    }
+    if (!response.ok) throw new Error("Failed to create hackathon");
+
+    alert(isDraft ? "Hackathon saved as draft!" : "Hackathon created successfully!");
+    onBack(); // Redirect to CreatedHackathons
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Error creating hackathon");
+  } finally {
+    setIsSubmitting(false);
   }
+};
+
 
   const addProblemStatement = () => {
     setFormData({

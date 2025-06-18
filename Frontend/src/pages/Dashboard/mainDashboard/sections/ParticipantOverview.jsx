@@ -116,7 +116,7 @@ export function ParticipantOverview({ onBack }) {
   const inactiveParticipants = participants.filter(p => p.status === "Inactive")
 
   const renderParticipantCard = participant => (
-    <Card key={participant.id} className="hover:shadow-lg transition-shadow">
+    <Card key={participant.id} className="pt-6 hover:shadow-lg transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-12 h-12">
@@ -245,7 +245,7 @@ export function ParticipantOverview({ onBack }) {
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Users className="w-8 h-8 text-blue-500" />
               <div>
@@ -258,7 +258,7 @@ export function ParticipantOverview({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-8 h-8 text-green-500" />
               <div>
@@ -271,7 +271,7 @@ export function ParticipantOverview({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-purple-500" />
               <div>
@@ -282,7 +282,7 @@ export function ParticipantOverview({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-8 h-8 text-orange-500" />
               <div>
@@ -343,7 +343,7 @@ export function ParticipantOverview({ onBack }) {
                 Participant distribution by location
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-3 space-y-3">
               {analytics.topCountries.map((country, index) => (
                 <div
                   key={country.name}
@@ -373,7 +373,7 @@ export function ParticipantOverview({ onBack }) {
               <CardTitle className="text-lg">Popular Skills</CardTitle>
               <CardDescription>Most common technologies</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="pt-3 space-y-3">
               {analytics.skillDistribution.map((skill, index) => (
                 <div
                   key={skill.skill}
@@ -400,7 +400,7 @@ export function ParticipantOverview({ onBack }) {
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="pt-4 space-y-2">
               <Button variant="outline" className="w-full justify-start">
                 <Users className="w-4 h-4 mr-2" />
                 Export Participant Data

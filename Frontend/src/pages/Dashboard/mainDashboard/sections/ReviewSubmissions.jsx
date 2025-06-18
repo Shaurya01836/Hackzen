@@ -190,7 +190,7 @@ export function ReviewSubmissions({ onBack }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-4 space-y-4">
         <p className="text-sm text-gray-600">{submission.description}</p>
 
         <div className="flex flex-wrap gap-1">
@@ -275,7 +275,7 @@ export function ReviewSubmissions({ onBack }) {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Clock className="w-8 h-8 text-yellow-500" />
               <div>
@@ -288,7 +288,7 @@ export function ReviewSubmissions({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Eye className="w-8 h-8 text-blue-500" />
               <div>
@@ -301,7 +301,7 @@ export function ReviewSubmissions({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-8 h-8 text-green-500" />
               <div>
@@ -314,7 +314,7 @@ export function ReviewSubmissions({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>

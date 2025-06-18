@@ -284,7 +284,7 @@ export function ExploreHackathons({ onBack }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-4 space-y-4">
         <p className="text-sm text-gray-600">{hackathon.description}</p>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -441,7 +441,7 @@ export function ExploreHackathons({ onBack }) {
       {/* Search and Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="pt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input placeholder="Search hackathons..." className="pl-10" />
@@ -450,7 +450,7 @@ export function ExploreHackathons({ onBack }) {
               <SelectTrigger>
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 {categories.map(category => (
                   <SelectItem
                     key={category}
@@ -465,7 +465,7 @@ export function ExploreHackathons({ onBack }) {
               <SelectTrigger>
                 <SelectValue placeholder="Difficulty" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 {difficulties.map(difficulty => (
                   <SelectItem
                     key={difficulty}
@@ -480,7 +480,7 @@ export function ExploreHackathons({ onBack }) {
               <SelectTrigger>
                 <SelectValue placeholder="Location" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 {locations.map(location => (
                   <SelectItem
                     key={location}
@@ -498,7 +498,7 @@ export function ExploreHackathons({ onBack }) {
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-indigo-500" />
               <div>
@@ -509,7 +509,7 @@ export function ExploreHackathons({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Users className="w-8 h-8 text-green-500" />
               <div>
@@ -522,7 +522,7 @@ export function ExploreHackathons({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Star className="w-8 h-8 text-yellow-500" />
               <div>
@@ -535,7 +535,7 @@ export function ExploreHackathons({ onBack }) {
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-8 h-8 text-purple-500" />
               <div>
