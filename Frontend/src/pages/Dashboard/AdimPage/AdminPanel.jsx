@@ -10,6 +10,8 @@ import { AnnouncementsPanel } from "./components/announcements-panel"
 import { SubmissionsPage } from "./components/submissions-page"
 import { MentorChatPage } from "./components/mentor-chat-page"
 import { OrganizerRequestsPage } from "./components/organizer-requests-page"
+import { SupportInboxPage } from "./components/support-inbox-page"
+
 
 
 export default function AdminPanel() {
@@ -31,6 +33,8 @@ export default function AdminPanel() {
         return <AnnouncementsPanel />
       case "organizers":
         return <OrganizerRequestsPage />
+      case "support":
+        return <SupportInboxPage />
       default:
         return <Dashboard />
     }
