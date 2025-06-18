@@ -8,77 +8,70 @@ const mongoose = require("mongoose");
 const http = require("http");
 const { Server } = require("socket.io");
 const socketHandler = require("./config/socket");
+const MongoStore = require('connect-mongo'); // ✅ persist sessions
 
-require("./config/passport"); // passport strategies must be loaded after dotenv
+require("./config/passport"); // load strategies
 
 const app = express();
 
-// ✅ CORS setup (must be before all routes/middleware)
+// ✅ CORS setup (frontend origin)
 app.use(cors({
-  origin: "http://localhost:5173", // Your React frontend
-  credentials: true
+  origin: "http://localhost:5173",
+  credentials: true,
 }));
 
-// ✅ Body parser
+// ✅ Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Sessions (used by Passport)
+// ✅ Session setup for OAuth persistence
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }), // store in MongoDB
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: 'lax', // frontend/backend same origin
+    secure: false,   // set to true in production (with HTTPS)
+  }
 }));
 
-// ✅ Passport.js init
+// ✅ Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Your route imports
-const hackathonRoutes = require('./routes/hackathonRoutes');
-const userRoutes = require('./routes/userRoutes');
-const teamRoutes = require('./routes/teamRoutes');
-const teamInviteRoutes = require('./routes/teamInviteRoutes');
-const submissionHistoryRoutes = require('./routes/submissionHistoryRoutes');
-const projectRoutes = require('./routes/projectRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const scoreRoutes = require('./routes/scoreRoutes');
-const badgeRoutes = require('./routes/badgeRoutes');
+// ✅ Routes
+app.use('/api/hackathons', require('./routes/hackathonRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/teams', require('./routes/teamRoutes'));
+app.use('/api/team-invites', require('./routes/teamInviteRoutes'));
+app.use('/api/submissions', require('./routes/submissionHistoryRoutes'));
+app.use('/api/projects', require('./routes/projectRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/scores', require('./routes/scoreRoutes'));
+app.use('/api/badges', require('./routes/badgeRoutes'));
 
-// ✅ Mount routes
-app.use('/api/hackathons', hackathonRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/teams', teamRoutes);
-app.use('/api/team-invites', teamInviteRoutes);
-app.use('/api/submissions', submissionHistoryRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/scores', scoreRoutes);
-app.use('/api/badges', badgeRoutes);
-
-// ✅ Create HTTP server and socket.io instance
+// ✅ HTTP + Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Allow frontend to connect (use specific origin in prod)
-    methods: ['GET', 'POST']
+    origin: 'http://localhost:5173',
+    credentials: true,
   }
 });
 
-// ✅ Attach socket logic
 socketHandler(io);
 
-// ✅ Start server
+// ✅ MongoDB and Start server
 const PORT = process.env.PORT || 3000;
-const uri = process.env.MONGO_URL;
-
-mongoose.connect(uri)
+mongoose.connect(process.env.MONGO_URL)
   .then(() => {
-    console.log("✅ DB connected");
+    console.log("✅ MongoDB connected");
     server.listen(PORT, () => {
-      console.log(`Server + Socket.IO running at http://localhost:${PORT}`);
+      console.log(`🚀 Server + Socket.IO at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("DB connection error:", err.message);
+    console.error("❌ DB connection failed:", err.message);
   });
