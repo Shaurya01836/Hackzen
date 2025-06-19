@@ -9,6 +9,7 @@ import DashboardPage from "./pages/Dashboard/mainDashboard/Page";
 // import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
 // import other pages as needed
 import OAuthSuccess from "./pages/OAuthSuccess"; // ✅ Import the new OAuthSuccess page
+import Loader from "./pages/Loader"
 function App() {
   return (
     <Routes>
@@ -23,6 +24,7 @@ function App() {
       {/* Add other routes like:
       <Route path="/dashboard" element={<Dashboard />} />
       */}
+      <Route path="/loader" element={<Loader />} />
     </Routes>
   );
 }
