@@ -16,7 +16,8 @@ const app = express();
 
 // ✅ CORS setup (frontend origin)
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "https://hackzen.vercel.app"],
+
   credentials: true,
 }));
 
@@ -61,7 +62,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+   origin: ["http://localhost:5173", "https://hackzen.vercel.app"],
     credentials: true,
   }
 });
