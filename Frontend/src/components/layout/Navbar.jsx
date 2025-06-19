@@ -23,7 +23,7 @@ function Navbar() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:3000/api/users/logout", {
+      await fetch("https://hackzen.onrender.com/api/users/logout", {
         method: "GET",
         credentials: "include",
       });
@@ -37,7 +37,7 @@ function Navbar() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/notifications/me", {
+      const res = await fetch("https://hackzen.onrender.com/api/notifications/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
