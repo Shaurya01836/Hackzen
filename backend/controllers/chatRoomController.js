@@ -1,26 +1,40 @@
-// controllers/chatRoomController.js
 const ChatRoom = require('../model/ChatRoomModel');
 
 // Create a new chat room (admin or system)
 exports.createChatRoom = async (req, res) => {
+  console.log("📥 Received POST /api/chatrooms");
+  console.log("Request body:", req.body);
+
   try {
-    const { hackathon, team, type } = req.body;
+    const { hackathon, team, type, name, description } = req.body;
 
     if (!hackathon || !type) {
+      console.warn("❌ Missing hackathon or type");
       return res.status(400).json({ message: 'Hackathon and type are required' });
     }
 
-    // Check for duplicates
     const exists = await ChatRoom.findOne({ hackathon, team, type });
-    if (exists) return res.status(400).json({ message: 'Chat room already exists' });
+    if (exists) {
+      console.warn("⚠️ Chat room already exists");
+      return res.status(400).json({ message: 'Chat room already exists' });
+    }
 
-    const chatRoom = await ChatRoom.create({ hackathon, team, type });
+    const chatRoom = await ChatRoom.create({
+      hackathon,
+      team,
+      type,
+      name,
+      description
+    });
 
+    console.log("✅ Chat room created:", chatRoom._id);
     res.status(201).json(chatRoom);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create chat room' });
+    console.error("🔥 Error creating chat room:", err);
+    res.status(500).json({ error: 'Failed to create chat room', details: err.message });
   }
 };
+
 
 // Get all rooms for a hackathon
 exports.getHackathonRooms = async (req, res) => {
@@ -28,7 +42,7 @@ exports.getHackathonRooms = async (req, res) => {
     const { hackathonId } = req.params;
 
     const rooms = await ChatRoom.find({ hackathon: hackathonId })
-      .populate('team', 'name') // optional: populate team info
+      .populate('team', 'name') // will return team.name
       .sort({ createdAt: -1 });
 
     res.status(200).json(rooms);

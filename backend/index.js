@@ -42,6 +42,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // ✅ Routes
+// ✅ Routes
 app.use('/api/hackathons', require('./routes/hackathonRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/teams', require('./routes/teamRoutes'));
@@ -51,6 +52,9 @@ app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/scores', require('./routes/scoreRoutes'));
 app.use('/api/badges', require('./routes/badgeRoutes'));
+app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
+app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
+
 
 // ✅ HTTP + Socket.IO server
 const server = http.createServer(app);
