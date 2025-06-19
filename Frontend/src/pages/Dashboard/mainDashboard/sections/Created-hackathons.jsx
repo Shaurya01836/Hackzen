@@ -115,7 +115,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-gray-500" />
             <span>
-              {hackathon.participants?.length || 0}/{hackathon.maxParticipants} participants
+            {hackathon.participantCount || 0}/{hackathon.maxParticipants} participants
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
             </div>
             <Progress
               value={
-                ((hackathon.participants?.length || 0) /
+                ((hackathon.participantCount || 0) /
                   hackathon.maxParticipants) *
                 100
               }
@@ -197,7 +197,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
+            variant="default"
             size="sm"
             onClick={onBack}
             className="flex items-center gap-2"
@@ -242,7 +242,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
               <Users className="w-8 h-8 text-blue-500" />
               <div>
                 <p className="text-2xl font-bold">
-                  {hackathons.reduce((sum, h) => sum + h.participants, 0)}
+                {hackathons.reduce((sum, h) => sum + (h.participantCount || 0), 0)}
                 </p>
                 <p className="text-sm text-gray-500">Total Participants</p>
               </div>
@@ -255,7 +255,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
               <BarChart3 className="w-8 h-8 text-green-500" />
               <div>
                 <p className="text-2xl font-bold">
-                  {hackathons.reduce((sum, h) => sum + h.submissions, 0)}
+                {hackathons.reduce((sum, h) => sum + (h.submissions?.length || 0), 0)}
                 </p>
                 <p className="text-sm text-gray-500">Total Submissions</p>
               </div>

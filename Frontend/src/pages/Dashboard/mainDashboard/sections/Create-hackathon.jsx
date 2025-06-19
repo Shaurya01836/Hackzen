@@ -123,6 +123,11 @@ export function CreateHackathon({ onBack }) {
   try {
     const token = localStorage.getItem("token"); // Assuming you store JWT locally
 
+    if (!token) {
+      alert("You must be logged in to create a hackathon.");
+      return;
+    }
+
     const response = await fetch("http://localhost:3000/api/hackathons", {
       method: "POST",
       headers: {
@@ -140,7 +145,13 @@ export function CreateHackathon({ onBack }) {
       })
     });
 
-    if (!response.ok) throw new Error("Failed to create hackathon");
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("❌ Backend Error Response:", data);
+      throw new Error(data.message || "Failed to create hackathon");
+    }
+    
 
     alert(isDraft ? "Hackathon saved as draft!" : "Hackathon created successfully!");
     onBack(); // Redirect to CreatedHackathons

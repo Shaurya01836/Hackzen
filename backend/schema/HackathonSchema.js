@@ -4,11 +4,20 @@ const HackathonSchema = new Schema({
   title: { type: String, required: true },
   description: String,
 
+  image: {
+    type: String, // URL to hosted image or Cloudinary/public asset
+    required: false
+  },
+
   organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
   category: {
     type: String,
-    enum: ['Artificial Intelligence', 'Fintech', 'Healthcare', 'Gaming', 'EdTech', 'Social Impact', 'Open Innovation', 'Other'],
+    enum: [
+  'Artificial Intelligence', 'Blockchain', 'Cybersecurity',
+  'FinTech', 'Gaming', 'Healthcare', 'Sustainability',
+  'Mobile Development', 'Web Development', 'IoT', 'Data Science', 'DevOps'
+],
     required: true
   },
 

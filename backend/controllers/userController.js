@@ -19,7 +19,7 @@ exports.registerUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const isAdminEmail = email === 'admin@.dev';
+    const isAdminEmail = email === 'admin@rr.dev';
 
     const newUser = await User.create({
       name,
