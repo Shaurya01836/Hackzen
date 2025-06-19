@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { InteractiveGridPattern } from "../components/Magic UI/InteractiveGridPattern";
 
+import { cn } from "../pages/Dashboard/AdimPage/components/lib/utils";
 const HackZenLoader = () => {
   const [displayedText, setDisplayedText] = useState("");
   const fullText = "HackZen";
@@ -19,11 +20,16 @@ const HackZenLoader = () => {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-white">
       {/* Force grid to full screen */}
-      <div className="absolute inset-0 z-0 w-full h-full">
-        <div className="absolute inset-0 z-0 w-full h-full">
-          <InteractiveGridPattern />
-        </div>
-      </div>
+       {/* Animated grid pattern background */}
+                <InteractiveGridPattern
+                  className={cn(
+                    "absolute inset-0 z-0 [mask-image:radial-gradient(1000px_circle_at_center,white,transparent)]"
+                  )}
+                  width={40}
+                  height={40}
+                  squares={[80, 80]}
+                  squaresClassName="hover:fill-primary"
+                />
 
       {/* Centered loading text */}
       <div className="absolute inset-0 z-10 flex items-center justify-center">
