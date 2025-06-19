@@ -85,71 +85,74 @@ function Navbar() {
             <RegisterModal onClose={() => setShowRegister(false)} />
           )}
 
-          <div className="hidden md:flex gap-4 items-center relative">
-            {/* ✅ Notification Bell */}
-            <div className="relative">
-              <button onClick={() => setShowDropdown(!showDropdown)}>
-                <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
+        <div className="hidden md:flex items-center gap-4">
+  {/* ✅ Icons Row */}
+  <div className="flex items-center gap-4">
+    {/* Notification Bell */}
+    <div className="relative">
+      <button onClick={() => setShowDropdown(!showDropdown)}>
+        <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
+        {notifications.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+            {notifications.length}
+          </span>
+        )}
+      </button>
 
-              {showDropdown && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-50 border text-sm">
-                  <div className="p-3 border-b font-semibold text-[#1b0c3f]">
-                    Notifications
-                  </div>
-                  <ul className="max-h-64 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <li className="p-3 text-gray-500">
-                        No new notifications
-                      </li>
-                    ) : (
-                      notifications.map((n) => (
-                        <li
-                          key={n._id}
-                          className="px-4 py-2 hover:bg-gray-50 border-b"
-                        >
-                          <p className="font-medium">{n.message}</p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(n.createdAt).toLocaleString()}
-                          </p>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            <User2Icon className="w-6 h-6 text-[#1b0c3f]" />
-
-            {!user ? (
-              <>
-                <InteractiveHoverButton onClick={() => setShowLogin(true)}>
-                  Login
-                </InteractiveHoverButton>
-                <InteractiveHoverButton onClick={() => setShowRegister(true)}>
-                  Register
-                </InteractiveHoverButton>
-              </>
-            ) : (
-              <>
-                <span className="text-sm text-[#1b0c3f] font-medium">
-                  {user.name}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-red-600 text-white rounded-3xl font-semibold flex gap-3 items-center"
-                >
-                  Logout <LogOut className="w-5 h-5" />
-                </button>
-              </>
-            )}
+      {showDropdown && (
+        <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-50 border text-sm">
+          <div className="p-3 border-b font-semibold text-[#1b0c3f]">
+            Notifications
           </div>
+          <ul className="max-h-64 overflow-y-auto">
+            {notifications.length === 0 ? (
+              <li className="p-3 text-gray-500">No new notifications</li>
+            ) : (
+              notifications.map((n) => (
+                <li
+                  key={n._id}
+                  className="px-4 py-2 hover:bg-gray-50 border-b"
+                >
+                  <p className="font-medium">{n.message}</p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(n.createdAt).toLocaleString()}
+                  </p>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    {/* User Icon (links to dashboard) */}
+    {user && (
+      <Link to="/dashboard">
+        <User2Icon className="w-6 h-6 text-[#1b0c3f] cursor-pointer hover:text-primary transition" />
+      </Link>
+    )}
+  </div>
+
+  {/* Auth Buttons */}
+  {!user ? (
+    <>
+      <InteractiveHoverButton onClick={() => setShowLogin(true)}>
+        Login
+      </InteractiveHoverButton>
+      <InteractiveHoverButton onClick={() => setShowRegister(true)}>
+        Register
+      </InteractiveHoverButton>
+    </>
+  ) : (
+    <button
+      onClick={handleLogout}
+      className="px-4 py-2 bg-red-600 text-white rounded-3xl font-semibold flex gap-3 items-center"
+    >
+      Logout <LogOut className="w-5 h-5" />
+    </button>
+  )}
+</div>
+
 
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)}>
