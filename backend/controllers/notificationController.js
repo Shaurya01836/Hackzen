@@ -1,5 +1,5 @@
 const Notification = require('../model/NotificationModel');
-
+const Announcement = require("../model/AnnouncementModel");
 exports.createNotification = async (req, res) => {
   try {
     const { recipient, message, type } = req.body;
@@ -18,10 +18,42 @@ exports.createNotification = async (req, res) => {
 
 exports.getMyNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({ recipient: req.user._id }).sort({ createdAt: -1 });
-    res.json(notifications);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+
+    // 1. Get user-specific notifications
+    const personal = await Notification.find({ recipient: userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 2. Get relevant announcements as notifications
+    const announcements = await Announcement.find({
+      $or: [
+        { audience: "all" },
+        { audience: userRole } // like 'participants', 'organizers'
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const announcementNotifs = announcements.map(a => ({
+      _id: a._id,
+      message: `📢 ${a.title} - ${a.message}`,
+      type: "announcement",
+      read: false,
+      createdAt: a.createdAt,
+      fromAnnouncement: true // helps frontend distinguish
+    }));
+
+    // 3. Combine and sort by date
+    const allNotifs = [...personal, ...announcementNotifs].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    res.json(allNotifs);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch notifications', details: err.message });
+    console.error("❌ Notification fetch failed:", err);
+    res.status(500).json({ message: "Failed to load notifications" });
   }
 };
 

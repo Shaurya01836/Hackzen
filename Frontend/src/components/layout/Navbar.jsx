@@ -5,12 +5,10 @@ import {
   GitGraphIcon,
   Menu,
   X,
-  LogIn,
-  UserPlus,
   LogOut,
 } from "lucide-react";
-import { useState } from "react";
-import { useAuth } from "../../context/AuthContext"; // ✅ auth
+import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 import LoginModal from "../LoginModal";
 import RegisterModal from "../RegisterModal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
@@ -19,20 +17,41 @@ function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
-  const { user, logout } = useAuth(); // ✅ get auth
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      await fetch("http://:3000/api/users/logout", {
+      await fetch("http://localhost:3000/api/users/logout", {
         method: "GET",
         credentials: "include",
       });
     } catch (err) {
       console.error("Logout failed:", err);
     } finally {
-      logout(); // clear localStorage + context
+      logout();
     }
   };
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:3000/api/notifications/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data) {
+        setNotifications(data.filter((n) => !n.read));
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) fetchNotifications();
+  }, [user]);
 
   return (
     <div className="relative">
@@ -40,7 +59,7 @@ function Navbar() {
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
 
-      <nav className=" px-6 pt-0">
+      <nav className="px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between border-y-2">
           <div className="flex items-center gap-2">
             <GitGraphIcon className="w-6 h-6 text-[#1b0c3f] hover:rotate-90 transition-all duration-200 ease-in-out" />
@@ -66,8 +85,46 @@ function Navbar() {
             <RegisterModal onClose={() => setShowRegister(false)} />
           )}
 
-          <div className="hidden md:flex gap-4 items-center">
-            <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
+          <div className="hidden md:flex gap-4 items-center relative">
+            {/* ✅ Notification Bell */}
+            <div className="relative">
+              <button onClick={() => setShowDropdown(!showDropdown)}>
+                <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-50 border text-sm">
+                  <div className="p-3 border-b font-semibold text-[#1b0c3f]">
+                    Notifications
+                  </div>
+                  <ul className="max-h-64 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <li className="p-3 text-gray-500">
+                        No new notifications
+                      </li>
+                    ) : (
+                      notifications.map((n) => (
+                        <li
+                          key={n._id}
+                          className="px-4 py-2 hover:bg-gray-50 border-b"
+                        >
+                          <p className="font-medium">{n.message}</p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(n.createdAt).toLocaleString()}
+                          </p>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
+
             <User2Icon className="w-6 h-6 text-[#1b0c3f]" />
 
             {!user ? (
