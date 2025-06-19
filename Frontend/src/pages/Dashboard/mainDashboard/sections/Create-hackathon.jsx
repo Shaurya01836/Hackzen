@@ -128,7 +128,7 @@ export function CreateHackathon({ onBack }) {
       return;
     }
 
-    const response = await fetch("http://localhost:3000/api/hackathons", {
+    const response = await fetch("https://hackzen.onrender.com/api/hackathons", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

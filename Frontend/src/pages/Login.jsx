@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // ✅ Make sure this path is correct
 
-function Login() {
+function Login({ onClose }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -17,7 +17,7 @@ function Login() {
     setErrorMsg("");
 
     try {
-      const res = await axios.post("http://localhost:3000/api/users/login", {
+      const res = await axios.post("https://hackzen.onrender.com/api/users/login", {
         email,
         password,
       });
@@ -27,10 +27,11 @@ function Login() {
 
       // ✅ Redirect by role
       const role = res.data.user.role;
+      if (onClose) onClose(); // ✅ close the modal
       if (role === "admin") {
         navigate("/admin");
       } else {
-        navigate("/dashboard");
+        navigate("/");
       }
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Login failed. Please try again.");
@@ -38,11 +39,11 @@ function Login() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:3000/api/users/google";
+    window.location.href = "https://hackzen.onrender.com/api/users/google";
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:3000/api/users/github";
+    window.location.href = "https://hackzen.onrender.com/api/users/github";
   };
 
   return (
@@ -107,7 +108,7 @@ function Login() {
       </form>
 
       <p className="text-sm text-center text-gray-500">
-        Don’t have an account?{" "}
+        Don't have an account?{" "}
         <a
           href="/register"
           className="text-[#1b0c3f] font-medium hover:underline"

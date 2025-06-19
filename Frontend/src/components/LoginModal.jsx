@@ -9,7 +9,7 @@ function LoginModal({ onClose }) {
       >
         &times;
       </button>
-      <Login />
+      <Login onClose={onClose}/> {/* ✅ pass onClose to Login */}
     </div>
   );
 }
