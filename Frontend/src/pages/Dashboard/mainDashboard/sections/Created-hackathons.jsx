@@ -170,7 +170,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
             Edit
           </Button>
           <Button
-            size="sm"
+             size="sm"
             variant="outline"
             className="flex items-center gap-1"
           >
