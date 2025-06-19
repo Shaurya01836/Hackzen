@@ -54,6 +54,7 @@ app.use('/api/scores', require('./routes/scoreRoutes'));
 app.use('/api/badges', require('./routes/badgeRoutes'));
 app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
 app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
+app.use('/api/announcements', require('./routes/announcementRoutes'));
 
 
 // ✅ HTTP + Socket.IO server
