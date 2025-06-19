@@ -113,7 +113,7 @@ export function MyPortfolio({ onBack }) {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"

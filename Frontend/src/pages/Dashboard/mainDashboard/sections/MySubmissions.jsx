@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import {
   ArrowLeft,
   FileText,
@@ -6,18 +6,23 @@ import {
   Youtube,
   Award,
   ExternalLink,
-  Upload
-} from "lucide-react"
+  Upload,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../../AdimPage/components/ui/card"
-import { Button } from "../../AdimPage/components/ui/button"
-import { Badge } from "../../AdimPage/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs"
+  CardTitle,
+} from "../../AdimPage/components/ui/card";
+import { Button } from "../../AdimPage/components/ui/button";
+import { Badge } from "../../AdimPage/components/ui/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../AdimPage/components/ui/tabs";
 
 const submissions = [
   {
@@ -34,7 +39,7 @@ const submissions = [
     description:
       "A comprehensive dashboard for smart city management using AI and IoT data",
     technologies: ["React", "Node.js", "TensorFlow", "MongoDB"],
-    feedback: "Great implementation of AI algorithms. UI could be improved."
+    feedback: "Great implementation of AI algorithms. UI could be improved.",
   },
   {
     id: 2,
@@ -50,7 +55,7 @@ const submissions = [
     description:
       "An intelligent chatbot that helps users with daily tasks and queries",
     technologies: ["Python", "OpenAI", "Flask", "React"],
-    feedback: null
+    feedback: null,
   },
   {
     id: 3,
@@ -66,16 +71,18 @@ const submissions = [
     description:
       "A decentralized trading platform with automated market making",
     technologies: ["Solidity", "Web3.js", "React", "Hardhat"],
-    feedback: "Excellent smart contract implementation and user experience."
-  }
-]
+    feedback: "Excellent smart contract implementation and user experience.",
+  },
+];
 
 export function MySubmissions({ onBack }) {
-  const judgedSubmissions = submissions.filter(s => s.status === "Judged")
-  const pendingSubmissions = submissions.filter(s => s.status === "Submitted")
+  const judgedSubmissions = submissions.filter((s) => s.status === "Judged");
+  const pendingSubmissions = submissions.filter(
+    (s) => s.status === "Submitted"
+  );
 
-  const renderSubmissionCard = submission => (
-    <Card key={submission.id} className="hover:shadow-lg transition-shadow">
+  const renderSubmissionCard = (submission) => (
+    <Card key={submission.id} className=" hover:ring-2 hover:ring-indigo-300">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -105,8 +112,8 @@ export function MySubmissions({ onBack }) {
         <p className="text-sm text-gray-600">{submission.description}</p>
 
         <div className="flex flex-wrap gap-1">
-          {submission.technologies.map(tech => (
-            <Badge key={tech} variant="outline" className="text-xs">
+          {submission.technologies.map((tech) => (
+            <Badge key={tech} variant="dark" className="text-sm">
               {tech}
             </Badge>
           ))}
@@ -167,13 +174,13 @@ export function MySubmissions({ onBack }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"
@@ -273,5 +280,5 @@ export function MySubmissions({ onBack }) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

@@ -88,7 +88,7 @@ export function MyHackathons({ onBack }) {
   const upcomingHackathons = hackathons.filter(h => h.status === "Upcoming")
 
   const renderHackathonCard = hackathon => (
-    <Card key={hackathon.id} className="hover:shadow-lg transition-shadow">
+    <Card key={hackathon.id} className=" hover:ring-2 hover:ring-indigo-300">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
@@ -167,10 +167,10 @@ export function MyHackathons({ onBack }) {
   )
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"

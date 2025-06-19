@@ -85,7 +85,7 @@ export function ChatRooms({ onBack, hackathonId }) {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"
@@ -154,7 +154,7 @@ export function ChatRooms({ onBack, hackathonId }) {
                         </div>
                       </div>
                     </div>
-                    <Button size="sm" className="ml-4" onClick={() => joinRoom(room._id, room.type)}>
+                    <Button size="lg" className="ml-4">
                       Join
                     </Button>
                   </div>

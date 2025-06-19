@@ -1,6 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
-import axios from "axios";
 import {
   ArrowLeft,
   Search,
@@ -30,76 +28,228 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../AdimPage/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../AdimPage/components/ui/tabs";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../AdimPage/components/ui/avatar";
 import { Progress } from "../../AdimPage/components/ui/progress";
 
+const hackathons = [
+  {
+    id: 1,
+    name: "Global AI Summit Hackathon",
+    organizer: "TechCorp Inc.",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Build the next generation of AI applications that solve real-world problems and improve lives globally.",
+    category: "Artificial Intelligence",
+    difficulty: "Advanced",
+    prize: "$50,000",
+    participants: 1247,
+    maxParticipants: 2000,
+    startDate: "Jan 15, 2025",
+    endDate: "Jan 22, 2025",
+    registrationDeadline: "Jan 14, 2025",
+    location: "Virtual",
+    status: "Registration Open",
+    tags: ["Machine Learning", "Deep Learning", "Computer Vision", "NLP"],
+    rating: 4.8,
+    reviews: 156,
+    featured: true,
+    sponsored: true,
+    requirements: [
+      "Python/R experience",
+      "ML fundamentals",
+      "Portfolio required",
+    ],
+    perks: ["Mentorship", "Cloud Credits", "Networking"],
+  },
+  {
+    id: 2,
+    name: "Sustainable Tech Challenge",
+    organizer: "GreenTech Foundation",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Create innovative solutions for environmental sustainability using cutting-edge technology.",
+    category: "Sustainability",
+    difficulty: "Intermediate",
+    prize: "$25,000",
+    participants: 567,
+    maxParticipants: 800,
+    startDate: "Feb 1, 2025",
+    endDate: "Feb 8, 2025",
+    registrationDeadline: "Jan 31, 2025",
+    location: "San Francisco, CA",
+    status: "Registration Open",
+    tags: ["IoT", "Clean Energy", "Smart Cities", "Climate Tech"],
+    rating: 4.6,
+    reviews: 89,
+    featured: false,
+    sponsored: false,
+    requirements: ["Any programming language", "Environmental passion"],
+    perks: ["Eco-friendly swag", "Industry connections"],
+  },
+  {
+    id: 3,
+    name: "FinTech Innovation Lab",
+    organizer: "Banking Consortium",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Revolutionize financial services with blockchain, AI, and modern web technologies.",
+    category: "FinTech",
+    difficulty: "Advanced",
+    prize: "$75,000",
+    participants: 892,
+    maxParticipants: 1200,
+    startDate: "Jan 20, 2025",
+    endDate: "Jan 27, 2025",
+    registrationDeadline: "Jan 19, 2025",
+    location: "New York, NY",
+    status: "Registration Open",
+    tags: ["Blockchain", "DeFi", "Payment Systems", "Security"],
+    rating: 4.9,
+    reviews: 234,
+    featured: true,
+    sponsored: true,
+    requirements: [
+      "Financial domain knowledge",
+      "Blockchain experience",
+      "KYC compliance",
+    ],
+    perks: ["Industry mentors", "Job opportunities", "Regulatory guidance"],
+  },
+  {
+    id: 4,
+    name: "Healthcare Innovation Sprint",
+    organizer: "MedTech Alliance",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Develop digital health solutions that improve patient outcomes and healthcare accessibility.",
+    category: "Healthcare",
+    difficulty: "Intermediate",
+    prize: "$30,000",
+    participants: 445,
+    maxParticipants: 600,
+    startDate: "Feb 10, 2025",
+    endDate: "Feb 17, 2025",
+    registrationDeadline: "Feb 9, 2025",
+    location: "Virtual",
+    status: "Registration Open",
+    tags: ["Digital Health", "Telemedicine", "Medical AI", "Patient Care"],
+    rating: 4.7,
+    reviews: 112,
+    featured: false,
+    sponsored: true,
+    requirements: ["Healthcare interest", "HIPAA awareness"],
+    perks: ["Medical expert mentors", "Clinical validation"],
+  },
+  {
+    id: 5,
+    name: "Gaming & VR Showcase",
+    organizer: "GameDev Studios",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Create immersive gaming experiences using VR, AR, and cutting-edge game development tools.",
+    category: "Gaming",
+    difficulty: "Beginner",
+    prize: "$15,000",
+    participants: 723,
+    maxParticipants: 1000,
+    startDate: "Mar 1, 2025",
+    endDate: "Mar 8, 2025",
+    registrationDeadline: "Feb 28, 2025",
+    location: "Los Angeles, CA",
+    status: "Registration Open",
+    tags: ["Unity", "Unreal Engine", "VR/AR", "Game Design"],
+    rating: 4.5,
+    reviews: 178,
+    featured: false,
+    sponsored: false,
+    requirements: ["Basic programming", "Creative mindset"],
+    perks: ["Gaming hardware", "Industry showcase"],
+  },
+  {
+    id: 6,
+    name: "Cybersecurity Defense Challenge",
+    organizer: "SecureNet Corp",
+    organizerLogo: "/placeholder.svg?height=40&width=40",
+    description:
+      "Build robust security solutions to protect against modern cyber threats and vulnerabilities.",
+    category: "Cybersecurity",
+    difficulty: "Advanced",
+    prize: "$40,000",
+    participants: 334,
+    maxParticipants: 500,
+    startDate: "Jan 25, 2025",
+    endDate: "Feb 1, 2025",
+    registrationDeadline: "Jan 24, 2025",
+    location: "Virtual",
+    status: "Registration Open",
+    tags: [
+      "Penetration Testing",
+      "Threat Detection",
+      "Encryption",
+      "Network Security",
+    ],
+    rating: 4.8,
+    reviews: 67,
+    featured: true,
+    sponsored: true,
+    requirements: ["Security fundamentals", "Ethical hacking knowledge"],
+    perks: ["Security certifications", "Job placement assistance"],
+  },
+];
+
+const categories = [
+  "All Categories",
+  "Artificial Intelligence",
+  "Blockchain",
+  "Cybersecurity",
+  "FinTech",
+  "Gaming",
+  "Healthcare",
+  "Sustainability",
+  "Mobile Development",
+  "Web Development",
+];
+
+const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
+
+const locations = [
+  "All Locations",
+  "Virtual",
+  "San Francisco, CA",
+  "New York, NY",
+  "Los Angeles, CA",
+  "Austin, TX",
+];
 
 export function ExploreHackathons({ onBack }) {
-  const [hackathons, setHackathons] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const featuredHackathons = hackathons.filter((h) => h.featured);
+  const sponsoredHackathons = hackathons.filter((h) => h.sponsored);
+  const upcomingHackathons = hackathons.filter(
+    (h) => h.status === "Registration Open"
+  );
 
-  useEffect(() => {
-    const fetchHackathons = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/api/hackathons");
-        console.log("Raw hackathons response:", res.data);
-
-        // 🔍 Debug participant field
-        console.log("💡 Participants debug:");
-        res.data.forEach(h => {
-          console.log(h.title, "participants:", h.participants);
-        });
-
-        setHackathons(res.data);
-      } catch (err) {
-        console.error("Hackathon fetch error:", err.message);
-        console.error("Full error:", err);
-        setError("Failed to fetch hackathons");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHackathons();
-  }, []);
-
-  const categories = [
-    "All Categories",
-    "Artificial Intelligence",
-    "Blockchain",
-    "Cybersecurity",
-    "FinTech",
-    "Gaming",
-    "Healthcare",
-    "Sustainability",
-    "Mobile Development",
-    "Web Development"
-  ];
-  const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
-  const locations = [
-    "All Locations",
-    "Virtual",
-    "Online",
-    "Hybrid",
-    "New York",
-    "Delhi"
-  ];
-
-  const featuredHackathons = hackathons.filter(h => h.tags?.includes("featured"));
-  const sponsoredHackathons = hackathons.filter(h => h.tags?.includes("sponsored"));
-  const upcomingHackathons = hackathons.filter(h => h.status === "upcoming");
-
-  const getDifficultyColor = (level) => {
-    switch (level) {
-      case "Beginner": return "bg-green-500";
-      case "Intermediate": return "bg-yellow-500";
-      case "Advanced": return "bg-red-500";
-      default: return "bg-gray-500";
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case "Beginner":
+        return "bg-green-500";
+      case "Intermediate":
+        return "bg-yellow-500";
+      case "Advanced":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
     }
   };
-
 
   const renderHackathonCard = (hackathon, featured = false) => (
     <Card key={hackathon._id} className={`hover:shadow-lg transition-shadow ${featured ? "ring-2 ring-purple-200" : ""}`}>
@@ -165,8 +315,10 @@ export function ExploreHackathons({ onBack }) {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1">
-          {(hackathon.tags || []).slice(0, 3).map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
+          {hackathon.tags.slice(0, 3).map((tag) => (
+            <Badge key={tag} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
           ))}
 
         </div>
@@ -183,8 +335,14 @@ export function ExploreHackathons({ onBack }) {
         <div>
           <p className="text-xs font-medium text-gray-700 mb-1">Requirements:</p>
           <div className="flex flex-wrap gap-1">
-            {(hackathon.requirements || []).map(req => (
-              <Badge key={req} variant="outline" className="text-xs bg-blue-50 text-blue-700">{req}</Badge>
+            {hackathon.requirements.map((req) => (
+              <Badge
+                key={req}
+                variant="outline"
+                className="text-xs bg-blue-50 text-blue-700"
+              >
+                {req}
+              </Badge>
             ))}
           </div>
         </div>
@@ -193,31 +351,38 @@ export function ExploreHackathons({ onBack }) {
         <div>
           <p className="text-xs font-medium text-gray-700 mb-1">Perks:</p>
           <div className="flex flex-wrap gap-1">
-            {(hackathon.perks || []).map(perk => (
-              <Badge key={perk} variant="outline" className="text-xs bg-green-50 text-green-700">{perk}</Badge>
+            {hackathon.perks.map((perk) => (
+              <Badge
+                key={perk}
+                variant="outline"
+                className="text-xs bg-green-50 text-green-700"
+              >
+                {perk}
+              </Badge>
             ))}
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button size="sm" className="flex items-center gap-1 bg-indigo-500 hover:bg-indigo-600">
-            <ExternalLink className="w-3 h-3" /> View Details
+          <Button size="sm" className="flex items-center gap-1">
+            <ExternalLink className="w-3 h-3" />
+            View Details
           </Button>
           <Button size="sm" variant="blue">
             Register Now
           </Button>{" "}
-          <Button size="sm" variant="outline" className="flex items-center gap-1">
-            <Heart className="w-3 h-3" /> Save
+          <Button
+            size="sm"
+            variant="destructive"
+            className="flex items-center gap-1"
+          >
+            <Heart className="w-3 h-3" />
+            Save
           </Button>
-          <Button size="sm" className="bg-green-500 hover:bg-green-600">Register Now</Button>
         </div>
       </CardContent>
     </Card>
   );
-
-  if (loading) return <div className="p-6 text-gray-500">Loading hackathons...</div>;
-  if (error) return <div className="p-6 text-red-500">{error}</div>;
-
 
   return (
     <div className="flex-1 space-y-6 p-6">

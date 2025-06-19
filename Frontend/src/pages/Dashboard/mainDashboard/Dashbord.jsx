@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Users,
   Trophy,
@@ -16,8 +16,8 @@ import {
   TrendingUp,
   Eye,
   CheckCircle,
-  Search
-} from "lucide-react"
+  Search,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -31,36 +31,40 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger
-} from "../AdimPage/components/ui/sidebar"
+  SidebarTrigger,
+} from "../AdimPage/components/ui/sidebar";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../AdimPage/components/ui/card"
-import { Button } from "../AdimPage/components/ui/button"
-import { Badge } from "../AdimPage/components/ui/badge"
-import { Progress } from "../AdimPage/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "../AdimPage/components/ui/avatar"
-import { Separator } from "../AdimPage/components/ui/separator"
-import { ProfileSection } from "./ProfileSection"
-import { MyHackathons } from "./sections/Myhackthon"
-import { MySubmissions } from "./sections/MySubmissions"
-import { ChatRooms } from "./sections/Chat-rooms"
-import { MyPortfolio } from "./sections/Myportfolio"
-import { CreatedHackathons } from "./sections/Created-hackathons"
-import { ParticipantOverview } from "./sections/ParticipantOverview"
-import { ReviewSubmissions } from "./sections/ReviewSubmissions"
-import { Announcements } from "./sections/Announcements"
-import { OrganizerTools } from "./sections/OrganizerTools"
-import { ExploreHackathons } from "./sections/ExploreHackathon"
-import { CreateHackathon } from "./sections/Create-hackathon"
+  CardTitle,
+} from "../AdimPage/components/ui/card";
+import { Button } from "../AdimPage/components/ui/button";
+import { Badge } from "../AdimPage/components/ui/badge";
+import { Progress } from "../AdimPage/components/ui/progress";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../AdimPage/components/ui/avatar";
+import { Separator } from "../AdimPage/components/ui/separator";
+import { ProfileSection } from "./ProfileSection";
+import { MyHackathons } from "./sections/Myhackthon";
+import { MySubmissions } from "./sections/MySubmissions";
+import { ChatRooms } from "./sections/Chat-rooms";
+import { MyPortfolio } from "./sections/Myportfolio";
+import { CreatedHackathons } from "./sections/Created-hackathons";
+import { ParticipantOverview } from "./sections/ParticipantOverview";
+import { ReviewSubmissions } from "./sections/ReviewSubmissions";
+import { Announcements } from "./sections/Announcements";
+import { OrganizerTools } from "./sections/OrganizerTools";
+import { ExploreHackathons } from "./sections/ExploreHackathon";
+import { CreateHackathon } from "./sections/Create-hackathon";
 
 export default function HackZenDashboard() {
-  const [activeRole, setActiveRole] = useState("participant")
-  const [currentView, setCurrentView] = useState("dashboard")
+  const [activeRole, setActiveRole] = useState("participant");
+  const [currentView, setCurrentView] = useState("dashboard");
 
   const participantMenuItems = [
     {
@@ -68,37 +72,37 @@ export default function HackZenDashboard() {
       icon: Trophy,
       href: "#",
       onClick: () => setCurrentView("my-hackathons"),
-      key: "my-hackathons"
+      key: "my-hackathons",
     },
     {
       title: "My Submissions",
       icon: FileText,
       href: "#",
       onClick: () => setCurrentView("my-submissions"),
-      key: "my-submissions"
+      key: "my-submissions",
     },
     {
       title: "Chat Rooms",
       icon: MessageSquare,
       href: "#",
       onClick: () => setCurrentView("chat-rooms"),
-      key: "chat-rooms"
+      key: "chat-rooms",
     },
     {
       title: "My Portfolio",
       icon: User,
       href: "#",
       onClick: () => setCurrentView("my-portfolio"),
-      key: "my-portfolio"
+      key: "my-portfolio",
     },
     {
       title: "Explore Hackathons",
       icon: Search,
       href: "#",
       onClick: () => setCurrentView("explore-hackathons"),
-      key: "explore-hackathons"
-    }
-  ]
+      key: "explore-hackathons",
+    },
+  ];
 
   const organizerMenuItems = [
     {
@@ -106,58 +110,58 @@ export default function HackZenDashboard() {
       icon: Plus,
       href: "#",
       onClick: () => setCurrentView("created-hackathons"),
-      key: "created-hackathons"
+      key: "created-hackathons",
     },
     {
       title: "Participant Overview",
       icon: Users,
       href: "#",
       onClick: () => setCurrentView("participant-overview"),
-      key: "participant-overview"
+      key: "participant-overview",
     },
     {
       title: "Review Submissions",
       icon: Eye,
       href: "#",
       onClick: () => setCurrentView("review-submissions"),
-      key: "review-submissions"
+      key: "review-submissions",
     },
     {
       title: "Announcements",
       icon: MessageSquare,
       href: "#",
       onClick: () => setCurrentView("announcements"),
-      key: "announcements"
+      key: "announcements",
     },
     {
       title: "Organizer Tools",
       icon: Settings,
       href: "#",
       onClick: () => setCurrentView("organizer-tools"),
-      key: "organizer-tools"
-    }
-  ]
+      key: "organizer-tools",
+    },
+  ];
 
   const hackathons = [
     {
       name: "AI Innovation Challenge",
       status: "Live",
       deadline: "2 days left",
-      participants: 156
+      participants: 156,
     },
     {
       name: "Web3 Builder Fest",
       status: "Closed",
       deadline: "Ended",
-      participants: 89
+      participants: 89,
     },
     {
       name: "Mobile App Marathon",
       status: "Upcoming",
       deadline: "5 days to start",
-      participants: 234
-    }
-  ]
+      participants: 234,
+    },
+  ];
 
   const submissions = [
     {
@@ -165,26 +169,26 @@ export default function HackZenDashboard() {
       github: "github.com/user/smart-city",
       youtube: "youtube.com/watch?v=abc",
       status: "Judged",
-      score: 85
+      score: 85,
     },
     {
       name: "AI Chatbot Assistant",
       github: "github.com/user/ai-chatbot",
       youtube: "",
       status: "Submitted",
-      score: null
-    }
-  ]
+      score: null,
+    },
+  ];
 
   const chatRooms = [
     { name: "AI Challenge General", members: 45, active: true },
     { name: "Web3 Builders", members: 23, active: false },
-    { name: "Mobile Dev Help", members: 67, active: true }
-  ]
+    { name: "Mobile Dev Help", members: 67, active: true },
+  ];
 
   return (
     <SidebarProvider>
-      <Sidebar className="border-r">
+      <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
@@ -215,7 +219,7 @@ export default function HackZenDashboard() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {participantMenuItems.map(item => (
+                {participantMenuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -243,7 +247,7 @@ export default function HackZenDashboard() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {organizerMenuItems.map(item => (
+                {organizerMenuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -284,8 +288,9 @@ export default function HackZenDashboard() {
 
       <SidebarInset>
         {currentView === "dashboard" ? (
-          <>
-            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6">
+          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50" >
+            
+            <header className="flex h-16 shrink-0 items-center gap-2 border-b px-6 ">
               <SidebarTrigger className="-ml-1" />
               <Separator orientation="vertical" className="mr-2 h-4" />
               <div>
@@ -296,7 +301,7 @@ export default function HackZenDashboard() {
               </div>
             </header>
 
-            <div className="flex-1 space-y-6 p-6">
+            <div className="flex-1 space-y-6 p-6 ">
               {/* Role Toggle */}
               <div className="flex gap-2">
                 <Button
@@ -318,7 +323,7 @@ export default function HackZenDashboard() {
               </div>
 
               {/* Main Content Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 ">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6  ">
                 {/* Participant Panel */}
                 {activeRole === "participant" && (
                   <>
@@ -329,7 +334,7 @@ export default function HackZenDashboard() {
                         </h2>
 
                         {/* My Hackathons */}
-                        <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                        <Card className="hover:ring-2 hover:ring-indigo-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Trophy className="w-5 h-5 text-indigo-600" />
@@ -358,7 +363,7 @@ export default function HackZenDashboard() {
                                     hackathon.status === "Live"
                                       ? "default"
                                       : hackathon.status === "Closed"
-                                      ? "secondary"
+                                      ? "destructive"
                                       : "outline"
                                   }
                                   className={
@@ -375,7 +380,7 @@ export default function HackZenDashboard() {
                         </Card>
 
                         {/* My Submissions */}
-                        <Card className="m-7 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                        <Card className="m-7 hover:ring-2 hover:ring-indigo-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <FileText className="w-5 h-5 text-indigo-600" />
@@ -439,7 +444,7 @@ export default function HackZenDashboard() {
 
                     <div className="space-y-6">
                       {/* Chat Rooms */}
-                      <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                      <Card className="hover:ring-2 hover:ring-indigo-300">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <MessageSquare className="w-5 h-5 text-indigo-600" />
@@ -465,12 +470,7 @@ export default function HackZenDashboard() {
                                 {room.active && (
                                   <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 )}
-                                <Button
-                                  size="sm"
-                                  className="bg-indigo-500 hover:bg-indigo-600"
-                                >
-                                  Join
-                                </Button>
+                                <Button size="lg">Join</Button>
                               </div>
                             </div>
                           ))}
@@ -478,7 +478,7 @@ export default function HackZenDashboard() {
                       </Card>
 
                       {/* Portfolio Stats */}
-                      <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-indigo-300">
+                      <Card className="hover:ring-2 hover:ring-indigo-300">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <Award className="w-5 h-5 text-indigo-600" />
@@ -533,7 +533,7 @@ export default function HackZenDashboard() {
                         </h2>
 
                         {/* Created Hackathons */}
-                        <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                        <Card className="hover:ring-2 hover:ring-purple-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Plus className="w-5 h-5 text-purple-600" />
@@ -564,14 +564,14 @@ export default function HackZenDashboard() {
                                   </Button>
                                   <Button
                                     size="sm"
-                                    className="bg-purple-500 hover:bg-purple-600"
+                                    className=""
                                   >
                                     Manage
                                   </Button>
                                 </div>
                               </div>
                             ))}
-                            <Button className="w-full bg-purple-500 hover:bg-purple-600">
+                            <Button className="w-full">
                               <Plus className="w-4 h-4 mr-2" />
                               Create New Hackathon
                             </Button>
@@ -579,7 +579,7 @@ export default function HackZenDashboard() {
                         </Card>
 
                         {/* Review Queue */}
-                        <Card className="m-7 hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                        <Card className="m-7 hover:ring-2 hover:ring-purple-300">
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <Eye className="w-5 h-5 text-purple-600" />
@@ -622,7 +622,7 @@ export default function HackZenDashboard() {
 
                     <div className="space-y-6">
                       {/* Participant Stats */}
-                      <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                      <Card className="hover:ring-2 hover:ring-purple-300">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <Users className="w-5 h-5 text-purple-600" />
@@ -671,7 +671,7 @@ export default function HackZenDashboard() {
                       </Card>
 
                       {/* Organizer Tools */}
-                      <Card className="hover:shadow-lg transition-shadow hover:ring-2 hover:ring-purple-300">
+                      <Card className="hover:ring-2 hover:ring-purple-300">
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <Settings className="w-5 h-5 text-purple-600" />
@@ -682,7 +682,7 @@ export default function HackZenDashboard() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <Button className="w-full justify-start bg-purple-500 hover:bg-purple-600">
+                          <Button className="w-full justify-start">
                             <BarChart3 className="w-4 h-4 mr-2" />
                             View Analytics
                           </Button>
@@ -720,25 +720,26 @@ export default function HackZenDashboard() {
                   📊 Analytics Overview
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className=" hover:ring-2 hover:ring-indigo-300">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-green-500" />
                         Submissions Trend
                       </CardTitle>
                     </CardHeader>
-                 <CardContent>
-                  <div className="h-24 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">+23%</p>
-                    <p className="text-sm text-gray-600">This month</p>
-                  </div>
-                  </div>
-                 </CardContent>
-
+                    <CardContent>
+                      <div className="h-24 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">
+                            +23%
+                          </p>
+                          <p className="text-sm text-gray-600">This month</p>
+                        </div>
+                      </div>
+                    </CardContent>
                   </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className=" hover:ring-2 hover:ring-indigo-300">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Users className="w-5 h-5 text-blue-500" />
@@ -757,7 +758,7 @@ export default function HackZenDashboard() {
                     </CardContent>
                   </Card>
 
-                  <Card className="hover:shadow-lg transition-shadow">
+                  <Card className=" hover:ring-2 hover:ring-indigo-300">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Trophy className="w-5 h-5 text-yellow-500" />
@@ -778,7 +779,7 @@ export default function HackZenDashboard() {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         ) : currentView === "profile" ? (
           <ProfileSection
             userName="John Doe"
@@ -816,5 +817,5 @@ export default function HackZenDashboard() {
         ) : null}
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

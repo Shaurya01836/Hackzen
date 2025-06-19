@@ -61,7 +61,7 @@ export function ProfileSection({ userName, userEmail, userAvatar, onBack }) {
   const renderHeader = () => (
     <div className="flex items-center gap-4 mb-6">
       <Button
-        variant="ghost"
+        variant="default"
         size="sm"
         onClick={onBack}
         className="flex items-center gap-2"

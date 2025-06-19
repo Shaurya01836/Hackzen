@@ -226,7 +226,7 @@ export function Announcements({ onBack }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
+            variant="default"
             size="sm"
             onClick={onBack}
             className="flex items-center gap-2"
