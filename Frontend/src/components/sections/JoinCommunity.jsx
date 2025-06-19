@@ -3,7 +3,7 @@ import { MessageCircle } from "lucide-react";
 
 function JoinCommunity() {
   return (
-    <section className=" w-full py-20 text-white overflow-hidden border-t-2 ">
+    <section className=" w-full py-20 text-white overflow-hidden">
       {/* Heading */}
       <h2 className="text-center text-3xl sm:text-5xl font-bold mb-12 relative z-10 font-heading1 text-gray-900">
         Join our Community

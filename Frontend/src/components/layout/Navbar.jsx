@@ -7,12 +7,13 @@ import {
   X,
   LogIn,
   UserPlus,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext"; // ✅ auth
 import LoginModal from "../LoginModal";
 import RegisterModal from "../RegisterModal";
+import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,7 +25,7 @@ function Navbar() {
     try {
       await fetch("http://localhost:3000/api/users/logout", {
         method: "GET",
-        credentials: "include"
+        credentials: "include",
       });
     } catch (err) {
       console.error("Logout failed:", err);
@@ -71,18 +72,12 @@ function Navbar() {
 
             {!user ? (
               <>
-                <button
-                  onClick={() => setShowLogin(true)}
-                  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center"
-                >
-                  Login <LogIn className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setShowRegister(true)}
-                  className="px-4 py-2 bg-[#1b0c3f] text-white rounded-3xl font-semibold flex gap-3 items-center"
-                >
-                  Register <UserPlus className="w-5 h-5" />
-                </button>
+                <InteractiveHoverButton onClick={() => setShowLogin(true)}>
+                  Login
+                </InteractiveHoverButton>
+                <InteractiveHoverButton onClick={() => setShowRegister(true)}>
+                  Register
+                </InteractiveHoverButton>
               </>
             ) : (
               <>

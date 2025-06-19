@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Navbar from "../components/layout/Navbar";
 import Header from "../components/layout/Header";
@@ -7,6 +8,9 @@ import FeaturedHackCards from "../components/common/FeaturedHackCards";
 import Footer from "../components/layout/Footer";
 import MilestoneStats from "../components/sections/MilestoneStats";
 import JoinCommunity from "../components/sections/JoinCommunity";
+import { InteractiveGridPattern } from "../components/Magic UI/InteractiveGridPattern";
+import { cn } from "../pages/Dashboard/AdimPage/components/lib/utils";
+
 
 const hackathonData = [
   {
@@ -42,24 +46,53 @@ const hackathonData = [
 function LandingPage() {
   return (
     <>
+   
       <Navbar />
 
-      {/* Full Gradient Wrapper until MilestoneStats */}
       <section className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         <Header />
         <LogoCloud />
 
-        <section className="pt-16">
-          <div className="max-w-6xl mx-auto px-4">
+        <section className="relative pt-16 pb-4 overflow-hidden">
+          {/* Animated grid pattern background */}
+          <InteractiveGridPattern
+            className={cn(
+              "absolute inset-0 z-0 [mask-image:radial-gradient(1000px_circle_at_center,white,transparent)]"
+            )}
+            width={40}
+            height={40}
+            squares={[80, 80]}
+            squaresClassName="hover:fill-primary"
+          />
+
+          {/* Main content container */}
+          <div className="relative z-10 max-w-6xl mx-auto px-4">
             <h2 className="text-4xl sm:text-5xl font-heading1 font-bold mb-10 text-center">
               Featured Hackathons
             </h2>
+
             <FeaturedHackCards hackathons={hackathonData} />
           </div>
         </section>
 
         <MilestoneStats />
-        <JoinCommunity />
+        
+     {/* Join Community with Grid Background */}
+<section className="relative pt-16 pb-20 overflow-hidden">
+  <InteractiveGridPattern
+    className={cn(
+      "absolute inset-0 z-0 [mask-image:radial-gradient(1000px_circle_at_center,white,transparent)]"
+    )}
+    width={40}
+    height={40}
+    squares={[80, 80]}
+    squaresClassName="hover:fill-primary"
+  />
+
+  <div className="relative z-10">
+    <JoinCommunity />
+  </div>
+</section>
       </section>
 
       <CtaSection />
