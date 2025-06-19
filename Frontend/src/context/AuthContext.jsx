@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Logout handler
   const logout = async () => {
     try {
-      await axios.get("http://localhost:3000/api/users/logout", {
+      await axios.get("https://hackzen.onrender.com/api/users/logout", {
         withCredentials: true
       });
     } catch (err) {
