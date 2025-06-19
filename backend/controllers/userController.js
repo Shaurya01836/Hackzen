@@ -19,14 +19,14 @@ exports.registerUser = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const isAdminEmail = email === 'admin@stpi.dev';
+    const isAdminEmail = email === 'admin@pp.dev';
 
     const newUser = await User.create({
       name,
       email,
       passwordHash,
       authProvider: 'email',
-      role: isAdminEmail ? 'admin' : undefined // default handled by schema
+      role: isAdminEmail ? 'admin' : undefined 
     });
 
     res.status(201).json({

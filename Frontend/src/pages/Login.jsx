@@ -3,12 +3,14 @@ import { Github } from "lucide-react";
 import GoogleIcon from "../components/common/GoogleIcon";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext"; // ✅ Make sure this path is correct
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth(); // ✅ From context
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,12 +22,16 @@ function Login() {
         password,
       });
 
-      // Save token and user info
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      // ✅ Save using context
+      login(res.data.user, res.data.token);
 
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // ✅ Redirect by role
+      const role = res.data.user.role;
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Login failed. Please try again.");
     }
