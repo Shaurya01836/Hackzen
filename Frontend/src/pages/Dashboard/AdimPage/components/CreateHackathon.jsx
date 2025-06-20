@@ -23,7 +23,6 @@ import { cn } from "./lib/utils"
 
 const categories = ["Artificial Intelligence","Fintech","Healthcare","Gaming","EdTech","Social Impact","Open Innovation","Other"
 ]
-
 const difficultyLevels = ["Beginner", "Intermediate", "Advanced"]
 const modes = ["online", "offline", "hybrid"]
 
