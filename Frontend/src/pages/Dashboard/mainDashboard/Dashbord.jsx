@@ -3,10 +3,12 @@
 import { useState } from "react";
 import {
   Users,
+  CircleArrowOutDownLeft,
   Trophy,
   MessageSquare,
   User,
   Plus,
+  LogOut,
   BarChart3,
   FileText,
   Settings,
@@ -44,7 +46,9 @@ import {
 import { Separator } from "../AdimPage/components/ui/separator";
 import { Button } from "../AdimPage/components/ui/button";
 import { Progress } from "../AdimPage/components/ui/progress";
-
+import { useNavigate } from "react-router-dom";
+import SignOutModal from "../../../components/SignOutModal";
+import { useAuth } from "../../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
 import { MyHackathons } from "./sections/Myhackthon";
@@ -60,6 +64,24 @@ import { ExploreHackathons } from "./sections/ExploreHackathon";
 import { CreateHackathon } from "./sections/Create-hackathon";
 
 export default function HackZenDashboard() {
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
+  const { logout } = useAuth(); 
+  const handleSignOut = async () => {
+  try {
+    await fetch("http://localhost:3000/api/users/logout", {
+      method: "GET",
+      credentials: "include",
+    });
+  } catch (err) {
+    console.error("Logout failed:", err);
+  } finally {
+    logout();
+    navigate("/");
+  }
+};
+
+
   const [currentView, setCurrentView] = useState("dashboard");
 
   const participantMenuItems = [
@@ -128,6 +150,7 @@ export default function HackZenDashboard() {
     },
   ];
 
+  
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -212,19 +235,21 @@ export default function HackZenDashboard() {
         </SidebarContent>
 
         <SidebarFooter className="p-4">
+         <button
+         onClick={() => navigate("/")}
+         className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] hover:bg-black transition"
+         >
+         <CircleArrowOutDownLeft className="w-5 h-5 text-white" />
+         <span className="text-sm font-medium text-white">Back to Home Page</span>
+         </button>
           <button
-            onClick={() => setCurrentView("dashboard")}
-            className="flex items-center gap-3 w-full p-2 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Avatar>
-              <AvatarImage src="/placeholder.svg?height=40&width=40" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium">John Doe</p>
-              <p className="text-xs text-gray-500">john@example.com</p>
-            </div>
-          </button>
+  onClick={() => setShowModal(true)}
+  className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-red-600 hover:bg-red-700 transition"
+>
+  <LogOut className="w-5 h-5 text-white" />
+  <span className="text-sm font-medium text-white">Sign Out</span>
+</button>
+
         </SidebarFooter>
       </Sidebar>
 
@@ -263,6 +288,12 @@ export default function HackZenDashboard() {
           <CreateHackathon onBack={() => setCurrentView("created-hackathons")} />
         ) : null}
       </SidebarInset>
+      <SignOutModal
+  isOpen={showModal}
+  onClose={() => setShowModal(false)}
+  onConfirm={handleSignOut}
+/>
     </SidebarProvider>
+    
   );
 }
