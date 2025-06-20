@@ -39,11 +39,11 @@ exports.createHackathon = async (req, res) => {
       difficultyLevel: difficulty || 'Beginner',
       location,
       organizer: req.user.id,
-      prizePool: {
-        amount: parseInt(prizePool?.replace(/[^\d]/g, '')) || 0,
-        currency: 'USD',
-        breakdown: prizePool || ''
-      },
+        prizePool: {
+    amount: req.body.prizePool.amount,
+    currency: req.body.prizePool.currency,
+    breakdown: req.body.prizePool.breakdown
+  },
       problemStatements,
       requirements,
       perks,
