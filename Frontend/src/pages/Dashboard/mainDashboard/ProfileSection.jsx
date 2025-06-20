@@ -37,7 +37,6 @@ import { Switch } from "../AdimPage/components/ui/switch";
 import { Input } from "../AdimPage/components/ui/input";
 import { Label } from "../AdimPage/components/ui/label";
 import { Textarea } from "../AdimPage/components/ui/textarea";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 
 
@@ -48,8 +47,8 @@ export function ProfileSection() {
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const {user, login, logout } = useAuth();
-const navigate = useNavigate();
+  const {user, login, } = useAuth();
+
 
   const [editForm, setEditForm] = useState({
   name: "",
@@ -62,19 +61,7 @@ const navigate = useNavigate();
   linkedin: ""
 });
 
-const handleSignOut = async () => {
-  try {
-    await fetch("http://localhost:3000/api/users/logout", {
-      method: "GET",
-      credentials: "include",
-    });
-  } catch (err) {
-    console.error("Logout failed:", err);
-  } finally {
-    logout();
-    navigate("/");
-}
-};
+
 
 useEffect(() => {
     const fetchUserProfile = async () => {
@@ -194,63 +181,8 @@ const initials = user?.name
       </CardContent>
     </Card>
 
-    {/* Account Settings */}
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="w-5 h-5" />
-          Account Settings
-        </CardTitle>
-        <CardDescription>
-          Manage your account preferences and notifications
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bell className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Push Notifications</p>
-              <p className="text-xs text-gray-500">
-                Receive updates about events and submissions
-              </p>
-            </div>
-          </div>
-          <Switch checked={notifications} onCheckedChange={setNotifications} />
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Mail className="w-4 h-4 text-gray-500" />
-            <div>
-              <p className="text-sm font-medium">Email Updates</p>
-              <p className="text-xs text-gray-500">
-                Get weekly insights and reports
-              </p>
-            </div>
-          </div>
-          <Switch checked={emailUpdates} onCheckedChange={setEmailUpdates} />
-        </div>
-      </CardContent>
-    </Card>
-
-  
-
-    {/* Danger Zone */}
-    <Card className="w-full border-red-300 bg-red-50">
-      <CardHeader>
-        <CardTitle className="text-red-600">Danger Zone</CardTitle>
-        <CardDescription>
-          Irreversible actions for your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-       <Button variant="destructive" className="w-full"
-        onClick={handleSignOut}>
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign Out
-</Button>
-      </CardContent>
-    </Card>
+   
+   
   </div>
 );
 
