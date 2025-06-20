@@ -16,12 +16,13 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
 
   // ✅ Login helper
-  const login = (userData, tokenData) => {
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", tokenData);
-    setUser(userData);
-    setToken(tokenData);
-  };
+  const login = (userData, authToken) => {
+  setUser(userData);
+  setToken(authToken);
+  localStorage.setItem("user", JSON.stringify(userData));
+  localStorage.setItem("token", authToken);
+};
+
 
   // ✅ Logout handler
   const logout = async () => {

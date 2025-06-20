@@ -42,12 +42,13 @@ import { useAuth } from "../../../context/AuthContext";
 
 
 export function ProfileSection() {
+  const [selectedImage, setSelectedImage] = useState(null);
   const [currentView, setCurrentView] = useState("overview");
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const {user, logout } = useAuth();
+  const {user, login, logout } = useAuth();
 const navigate = useNavigate();
 
   const [editForm, setEditForm] = useState({
@@ -75,8 +76,6 @@ const handleSignOut = async () => {
 }
 };
 
-
-
 useEffect(() => {
     const fetchUserProfile = async () => {
       try {
@@ -97,16 +96,24 @@ const userId = storedUser ? JSON.parse(storedUser)._id : null;
 
         const data = res.data;
 
-        setEditForm({
-          name: data.name || "",
-          email: data.email || "",
-          phone: data.phone || "",
-          location: data.location || "",
-          bio: data.bio || "",
-          website: data.website || "",
-          github: data.githubUsername ? `https://github.com/${data.githubUsername}` : "",
-          linkedin: data.linkedin || "",
-        });
+      setEditForm((prev) => ({
+  ...prev,
+  name: data.name || "",
+  email: data.email || "",
+  phone: data.phone || "",
+  location: data.location || "",
+  bio: data.bio || "",
+  website: data.website || "",
+  github: data.githubUsername ? `https://github.com/${data.githubUsername}` : "",
+  linkedin: data.linkedin || "",
+  profileImage: data.profileImage || "",
+}));
+
+// 🔄 Optional: refresh global user context with latest profileImage
+const updatedUser = { ...user, profileImage: data.profileImage };
+localStorage.setItem("user", JSON.stringify(updatedUser));
+login(updatedUser, token);
+
       } catch (err) {
         console.error("Failed to load user profile", err);
       }
@@ -255,23 +262,33 @@ const initials = user?.name
         <CardTitle>Profile Picture</CardTitle>
         <CardDescription>Update your profile photo</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col items-center space-y-4">
-        <Avatar className="w-32 h-32">
-          <AvatarImage
-            src={user?.profileImage || "/placeholder.svg?height=128&width=128"}
-          />
-          <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex gap-2 flex-wrap justify-center">
-          <Button size="sm" variant="outline">
-            <Edit className="w-3 h-3 mr-1" />
-            Change
-          </Button>
-          <Button size="sm" variant="outline">
-            Remove
-          </Button>
-        </div>
-      </CardContent>
+     <CardContent className="flex flex-col items-center space-y-4">
+  <Avatar className="w-32 h-32">
+    <AvatarImage src={editForm.profileImage || user?.profileImage || "/placeholder.svg"} />
+    <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
+  </Avatar>
+
+  <input
+    type="file"
+    accept="image/*"
+    id="upload-avatar"
+    className="hidden"
+    onChange={handleImageUpload}
+  />
+
+  <div>
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => document.getElementById("upload-avatar").click()}
+    >
+      <Edit className="w-3 h-3 mr-1" />
+      Upload New Image
+    </Button>
+  </div>
+</CardContent>
+
+
     </Card>
 
     {/* Personal Information Section */}
@@ -670,6 +687,7 @@ const handleSaveChanges = async () => {
     website: editForm.website,
     githubUsername: editForm.github.replace("https://github.com/", ""),
     linkedin: editForm.linkedin,
+      profileImage: editForm.profileImage || selectedImage, // include image
   };
 
   console.log("👤 userId:", userId);
@@ -686,16 +704,55 @@ const handleSaveChanges = async () => {
         },
       }
     );
-    console.log("✅ Update response:", res.data);
+    console.log("Update response:", res.data);
     alert("Profile updated successfully!");
     setCurrentView("overview");
   } catch (err) {
-    console.error("❌ Update error:", err.response?.data || err.message);
+    console.error("Update error:", err.response?.data || err.message);
     alert("Failed to update profile.");
   }
 };
 
 
+const handleImageUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("image", file);
+
+  try {
+    const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
+    const imageUrl = uploadRes.data.url;
+
+    setSelectedImage(null);
+    setEditForm((prev) => ({ ...prev, profileImage: imageUrl }));
+
+    // ✅ update user profile in MongoDB immediately
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (userData?._id && token) {
+      await axios.put(
+        `http://localhost:3000/api/users/${userData._id}`,
+        { profileImage: imageUrl },
+        {  headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json", // ✅ ensure correct content type
+    }, }
+      );
+
+      // Update localStorage and context user
+      const updatedUser = { ...userData, profileImage: imageUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+    }
+    alert("Image uploaded successfully!");
+  } catch (err) {
+    console.error("Image upload failed:", err);
+    alert("Failed to upload image");
+  }
+};
 
 
 

@@ -9,6 +9,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const socketHandler = require("./config/socket");
 const MongoStore = require('connect-mongo'); // ✅ persist sessions
+const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
 
 require("./config/passport"); // load strategies
 
