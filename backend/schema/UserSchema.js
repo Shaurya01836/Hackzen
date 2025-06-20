@@ -12,6 +12,11 @@ const UserSchema = new Schema({
     enum: ['participant', 'organizer', 'mentor', 'judge', 'admin'],
     default: 'participant'
   },
+   phone: String,
+  location: String,
+  bio: String,
+  website: String,
+  linkedin: String,
   skills: [String],
   badges: [{ type: Schema.Types.ObjectId, ref: 'Badge' }],
   hackathonsJoined: [{ type: Schema.Types.ObjectId, ref: 'Hackathon' }],

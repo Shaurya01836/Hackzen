@@ -92,15 +92,34 @@ exports.getUserById = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const updates = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Only allow editable fields from frontend
+    const allowedFields = [
+      "name",
+      "phone",
+      "location",
+      "bio",
+      "website",
+      "githubUsername",
+      "linkedin"
+    ];
+
+    // Filter incoming req.body to only allow those fields
+    const updates = Object.fromEntries(
+      Object.entries(req.body).filter(([key]) => allowedFields.includes(key))
+    );
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+    });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Delete user
 exports.deleteUser = async (req, res) => {
@@ -131,5 +150,15 @@ exports.changeUserRole = async (req, res) => {
     res.json({ message: `User role updated to ${newRole}`, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select("-passwordHash");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
   }
 };

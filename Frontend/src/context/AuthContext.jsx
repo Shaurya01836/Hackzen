@@ -40,31 +40,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ OAuth redirect handling (token in URL)
-  useEffect(() => {
-    const url = new URLSearchParams(location.search);
-    const oauthToken = url.get("token");
-    const name = url.get("name");
-    const email = url.get("email");
+ // ✅ 1. Handle OAuth redirect from URL
+useEffect(() => {
+  const url = new URLSearchParams(location.search);
+  const oauthToken = url.get("token");
+  const name = url.get("name");
+  const email = url.get("email");
+  const id = url.get("id");
 
-    if (oauthToken && name && email) {
-      const userData = { name, email };
-      login(userData, oauthToken);
-      navigate("/dashboard");
-    }
-  }, [location]);
-
-  // ✅ Sync across tabs
-  useEffect(() => {
-    const sync = () => {
-      const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
-      setUser(storedUser ? JSON.parse(storedUser) : null);
-      setToken(storedToken || null);
+  if (oauthToken && name && email && id) {
+    const userData = {
+      _id: id,
+      name,
+      email,
     };
+    login(userData, oauthToken);
+    navigate("/dashboard");
+  }
+}, [location]);
 
-    window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
-  }, []);
+// ✅ 2. Sync user/token from localStorage across tabs
+useEffect(() => {
+  const sync = () => {
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+    setUser(storedUser ? JSON.parse(storedUser) : null);
+    setToken(storedToken || null);
+  };
+
+  window.addEventListener("storage", sync);
+  return () => window.removeEventListener("storage", sync);
+}, []);
+
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout }}>

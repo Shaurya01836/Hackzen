@@ -23,7 +23,10 @@ function Login({ onClose }) {
       });
 
       // ✅ Save using context
-      login(res.data.user, res.data.token);
+     console.log("📥 Login Response:", res.data);
+
+login(res.data.user, res.data.token);
+
 
       // ✅ Redirect by role
       const role = res.data.user.role;

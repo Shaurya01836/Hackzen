@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+// adjust path if needed
 import {
   User,
   Settings,
@@ -35,32 +37,93 @@ import { Switch } from "../AdimPage/components/ui/switch";
 import { Input } from "../AdimPage/components/ui/input";
 import { Label } from "../AdimPage/components/ui/label";
 import { Textarea } from "../AdimPage/components/ui/textarea";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
-export function ProfileSection({ userName, userEmail, userAvatar}) {
+
+export function ProfileSection() {
   const [currentView, setCurrentView] = useState("overview");
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const {user, logout } = useAuth();
+const navigate = useNavigate();
 
   const [editForm, setEditForm] = useState({
-    name: userName,
-    email: userEmail,
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
-    bio:
-      "Passionate developer and hackathon enthusiast. Love building innovative solutions and collaborating with amazing teams.",
-    website: "https://johndoe.dev",
-    github: "https://github.com/johndoe",
-    linkedin: "https://linkedin.com/in/johndoe",
-  });
+  name: "",
+  email: "",
+  phone: "",
+  location: "",
+  bio: "",
+  website: "",
+  github: "",
+  linkedin: ""
+});
 
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .substring(0, 2);
+const handleSignOut = async () => {
+  try {
+    await fetch("http://localhost:3000/api/users/logout", {
+      method: "GET",
+      credentials: "include",
+    });
+  } catch (err) {
+    console.error("Logout failed:", err);
+  } finally {
+    logout();
+    navigate("/");
+}
+};
+
+
+
+useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+const userId = storedUser ? JSON.parse(storedUser)._id : null;
+        const token = localStorage.getItem("token");
+
+        if (!userId || !token) {
+          console.warn("⚠️ Missing user ID or token.");
+          return;
+        }
+
+        const res = await axios.get(`http://localhost:3000/api/users/${userId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = res.data;
+
+        setEditForm({
+          name: data.name || "",
+          email: data.email || "",
+          phone: data.phone || "",
+          location: data.location || "",
+          bio: data.bio || "",
+          website: data.website || "",
+          github: data.githubUsername ? `https://github.com/${data.githubUsername}` : "",
+          linkedin: data.linkedin || "",
+        });
+      } catch (err) {
+        console.error("Failed to load user profile", err);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+
+
+const initials = user?.name
+  ?.split(" ")
+  .map((n) => n[0])
+  .join("")
+  .toUpperCase()
+  .substring(0, 2);
+
 
   const renderHeader = () => (
     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -93,12 +156,12 @@ export function ProfileSection({ userName, userEmail, userAvatar}) {
       <CardHeader>
         <div className="flex flex-col items-center space-y-4">
           <Avatar className="w-24 h-24">
-            <AvatarImage src={userAvatar || "/placeholder.svg"} />
+            <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
             <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
           </Avatar>
           <div className="text-center">
-            <CardTitle className="text-xl">{userName}</CardTitle>
-            <CardDescription>{userEmail}</CardDescription>
+            <CardTitle className="text-xl">{user?.name}</CardTitle>
+            <CardDescription>{user?.email}</CardDescription>
             <div className="flex gap-2 mt-3 justify-center flex-wrap">
               <Badge variant="secondary">Participant</Badge>
               <Badge variant="outline">Organizer</Badge>
@@ -174,10 +237,11 @@ export function ProfileSection({ userName, userEmail, userAvatar}) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Button variant="destructive" className="w-full">
+       <Button variant="destructive" className="w-full"
+        onClick={handleSignOut}>
           <LogOut className="w-4 h-4 mr-2" />
           Sign Out
-        </Button>
+</Button>
       </CardContent>
     </Card>
   </div>
@@ -194,7 +258,7 @@ export function ProfileSection({ userName, userEmail, userAvatar}) {
       <CardContent className="flex flex-col items-center space-y-4">
         <Avatar className="w-32 h-32">
           <AvatarImage
-            src={userAvatar || "/placeholder.svg?height=128&width=128"}
+            src={user?.profileImage || "/placeholder.svg?height=128&width=128"}
           />
           <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
         </Avatar>
@@ -318,7 +382,7 @@ export function ProfileSection({ userName, userEmail, userAvatar}) {
 
     {/* Save + Cancel Actions */}
     <div className="flex flex-col sm:flex-row gap-3 justify-start">
-      <Button className="flex items-center gap-2 w-full sm:w-auto">
+      <Button onClick={handleSaveChanges} className="flex items-center gap-2 w-full sm:w-auto">
         <Save className="w-4 h-4" />
         Save Changes
       </Button>
@@ -580,6 +644,59 @@ export function ProfileSection({ userName, userEmail, userAvatar}) {
     </Button>
   </div>
 );
+
+const handleSaveChanges = async () => {
+  let userId = null;
+  try {
+    const userData = JSON.parse(localStorage.getItem("user"));
+    userId = userData?._id;
+  } catch (e) {
+    console.error("❌ Failed to parse user from localStorage", e);
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!userId || !token) {
+    alert("User not logged in. Please log in again.");
+    return;
+  }
+
+  const updates = {
+    name: editForm.name,
+    email: editForm.email,
+    phone: editForm.phone,
+    location: editForm.location,
+    bio: editForm.bio,
+    website: editForm.website,
+    githubUsername: editForm.github.replace("https://github.com/", ""),
+    linkedin: editForm.linkedin,
+  };
+
+  console.log("👤 userId:", userId);
+  console.log("🔐 token:", token);
+  console.log("📦 updates:", updates);
+
+  try {
+    const res = await axios.put(
+      `http://localhost:3000/api/users/${userId}`,
+      updates,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    console.log("✅ Update response:", res.data);
+    alert("Profile updated successfully!");
+    setCurrentView("overview");
+  } catch (err) {
+    console.error("❌ Update error:", err.response?.data || err.message);
+    alert("Failed to update profile.");
+  }
+};
+
+
+
 
 
   return (
