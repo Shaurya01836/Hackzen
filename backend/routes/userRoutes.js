@@ -33,7 +33,7 @@ router.get(
       expiresIn: '7d',
     });
 
-    const redirectUrl = `https://hackzen.vercel.app//oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
+    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
     res.redirect(redirectUrl);
   }
 );
@@ -50,7 +50,7 @@ router.get(
       expiresIn: '7d',
     });
 
-    const redirectUrl = `https://hackzen.vercel.app//oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
+    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
     res.redirect(redirectUrl);
   }
 );

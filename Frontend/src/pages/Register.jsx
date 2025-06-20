@@ -25,7 +25,7 @@ function Register() {
     setErrorMsg("");
 
     try {
-      const res = await axios.post("https://hackzen.onrender.com/api/users/register", {
+      const res = await axios.post("http://localhost:3000/api/users/register", {
         name: form.name,
         email: form.email,
         password: form.password
@@ -43,11 +43,11 @@ function Register() {
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "https://hackzen.onrender.com/api/users/google";
+    window.location.href = "http://localhost:3000/api/users/google";
   };
 
   const handleGithubSignup = () => {
-    window.location.href = "https://hackzen.onrender.com/api/users/github";
+    window.location.href = "http://localhost:3000/api/users/github";
   };
 
   return (

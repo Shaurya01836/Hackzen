@@ -17,7 +17,7 @@ function Login({ onClose }) {
     setErrorMsg("");
 
     try {
-      const res = await axios.post("https://hackzen.onrender.com/api/users/login", {
+      const res = await axios.post("http://localhost:3000/api/users/login", {
         email,
         password,
       });
@@ -39,11 +39,11 @@ function Login({ onClose }) {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "https://hackzen.onrender.com/api/users/google";
+    window.location.href = "http://localhost:3000/api/users/google";
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "https://hackzen.onrender.com/api/users/github";
+    window.location.href = "http://localhost:3000/api/users/github";
   };
 
   return (

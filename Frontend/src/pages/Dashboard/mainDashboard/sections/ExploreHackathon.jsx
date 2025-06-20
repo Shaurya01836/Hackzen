@@ -43,7 +43,7 @@ export function ExploreHackathons({ onBack }) {
   useEffect(() => {
     const fetchHackathons = async () => {
       try {
-        const res = await axios.get("https://hackzen.onrender.com/api/hackathons");
+        const res = await axios.get("http://localhost:3000/api/hackathons");
         console.log("Raw hackathons response:", res.data);
 
         // 🔍 Debug participant field
