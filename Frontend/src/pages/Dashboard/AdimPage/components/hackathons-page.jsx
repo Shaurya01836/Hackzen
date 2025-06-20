@@ -1,89 +1,62 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
-import { Button } from "./ui/AdminButton"
-import { Badge } from "./ui/badge"
-import { Input } from "./ui/input"
-import { Plus, Search, Calendar, Users, Trophy, Eye } from "lucide-react"
-import { CreateHackathonForm } from "./CreateHackathon"
-
-const hackathons = [
-  {
-    id: 1,
-    title: "AI Innovation Challenge 2024",
-    organizer: "TechCorp Inc.",
-    status: "Live",
-    startDate: "2024-01-20",
-    endDate: "2024-01-22",
-    participants: 1247,
-    submissions: 89,
-    prize: "$50,000"
-  },
-  {
-    id: 2,
-    title: "Sustainable Future Hackathon",
-    organizer: "GreenTech Solutions",
-    status: "Pending",
-    startDate: "2024-02-15",
-    endDate: "2024-02-17",
-    participants: 0,
-    submissions: 0,
-    prize: "$25,000"
-  },
-  {
-    id: 3,
-    title: "FinTech Revolution",
-    organizer: "Banking Innovations Ltd.",
-    status: "Closed",
-    startDate: "2024-01-01",
-    endDate: "2024-01-03",
-    participants: 892,
-    submissions: 156,
-    prize: "$75,000"
-  },
-  {
-    id: 4,
-    title: "Healthcare Tech Challenge",
-    organizer: "MedTech Ventures",
-    status: "Live",
-    startDate: "2024-01-18",
-    endDate: "2024-01-25",
-    participants: 634,
-    submissions: 45,
-    prize: "$40,000"
-  }
-]
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard";
+import { Button } from "./ui/AdminButton";
+import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
+import { Plus, Search, Calendar, Users, Trophy, Eye } from "lucide-react";
+import { CreateHackathonForm } from "./CreateHackathon";
 
 export function HackathonsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [hackathons, setHackathons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/api/hackathons");
+        setHackathons(res.data);
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setError("Failed to fetch hackathons");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHackathons();
+  }, []);
 
   const filteredHackathons = hackathons.filter(
-    hackathon =>
+    (hackathon) =>
       hackathon.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hackathon.organizer.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+      hackathon.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const getStatusColor = status => {
+  if (loading) return <p className="text-white">Loading hackathons...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+
+  const getStatusColor = (status) => {
     switch (status) {
       case "Live":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500/20 text-green-300 border-green-500/30";
       case "Pending":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
       case "Closed":
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
     }
-  }
+  };
 
-  const handleCreateHackathon = hackathonData => {
-    console.log("Creating hackathon:", hackathonData)
-    // Here you would typically send the data to your backend
-    setShowCreateForm(false)
-    // You could also add the new hackathon to the local state to update the UI immediately
-  }
+  const handleCreateHackathon = (hackathonData) => {
+    console.log("Creating hackathon:", hackathonData);
+    setShowCreateForm(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -110,7 +83,7 @@ export function HackathonsPage() {
                 <Input
                   placeholder="Search hackathons by title or organizer..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
                 />
               </div>
@@ -119,9 +92,9 @@ export function HackathonsPage() {
 
           {/* Hackathons Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredHackathons.map(hackathon => (
+            {filteredHackathons.map((hackathon) => (
               <Card
-                key={hackathon.id}
+                key={hackathon._id}
                 className="bg-black/20 backdrop-blur-xl border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group"
               >
                 <CardHeader>
@@ -131,7 +104,7 @@ export function HackathonsPage() {
                         {hackathon.title}
                       </CardTitle>
                       <p className="text-gray-400 text-sm">
-                        by {hackathon.organizer}
+                        by {hackathon.organizer?.name || "Unknown"}
                       </p>
                     </div>
                     <Badge className={getStatusColor(hackathon.status)}>
@@ -185,5 +158,5 @@ export function HackathonsPage() {
         />
       )}
     </div>
-  )
+  );
 }
