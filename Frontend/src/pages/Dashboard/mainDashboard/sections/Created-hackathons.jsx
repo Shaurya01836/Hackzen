@@ -215,7 +215,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
           </div>
         </div>
         <Button
-          className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600"
+          className="flex items-center gap-2"
           onClick={onCreateNew}
         >
           <Plus className="w-4 h-4" />

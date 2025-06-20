@@ -251,10 +251,10 @@ export function CreateHackathon({ onBack }) {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"
@@ -286,7 +286,7 @@ export function CreateHackathon({ onBack }) {
                 Essential details about your hackathon
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div>
                 <Label htmlFor="title">Hackathon Title *</Label>
                 <Input
@@ -404,7 +404,7 @@ export function CreateHackathon({ onBack }) {
                 Set important dates for your hackathon
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="startDate">Start Date *</Label>
@@ -497,7 +497,7 @@ export function CreateHackathon({ onBack }) {
                 Define the challenges participants will work on
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               {formData.problemStatements.map((statement, index) => (
                 <div key={index} className="flex gap-2">
                   <Textarea
@@ -542,7 +542,7 @@ export function CreateHackathon({ onBack }) {
                 What participants need to know or have
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               {formData.requirements.map((requirement, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
@@ -584,7 +584,7 @@ export function CreateHackathon({ onBack }) {
                 What participants will get from joining
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               {formData.perks.map((perk, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
@@ -626,7 +626,7 @@ export function CreateHackathon({ onBack }) {
                 Add relevant tags to help participants find your hackathon
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="flex gap-2">
                 <Input
                   value={currentTag}
@@ -677,7 +677,7 @@ export function CreateHackathon({ onBack }) {
                 Settings
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div>
                 <Label htmlFor="maxParticipants">Max Participants</Label>
                 <Input
@@ -723,7 +723,7 @@ export function CreateHackathon({ onBack }) {
                 How your hackathon will appear to participants
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-4">
               <div className="p-3 border rounded-lg">
                 <h3 className="font-medium">
                   {formData.title || "Hackathon Title"}
@@ -736,7 +736,7 @@ export function CreateHackathon({ onBack }) {
                   {formData.category && (
                     <Badge variant="outline">{formData.category}</Badge>
                   )}
-                  <Badge variant="outline">{formData.difficulty}</Badge>
+                  <Badge variant="dark">{formData.difficulty}</Badge>
                 </div>
               </div>
             </CardContent>
@@ -747,11 +747,12 @@ export function CreateHackathon({ onBack }) {
             <CardHeader>
               <CardTitle>Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-4">
               <Button
                 onClick={() => handleSubmit(false)}
                 disabled={isSubmitting}
-                className="w-full bg-purple-500 hover:bg-purple-600"
+                className="w-full "
+                variant="default"
               >
                 <Save className="w-4 h-4 mr-2" />
                 {isSubmitting ? "Creating..." : "Create Hackathon"}

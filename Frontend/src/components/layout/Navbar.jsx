@@ -1,16 +1,12 @@
+"use client";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  BellIcon,
-  GitGraphIcon,
-  Menu,
-  X,
-  LayoutDashboard,
-} from "lucide-react";
+import { BellIcon, GitGraphIcon, Menu, X, LayoutDashboard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext"; // ✅ Make sure this is active
 import LoginModal from "../LoginModal";
 import RegisterModal from "../RegisterModal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
+import { AnimatedList } from "../Magic UI/AnimatedList";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,29 +88,33 @@ function Navbar() {
                 </button>
 
                 {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg z-50 border text-sm">
-                    <div className="p-3 border-b font-semibold text-[#1b0c3f]">
+                  <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 border border-white/10  bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] backdrop-blur-lg text-sm overflow-hidden">
+                    <div className="p-4 border-b border-white/10 font-semibold text-white text-lg">
                       Notifications
                     </div>
-                    <ul className="max-h-64 overflow-y-auto">
+                    <div className="max-h-80 min-h-80 overflow-y-auto px-2 py-1 scrollbar-hide">
                       {notifications.length === 0 ? (
-                        <li className="p-3 text-gray-500">
+                        <div className="p-4 text-center text-gray-300">
                           No new notifications
-                        </li>
+                        </div>
                       ) : (
-                        notifications.map((n) => (
-                          <li
-                            key={n._id}
-                            className="px-4 py-2 hover:bg-gray-50 border-b"
-                          >
-                            <p className="font-medium">{n.message}</p>
-                            <p className="text-xs text-gray-500">
-                              {new Date(n.createdAt).toLocaleString()}
-                            </p>
-                          </li>
-                        ))
+                        <AnimatedList>
+                          {notifications.map((n) => (
+                            <div
+                              key={n._id}
+                              className="group transition-all duration-200 ease-in-out hover:scale-[101%] bg-white/5 backdrop-blur-md rounded-lg px-4 py-3 mb-2 border border-white/10 shadow-sm hover:shadow-md"
+                            >
+                              <div className="font-medium text-white group-hover:text-yellow-400">
+                                {n.message}
+                              </div>
+                              <div className="text-xs text-gray-300 mt-1">
+                                {new Date(n.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </AnimatedList>
                       )}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>

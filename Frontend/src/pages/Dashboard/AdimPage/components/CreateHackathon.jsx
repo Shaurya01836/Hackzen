@@ -347,7 +347,7 @@ breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
   )
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
