@@ -1,99 +1,127 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
-import { Input } from "./ui/input"
-import { Button } from "./ui/AdminButton"
-import { Badge } from "./ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Search, Filter, Eye, Ban, MoreHorizontal } from "lucide-react"
-
-const users = [
-  {
-    id: 1,
-    name: "Alex Johnson",
-    email: "alex.johnson@email.com",
-    role: "Participant",
-    joinedOn: "2024-01-15",
-    status: "Active",
-    avatar: "AJ",
-  },
-  {
-    id: 2,
-    name: "Sarah Chen",
-    email: "sarah.chen@email.com",
-    role: "Organizer",
-    joinedOn: "2024-01-10",
-    status: "Active",
-    avatar: "SC",
-  },
-  {
-    id: 3,
-    name: "Mike Rodriguez",
-    email: "mike.rodriguez@email.com",
-    role: "Mentor",
-    joinedOn: "2024-01-08",
-    status: "Inactive",
-    avatar: "MR",
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    email: "emily.davis@email.com",
-    role: "Judge",
-    joinedOn: "2024-01-12",
-    status: "Active",
-    avatar: "ED",
-  },
-  {
-    id: 5,
-    name: "David Kim",
-    email: "david.kim@email.com",
-    role: "Participant",
-    joinedOn: "2024-01-14",
-    status: "Banned",
-    avatar: "DK",
-  },
-]
+import { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle
+} from "./ui/AdminCard";
+import { Input } from "./ui/input";
+import { Button } from "./ui/AdminButton";
+import { Badge } from "./ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "./ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "./ui/dropdown-menu";
+import {
+  Search,
+  Filter,
+  Eye,
+  Ban,
+  Shield,
+  MoreHorizontal
+} from "lucide-react";
 
 export function UsersManagement() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedRole, setSelectedRole] = useState("All")
+  const [users, setUsers] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRole, setSelectedRole] = useState("All");
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === "All" || user.role === selectedRole
-    return matchesSearch && matchesRole
-  })
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("https://hackzen.onrender.com/api/users", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setUsers(res.data);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  const handleChangeRole = async (userId) => {
+    const newRole = prompt(
+      "Enter new role:\nparticipant, organizer, mentor, judge, admin"
+    );
+    if (!newRole) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(
+        `https://hackzen.onrender.com/api/users/${userId}/role`,
+        { newRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      alert("User role updated");
+      setUsers((prev) =>
+        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
+      );
+    } catch (err) {
+      alert("Failed to update role");
+    }
+  };
+
+  const formatRole = (role) =>
+    role.charAt(0).toUpperCase() + role.slice(1);
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Active":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500/20 text-green-300 border-green-500/30";
       case "Inactive":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
       case "Banned":
-        return "bg-red-500/20 text-red-300 border-red-500/30"
+        return "bg-red-500/20 text-red-300 border-red-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
     }
-  }
+  };
 
   const getRoleColor = (role) => {
     switch (role) {
-      case "Organizer":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30"
-      case "Mentor":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30"
-      case "Judge":
-        return "bg-orange-500/20 text-orange-300 border-orange-500/30"
+      case "organizer":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+      case "mentor":
+        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      case "judge":
+        return "bg-orange-500/20 text-orange-300 border-orange-500/30";
+      case "admin":
+        return "bg-red-500/20 text-red-300 border-red-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
     }
-  }
+  };
+
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole =
+      selectedRole === "All" || user.role === selectedRole.toLowerCase();
+    return matchesSearch && matchesRole;
+  });
 
   return (
     <div className="space-y-6">
@@ -125,7 +153,7 @@ export function UsersManagement() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                {["All", "Participant", "Organizer", "Mentor", "Judge"].map((role) => (
+                {["All", "Participant", "Organizer", "Mentor", "Judge", "Admin"].map((role) => (
                   <DropdownMenuItem
                     key={role}
                     onClick={() => setSelectedRole(role)}
@@ -151,10 +179,10 @@ export function UsersManagement() {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user.id} className="border-purple-500/20 hover:bg-white/5">
+                <TableRow key={user._id} className="border-purple-500/20 hover:bg-white/5">
                   <TableCell className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {user.avatar}
+                      {user.name?.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <div className="text-white font-medium">{user.name}</div>
@@ -162,11 +190,15 @@ export function UsersManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getRoleColor(user.role)}>{user.role}</Badge>
+                    <Badge className={getRoleColor(user.role)}>
+                      {formatRole(user.role)}
+                    </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-300">{user.joinedOn}</TableCell>
+                  <TableCell className="text-gray-300">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(user.status)}>{user.status}</Badge>
+                    <Badge className={getStatusColor("Active")}>Active</Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -180,9 +212,13 @@ export function UsersManagement() {
                           <Eye className="w-4 h-4 mr-2" />
                           View Profile
                         </DropdownMenuItem>
+                        <DropdownMenuItem className="text-white hover:bg-white/5" onClick={() => handleChangeRole(user._id)}>
+                          <Shield className="w-4 h-4 mr-2" />
+                          Change Role
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
                           <Ban className="w-4 h-4 mr-2" />
-                          {user.status === "Banned" ? "Unban User" : "Ban User"}
+                          Ban User
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -194,5 +230,5 @@ export function UsersManagement() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
