@@ -100,7 +100,8 @@ exports.updateUser = async (req, res) => {
       "bio",
       "website",
       "githubUsername",
-      "linkedin"
+      "linkedin",
+      "profileImage"
     ];
 
     // Filter incoming req.body to only allow those fields
