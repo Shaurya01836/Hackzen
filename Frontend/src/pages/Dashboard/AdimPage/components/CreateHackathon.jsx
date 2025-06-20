@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "../../../../context/AuthContext"; // adjust path if needed
+
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
 import { Button } from "./ui/AdminButton"
 import { Input } from "./ui/input"
@@ -26,6 +28,7 @@ const difficultyLevels = ["Beginner", "Intermediate", "Advanced"]
 const modes = ["online", "offline", "hybrid"]
 
 export function CreateHackathonForm({ onBack, onSave }) {
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({title: "",description: "",category: "",difficultyLevel: "",location: "",startDate: null,endDate: null,registrationDeadline: null,submissionDeadline: null,maxParticipants: 100,problemStatements: [""],requirements: [""],perks: [""],tags: [],mode: "online",prizePool: {
 amount: "",
 currency: "USD",
@@ -56,7 +59,25 @@ breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
       }))
     }
   }
-
+const removeImage = (type, index = null) => {
+  if (type === "gallery" && index !== null) {
+    setFormData(prev => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        gallery: prev.images.gallery.filter((_, i) => i !== index)
+      }
+    }));
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        [type]: null
+      }
+    }));
+  }
+};
   const handleArrayChange = (field, index, value) => {
     setFormData(prev => ({
       ...prev,
@@ -96,120 +117,78 @@ breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
   }
 
   // Cloudinary upload function
-  const uploadToCloudinary = async (file, uploadPreset = "hackzen_uploads") => {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("upload_preset", uploadPreset)
-    // formData.append("cloud_name", "your-cloud-name") // Replace with your Cloudinary cloud name
 
-    try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dg2q2tzbv/image/upload`,
-        {
-          method: "POST",
-          body: formData
-        }
-      )
 
-      if (!response.ok) {
-        throw new Error("Upload failed")
-      }
 
-      const data = await response.json()
-      return {
-        url: data.secure_url,
-        publicId: data.public_id,
-        width: data.width,
-        height: data.height
-      }
-    } catch (error) {
-      throw new Error(`Upload failed: ${error.message}`)
-    }
-  }
+const handleFileSelect = async (file, type) => {
+  if (!file) return;
 
-  const handleImageUpload = async (file, type) => {
-    if (!file) return
+  const formData = new FormData();
+  formData.append("image", file);
 
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setUploadStates(prev => ({
-        ...prev,
-        [type]: { uploading: false, error: "Please select an image file" }
-      }))
-      return
-    }
+  try {
+    const res = await fetch("http://localhost:3000/api/uploads/image", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}` // 🛡️ Your login token
+      },
+      body: formData
+    });
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadStates(prev => ({
-        ...prev,
-        [type]: { uploading: false, error: "File size must be less than 5MB" }
-      }))
-      return
-    }
+    const data = await res.json();
 
-    setUploadStates(prev => ({
+    // Update formData.images
+    setFormData((prev) => ({
       ...prev,
-      [type]: { uploading: true, error: null }
-    }))
-
-    try {
-      const uploadResult = await uploadToCloudinary(file)
-
-      if (type === "gallery") {
-        setFormData(prev => ({
-          ...prev,
-          images: {
-            ...prev.images,
-            gallery: [...prev.images.gallery, uploadResult]
-          }
-        }))
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          images: {
-            ...prev.images,
-            [type]: uploadResult
-          }
-        }))
+      images: {
+        ...prev.images,
+        [type]: data // { url, publicId, width, height }
       }
+    }));
+  } catch (err) {
+    console.error("Upload error:", err);
+    alert("Image upload failed");
+  }
+};
 
-      setUploadStates(prev => ({
-        ...prev,
-        [type]: { uploading: false, error: null }
-      }))
-    } catch (error) {
-      setUploadStates(prev => ({
-        ...prev,
-        [type]: { uploading: false, error: error.message }
-      }))
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch("http://localhost:3000/api/hackathons", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` // ✅ Auth token
+      },
+      body: JSON.stringify({
+        ...formData,
+        difficulty: formData.difficultyLevel, // match backend schema
+        problemStatements: formData.problemStatements.filter(ps => ps.trim()),
+        requirements: formData.requirements.filter(r => r.trim()),
+        perks: formData.perks.filter(p => p.trim()),
+        tags: formData.tags,
+        status: "upcoming" // or "draft" if you have save draft
+      })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to create hackathon");
     }
-  }
 
-  const removeImage = (type, index = null) => {
-    if (type === "gallery" && index !== null) {
-      setFormData(prev => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          gallery: prev.images.gallery.filter((_, i) => i !== index)
-        }
-      }))
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          [type]: null
-        }
-      }))
-    }
-  }
-
-  const handleSubmit = e => {
-    e.preventDefault()
-    onSave(formData)
-  }
+    const data = await res.json();
+    alert("✅ Hackathon created successfully!");
+    onBack(); // Go back to previous page
+  } catch (error) {
+  const text = await error?.response?.text?.();
+  console.error("❌ Raw error text:", text);
+  console.error("❌ Submission failed:", error);
+  alert(`Error: ${error.message}`);
+}
+};
 
   const DatePicker = ({ date, onDateChange, placeholder }) => (
     <Popover>
@@ -237,117 +216,118 @@ breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
     </Popover>
   )
 
-  const ImageUploadCard = ({
-    title,
-    description,
-    type,
-    currentImage,
-    multiple = false
-  }) => (
-    <div className="border border-purple-500/20 rounded-lg p-4 bg-white/5">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h4 className="text-white font-medium">{title}</h4>
-          <p className="text-gray-400 text-sm">{description}</p>
-        </div>
-        {uploadStates[type].uploading && (
-          <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
-        )}
+const ImageUploadCard = ({
+  title,
+  description,
+  type,
+  currentImage,
+  multiple = false
+}) => (
+  <div className="border border-purple-500/20 rounded-lg p-4 bg-white/5">
+    <div className="flex items-center justify-between mb-3">
+      <div>
+        <h4 className="text-white font-medium">{title}</h4>
+        <p className="text-gray-400 text-sm">{description}</p>
       </div>
-
-      {/* Upload Area */}
-      <div className="space-y-3">
-        <label
-          htmlFor={`upload-${type}`}
-          className={cn(
-            "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200",
-            uploadStates[type].uploading
-              ? "border-purple-500/50 bg-purple-500/10"
-              : "border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/5"
-          )}
-        >
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <Upload className="w-8 h-8 mb-2 text-purple-400" />
-            <p className="text-sm text-gray-300">
-              <span className="font-semibold">Click to upload</span> or drag and
-              drop
-            </p>
-            <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
-          </div>
-          <input
-            id={`upload-${type}`}
-            type="file"
-            className="hidden"
-            accept="image/*"
-            multiple={multiple}
-            onChange={e => {
-              const file = e.target.files[0]
-              if (file) handleImageUpload(file, type)
-            }}
-            disabled={uploadStates[type].uploading}
-          />
-        </label>
-
-        {/* Error Display */}
-        {uploadStates[type].error && (
-          <div className="flex items-center text-red-400 text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            {uploadStates[type].error}
-          </div>
-        )}
-
-        {/* Current Image Display */}
-        {type !== "gallery" && currentImage && (
-          <div className="relative">
-            <img
-              src={currentImage.url || "/placeholder.svg"}
-              alt={title}
-              className="w-full h-32 object-cover rounded-lg border border-purple-500/20"
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="destructive"
-              className="absolute top-2 right-2 h-6 w-6"
-              onClick={() => removeImage(type)}
-            >
-              <X className="w-3 h-3" />
-            </Button>
-            <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm rounded px-2 py-1">
-              <Check className="w-4 h-4 text-green-400" />
-            </div>
-          </div>
-        )}
-
-        {/* Gallery Images Display */}
-        {type === "gallery" && formData.images.gallery.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {formData.images.gallery.map((image, index) => (
-              <div key={index} className="relative">
-                <img
-                  src={image.url || "/placeholder.svg"}
-                  alt={`Gallery ${index + 1}`}
-                  className="w-full h-20 object-cover rounded border border-purple-500/20"
-                />
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="destructive"
-                  className="absolute top-1 right-1 h-5 w-5"
-                  onClick={() => removeImage("gallery", index)}
-                >
-                  <X className="w-2 h-2" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {uploadStates[type]?.uploading && (
+        <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+      )}
     </div>
-  )
+
+    {/* Upload Area */}
+    <div className="space-y-3">
+      <label
+        htmlFor={`upload-${type}`}
+        className={cn(
+          "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200",
+          uploadStates[type]?.uploading
+            ? "border-purple-500/50 bg-purple-500/10"
+            : "border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/5"
+        )}
+      >
+        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+          <Upload className="w-8 h-8 mb-2 text-purple-400" />
+          <p className="text-sm text-gray-300">
+            <span className="font-semibold">Click to upload</span> or drag and
+            drop
+          </p>
+          <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
+        </div>
+        <input
+          id={`upload-${type}`}
+          type="file"
+          className="hidden"
+          accept="image/*"
+          multiple={multiple}
+          onChange={e => {
+            const file = e.target.files[0]
+            if (file) handleFileSelect(file, type) // ✅ Use backend upload function
+          }}
+          disabled={uploadStates[type]?.uploading}
+        />
+      </label>
+
+      {/* Error Display */}
+      {uploadStates[type]?.error && (
+        <div className="flex items-center text-red-400 text-sm">
+          <AlertCircle className="w-4 h-4 mr-2" />
+          {uploadStates[type].error}
+        </div>
+      )}
+
+      {/* Current Image Display */}
+      {type !== "gallery" && currentImage && (
+        <div className="relative">
+          <img
+            src={currentImage.url || "/placeholder.svg"}
+            alt={title}
+            className="w-full h-32 object-cover rounded-lg border border-purple-500/20"
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="destructive"
+            className="absolute top-2 right-2 h-6 w-6"
+            onClick={() => removeImage(type)}
+          >
+            <X className="w-3 h-3" />
+          </Button>
+          <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm rounded px-2 py-1">
+            <Check className="w-4 h-4 text-green-400" />
+          </div>
+        </div>
+      )}
+
+      {/* Gallery Images Display */}
+      {type === "gallery" && formData.images.gallery.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {formData.images.gallery.map((image, index) => (
+            <div key={index} className="relative">
+              <img
+                src={image.url || "/placeholder.svg"}
+                alt={`Gallery ${index + 1}`}
+                className="w-full h-20 object-cover rounded border border-purple-500/20"
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                className="absolute top-1 right-1 h-5 w-5"
+                onClick={() => removeImage("gallery", index)}
+              >
+                <X className="w-2 h-2" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+)
+
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
