@@ -54,7 +54,6 @@ import { ProfileSection } from "./ProfileSection";
 import { MyHackathons } from "./sections/Myhackthon";
 import { MySubmissions } from "./sections/MySubmissions";
 import { ChatRooms } from "./sections/Chat-rooms";
-import { MyPortfolio } from "./sections/Myportfolio";
 import { CreatedHackathons } from "./sections/Created-hackathons";
 import { ParticipantOverview } from "./sections/ParticipantOverview";
 import { ReviewSubmissions } from "./sections/ReviewSubmissions";
@@ -103,12 +102,7 @@ export default function HackZenDashboard() {
       key: "chat-rooms",
       onClick: () => setCurrentView("chat-rooms"),
     },
-    {
-      title: "My Portfolio",
-      icon: User,
-      key: "my-portfolio",
-      onClick: () => setCurrentView("my-portfolio"),
-    },
+
     {
       title: "Explore Hackathons",
       icon: Search,
@@ -267,8 +261,6 @@ export default function HackZenDashboard() {
           <MySubmissions onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "chat-rooms" ? (
           <ChatRooms onBack={() => setCurrentView("dashboard")} />
-        ) : currentView === "my-portfolio" ? (
-          <MyPortfolio onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "explore-hackathons" ? (
           <ExploreHackathons onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "created-hackathons" ? (

@@ -86,7 +86,7 @@ export function MySubmissions({ onBack }) {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg">{submission.name}</CardTitle>
+            <CardTitle className="text-lg text-indigo-700">{submission.name}</CardTitle>
             <CardDescription className="mt-1">
               {submission.hackathon} • Submitted {submission.submittedDate}
             </CardDescription>
@@ -113,41 +113,18 @@ export function MySubmissions({ onBack }) {
 
         <div className="flex flex-wrap gap-1">
           {submission.technologies.map((tech) => (
-            <Badge key={tech} variant="dark" className="text-sm">
+            <Badge key={tech} className="bg-indigo-100 text-indigo-700" variant="outline">
               {tech}
             </Badge>
           ))}
         </div>
 
-        {submission.score && (
-          <div className="flex items-center gap-4 p-3 bg-green-50 rounded-lg">
-            <Award className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="font-medium text-green-800">
-                Score: {submission.score}/100
-              </p>
-              {submission.rank && (
-                <p className="text-sm text-green-600">
-                  Ranked #{submission.rank}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {submission.feedback && (
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm font-medium text-blue-800 mb-1">
-              Judge Feedback:
-            </p>
-            <p className="text-sm text-blue-700">{submission.feedback}</p>
-          </div>
-        )}
+    
 
         <div className="flex gap-2 pt-2">
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             className="flex items-center gap-1"
           >
             <Github className="w-3 h-3" />
@@ -156,7 +133,7 @@ export function MySubmissions({ onBack }) {
           {submission.youtube && (
             <Button
               size="sm"
-              variant="outline"
+              variant="default"
               className="flex items-center gap-1"
             >
               <Youtube className="w-3 h-3" />
@@ -165,7 +142,7 @@ export function MySubmissions({ onBack }) {
           )}
           <Button
             size="sm"
-            variant="outline"
+            variant="default"
             className="flex items-center gap-1"
           >
             <ExternalLink className="w-3 h-3" />

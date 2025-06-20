@@ -88,82 +88,104 @@ export function MyHackathons({ onBack }) {
   const upcomingHackathons = hackathons.filter(h => h.status === "Upcoming")
 
   const renderHackathonCard = hackathon => (
-    <Card key={hackathon.id} className=" hover:ring-2 hover:ring-indigo-300">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg">{hackathon.name}</CardTitle>
-            <CardDescription className="mt-1">
-              {hackathon.description}
-            </CardDescription>
-          </div>
-          <Badge
-            variant={
-              hackathon.status === "Live"
-                ? "default"
-                : hackathon.status === "Closed"
-                ? "secondary"
-                : "outline"
-            }
-            className={hackathon.status === "Live" ? "bg-green-500" : ""}
+   <Card
+  key={hackathon.id}
+  className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md border border-gray-200 bg-white/80 backdrop-blur-sm"
+>
+  <CardHeader>
+    <div className="flex items-start justify-between">
+      <div>
+        <CardTitle className="text-lg font-semibold text-indigo-700">
+          {hackathon.name}
+        </CardTitle>
+        <CardDescription className="mt-1 text-gray-600">
+          {hackathon.description}
+        </CardDescription>
+      </div>
+      <Badge
+        variant={
+          hackathon.status === "Live"
+            ? "default"
+            : hackathon.status === "Closed"
+            ? "secondary"
+            : "outline"
+        }
+        className={`capitalize ${
+          hackathon.status === "Live"
+            ? "bg-green-500 text-white"
+            : hackathon.status === "Closed"
+            ? "bg-gray-400 text-white"
+            : "border-indigo-300 text-indigo-600"
+        }`}
+      >
+        {hackathon.status}
+      </Badge>
+    </div>
+  </CardHeader>
+  <CardContent className="pt-4 space-y-4">
+    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+      <div className="flex items-center gap-2">
+        <Calendar className="w-4 h-4 text-indigo-500" />
+        <span>
+          {hackathon.startDate} - {hackathon.endDate}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Users className="w-4 h-4 text-indigo-500" />
+        <span>{hackathon.participants} participants</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-indigo-500" />
+        <span>{hackathon.prize} prize pool</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Clock className="w-4 h-4 text-indigo-500" />
+        <span>{hackathon.deadline}</span>
+      </div>
+    </div>
+
+    <div className="flex gap-2 flex-wrap">
+      <Badge className="bg-indigo-100 text-indigo-700" variant="outline">
+        {hackathon.category}
+      </Badge>
+      <Badge className="bg-indigo-100 text-indigo-700" variant="outline">
+        {hackathon.difficulty}
+      </Badge>
+    </div>
+
+    <div className="flex gap-2 pt-2 flex-wrap">
+      {hackathon.registered ? (
+        <>
+          <Button
+            size="sm"
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            {hackathon.status}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span>
-              {hackathon.startDate} - {hackathon.endDate}
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-gray-500" />
-            <span>{hackathon.participants} participants</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-gray-500" />
-            <span>{hackathon.prize} prize pool</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <span>{hackathon.deadline}</span>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Badge variant="outline">{hackathon.category}</Badge>
-          <Badge variant="outline">{hackathon.difficulty}</Badge>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          {hackathon.registered ? (
-            <>
-              <Button size="sm" className="flex items-center gap-1">
-                <ExternalLink className="w-3 h-3" />
-                View Details
-              </Button>
-              {hackathon.status === "Live" && !hackathon.submitted && (
-                <Button size="sm" variant="outline">
-                  Submit Project
-                </Button>
-              )}
-              {hackathon.submitted && (
-                <Button size="sm" variant="outline" disabled>
-                  Submitted ✓
-                </Button>
-              )}
-            </>
-          ) : (
-            <Button size="sm" variant="outline">
-              Register Now
+            <ExternalLink className="w-3 h-3" />
+            View Details
+          </Button>
+          {hackathon.status === "Live" && !hackathon.submitted && (
+            <Button size="sm" variant="default">
+              Submit Project
             </Button>
           )}
-        </div>
-      </CardContent>
-    </Card>
+          {hackathon.submitted && (
+            <Button size="sm" variant="outline" disabled>
+              Submitted ✓
+            </Button>
+          )}
+        </>
+      ) : (
+        <Button
+          size="sm"
+          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90"
+        >
+          Register Now
+        </Button>
+      )}
+    </div>
+  </CardContent>
+</Card>
+
   )
 
   return (

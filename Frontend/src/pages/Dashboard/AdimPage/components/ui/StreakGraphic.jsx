@@ -22,7 +22,7 @@ const sampleStreakData = Array.from({ length: 12 }, () =>
 
 const StreakGraphic = () => {
   return (
-    <div className="rounded-lg border-2 border-[#e0d8fa] bg-white text-gray-900 py-6 px-40 ">
+    <div className="rounded-lg  text-gray-900 py-6 px-40  ring-1 ring-indigo-300">
       <h2 className="text-2xl font-bold text-center mb-6">Streaks</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
