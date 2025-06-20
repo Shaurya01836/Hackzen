@@ -19,7 +19,7 @@ export function AnimatedListItem({ children }) {
 }
 
 export const AnimatedList = React.memo(
-  ({ children, className, delay = 1000, ...props }) => {
+  ({ children, className, delay = 150, ...props }) => {
     const [index, setIndex] = useState(0)
     const childrenArray = useMemo(() => React.Children.toArray(children), [
       children

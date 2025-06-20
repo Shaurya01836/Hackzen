@@ -57,7 +57,7 @@ function Navbar() {
           </div>
 
           <div className="hidden md:flex gap-6">
-            {["Home", "Hackathons", "More", "About"].map((text, index) => (
+            {["Home","Hackathons",  "Community","More", "About"].map((text, index) => (
               <Link
                 key={index}
                 to={`/${text.toLowerCase()}`}
@@ -153,7 +153,7 @@ function Navbar() {
 
         {isOpen && (
           <div className="md:hidden flex flex-col gap-4 pb-4">
-            {["Home", "Hackathons", "More", "About"].map((text, index) => (
+            {["Hackathons", "More", "About"].map((text, index) => (
               <Link
                 key={index}
                 to={`/${text.toLowerCase()}`}
