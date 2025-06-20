@@ -30,10 +30,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../AdimPage/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../AdimPage/components/ui/tabs";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../AdimPage/components/ui/avatar";
 import { Progress } from "../../AdimPage/components/ui/progress";
-
 
 export function ExploreHackathons({ onBack }) {
   const [hackathons, setHackathons] = useState([]);
@@ -48,7 +56,7 @@ export function ExploreHackathons({ onBack }) {
 
         // 🔍 Debug participant field
         console.log("💡 Participants debug:");
-        res.data.forEach(h => {
+        res.data.forEach((h) => {
           console.log(h.title, "participants:", h.participants);
         });
 
@@ -75,7 +83,7 @@ export function ExploreHackathons({ onBack }) {
     "Healthcare",
     "Sustainability",
     "Mobile Development",
-    "Web Development"
+    "Web Development",
   ];
   const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
   const locations = [
@@ -84,143 +92,122 @@ export function ExploreHackathons({ onBack }) {
     "Online",
     "Hybrid",
     "New York",
-    "Delhi"
+    "Delhi",
   ];
 
-  const featuredHackathons = hackathons.filter(h => h.tags?.includes("featured"));
-  const sponsoredHackathons = hackathons.filter(h => h.tags?.includes("sponsored"));
-  const upcomingHackathons = hackathons.filter(h => h.status === "upcoming");
-
-  const getDifficultyColor = (level) => {
-    switch (level) {
-      case "Beginner": return "bg-green-500";
-      case "Intermediate": return "bg-yellow-500";
-      case "Advanced": return "bg-red-500";
-      default: return "bg-gray-500";
-    }
-  };
-
-
-  const renderHackathonCard = (hackathon, featured = false) => (
-    <Card key={hackathon._id} className={`hover:shadow-lg transition-shadow ${featured ? "ring-2 ring-purple-200" : ""}`}>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Avatar className="w-12 h-12">
-
-              <AvatarImage src={hackathon.image || "/placeholder.svg"} />
-              <AvatarFallback>{hackathon.title[0]}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{hackathon.title}</CardTitle>
-                  <CardDescription className="mt-1">
-                    by {hackathon.organizer?.name || "Organizer"}
-                  </CardDescription>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-4">
-        <p className="text-sm text-gray-600">{hackathon.description}</p>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-500" />
-            <span>{new Date(hackathon.startDate).toLocaleDateString()} - {new Date(hackathon.endDate).toLocaleDateString()}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-gray-500" />
-            <span>{hackathon.location}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-gray-500" />
-            <span>{hackathon.prizePool?.amount || "N/A"} {hackathon.prizePool?.currency}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-gray-500" />
-            <span>Register before: {new Date(hackathon.registrationDeadline).toLocaleDateString()}</span>
-          </div>
-        </div>
-
-        {/* Participation Progress */}
-        <div>
-          <div className="flex justify-between text-sm mb-2">
-            <span>Participants</span>
-            <span>{hackathon.participantCount || 0}/{hackathon.maxParticipants}</span>
-          </div>
-          <Progress value={(hackathon.participants.length / hackathon.maxParticipants) * 100} className="h-2" />
-        </div>
-
-        {/* Rating */}
-        <div className="flex items-center gap-2">
-          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-          <span className="text-sm font-medium">4.5</span>
-          <span className="text-sm text-gray-500">(12 reviews)</span>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1">
-          {(hackathon.tags || []).slice(0, 3).map(tag => (
-            <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-          ))}
-
-        </div>
-
-        {/* Difficulty and Category */}
-        <div className="flex gap-2">
-          <Badge variant="outline">{hackathon.category}</Badge>
-          <Badge className={`${getDifficultyColor(hackathon.difficultyLevel)} text-white`} variant="outline">
-            {hackathon.difficultyLevel}
-          </Badge>
-        </div>
-
-        {/* Requirements */}
-        <div>
-          <p className="text-xs font-medium text-gray-700 mb-1">Requirements:</p>
-          <div className="flex flex-wrap gap-1">
-            {(hackathon.requirements || []).map(req => (
-              <Badge key={req} variant="outline" className="text-xs bg-blue-50 text-blue-700">{req}</Badge>
-            ))}
-          </div>
-        </div>
-
-        {/* Perks */}
-        <div>
-          <p className="text-xs font-medium text-gray-700 mb-1">Perks:</p>
-          <div className="flex flex-wrap gap-1">
-            {(hackathon.perks || []).map(perk => (
-              <Badge key={perk} variant="outline" className="text-xs bg-green-50 text-green-700">{perk}</Badge>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button size="sm" className="flex items-center gap-1 bg-indigo-500 hover:bg-indigo-600">
-            <ExternalLink className="w-3 h-3" /> View Details
-          </Button>
-          <Button size="sm" variant="blue">
-            Register Now
-          </Button>{" "}
-          <Button size="sm" variant="outline" className="flex items-center gap-1">
-            <Heart className="w-3 h-3" /> Save
-          </Button>
-          <Button size="sm" className="bg-green-500 hover:bg-green-600">Register Now</Button>
-        </div>
-      </CardContent>
-    </Card>
+  const featuredHackathons = hackathons.filter((h) =>
+    h.tags?.includes("featured")
   );
+  const sponsoredHackathons = hackathons.filter((h) =>
+    h.tags?.includes("sponsored")
+  );
+  const upcomingHackathons = hackathons.filter((h) => h.status === "upcoming");
 
-  if (loading) return <div className="p-6 text-gray-500">Loading hackathons...</div>;
+ const renderHackathonCard = (hackathon, featured = false) => (
+<Card
+  key={hackathon._id}
+  className={` bg-white ${
+    featured ? "ring-2 ring-purple-300" : "shadow-sm"
+  }`}
+>
+
+    <CardHeader className="pb-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={hackathon.image || "/placeholder.svg"} />
+            <AvatarFallback>{hackathon.title[0]}</AvatarFallback>
+          </Avatar>
+          <div>
+            <CardTitle className="text-lg font-semibold text-gray-800">
+              {hackathon.title}
+            </CardTitle>
+            <CardDescription className="text-sm">
+              by <span className="font-medium">{hackathon.organizer?.name || "Organizer"}</span>
+            </CardDescription>
+          </div>
+        </div>
+        <div>
+          {hackathon.tags?.includes("sponsored") && (
+            <Badge className="bg-yellow-100 text-yellow-800 text-xs">Sponsored</Badge>
+          )}
+          {hackathon.tags?.includes("featured") && (
+            <Badge className="bg-purple-100 text-purple-800 text-xs">Featured</Badge>
+          )}
+        </div>
+      </div>
+    </CardHeader>
+
+    <CardContent className="space-y-4 text-sm text-gray-600 pt-4">
+      <p className="line-clamp-3">{hackathon.description}</p>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-gray-500" />
+          <span>
+            {new Date(hackathon.startDate).toLocaleDateString()} -{" "}
+            {new Date(hackathon.endDate).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-gray-500" />
+          <span>{hackathon.location}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-gray-500" />
+          <span>
+            {hackathon.prizePool?.amount || "N/A"}{" "}
+            {hackathon.prizePool?.currency}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-gray-500" />
+          <span>
+            Register by{" "}
+            {new Date(hackathon.registrationDeadline).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-sm">
+        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+        <span className="font-medium text-gray-800">4.5</span>
+        <span className="text-gray-500">(12 reviews)</span>
+      </div>
+
+      {/* Tags */}
+      <div className="flex flex-wrap gap-2 pt-2">
+        {(hackathon.tags || []).slice(0, 4).map((tag) => (
+          <Badge
+            key={tag}
+            className="bg-slate-100 text-slate-800 text-xs font-medium rounded-full"
+          >
+            {tag}
+          </Badge>
+        ))}
+      </div>
+
+      {/* CTA Buttons */}
+      <div className="flex gap-2 pt-2">
+        <Button size="sm" className="gap-1 rounded-md">
+          <ExternalLink className="w-4 h-4" />
+          View
+        </Button>
+        <Button size="sm" className="gap-1 rounded-md" variant="destructive">
+          <Heart className="w-4 h-4" />
+          Save
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+  if (loading)
+    return <div className="p-6 text-gray-500">Loading hackathons...</div>;
   if (error) return <div className="p-6 text-red-500">{error}</div>;
 
-
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <Button
           variant="default"
@@ -297,60 +284,6 @@ export function ExploreHackathons({ onBack }) {
           </div>
         </CardContent>
       </Card>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Trophy className="w-8 h-8 text-indigo-500" />
-              <div>
-                <p className="text-2xl font-bold">{hackathons.length}</p>
-                <p className="text-sm text-gray-500">Available Events</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {hackathons.reduce((sum, h) => sum + (h.participantCount || 0), 0)}
-                </p>
-                <p className="text-sm text-gray-500">Total Participants</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Star className="w-8 h-8 text-yellow-500" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {featuredHackathons.length}
-                </p>
-                <p className="text-sm text-gray-500">Featured Events</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-purple-500" />
-              <div>
-                <p className="text-2xl font-bold">
-                  {upcomingHackathons.length}
-                </p>
-                <p className="text-sm text-gray-500">Open for Registration</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
