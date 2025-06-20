@@ -9,7 +9,7 @@ const badgeVariants = cva(
         default: "bg-green-500 text-white border-transparent ",
         secondary: "bg-blue-600 text-white border-transparent",
         destructive: "bg-red-600 text-white border-transparent",
-        outline: "bg-purple-500 text-white border-transparent",
+        outline: "bg-indigo-100 text-indigo-700 border-transparent",
         dark: "bg-[#1b0c3f] text-white border-transparent",
       },
     },

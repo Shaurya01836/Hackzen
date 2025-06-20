@@ -145,10 +145,10 @@ export function MyHackathons({ onBack }) {
     </div>
 
     <div className="flex gap-2 flex-wrap">
-      <Badge className="bg-indigo-100 text-indigo-700" variant="outline">
+      <Badge className="" variant="outline">
         {hackathon.category}
       </Badge>
-      <Badge className="bg-indigo-100 text-indigo-700" variant="outline">
+      <Badge className="" variant="outline">
         {hackathon.difficulty}
       </Badge>
     </div>

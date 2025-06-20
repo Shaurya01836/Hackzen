@@ -217,7 +217,7 @@ export function ProfileSection() {
             <CardTitle className="text-xl">{user?.name}</CardTitle>
             <CardDescription>{user?.email}</CardDescription>
             <div className="flex gap-2 mt-2 justify-center flex-wrap">
-              <Badge className="bg-indigo-100 text-indigo-700" variant="secondary">Participant</Badge>
+              <Badge className="" variant="outline">Participant</Badge>
            
             </div>
           </div>
