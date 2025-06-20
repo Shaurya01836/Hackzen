@@ -7,86 +7,29 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
+  Select,SelectContent,SelectItem,SelectTrigger,SelectValue
 } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Separator } from "./ui/separator"
 import { Calendar } from "./ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
+import { Popover, PopoverContent,PopoverTrigger
 } from "./ui/popover"
-import {
-  X,
-  CalendarIcon,
-  Plus,
-  Minus,
-  Trophy,
-  Users,
-  MapPin,
-  Clock,
-  Target,
-  Sparkles,
-  Save,
-  ArrowLeft,
-  FileText,
-  Award,
-  Settings,
-  Upload,
-  ImageIcon,
-  Loader2,
-  Check,
-  AlertCircle
+import { X, CalendarIcon, Plus, Minus, Trophy,Users,Clock,MapPin,Target,Sparkles,Save,ArrowLeft,FileText,Award,Settings,Upload,ImageIcon,Loader2,Check,AlertCircle
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "./lib/utils"
 
-const categories = [
-  "Artificial Intelligence",
-  "Fintech",
-  "Healthcare",
-  "Gaming",
-  "EdTech",
-  "Social Impact",
-  "Open Innovation",
-  "Other"
+const categories = ["Artificial Intelligence","Fintech","Healthcare","Gaming","EdTech","Social Impact","Open Innovation","Other"
 ]
 
 const difficultyLevels = ["Beginner", "Intermediate", "Advanced"]
 const modes = ["online", "offline", "hybrid"]
 
 export function CreateHackathonForm({ onBack, onSave }) {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    category: "",
-    difficultyLevel: "",
-    location: "",
-    startDate: null,
-    endDate: null,
-    registrationDeadline: null,
-    submissionDeadline: null,
-    maxParticipants: 100,
-    problemStatements: [""],
-    requirements: [""],
-    perks: [""],
-    tags: [],
-    mode: "online",
-    prizePool: {
-      amount: "",
-      currency: "USD",
-      breakdown: ""
-    },
-    images: {
-      banner: null,
-      logo: null,
-      gallery: []
-    }
+  const [formData, setFormData] = useState({title: "",description: "",category: "",difficultyLevel: "",location: "",startDate: null,endDate: null,registrationDeadline: null,submissionDeadline: null,maxParticipants: 100,problemStatements: [""],requirements: [""],perks: [""],tags: [],mode: "online",prizePool: {
+amount: "",
+currency: "USD",
+breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
   })
 
   const [currentTag, setCurrentTag] = useState("")
