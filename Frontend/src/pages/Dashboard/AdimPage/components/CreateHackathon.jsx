@@ -3,8 +3,8 @@
 import { useState } from "react"
 import { useAuth } from "../../../../context/AuthContext"; // adjust path if needed
 
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
-import { Button } from "./ui/AdminButton"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
@@ -16,7 +16,7 @@ import { Separator } from "./ui/separator"
 import { Calendar } from "./ui/calendar"
 import { Popover, PopoverContent,PopoverTrigger
 } from "./ui/popover"
-import { X, CalendarIcon, Plus, Minus, Trophy,Users,Clock,MapPin,Target,Sparkles,Save,ArrowLeft,FileText,Award,Settings,Upload,ImageIcon,Loader2,Check,AlertCircle
+import { X, CalendarIcon, Plus, Minus, Trophy,Users,Clock,MapPin,Target,Sparkles,Save,ArrowLeft,FileText,Award,Settings,Upload,ImageIcon,Loader2,Check,AlertCircle,Locate, IndianRupee, AudioWaveform
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "./lib/utils"
@@ -26,8 +26,8 @@ const categories = ["Artificial Intelligence","Fintech","Healthcare","Gaming","E
 const difficultyLevels = ["Beginner", "Intermediate", "Advanced"]
 const modes = ["online", "offline", "hybrid"]
 
-export function CreateHackathonForm({ onBack, onSave }) {
-  const { user, token } = useAuth();
+export function CreateHackathonForm({ onBack }) {
+  const { token } = useAuth();
   const [formData, setFormData] = useState({title: "",description: "",category: "",difficultyLevel: "",location: "",startDate: null,endDate: null,registrationDeadline: null,submissionDeadline: null,maxParticipants: 100,problemStatements: [""],requirements: [""],perks: [""],tags: [],mode: "online",prizePool: {
 amount: "",
 currency: "USD",
@@ -178,7 +178,7 @@ const handleSubmit = async (e) => {
       throw new Error(errorData.message || "Failed to create hackathon");
     }
 
-    const data = await res.json();
+    await res.json();
     alert("✅ Hackathon created successfully!");
     onBack(); // Go back to previous page
   } catch (error) {
@@ -195,8 +195,8 @@ const handleSubmit = async (e) => {
         <Button
           variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal bg-white/5 border-purple-500/20 text-white hover:bg-white/10",
-            !date && "text-gray-400"
+            "w-full justify-start text-left font-normal bg-white/5 border-purple-500/20 text-black hover:bg-white/10",
+            !date && "text-gray-600"
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -225,11 +225,11 @@ const ImageUploadCard = ({
   <div className="border border-purple-500/20 rounded-lg p-4 bg-white/5">
     <div className="flex items-center justify-between mb-3">
       <div>
-        <h4 className="text-white font-medium">{title}</h4>
-        <p className="text-gray-400 text-sm">{description}</p>
+        <h4 className="text-black font-medium">{title}</h4>
+        <p className="text-gray-800 text-sm">{description}</p>
       </div>
       {uploadStates[type]?.uploading && (
-        <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
+        <Loader2 className="w-5 h-5 animate-spin text-purple-700" />
       )}
     </div>
 
@@ -246,11 +246,11 @@ const ImageUploadCard = ({
       >
         <div className="flex flex-col items-center justify-center pt-5 pb-6">
           <Upload className="w-8 h-8 mb-2 text-purple-400" />
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-black">
             <span className="font-semibold">Click to upload</span> or drag and
             drop
           </p>
-          <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
+          <p className="text-xs text-black">PNG, JPG, GIF up to 5MB</p>
         </div>
         <input
           id={`upload-${type}`}
@@ -339,11 +339,11 @@ const ImageUploadCard = ({
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center">
-              <Sparkles className="w-8 h-8 mr-3 text-purple-400" />
+            <h1 className="text-3xl font-bold text-black flex items-center">
+              <Sparkles className="w-8 h-8 mr-3 text-purple-600" />
               Create New Hackathon
             </h1>
-            <p className="text-gray-400 mt-1">
+            <p className="text-gray-600 mt-1">
               Fill out all the details to create an amazing hackathon experience
             </p>
           </div>
@@ -352,10 +352,10 @@ const ImageUploadCard = ({
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <FileText className="w-5 h-5 mr-2 text-purple-400" />
+            <CardTitle className="text-black flex items-center">
+              <FileText className="w-5 h-5 mr-2 black" />
               Basic Information
             </CardTitle>
           </CardHeader>
@@ -364,9 +364,9 @@ const ImageUploadCard = ({
               <div className="md:col-span-2">
                 <Label
                   htmlFor="title"
-                  className="text-gray-300 flex items-center"
+                  className="text-black flex items-center"
                 >
-                  <Sparkles className="w-4 h-4 mr-2 text-purple-400" />
+                  <Sparkles className="w-4 h-4 mr-2 text-purple-700" />
                   Hackathon Title *
                 </Label>
                 <Input
@@ -374,20 +374,20 @@ const ImageUploadCard = ({
                   value={formData.title}
                   onChange={e => handleInputChange("title", e.target.value)}
                   placeholder="Enter an exciting hackathon title..."
-                  className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400 mt-2"
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-700 mt-2"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="category" className="text-gray-300">
+                <Label htmlFor="category" className="text-black">
                   Category *
                 </Label>
                 <Select
                   value={formData.category}
                   onValueChange={value => handleInputChange("category", value)}
                 >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-white mt-2">
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
@@ -405,7 +405,7 @@ const ImageUploadCard = ({
               </div>
 
               <div>
-                <Label htmlFor="difficulty" className="text-gray-300">
+                <Label htmlFor="difficulty" className="text-black">
                   Difficulty Level *
                 </Label>
                 <Select
@@ -414,7 +414,7 @@ const ImageUploadCard = ({
                     handleInputChange("difficultyLevel", value)
                   }
                 >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-white mt-2">
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
                   <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
@@ -432,7 +432,7 @@ const ImageUploadCard = ({
               </div>
 
               <div className="md:col-span-2">
-                <Label htmlFor="description" className="text-gray-300">
+                <Label htmlFor="description" className="text-black">
                   Description
                 </Label>
                 <Textarea
@@ -442,7 +442,7 @@ const ImageUploadCard = ({
                     handleInputChange("description", e.target.value)
                   }
                   placeholder="Describe your hackathon, its goals, and what participants can expect..."
-                  className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400 resize-none mt-2"
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-800 resize-none mt-2"
                   rows={4}
                 />
               </div>
@@ -451,10 +451,10 @@ const ImageUploadCard = ({
         </Card>
 
         {/* Images & Media */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <ImageIcon className="w-5 h-5 mr-2 text-pink-400" />
+            <CardTitle className="text-black flex items-center">
+              <ImageIcon className="w-5 h-5 mr-2 text-pink-500" />
               Images & Media
             </CardTitle>
           </CardHeader>
@@ -486,10 +486,10 @@ const ImageUploadCard = ({
         </Card>
 
         {/* Event Details */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Settings className="w-5 h-5 mr-2 text-blue-400" />
+            <CardTitle className="text-black flex items-center">
+              <Settings className="w-5 h-5 mr-2 text-blue-700" />
               Event Details
             </CardTitle>
           </CardHeader>
@@ -498,16 +498,16 @@ const ImageUploadCard = ({
               <div>
                 <Label
                   htmlFor="mode"
-                  className="text-gray-300 flex items-center"
+                  className="text-black flex items-center"
                 >
-                  <MapPin className="w-4 h-4 mr-2 text-blue-400" />
+                  <MapPin className="w-4 h-4 mr-2 text-blue-700" />
                   Mode
                 </Label>
                 <Select
                   value={formData.mode}
                   onValueChange={value => handleInputChange("mode", value)}
                 >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-white mt-2">
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
@@ -525,7 +525,8 @@ const ImageUploadCard = ({
               </div>
 
               <div>
-                <Label htmlFor="location" className="text-gray-300">
+                <Label htmlFor="location" className="text-black flex items-center">
+                  <Locate className="w-4 h-4 mr-2 text-green-600" />
                   Location
                 </Label>
                 <Input
@@ -533,16 +534,16 @@ const ImageUploadCard = ({
                   value={formData.location}
                   onChange={e => handleInputChange("location", e.target.value)}
                   placeholder="Virtual, New York, etc."
-                  className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400 mt-2"
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 mt-2"
                 />
               </div>
 
               <div>
                 <Label
                   htmlFor="maxParticipants"
-                  className="text-gray-300 flex items-center"
+                  className="text-black flex items-center"
                 >
-                  <Users className="w-4 h-4 mr-2 text-green-400" />
+                  <Users className="w-4 h-4 mr-2 text-green-500" />
                   Max Participants
                 </Label>
                 <Input
@@ -555,7 +556,7 @@ const ImageUploadCard = ({
                       Number.parseInt(e.target.value)
                     )
                   }
-                  className="bg-white/5 border-purple-500/20 text-white mt-2"
+                  className="bg-white/5 border-purple-500/20 text-black mt-2"
                 />
               </div>
             </div>
@@ -564,8 +565,8 @@ const ImageUploadCard = ({
 
             {/* Problem Statements */}
             <div>
-              <Label className="text-gray-300 flex items-center mb-3">
-                <Target className="w-4 h-4 mr-2 text-orange-400" />
+              <Label className="text-black flex items-center mb-3">
+                <Target className="w-4 h-4 mr-2 text-orange-600" />
                 Problem Statements
               </Label>
               {formData.problemStatements.map((statement, index) => (
@@ -580,7 +581,7 @@ const ImageUploadCard = ({
                       )
                     }
                     placeholder={`Problem statement ${index + 1}...`}
-                    className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                    className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
                   />
                   {formData.problemStatements.length > 1 && (
                     <Button
@@ -610,7 +611,9 @@ const ImageUploadCard = ({
 
             {/* Requirements */}
             <div>
-              <Label className="text-gray-300 mb-3 block">Requirements</Label>
+              <Label className="text-black flex items-center mb-3 block">
+              <AudioWaveform className="w-4 h-4 mr-2 text-orange-600" />
+                Requirements</Label>
               {formData.requirements.map((requirement, index) => (
                 <div key={index} className="flex gap-2 mb-3">
                   <Input
@@ -625,9 +628,9 @@ const ImageUploadCard = ({
                     <Button
                       type="button"
                       variant="outline"
+                      className="border-red-500/20 text-red-400 hover:bg-red-500/10"
                       size="icon"
                       onClick={() => removeArrayItem("requirements", index)}
-                      className="border-red-500/20 text-red-400 hover:bg-red-500/10"
                     >
                       <Minus className="w-4 h-4" />
                     </Button>
@@ -647,8 +650,8 @@ const ImageUploadCard = ({
 
             {/* Perks */}
             <div>
-              <Label className="text-gray-300 flex items-center mb-3">
-                <Sparkles className="w-4 h-4 mr-2 text-yellow-400" />
+              <Label className="text-black flex items-center mb-3">
+                <Sparkles className="w-4 h-4 mr-2 text-yellow-600" />
                 Perks & Benefits
               </Label>
               {formData.perks.map((perk, index) => (
@@ -667,7 +670,7 @@ const ImageUploadCard = ({
                       variant="outline"
                       size="icon"
                       onClick={() => removeArrayItem("perks", index)}
-                      className="border-red-500/20 text-red-400 hover:bg-red-500/10"
+                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                     >
                       <Minus className="w-4 h-4" />
                     </Button>
@@ -678,7 +681,7 @@ const ImageUploadCard = ({
                 type="button"
                 variant="outline"
                 onClick={() => addArrayItem("perks")}
-                className="border-purple-500/20 text-purple-300 hover:bg-purple-500/10"
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Perk
@@ -688,17 +691,17 @@ const ImageUploadCard = ({
         </Card>
 
         {/* Dates & Timeline */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card >
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-green-400" />
+            <CardTitle className="text-black flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-green-600" />
               Dates & Timeline
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <Label className="text-gray-300 mb-2 block">Start Date *</Label>
+                <Label className="text-black mb-2 block">Start Date *</Label>
                 <DatePicker
                   date={formData.startDate}
                   onDateChange={date => handleInputChange("startDate", date)}
@@ -707,7 +710,7 @@ const ImageUploadCard = ({
               </div>
 
               <div>
-                <Label className="text-gray-300 mb-2 block">End Date *</Label>
+                <Label className="text-black mb-2 block">End Date *</Label>
                 <DatePicker
                   date={formData.endDate}
                   onDateChange={date => handleInputChange("endDate", date)}
@@ -716,7 +719,7 @@ const ImageUploadCard = ({
               </div>
 
               <div>
-                <Label className="text-gray-300 mb-2 block">
+                <Label className="text-black mb-2 block">
                   Registration Deadline *
                 </Label>
                 <DatePicker
@@ -729,7 +732,7 @@ const ImageUploadCard = ({
               </div>
 
               <div>
-                <Label className="text-gray-300 mb-2 block">
+                <Label className="black mb-2 block">
                   Submission Deadline
                 </Label>
                 <DatePicker
@@ -745,17 +748,17 @@ const ImageUploadCard = ({
         </Card>
 
         {/* Tags */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white">Tags</CardTitle>
+            <CardTitle className="text-black ">Tags</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-1 space-y-4">
             <div className="flex gap-2">
               <Input
                 value={currentTag}
                 onChange={e => setCurrentTag(e.target.value)}
                 placeholder="Add a tag..."
-                className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
                 onKeyPress={e =>
                   e.key === "Enter" && (e.preventDefault(), addTag())
                 }
@@ -789,10 +792,10 @@ const ImageUploadCard = ({
         </Card>
 
         {/* Prize Pool */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Award className="w-5 h-5 mr-2 text-yellow-400" />
+            <CardTitle className="text-black flex items-center">
+              <Award className="w-5 h-5 mr-2 text-yellow-500" />
               Prize Pool
             </CardTitle>
           </CardHeader>
@@ -801,9 +804,9 @@ const ImageUploadCard = ({
               <div>
                 <Label
                   htmlFor="prizeAmount"
-                  className="text-gray-300 flex items-center"
+                  className="text-black flex items-center"
                 >
-                  <Trophy className="w-4 h-4 mr-2 text-yellow-400" />
+                  <Trophy className="w-4 h-4 mr-2 text-yellow-600" />
                   Prize Amount
                 </Label>
                 <Input
@@ -814,12 +817,13 @@ const ImageUploadCard = ({
                     handleInputChange("prizePool.amount", e.target.value)
                   }
                   placeholder="10000"
-                  className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400 mt-2"
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 mt-2"
                 />
               </div>
 
               <div>
-                <Label htmlFor="currency" className="text-gray-300">
+                <Label htmlFor="currency" className="text-black flex items-center">
+                  <IndianRupee className="w-4 h-4 mr-2 text-yellow-600" />
                   Currency
                 </Label>
                 <Select
@@ -828,7 +832,7 @@ const ImageUploadCard = ({
                     handleInputChange("prizePool.currency", value)
                   }
                 >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-white mt-2">
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
@@ -862,7 +866,7 @@ const ImageUploadCard = ({
             </div>
 
             <div>
-              <Label htmlFor="prizeBreakdown" className="text-gray-300">
+              <Label htmlFor="prizeBreakdown" className="text-black">
                 Prize Breakdown
               </Label>
               <Textarea
@@ -872,7 +876,7 @@ const ImageUploadCard = ({
                   handleInputChange("prizePool.breakdown", e.target.value)
                 }
                 placeholder="1st Place: $5000, 2nd Place: $3000, 3rd Place: $2000..."
-                className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400 resize-none mt-2"
+                className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 resize-none mt-2"
                 rows={3}
               />
             </div>
@@ -885,7 +889,7 @@ const ImageUploadCard = ({
             type="button"
             variant="outline"
             onClick={onBack}
-            className="border-purple-500/20 text-white hover:bg-white/5"
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
           >
             Cancel
           </Button>
