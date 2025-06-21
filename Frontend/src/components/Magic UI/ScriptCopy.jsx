@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "../Magic UI/Button";
-import { cn } from "../../pages/Dashboard/AdimPage/components/lib/utils";
+import { cn } from "../../lib/utils";
 import { Check, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";

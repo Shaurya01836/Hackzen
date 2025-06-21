@@ -1,16 +1,16 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
+import LandingPage from "./pages/Home/LandingPage";
 import NotFound from "./pages/Notfound";
-import Page from "./pages/Dashboard/AdimPage/AdminPanel";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import DashboardPage from "./pages/Dashboard/mainDashboard/Page";
+import Page from "./pages/AdminDashboard/AdminPanel";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import DashboardPage from "./pages/mainDashboard/Page";
 // import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
 // import other pages as needed
 import OAuthSuccess from "./pages/OAuthSuccess"; // ✅ Import the new OAuthSuccess page
 import Loader from "./pages/Loader";
-import About from "./pages/About";
+import About from "./pages/Home/About";
 function App() {
   return (
     <Routes>

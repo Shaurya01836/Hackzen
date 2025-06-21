@@ -1,5 +1,5 @@
 "use client"
-import { cn } from "../../pages/Dashboard/AdimPage/components/lib/utils"
+import { cn } from "../../lib/utils"
 import { motion } from "framer-motion"
 import { useEffect, useRef, useState } from "react"
 

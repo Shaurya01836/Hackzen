@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { InteractiveGridPattern } from "../components/Magic UI/InteractiveGridPattern";
-import { cn } from "../pages/Dashboard/AdimPage/components/lib/utils";
+import { cn } from "../lib/utils";
 
 const HackZenLoader = () => {
   const [displayedText, setDisplayedText] = useState("");
