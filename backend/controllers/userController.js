@@ -100,6 +100,7 @@ exports.updateUser = async (req, res) => {
       "bio",
       "website",
       "github",
+      "githubUsername",
       "linkedin",
       "profileImage"
     ];

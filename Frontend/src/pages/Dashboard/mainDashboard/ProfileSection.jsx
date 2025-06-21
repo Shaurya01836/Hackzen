@@ -66,7 +66,7 @@ const setCurrentView = (view) => {
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const { user, login } = useAuth();
+  const { user, token, login } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
@@ -926,63 +926,49 @@ useEffect(() => {
     </div>
   );
 
-  const handleSaveChanges = async () => {
-    let userId = null;
-    try {
-      const userData = JSON.parse(localStorage.getItem("user"));
-      userId = userData?._id;
-    } catch (e) {
-      console.error("Failed to parse user from localStorage", e);
-    }
+const handleSaveChanges = async () => {
+  if (!user?._id || !token) {
+    alert("User not logged in. Please log in again.");
+    return;
+  }
 
-    const token = localStorage.getItem("token");
-
-    if (!userId || !token) {
-      alert("User not logged in. Please log in again.");
-      return;
-    }
-
-    const updates = {
-      name: editForm.name,
-      email: editForm.email,
-      phone: editForm.phone,
-      location: editForm.location,
-      bio: editForm.bio,
-      website: editForm.website,
-      github: editForm.github,
-      linkedin: editForm.linkedin,
-      profileImage: editForm.profileImage || selectedImage,
-    };
-
-    try {
-      const res = await axios.put(
-        `http://localhost:3000/api/users/${userId}`,
-        updates,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const updatedUser = res.data;
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      login(updatedUser, token); // ✅ Refresh context with new data
-      setCurrentView("overview");
-      alert("Profile updated successfully!");
-    } catch (err) {
-      if (err.response) {
-        console.error("Server Error:", err.response.data);
-        alert(err.response.data.message || "Failed to update profile");
-      } else if (err.request) {
-        console.error("No response from server:", err.request);
-        alert("No response from server. Check network or backend.");
-      } else {
-        console.error("Request setup error:", err.message);
-        alert("Unexpected error: " + err.message);
-      }
-    }
+  const updates = {
+    name: editForm.name,
+    email: editForm.email,
+    phone: editForm.phone,
+    location: editForm.location,
+    bio: editForm.bio,
+    website: editForm.website,
+    github: editForm.github,
+    linkedin: editForm.linkedin,
+    profileImage: editForm.profileImage || selectedImage,
   };
+
+  try {
+    const res = await axios.put(
+      `http://localhost:3000/api/users/${user._id}`,
+      updates,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const updatedUser = res.data;
+
+    // 🔄 Sync context and localStorage
+    login(updatedUser, token);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+
+    setCurrentView("overview");
+    alert("Profile updated successfully!");
+  } catch (err) {
+    console.error("Error updating profile:", err);
+    alert("Failed to update profile");
+  }
+};
+
 
  const handleImageUpload = async (e) => {
   const file = e.target.files[0];

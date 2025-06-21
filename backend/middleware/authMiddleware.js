@@ -1,54 +1,54 @@
-const jwt = require('jsonwebtoken');
-const User = require('../model/UserModel'); // Make sure this path is correct
+const jwt = require("jsonwebtoken");
+const User = require("../model/UserModel"); // Adjust if needed
 
-// ✅ Protect any route (requires valid token)
+// Middleware: Require Auth
 const protect = async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization?.startsWith('Bearer')) {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+
     try {
-      token = req.headers.authorization.split(' ')[1];
-      console.log("🪪 Incoming token:", token); // 🔍 Step 3 log
-
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log("🔓 Decoded Token:", decoded); // 🔍 Step 3 log
 
-      const user = await User.findById(decoded.id).select('-passwordHash');
+      const user = await User.findById(decoded.id).select("-passwordHash");
       if (!user) {
-        console.log("❌ No user found for decoded ID:", decoded.id); // 🔍 Step 3 log
-        return res.status(401).json({ message: 'User not found, invalid token' });
+        return res.status(401).json({ message: "User not found for token" });
       }
 
       req.user = user;
-      console.log("✅ User found and attached to req.user:", user.email); // 🔍 Optional
-
       next();
     } catch (err) {
-      console.error('JWT verification failed:', err.message);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      console.error("JWT error:", err.message);
+      return res.status(401).json({ message: "Invalid or expired token" });
     }
   } else {
-    return res.status(401).json({ message: 'Not authorized, no token provided' });
+    return res.status(401).json({ message: "No token provided in Authorization header" });
   }
 };
 
-// ✅ Admin-only access
+// Middleware: Admin Only
 const isAdmin = (req, res, next) => {
-  if (req.user?.role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Access denied: Admins only' });
+  if (req.user?.role === "admin") {
+    return next();
   }
+  return res.status(403).json({ message: "Access denied: Admins only" });
 };
 
-// ✅ Organizer or Admin access
+// Middleware: Organizer or Admin
 const isOrganizerOrAdmin = (req, res, next) => {
   const role = req.user?.role;
-  if (role === 'organizer' || role === 'admin') {
-    next();
-  } else {
-    res.status(403).json({ message: 'Access denied: Organizer or Admins only' });
+  if (role === "organizer" || role === "admin") {
+    return next();
   }
+  return res.status(403).json({ message: "Access denied: Organizer or Admins only" });
 };
 
-module.exports = { protect, isAdmin, isOrganizerOrAdmin };
+module.exports = {
+  protect,
+  isAdmin,
+  isOrganizerOrAdmin,
+};
