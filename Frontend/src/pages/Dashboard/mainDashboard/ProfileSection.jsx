@@ -24,6 +24,12 @@ import {
   TrendingUp,
   Github,
   ExternalLink,
+  Phone,
+  MapPin,
+  Globe,
+  Linkedin,
+  UserCircle2,
+  Info,
 } from "lucide-react";
 import {
   Card,
@@ -115,56 +121,51 @@ export function ProfileSection() {
     { name: "DevOps", level: 60 },
   ];
 
- 
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
 
-useEffect(() => {
-  fetchUserProfile();
-}, []);
+  const fetchUserProfile = async () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      const userId = storedUser ? JSON.parse(storedUser)._id : null;
+      const token = localStorage.getItem("token");
 
-const fetchUserProfile = async () => {
-  try {
-    const storedUser = localStorage.getItem("user");
-    const userId = storedUser ? JSON.parse(storedUser)._id : null;
-    const token = localStorage.getItem("token");
+      if (!userId || !token) {
+        console.warn("Missing user ID or token.");
+        return;
+      }
 
-    if (!userId || !token) {
-      console.warn("Missing user ID or token.");
-      return;
-    }
-
-    const res = await axios.get(
-      `http://localhost:3000/api/users/${userId}`,
-      {
+      const res = await axios.get(`http://localhost:3000/api/users/${userId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }
-    );
+      });
 
-    const data = res.data;
+      const data = res.data;
 
-    setEditForm({
-      name: data.name || "",
-      email: data.email || "",
-      phone: data.phone || "",
-      location: data.location || "",
-      bio: data.bio || "",
-      website: data.website || "",
-      github: data.githubUsername
-        ? `https://github.com/${data.githubUsername}`
-        : "",
-      linkedin: data.linkedin || "",
-      profileImage: data.profileImage || "",
-    });
+      setEditForm({
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        location: data.location || "",
+        bio: data.bio || "",
+        website: data.website || "",
+        github: data.githubUsername
+          ? `https://github.com/${data.githubUsername}`
+          : "",
+        linkedin: data.linkedin || "",
+        profileImage: data.profileImage || "",
+      });
 
-    // Optional: update local context
-    const updatedUser = { ...data };
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    login(updatedUser, token);
-  } catch (err) {
-    console.error("Failed to load user profile", err);
-  }
-};
+      // Optional: update local context
+      const updatedUser = { ...data };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+    } catch (err) {
+      console.error("Failed to load user profile", err);
+    }
+  };
 
   const initials = user?.name
     ?.split(" ")
@@ -198,31 +199,122 @@ const fetchUserProfile = async () => {
 
   const renderOverview = () => (
     <div className="flex flex-col gap-6 w-full p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <Card className="w-full overflow-hidden shadow-lg border-none relative">
+      <Card className="w-full overflow-hidden relative rounded-2xl">
         {/* Banner */}
         <div className="relative h-36 w-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-2xl">
-          <div className="absolute inset-0 opacity-20 bg-[url('/banner-pattern.svg')] bg-cover bg-center rounded-b-2xl" />
+          <div className="absolute inset-0 opacity-20 bg-[url('/banner-pattern.svg')] bg-cover bg-center" />
         </div>
 
-        {/* Avatar Overlap */}
-        <div className="flex justify-center -mt-14 z-10">
-          <Avatar className="w-28 h-28 border-2 border-indigo-300 shadow-md">
+        {/* Avatar */}
+        <div className="flex justify-center -mt-16 z-10">
+          <Avatar className="w-28 h-28 border-[3px] border-white shadow-xl">
             <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
-            <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+            <AvatarFallback className="text-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white">
+              {initials}
+            </AvatarFallback>
           </Avatar>
         </div>
 
-        {/* Profile Details */}
-        <CardHeader className="pt-2">
-          <div className="flex flex-col items-center space-y-2">
-            <CardTitle className="text-xl">{user?.name}</CardTitle>
-            <CardDescription>{user?.email}</CardDescription>
-            <div className="flex gap-2 mt-2 justify-center flex-wrap">
-              <Badge className="" variant="outline">Participant</Badge>
-           
-            </div>
+        {/* Profile Info */}
+        <CardHeader className="pt-4 pb-2 text-center">
+          <CardTitle className="text-2xl font-semibold text-gray-800">
+            {user?.name}
+          </CardTitle>
+
+          <div className="flex gap-2 pt-2 justify-center flex-wrap">
+            <Badge
+              variant="default"
+              className="bg-purple-100 text-purple-800 border-purple-300"
+            >
+              Participant
+            </Badge>
           </div>
         </CardHeader>
+
+        <CardContent className="space-y-5 px-6 pb-6 text-sm text-gray-700">
+          {/* Section: Personal Information */}
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+              Personal Information
+            </h3>
+
+            {/* Name & Email */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+              <div className="flex items-center gap-2">
+                <UserCircle2 className="w-4 h-4 text-indigo-500" />
+                <span>{user?.name || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-indigo-500" />
+                <span>{user?.email || "N/A"}</span>
+              </div>
+            </div>
+
+            {/* Phone & Location */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2">
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-indigo-500" />
+                <span>{user?.phone || "N/A"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-indigo-500" />
+                <span>{user?.location || "N/A"}</span>
+              </div>
+            </div>
+
+            {/* Bio */}
+            <div className="flex items-start gap-2 mt-3">
+              <div className="pt-1">
+                <Info className="w-4 h-4 text-indigo-500" />
+              </div>
+              <span className="whitespace-pre-wrap">
+                {user?.bio || "No bio added yet."}
+              </span>
+            </div>
+          </div>
+
+          {/* Section: Social Links */}
+          <div className="border-t border-gray-200 pt-4">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+              Social Links
+            </h3>
+            <div className="flex flex-wrap gap-4 text-indigo-600">
+              {user?.website && (
+                <a
+                  href={user.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:text-indigo-800 transition"
+                >
+                  <Globe className="w-4 h-4" />
+                  <span className="underline text-sm">Website</span>
+                </a>
+              )}
+              {user?.github && (
+                <a
+                  href={user.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:text-indigo-800 transition"
+                >
+                  <Github className="w-4 h-4" />
+                  <span className="underline text-sm">GitHub</span>
+                </a>
+              )}
+              {user?.linkedin && (
+                <a
+                  href={user.linkedin}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:text-indigo-800 transition"
+                >
+                  <Linkedin className="w-4 h-4" />
+                  <span className="underline text-sm">LinkedIn</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -287,7 +379,11 @@ const fetchUserProfile = async () => {
               </div>
               <div className="flex flex-wrap gap-1 mb-3">
                 {project.technologies.map((tech) => (
-                  <Badge key={tech} variant="outline" className="text-xs bg-indigo-100 text-indigo-700">
+                  <Badge
+                    key={tech}
+                    variant="outline"
+                    className="text-xs bg-indigo-100 text-indigo-700"
+                  >
                     {tech}
                   </Badge>
                 ))}
@@ -830,37 +926,35 @@ const fetchUserProfile = async () => {
       profileImage: editForm.profileImage || selectedImage, // include image
     };
 
-
     try {
-  const res = await axios.put(
-    `http://localhost:3000/api/users/${userId}`,
-    updates,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+      const res = await axios.put(
+        `http://localhost:3000/api/users/${userId}`,
+        updates,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-   const updatedUser = res.data;
-localStorage.setItem("user", JSON.stringify(updatedUser));
-login(updatedUser, token); // ✅ Refresh context with new data
-setCurrentView("overview");
-  alert("Profile updated successfully!");
-  } catch (err) {
-    if (err.response) {
-      console.error("Server Error:", err.response.data);
-      alert(err.response.data.message || "Failed to update profile");
-    } else if (err.request) {
-      console.error("No response from server:", err.request);
-      alert("No response from server. Check network or backend.");
-    } else {
-      console.error("Request setup error:", err.message);
-      alert("Unexpected error: " + err.message);
+      const updatedUser = res.data;
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token); // ✅ Refresh context with new data
+      setCurrentView("overview");
+      alert("Profile updated successfully!");
+    } catch (err) {
+      if (err.response) {
+        console.error("Server Error:", err.response.data);
+        alert(err.response.data.message || "Failed to update profile");
+      } else if (err.request) {
+        console.error("No response from server:", err.request);
+        alert("No response from server. Check network or backend.");
+      } else {
+        console.error("Request setup error:", err.message);
+        alert("Unexpected error: " + err.message);
+      }
     }
-  }
-};
-
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];

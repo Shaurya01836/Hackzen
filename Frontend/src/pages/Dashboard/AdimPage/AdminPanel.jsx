@@ -41,7 +41,7 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1b0c3f] to-[#0d061f]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
 
       <div className="flex h-screen">
         <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />

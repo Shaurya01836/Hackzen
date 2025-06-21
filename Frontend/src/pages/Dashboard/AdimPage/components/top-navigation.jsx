@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Bell, User, Moon, Sun } from "lucide-react"
+import { Search, Bell, User } from "lucide-react"
 import { Input } from "./ui/input"
 import { Button } from "./ui/AdminButton"
 import { Badge } from "./ui/badge"
@@ -13,15 +13,14 @@ import {
 } from "./ui/dropdown-menu"
 
 export function TopNavigation() {
-
   return (
-    <header className="h-16 bg-black/20 backdrop-blur-xl border-b border-purple-500/20 flex items-center justify-between px-6">
+    <header className="py-3 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
       {/* Search Bar */}
       <div className="flex-1 max-w-md relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-4 h-4" />
         <Input
           placeholder="Search users, hackathons, submissions..."
-          className="pl-10 bg-white/5 border-purple-500/20 text-white placeholder-gray-400 focus:border-purple-500/50 focus:ring-purple-500/20"
+          className="pl-10 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border border-gray-300 text-gray-800 placeholder-gray-400 focus:border-purple-500 focus:ring-purple-200"
         />
       </div>
 
@@ -31,28 +30,28 @@ export function TopNavigation() {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative text-gray-400 hover:text-white hover:bg-white/5">
+            <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-black hover:bg-gray-100">
               <Bell className="w-5 h-5" />
               <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 bg-red-500 text-white text-xs flex items-center justify-center">
                 3
               </Badge>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 bg-black/90 backdrop-blur-xl border-purple-500/20">
+          <DropdownMenuContent align="end" className="w-80 bg-white border border-gray-200 shadow-lg">
             <div className="p-4">
-              <h3 className="font-semibold text-white mb-2">Notifications</h3>
+              <h3 className="font-semibold text-gray-800 mb-2">Notifications</h3>
               <div className="space-y-3">
-                <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
-                  <p className="text-sm text-white">New hackathon submission received</p>
-                  <p className="text-xs text-gray-400 mt-1">3 minutes ago</p>
+                <div className="p-3 bg-purple-100 rounded-lg border border-purple-200">
+                  <p className="text-sm text-gray-800">New hackathon submission received</p>
+                  <p className="text-xs text-gray-500 mt-1">3 minutes ago</p>
                 </div>
-                <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                  <p className="text-sm text-white">User reported inappropriate content</p>
-                  <p className="text-xs text-gray-400 mt-1">15 minutes ago</p>
+                <div className="p-3 bg-blue-100 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-800">User reported inappropriate content</p>
+                  <p className="text-xs text-gray-500 mt-1">15 minutes ago</p>
                 </div>
-                <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <p className="text-sm text-white">Payment received: $299</p>
-                  <p className="text-xs text-gray-400 mt-1">1 hour ago</p>
+                <div className="p-3 bg-green-100 rounded-lg border border-green-200">
+                  <p className="text-sm text-gray-800">Payment received: $299</p>
+                  <p className="text-xs text-gray-500 mt-1">1 hour ago</p>
                 </div>
               </div>
             </div>
@@ -64,7 +63,7 @@ export function TopNavigation() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center space-x-2 text-gray-400 hover:text-white hover:bg-white/5"
+              className="flex items-center space-x-2 text-gray-600 hover:text-black hover:bg-gray-100"
             >
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
@@ -72,11 +71,11 @@ export function TopNavigation() {
               <span className="hidden md:block">Admin</span>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-            <DropdownMenuItem className="text-white hover:bg-white/5">My Profile</DropdownMenuItem>
-            <DropdownMenuItem className="text-white hover:bg-white/5">Account Settings</DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-purple-500/20" />
-            <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">Logout</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+            <DropdownMenuItem className="text-gray-800 hover:bg-gray-100">My Profile</DropdownMenuItem>
+            <DropdownMenuItem className="text-gray-800 hover:bg-gray-100">Account Settings</DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-gray-200" />
+            <DropdownMenuItem className="text-red-600 hover:bg-red-100">Logout</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

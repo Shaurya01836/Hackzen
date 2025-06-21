@@ -33,14 +33,14 @@ const sidebarItems = [
 
 export function Sidebar({ activeSection, setActiveSection }) {
   return (
-    <div className="w-64 bg-black/20 backdrop-blur-xl border-r border-purple-500/20 flex flex-col">
+    <div className="w-64 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-r border-purple-200 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-purple-500/20">
+      <div className="p-4 border-b border-purple-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">HZ</span>
           </div>
-          <span className="text-white font-bold text-xl">HackZen</span>
+          <span className="text-gray-800 font-bold text-xl">HackZen</span>
         </div>
       </div>
 
@@ -57,20 +57,20 @@ export function Sidebar({ activeSection, setActiveSection }) {
               className={cn(
                 "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group",
                 isActive
-                  ? "bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white border border-purple-500/30"
-                  : "text-gray-400 hover:text-white hover:bg-white/5",
+                  ? "bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border border-purple-300 shadow-sm"
+                  : "text-gray-600 hover:text-purple-700 hover:bg-purple-100/50",
               )}
             >
               <Icon
                 className={cn(
                   "w-5 h-5 transition-all duration-200",
                   isActive
-                    ? "text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]"
-                    : "group-hover:text-purple-400 group-hover:drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]",
+                    ? "text-purple-500"
+                    : "group-hover:text-purple-500",
                 )}
               />
               <span className="font-medium">{item.label}</span>
-              {isActive && <div className="ml-auto w-2 h-2 bg-purple-400 rounded-full animate-pulse" />}
+              {isActive && <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full animate-pulse" />}
             </button>
           )
         })}
