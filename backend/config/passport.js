@@ -13,12 +13,14 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ githubUsername: profile.username });
+        const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
+
+        // ✅ First: check if a user with this email already exists
+        let user = await User.findOne({ email });
 
         if (!user) {
           user = await User.create({
-            name: profile.displayName || profile.username,
-            email: profile.emails?.[0]?.value || `${profile.username}@github.com`,
+            name: profile.displayName || profile.username,  email,
             githubUsername: profile.username,
             profileImage: profile.photos?.[0]?.value || '',
             authProvider: 'github',
