@@ -9,12 +9,12 @@ import {
   Upload,
 } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../AdimPage/components/ui/card";
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle,
+} from "../../AdimPage/components/ui/AnimatedCard";
 import { Button } from "../../AdimPage/components/ui/button";
 import { Badge } from "../../AdimPage/components/ui/badge";
 import {
@@ -77,21 +77,23 @@ const submissions = [
 ];
 
 export function MySubmissions({ onBack }) {
-   const navigate = useNavigate();
+  const navigate = useNavigate();
   const judgedSubmissions = submissions.filter((s) => s.status === "Judged");
   const pendingSubmissions = submissions.filter(
     (s) => s.status === "Submitted"
   );
 
   const renderSubmissionCard = (submission) => (
-    <Card key={submission.id} className=" hover:ring-2 hover:ring-indigo-300">
-      <CardHeader>
+    <ACard key={submission.id} className="hover:ring-2 hover:ring-indigo-300">
+      <ACardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg text-indigo-700">{submission.name}</CardTitle>
-            <CardDescription className="mt-1">
+            <ACardTitle className="text-lg text-indigo-700">
+              {submission.name}
+            </ACardTitle>
+            <ACardDescription className="mt-1">
               {submission.hackathon} • Submitted {submission.submittedDate}
-            </CardDescription>
+            </ACardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Badge
@@ -109,19 +111,21 @@ export function MySubmissions({ onBack }) {
             )}
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-4">
+      </ACardHeader>
+      <ACardContent className="pt-4 space-y-4">
         <p className="text-sm text-gray-600">{submission.description}</p>
 
         <div className="flex flex-wrap gap-1">
           {submission.technologies.map((tech) => (
-            <Badge key={tech} className="bg-indigo-100 text-indigo-700" variant="outline">
+            <Badge
+              key={tech}
+              className="bg-indigo-100 text-indigo-700"
+              variant="outline"
+            >
               {tech}
             </Badge>
           ))}
         </div>
-
-    
 
         <div className="flex gap-2 pt-2">
           <Button
@@ -151,8 +155,8 @@ export function MySubmissions({ onBack }) {
             Live Demo
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </ACardContent>
+    </ACard>
   );
 
   return (
@@ -179,8 +183,8 @@ export function MySubmissions({ onBack }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardContent className="pt-4">
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-500" />
               <div>
@@ -188,10 +192,10 @@ export function MySubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Total Submissions</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-green-500" />
               <div>
@@ -199,10 +203,10 @@ export function MySubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Judged</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Upload className="w-8 h-8 text-yellow-500" />
               <div>
@@ -212,8 +216,8 @@ export function MySubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Pending Review</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ACardContent>
+        </ACard>
       </div>
 
       <Tabs defaultValue="all" className="space-y-6">
@@ -247,8 +251,8 @@ export function MySubmissions({ onBack }) {
               {pendingSubmissions.map(renderSubmissionCard)}
             </div>
           ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+            <ACard>
+              <ACardContent className="flex flex-col items-center justify-center py-12">
                 <Upload className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No Pending Submissions
@@ -256,8 +260,8 @@ export function MySubmissions({ onBack }) {
                 <p className="text-gray-500 text-center">
                   All your submissions have been reviewed.
                 </p>
-              </CardContent>
-            </Card>
+              </ACardContent>
+            </ACard>
           )}
         </TabsContent>
       </Tabs>

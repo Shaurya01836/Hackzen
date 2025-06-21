@@ -8,12 +8,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../AdimPage/components/ui/card";
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle,
+} from "../../AdimPage/components/ui/AnimatedCard";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../AdimPage/components/ui/button";
 import { Badge } from "../../AdimPage/components/ui/badge";
@@ -46,8 +46,7 @@ const hackathons = [
     status: "Closed",
     deadline: "Ended",
     participants: 89,
-    description:
-      "Create decentralized applications using blockchain technology",
+    description: "Create decentralized applications using blockchain technology",
     prize: "$5,000",
     startDate: "Nov 20, 2024",
     endDate: "Nov 27, 2024",
@@ -95,19 +94,19 @@ export function MyHackathons({ onBack }) {
   const upcomingHackathons = hackathons.filter((h) => h.status === "Upcoming");
 
   const renderHackathonCard = (hackathon) => (
-    <Card
+    <ACard
       key={hackathon.id}
       className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md "
     >
-      <CardHeader>
+      <ACardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle className="text-lg font-semibold text-indigo-700">
+            <ACardTitle className="text-lg font-semibold text-indigo-700">
               {hackathon.name}
-            </CardTitle>
-            <CardDescription className="mt-1 text-gray-600">
+            </ACardTitle>
+            <ACardDescription className="mt-1 text-gray-600">
               {hackathon.description}
-            </CardDescription>
+            </ACardDescription>
           </div>
           <Badge
             variant={
@@ -128,8 +127,8 @@ export function MyHackathons({ onBack }) {
             {hackathon.status}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="pt-4 space-y-4">
+      </ACardHeader>
+      <ACardContent className="pt-4 space-y-4">
         <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-indigo-500" />
@@ -152,12 +151,8 @@ export function MyHackathons({ onBack }) {
         </div>
 
         <div className="flex gap-2 flex-wrap">
-          <Badge className="" variant="outline">
-            {hackathon.category}
-          </Badge>
-          <Badge className="" variant="outline">
-            {hackathon.difficulty}
-          </Badge>
+          <Badge variant="outline">{hackathon.category}</Badge>
+          <Badge variant="outline">{hackathon.difficulty}</Badge>
         </div>
 
         <div className="flex gap-2 pt-2 flex-wrap">
@@ -190,8 +185,8 @@ export function MyHackathons({ onBack }) {
             </Button>
           )}
         </div>
-      </CardContent>
-    </Card>
+      </ACardContent>
+    </ACard>
   );
 
   return (
@@ -236,8 +231,8 @@ export function MyHackathons({ onBack }) {
               {activeHackathons.map(renderHackathonCard)}
             </div>
           ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+            <ACard>
+              <ACardContent className="flex flex-col items-center justify-center py-12">
                 <Trophy className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No Active Hackathons
@@ -245,8 +240,8 @@ export function MyHackathons({ onBack }) {
                 <p className="text-gray-500 text-center">
                   You're not currently participating in any active hackathons.
                 </p>
-              </CardContent>
-            </Card>
+              </ACardContent>
+            </ACard>
           )}
         </TabsContent>
 
@@ -256,8 +251,8 @@ export function MyHackathons({ onBack }) {
               {upcomingHackathons.map(renderHackathonCard)}
             </div>
           ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+            <ACard>
+              <ACardContent className="flex flex-col items-center justify-center py-12">
                 <Calendar className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No Upcoming Hackathons
@@ -265,8 +260,8 @@ export function MyHackathons({ onBack }) {
                 <p className="text-gray-500 text-center">
                   No upcoming hackathons registered yet.
                 </p>
-              </CardContent>
-            </Card>
+              </ACardContent>
+            </ACard>
           )}
         </TabsContent>
 
@@ -276,8 +271,8 @@ export function MyHackathons({ onBack }) {
               {completedHackathons.map(renderHackathonCard)}
             </div>
           ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+            <ACard>
+              <ACardContent className="flex flex-col items-center justify-center py-12">
                 <Trophy className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No Completed Hackathons
@@ -285,8 +280,8 @@ export function MyHackathons({ onBack }) {
                 <p className="text-gray-500 text-center">
                   You haven't completed any hackathons yet.
                 </p>
-              </CardContent>
-            </Card>
+              </ACardContent>
+            </ACard>
           )}
         </TabsContent>
       </Tabs>

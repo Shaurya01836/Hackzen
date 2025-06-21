@@ -15,6 +15,13 @@ import {
   CardHeader,
   CardTitle
 } from "../../AdimPage/components/ui/card"
+import {
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle
+} from "../../AdimPage/components/ui/AnimatedCard"
 import { Button } from "../../AdimPage/components/ui/button"
 import { Badge } from "../../AdimPage/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar"
@@ -279,8 +286,8 @@ export function ReviewSubmissions({ onBack }) {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Clock className="w-8 h-8 text-yellow-500" />
               <div>
@@ -290,10 +297,10 @@ export function ReviewSubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Pending Review</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Eye className="w-8 h-8 text-blue-500" />
               <div>
@@ -303,10 +310,10 @@ export function ReviewSubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Under Review</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-8 h-8 text-green-500" />
               <div>
@@ -316,10 +323,10 @@ export function ReviewSubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Completed</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
@@ -329,8 +336,8 @@ export function ReviewSubmissions({ onBack }) {
                 <p className="text-sm text-gray-500">Needs Revision</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ACardContent>
+        </ACard>
       </div>
 
       <Tabs defaultValue="pending" className="space-y-6">

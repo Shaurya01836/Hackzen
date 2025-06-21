@@ -16,6 +16,13 @@ import {
   CardHeader,
   CardTitle
 } from "../../AdimPage/components/ui/card"
+import {
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle
+} from "../../AdimPage/components/ui/AnimatedCard"
 import { Button } from "../../AdimPage/components/ui/button"
 import { Badge } from "../../AdimPage/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar"
@@ -249,8 +256,8 @@ export function ParticipantOverview({ onBack }) {
 
       {/* Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Users className="w-8 h-8 text-blue-500" />
               <div>
@@ -260,10 +267,10 @@ export function ParticipantOverview({ onBack }) {
                 <p className="text-sm text-gray-500">Total Participants</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-8 h-8 text-green-500" />
               <div>
@@ -273,10 +280,10 @@ export function ParticipantOverview({ onBack }) {
                 <p className="text-sm text-gray-500">Active Now</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Award className="w-8 h-8 text-purple-500" />
               <div>
@@ -284,10 +291,10 @@ export function ParticipantOverview({ onBack }) {
                 <p className="text-sm text-gray-500">New This Month</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Calendar className="w-8 h-8 text-orange-500" />
               <div>
@@ -295,8 +302,8 @@ export function ParticipantOverview({ onBack }) {
                 <p className="text-sm text-gray-500">Average Age</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ACardContent>
+        </ACard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,15 +1,16 @@
-import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
-import { cva } from "class-variance-authority";
+"use client"
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva } from "class-variance-authority"
+import { cn } from "../lib/utils"
 
-import { cn } from "../lib/utils";
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 relative overflow-hidden hover:scale-105", 
   {
     variants: {
       variant: {
-        default: "bg-[#1b0c3f] text-white hover:bg-[#0d061f]", 
-        blue: "bg-[#5046e6] hover:bg-[#403bb5] text-white ", 
+        default: "bg-[#1b0c3f] text-white hover:bg-[#0d061f]",
+        blue: "bg-[#5046e6] hover:bg-[#403bb5] text-white",
         destructive: "bg-[#ef4444] text-white hover:bg-[#dc2626]",
         outline: "border border-gray-300 bg-white text-black hover:bg-gray-100",
         secondary: "bg-gray-100 text-black hover:bg-gray-200",
@@ -28,20 +29,44 @@ const buttonVariants = cva(
       size: "default",
     },
   }
-);
+)
 
 const Button = React.forwardRef(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
+    const Comp = asChild ? Slot : "button"
+
+    const handleRipple = (e) => {
+      const button = e.currentTarget
+      const ripple = document.createElement("span")
+      const diameter = Math.max(button.clientWidth, button.clientHeight)
+      const radius = diameter / 2
+
+      ripple.style.width = ripple.style.height = `${diameter}px`
+      ripple.style.left = `${e.clientX - button.getBoundingClientRect().left - radius}px`
+      ripple.style.top = `${e.clientY - button.getBoundingClientRect().top - radius}px`
+      ripple.classList.add("ripple")
+
+      const existingRipple = button.getElementsByClassName("ripple")[0]
+      if (existingRipple) {
+        existingRipple.remove()
+      }
+
+      button.appendChild(ripple)
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        onClick={(e) => {
+          handleRipple(e)
+          props.onClick?.(e)
+        }}
         {...props}
       />
-    );
+    )
   }
-);
-Button.displayName = "Button";
+)
+Button.displayName = "Button"
 
-export { Button };
+export { Button }

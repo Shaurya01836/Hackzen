@@ -21,6 +21,13 @@ import {
   CardHeader,
   CardTitle
 } from "../../AdimPage/components/ui/card"
+import {
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle
+} from "../../AdimPage/components/ui/AnimatedCard"
 import { Button } from "../../AdimPage/components/ui/button"
 import { Badge } from "../../AdimPage/components/ui/badge"
 import {
@@ -230,8 +237,8 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-purple-500" />
               <div>
@@ -239,10 +246,10 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
                 <p className="text-sm text-gray-500">Total Events</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Users className="w-8 h-8 text-blue-500" />
               <div>
@@ -252,10 +259,10 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
                 <p className="text-sm text-gray-500">Total Participants</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <BarChart3 className="w-8 h-8 text-green-500" />
               <div>
@@ -265,10 +272,10 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
                 <p className="text-sm text-gray-500">Total Submissions</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4">
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
               <Settings className="w-8 h-8 text-orange-500" />
               <div>
@@ -276,8 +283,8 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
                 <p className="text-sm text-gray-500">Active Now</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ACardContent>
+        </ACard>
       </div>
 
       <Tabs defaultValue="all" className="space-y-6">
