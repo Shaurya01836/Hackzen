@@ -33,7 +33,7 @@ router.get(
       expiresIn: '7d',
     });
 
-    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
+    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
     res.redirect(redirectUrl);
   }
 );
@@ -50,7 +50,7 @@ router.get(
       expiresIn: '7d',
     });
 
-    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}`;
+    const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
     res.redirect(redirectUrl);
   }
 );
@@ -69,8 +69,8 @@ router.post('/login', userController.loginUser);
 router.get('/logout', (req, res) => {
   req.logout(() => {
     req.session.destroy(() => {
-      res.clearCookie('connect.sid'); // 🧼 clear session cookie
-      res.redirect('http://localhost:5173/'); // or home
+      res.clearCookie('connect.sid');
+      res.redirect('http://localhost:5173/');
     });
   });
 });
