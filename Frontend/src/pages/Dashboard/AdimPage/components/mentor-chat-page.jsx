@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/AdminCard"
-import { Button } from "./ui/AdminButton"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import { Input } from "./ui/input"
 import { Avatar, AvatarFallback } from "./ui/avatar"
@@ -87,82 +87,82 @@ export function MentorChatPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Online":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       case "Busy":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500 text-white border-yellow-500/30"
       case "Away":
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   const getChatStatusColor = (status) => {
     switch (status) {
       case "Active":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30"
+        return "bg-blue-500 text-white border-blue-500/30"
       case "Resolved":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Mentor & Chat Management</h1>
+        <h1 className="text-3xl font-bold text-black">Mentor & Chat Management</h1>
         <div className="flex items-center space-x-4">
           <div className="flex items-center text-green-400">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-            <span className="text-sm">Live Monitoring</span>
+            <div className="w-2 h-2 bg-green-800 rounded-full animate-pulse mr-2" />
+            <span className="text-sm font-bold">Live Monitoring</span>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Active Mentors</p>
-                <p className="text-2xl font-bold text-white">12</p>
+                <p className="text-gray-800 text-sm">Active Mentors</p>
+                <p className="text-2xl font-bold text-gray-600">12</p>
               </div>
-              <Users className="w-8 h-8 text-green-400" />
+              <Users className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Active Chats</p>
-                <p className="text-2xl font-bold text-white">28</p>
+                <p className="text-gray-800 text-sm">Active Chats</p>
+                <p className="text-2xl font-bold text-gray-600">28</p>
               </div>
-              <MessageSquare className="w-8 h-8 text-blue-400" />
+              <MessageSquare className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Avg Response Time</p>
-                <p className="text-2xl font-bold text-white">3.2m</p>
+                <p className="text-gray-800 text-sm">Avg Response Time</p>
+                <p className="text-2xl font-bold text-gray-600">3.2m</p>
               </div>
-              <Clock className="w-8 h-8 text-yellow-400" />
+              <Clock className="w-8 h-8 text-yellow-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Satisfaction Rate</p>
-                <p className="text-2xl font-bold text-white">94%</p>
+                <p className="text-gray-800 text-sm">Satisfaction Rate</p>
+                <p className="text-2xl font-bold text-gray-600">94%</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-purple-400" />
+              <TrendingUp className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -170,19 +170,19 @@ export function MentorChatPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Mentors List */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Users className="w-5 h-5 mr-2 text-purple-400" />
+            <CardTitle className="pb-5 text-black flex items-center">
+              <Users className="w-5 h-5 mr-2 text-purple-700" />
               Active Mentors
             </CardTitle>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
               <Input
                 placeholder="Search mentors..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
               />
             </div>
           </CardHeader>
@@ -200,37 +200,37 @@ export function MentorChatPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="text-white font-medium">{mentor.name}</h3>
-                      <p className="text-gray-400 text-sm">{mentor.expertise}</p>
+                      <h3 className="text-black font-medium">{mentor.name}</h3>
+                      <p className="text-gray-500 text-sm">{mentor.expertise}</p>
                     </div>
                   </div>
                   <Badge className={getStatusColor(mentor.status)}>{mentor.status}</Badge>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-400">Active Chats</p>
+                    <p className="text-black">Active Chats</p>
                     <p className="text-white font-semibold">{mentor.activeChats}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Total Sessions</p>
+                    <p className="text-black">Total Sessions</p>
                     <p className="text-white font-semibold">{mentor.totalSessions}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400">Rating</p>
-                    <p className="text-yellow-400 font-semibold">⭐ {mentor.rating}</p>
+                    <p className="text-black">Rating</p>
+                    <p className="text-yellow-500 font-semibold">⭐ {mentor.rating}</p>
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs mt-2">Last active: {mentor.lastActive}</p>
+                <p className="text-gray-700 text-xs mt-2">Last active: {mentor.lastActive}</p>
               </div>
             ))}
           </CardContent>
         </Card>
 
         {/* Recent Chat Logs */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <MessageSquare className="w-5 h-5 mr-2 text-blue-400" />
+            <CardTitle className="text-black flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-blue-700" />
               Recent Chat Sessions
             </CardTitle>
           </CardHeader>
@@ -239,20 +239,20 @@ export function MentorChatPage() {
               <div key={chat.id} className="p-4 bg-white/5 rounded-lg border border-purple-500/20">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
-                    <h4 className="text-white font-medium text-sm">{chat.participant}</h4>
-                    <span className="text-gray-400 text-xs">→</span>
-                    <span className="text-purple-300 text-sm">{chat.mentor}</span>
+                    <h4 className="text-black font-medium text-sm">{chat.participant}</h4>
+                    <span className="text-gray-800 text-xs">→</span>
+                    <span className="text-black text-sm">{chat.mentor}</span>
                   </div>
                   <Badge className={getChatStatusColor(chat.status)}>{chat.status}</Badge>
                 </div>
-                <p className="text-gray-400 text-sm font-medium mb-2">{chat.topic}</p>
-                <p className="text-gray-300 text-sm mb-2 line-clamp-2">{chat.lastMessage}</p>
+                <p className="text-gray-800 text-sm font-medium mb-2">{chat.topic}</p>
+                <p className="text-gray-700 text-sm mb-2 line-clamp-2">{chat.lastMessage}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500 text-xs">{chat.timestamp}</span>
+                  <span className="text-gray-700 text-xs">{chat.timestamp}</span>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-purple-500/20 text-white hover:bg-purple-500/10"
+                    className="text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
                   >
                     View Chat
                   </Button>

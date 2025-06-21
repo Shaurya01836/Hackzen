@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ChangeRoleDialog from "./ui/ChangeRoleDialog";
 import axios from "axios";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from "./ui/AdminCard";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Input } from "./ui/input";
-import { Button } from "./ui/AdminButton";
+import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import {
   Table,
@@ -17,13 +13,13 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "./ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import {
   Search,
@@ -31,7 +27,8 @@ import {
   Eye,
   Ban,
   Shield,
-  MoreHorizontal
+  MoreHorizontal,
+  Shuffle,
 } from "lucide-react";
 
 export function UsersManagement() {
@@ -45,8 +42,8 @@ export function UsersManagement() {
         const token = localStorage.getItem("token");
         const res = await axios.get("https://hackzen.onrender.com/api/users", {
           headers: {
-            Authorization: `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
         setUsers(res.data);
       } catch (err) {
@@ -57,60 +54,33 @@ export function UsersManagement() {
     fetchUsers();
   }, []);
 
-  const handleChangeRole = async (userId) => {
-    const newRole = prompt(
-      "Enter new role:\nparticipant, organizer, mentor, judge, admin"
-    );
-    if (!newRole) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `https://hackzen.onrender.com/api/users/${userId}/role`,
-        { newRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      alert("User role updated");
-      setUsers((prev) =>
-        prev.map((u) => (u._id === userId ? { ...u, role: newRole } : u))
-      );
-    } catch (err) {
-      alert("Failed to update role");
-    }
-  };
-
-  const formatRole = (role) =>
-    role.charAt(0).toUpperCase() + role.slice(1);
+  const formatRole = (role) => role.charAt(0).toUpperCase() + role.slice(1);
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Active":
-        return "bg-green-500/20 text-green-300 border-green-500/30";
+        return "bg-green-500 text-white border-green-500/30";
       case "Inactive":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+        return "bg-yellow-500 text-white border-yellow-500/30";
       case "Banned":
-        return "bg-red-500/20 text-red-300 border-red-500/30";
+        return "bg-red-500 text-white border-red-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+        return "bg-gray-500 text-white border-gray-500/30";
     }
   };
 
   const getRoleColor = (role) => {
     switch (role) {
       case "organizer":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+        return "bg-purple-500 text-white border-purple-500/30";
       case "mentor":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+        return "bg-blue-500 text-white border-blue-500/30";
       case "judge":
-        return "bg-orange-500/20 text-orange-300 border-orange-500/30";
+        return "bg-orange-500 text-white border-orange-500/30";
       case "admin":
-        return "bg-red-500/20 text-red-300 border-red-500/30";
+        return "bg-red-500 text-white border-red-500/30";
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30";
+        return "bg-gray-500 text-white border-gray-500/30";
     }
   };
 
@@ -124,36 +94,46 @@ export function UsersManagement() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Users Management</h1>
+        <h1 className="text-3xl font-bold">Users Management</h1>
         <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
           Export Users
         </Button>
       </div>
 
-      <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">User Directory</CardTitle>
-          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+          <CardTitle className="text-gray-700">User Directory</CardTitle>
+          <div className="pt-4 flex flex-col sm:flex-row gap-4 mt-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-700 w-4 h-4" />
               <Input
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-500"
               />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-purple-500/20 text-white hover:bg-white/5">
+                <Button
+                  variant="outline"
+                  className="border-purple-500/20 text-gray-700 hover:bg-white/5"
+                >
                   <Filter className="w-4 h-4 mr-2" />
                   Role: {selectedRole}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                {["All", "Participant", "Organizer", "Mentor", "Judge", "Admin"].map((role) => (
+                {[
+                  "All",
+                  "Participant",
+                  "Organizer",
+                  "Mentor",
+                  "Judge",
+                  "Admin",
+                ].map((role) => (
                   <DropdownMenuItem
                     key={role}
                     onClick={() => setSelectedRole(role)}
@@ -170,22 +150,27 @@ export function UsersManagement() {
           <Table>
             <TableHeader>
               <TableRow className="border-purple-500/20">
-                <TableHead className="text-gray-300">User</TableHead>
-                <TableHead className="text-gray-300">Role</TableHead>
-                <TableHead className="text-gray-300">Joined On</TableHead>
-                <TableHead className="text-gray-300">Status</TableHead>
-                <TableHead className="text-gray-300">Actions</TableHead>
+                <TableHead className="text-gray-800">User</TableHead>
+                <TableHead className="text-gray-800">Role</TableHead>
+                <TableHead className="text-gray-800">Joined On</TableHead>
+                <TableHead className="text-gray-800">Status</TableHead>
+                <TableHead className="text-gray-800">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user._id} className="border-purple-500/20 hover:bg-white/5">
+                <TableRow
+                  key={user._id}
+                  className="border-purple-500/20 hover:bg-white/5"
+                >
                   <TableCell className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                       {user.name?.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <div className="text-white font-medium">{user.name}</div>
+                      <div className="text-gray-700 font-medium">
+                        {user.name}
+                      </div>
                       <div className="text-gray-400 text-sm">{user.email}</div>
                     </div>
                   </TableCell>
@@ -194,7 +179,7 @@ export function UsersManagement() {
                       {formatRole(user.role)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-gray-300">
+                  <TableCell className="text-black">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
@@ -203,8 +188,12 @@ export function UsersManagement() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                          <MoreHorizontal className="w-4 h-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-gray-400 hover:text-black"
+                        >
+                          <Shuffle className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
@@ -212,10 +201,17 @@ export function UsersManagement() {
                           <Eye className="w-4 h-4 mr-2" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-white hover:bg-white/5" onClick={() => handleChangeRole(user._id)}>
-                          <Shield className="w-4 h-4 mr-2" />
-                          Change Role
-                        </DropdownMenuItem>
+                        <ChangeRoleDialog
+                          userId={user._id}
+                          currentRole={user.role}
+                          onRoleUpdate={(newRole) => {
+                            setUsers((prev) =>
+                              prev.map((u) =>
+                                u._id === user._id ? { ...u, role: newRole } : u
+                              )
+                            );
+                          }}
+                        />
                         <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
                           <Ban className="w-4 h-4 mr-2" />
                           Ban User
