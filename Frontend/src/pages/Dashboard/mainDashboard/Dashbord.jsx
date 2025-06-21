@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import {
   Users,
   CircleArrowOutDownLeft,
@@ -46,7 +48,6 @@ import {
 import { Separator } from "../AdimPage/components/ui/separator";
 import { Button } from "../AdimPage/components/ui/button";
 import { Progress } from "../AdimPage/components/ui/progress";
-import { useNavigate } from "react-router-dom";
 import SignOutModal from "../../../components/SignOutModal";
 import { useAuth } from "../../../context/AuthContext";
 // Sections
@@ -63,25 +64,30 @@ import { ExploreHackathons } from "./sections/ExploreHackathon";
 import { CreateHackathon } from "./sections/Create-hackathon";
 
 export default function HackZenDashboard() {
+  const location = useLocation();
   const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const initialView = queryParams.get("view") || "dashboard";
+
+  const [currentView, setCurrentView] = useState(initialView);
   const [showModal, setShowModal] = useState(false);
-  const { logout } = useAuth(); 
+
+  const { logout } = useAuth();
+
   const handleSignOut = async () => {
-  try {
-    await fetch("http://localhost:3000/api/users/logout", {
-      method: "GET",
-      credentials: "include",
-    });
-  } catch (err) {
-    console.error("Logout failed:", err);
-  } finally {
-    logout();
-    navigate("/");
-  }
-};
+    try {
+      await fetch("http://localhost:3000/api/users/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      logout();
+      navigate("/");
+    }
+  };
 
-
-  const [currentView, setCurrentView] = useState("dashboard");
 
   const participantMenuItems = [
     {
@@ -144,7 +150,6 @@ export default function HackZenDashboard() {
     },
   ];
 
-  
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -229,21 +234,22 @@ export default function HackZenDashboard() {
         </SidebarContent>
 
         <SidebarFooter className="p-4">
-         <button
-         onClick={() => navigate("/")}
-         className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] hover:bg-black transition"
-         >
-         <CircleArrowOutDownLeft className="w-5 h-5 text-white" />
-         <span className="text-sm font-medium text-white">Back to Home Page</span>
-         </button>
           <button
-  onClick={() => setShowModal(true)}
-  className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-red-600 hover:bg-red-700 transition"
->
-  <LogOut className="w-5 h-5 text-white" />
-  <span className="text-sm font-medium text-white">Sign Out</span>
-</button>
-
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] hover:bg-black transition"
+          >
+            <CircleArrowOutDownLeft className="w-5 h-5 text-white" />
+            <span className="text-sm font-medium text-white">
+              Back to Home Page
+            </span>
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-red-600 hover:bg-red-700 transition"
+          >
+            <LogOut className="w-5 h-5 text-white" />
+            <span className="text-sm font-medium text-white">Sign Out</span>
+          </button>
         </SidebarFooter>
       </Sidebar>
 
@@ -277,15 +283,16 @@ export default function HackZenDashboard() {
         ) : currentView === "organizer-tools" ? (
           <OrganizerTools onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "create-hackathon" ? (
-          <CreateHackathon onBack={() => setCurrentView("created-hackathons")} />
+          <CreateHackathon
+            onBack={() => setCurrentView("created-hackathons")}
+          />
         ) : null}
       </SidebarInset>
       <SignOutModal
-  isOpen={showModal}
-  onClose={() => setShowModal(false)}
-  onConfirm={handleSignOut}
-/>
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleSignOut}
+      />
     </SidebarProvider>
-    
   );
 }

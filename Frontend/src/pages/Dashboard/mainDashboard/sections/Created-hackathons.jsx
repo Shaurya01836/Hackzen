@@ -75,7 +75,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
   }
 
   const renderHackathonCard = hackathon => (
-    <Card key={hackathon._id} className="hover:shadow-lg transition-shadow">
+    <Card key={hackathon._id} className="">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -87,7 +87,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
           <div className="flex items-center gap-2">
             <Badge
               variant="outline"
-              className={`${getStatusColor(hackathon.status)} text-white`}
+              className={`${getStatusColor(hackathon.status)}`}
             >
               {hackathon.status}
             </Badge>
@@ -193,7 +193,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
   )
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button

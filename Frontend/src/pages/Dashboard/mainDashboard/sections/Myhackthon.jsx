@@ -90,7 +90,7 @@ export function MyHackathons({ onBack }) {
   const renderHackathonCard = hackathon => (
    <Card
   key={hackathon.id}
-  className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md border border-gray-200 bg-white/80 backdrop-blur-sm"
+  className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md"
 >
   <CardHeader>
     <div className="flex items-start justify-between">

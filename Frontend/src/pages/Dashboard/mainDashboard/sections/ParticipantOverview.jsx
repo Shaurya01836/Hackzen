@@ -116,7 +116,7 @@ export function ParticipantOverview({ onBack }) {
   const inactiveParticipants = participants.filter(p => p.status === "Inactive")
 
   const renderParticipantCard = participant => (
-    <Card key={participant.id} className="pt-6 hover:shadow-lg transition-shadow">
+    <Card key={participant.id} className="pt-6">
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <Avatar className="w-12 h-12">
@@ -221,7 +221,7 @@ export function ParticipantOverview({ onBack }) {
   )
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <Button
           variant="default"

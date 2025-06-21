@@ -72,7 +72,7 @@ export function Announcements({ onBack }) {
   const sent = announcements
 
   return (
-    <div className="flex-1 space-y-6 p-6">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="default" size="sm" onClick={onBack} className="flex items-center gap-2">
