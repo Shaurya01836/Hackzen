@@ -99,7 +99,7 @@ exports.updateUser = async (req, res) => {
       "location",
       "bio",
       "website",
-      "githubUsername",
+      "github",
       "linkedin",
       "profileImage"
     ];

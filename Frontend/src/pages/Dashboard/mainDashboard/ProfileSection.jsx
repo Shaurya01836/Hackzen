@@ -55,12 +55,22 @@ import StreakGraphic from "../AdimPage/components/ui/StreakGraphic";
 
 export function ProfileSection() {
   const [selectedImage, setSelectedImage] = useState(null);
-  const [currentView, setCurrentView] = useState("overview");
+ const [currentView, setCurrentViewState] = useState("overview");
+
+const setCurrentView = (view) => {
+  setCurrentViewState(view);
+  localStorage.setItem("currentView", view);
+};
+
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const { user, login } = useAuth();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
+
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -121,9 +131,12 @@ export function ProfileSection() {
     { name: "DevOps", level: 60 },
   ];
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+useEffect(() => {
+  const savedView = localStorage.getItem("currentView");
+  if (savedView) setCurrentViewState(savedView); // use raw setter here
+  fetchUserProfile();
+}, []);
+
 
   const fetchUserProfile = async () => {
     try {
@@ -151,9 +164,7 @@ export function ProfileSection() {
         location: data.location || "",
         bio: data.bio || "",
         website: data.website || "",
-        github: data.githubUsername
-          ? `https://github.com/${data.githubUsername}`
-          : "",
+        github: data.github || "",
         linkedin: data.linkedin || "",
         profileImage: data.profileImage || "",
       });
@@ -429,15 +440,21 @@ export function ProfileSection() {
     </div>
   );
 
-  const renderEditProfile = () => (
-    <div className="w-full flex flex-col gap-6">
-      {/* Profile Picture Section */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Profile Picture</CardTitle>
-          <CardDescription>Update your profile photo</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center space-y-4">
+ const renderEditProfile = () => (
+  <div className="w-full flex flex-col gap-6">
+    {/* Profile Picture Section */}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Profile Picture</CardTitle>
+        <CardDescription>Update your profile photo</CardDescription>
+      </CardHeader>
+
+      <CardContent className="flex flex-col items-center space-y-4">
+        {isUploading ? (
+          <div className="w-32 h-32 flex items-center justify-center border rounded-full">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
+        ) : (
           <Avatar className="w-32 h-32">
             <AvatarImage
               src={
@@ -448,27 +465,38 @@ export function ProfileSection() {
             />
             <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
           </Avatar>
+        )}
 
-          <input
-            type="file"
-            accept="image/*"
-            id="upload-avatar"
-            className="hidden"
-            onChange={handleImageUpload}
-          />
+        <input
+          type="file"
+          accept="image/*"
+          id="upload-avatar"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
 
-          <div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById("upload-avatar").click()}
-            >
-              <Edit className="w-3 h-3 mr-1" />
-              Upload New Image
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="flex flex-col items-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              document.getElementById("upload-avatar").click()
+            }
+            disabled={isUploading}
+          >
+            <Edit className="w-3 h-3 mr-1" />
+            {isUploading ? "Uploading..." : "Upload New Image"}
+          </Button>
+
+          {uploadSuccess && (
+            <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
+              ✅ Image uploaded successfully!
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+
 
       {/* Personal Information Section */}
       <Card className="w-full">
@@ -921,9 +949,9 @@ export function ProfileSection() {
       location: editForm.location,
       bio: editForm.bio,
       website: editForm.website,
-      githubUsername: editForm.github.replace("https://github.com/", ""),
+      github: editForm.github,
       linkedin: editForm.linkedin,
-      profileImage: editForm.profileImage || selectedImage, // include image
+      profileImage: editForm.profileImage || selectedImage,
     };
 
     try {
@@ -956,50 +984,57 @@ export function ProfileSection() {
     }
   };
 
-  const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+ const handleImageUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const formData = new FormData();
-    formData.append("image", file);
+  const formData = new FormData();
+  formData.append("image", file);
 
-    try {
-      const uploadRes = await axios.post(
-        "http://localhost:3000/api/uploads/image",
-        formData
+  setIsUploading(true); // ⏳ Start loading
+
+  try {
+    const uploadRes = await axios.post(
+      "http://localhost:3000/api/uploads/image",
+      formData
+    );
+    const imageUrl = uploadRes.data.url;
+
+    setSelectedImage(null);
+    setEditForm((prev) => ({ ...prev, profileImage: imageUrl }));
+
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (userData?._id && token) {
+      await axios.put(
+        `http://localhost:3000/api/users/${userData._id}`,
+        { profileImage: imageUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-      const imageUrl = uploadRes.data.url;
 
-      setSelectedImage(null);
-      setEditForm((prev) => ({ ...prev, profileImage: imageUrl }));
-
-      // ✅ update user profile in MongoDB immediately
-      const userData = JSON.parse(localStorage.getItem("user"));
-      const token = localStorage.getItem("token");
-
-      if (userData?._id && token) {
-        await axios.put(
-          `http://localhost:3000/api/users/${userData._id}`,
-          { profileImage: imageUrl },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json", // ✅ ensure correct content type
-            },
-          }
-        );
-
-        // Update localStorage and context user
-        const updatedUser = { ...userData, profileImage: imageUrl };
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-        login(updatedUser, token);
-      }
-      alert("Image uploaded successfully!");
-    } catch (err) {
-      console.error("Image upload failed:", err);
-      alert("Failed to upload image");
+      // ✅ Update local storage and auth context
+      const updatedUser = { ...userData, profileImage: imageUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
     }
-  };
+
+    // ✅ Show success notification
+    setUploadSuccess(true);
+    setTimeout(() => setUploadSuccess(false), 3000); // Auto-hide after 3s
+  } catch (err) {
+    console.error("Image upload failed:", err);
+    alert("Failed to upload image");
+  } finally {
+    setIsUploading(false); // ✅ Stop loading
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans">

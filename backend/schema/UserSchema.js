@@ -5,7 +5,7 @@ const UserSchema = new Schema({
   email: { type: String, unique: true },
   passwordHash: String,
   authProvider: { type: String, enum: ['email', 'github', 'google'] },
-  githubUsername: String,
+  github: String,
   profileImage: {
   type: String,
   default: "",
