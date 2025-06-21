@@ -19,6 +19,7 @@ import { Button } from "../../AdimPage/components/ui/button"
 import { Badge } from "../../AdimPage/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs"
+import { useNavigate } from "react-router-dom";
 
 const submissions = [
   {
@@ -110,6 +111,7 @@ const submissions = [
 ]
 
 export function ReviewSubmissions({ onBack }) {
+   const navigate = useNavigate();
   const pendingSubmissions = submissions.filter(
     s => s.status === "Pending Review"
   )
@@ -253,10 +255,13 @@ export function ReviewSubmissions({ onBack }) {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
-        <Button
+         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

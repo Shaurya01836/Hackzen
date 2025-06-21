@@ -23,6 +23,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../AdimPage/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 const submissions = [
   {
@@ -76,6 +77,7 @@ const submissions = [
 ];
 
 export function MySubmissions({ onBack }) {
+   const navigate = useNavigate();
   const judgedSubmissions = submissions.filter((s) => s.status === "Judged");
   const pendingSubmissions = submissions.filter(
     (s) => s.status === "Submitted"
@@ -159,7 +161,10 @@ export function MySubmissions({ onBack }) {
         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

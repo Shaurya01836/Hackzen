@@ -74,6 +74,12 @@ export default function HackZenDashboard() {
 
   const { logout } = useAuth();
 
+ const changeView = (viewKey) => {
+  setCurrentView(viewKey);
+  navigate(`?view=${viewKey}`);
+};
+
+
   const handleSignOut = async () => {
     try {
       await fetch("http://localhost:3000/api/users/logout", {
@@ -88,32 +94,31 @@ export default function HackZenDashboard() {
     }
   };
 
-
   const participantMenuItems = [
     {
       title: "My Hackathons",
       icon: Trophy,
       key: "my-hackathons",
-      onClick: () => setCurrentView("my-hackathons"),
+       onClick: () => changeView("my-hackathons"),
     },
     {
       title: "My Submissions",
       icon: FileText,
       key: "my-submissions",
-      onClick: () => setCurrentView("my-submissions"),
+      onClick: () => changeView("my-submissions"),
     },
     {
       title: "Chat Rooms",
       icon: MessageSquare,
       key: "chat-rooms",
-      onClick: () => setCurrentView("chat-rooms"),
+      onClick: () => changeView("chat-rooms"),
     },
 
     {
       title: "Explore Hackathons",
       icon: Search,
       key: "explore-hackathons",
-      onClick: () => setCurrentView("explore-hackathons"),
+      onClick: () => changeView("explore-hackathons"),
     },
   ];
 
@@ -122,31 +127,31 @@ export default function HackZenDashboard() {
       title: "Created Hackathons",
       icon: Plus,
       key: "created-hackathons",
-      onClick: () => setCurrentView("created-hackathons"),
+      onClick: () => changeView("created-hackathons"),
     },
     {
       title: "Participant Overview",
       icon: Users,
       key: "participant-overview",
-      onClick: () => setCurrentView("participant-overview"),
+      onClick: () => changeView("participant-overview"),
     },
     {
       title: "Review Submissions",
       icon: Eye,
       key: "review-submissions",
-      onClick: () => setCurrentView("review-submissions"),
+      onClick: () => changeView("review-submissions"),
     },
     {
       title: "Announcements",
       icon: MessageSquare,
       key: "announcements",
-      onClick: () => setCurrentView("announcements"),
+      onClick: () => changeView("announcements"),
     },
     {
       title: "Organizer Tools",
       icon: Settings,
       key: "organizer-tools",
-      onClick: () => setCurrentView("organizer-tools"),
+      onClick: () => changeView("organizer-tools"),
     },
   ];
 

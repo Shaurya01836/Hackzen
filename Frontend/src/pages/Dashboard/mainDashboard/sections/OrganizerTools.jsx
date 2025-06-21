@@ -22,6 +22,7 @@ import { Button } from "../../AdimPage/components/ui/button"
 import { Badge } from "../../AdimPage/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs"
 import { Progress } from "../../AdimPage/components/ui/progress"
+import { useNavigate } from "react-router-dom";
 
 const analyticsData = {
   totalEvents: 12,
@@ -125,6 +126,7 @@ const quickActions = [
 ]
 
 export function OrganizerTools({ onBack }) {
+   const navigate = useNavigate();
   const getActivityIcon = type => {
     switch (type) {
       case "registration":
@@ -154,7 +156,10 @@ export function OrganizerTools({ onBack }) {
         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

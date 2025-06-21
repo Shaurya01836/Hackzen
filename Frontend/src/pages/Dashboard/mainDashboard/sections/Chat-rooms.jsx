@@ -12,8 +12,10 @@ import { Input } from "../../AdimPage/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/ui/avatar";
 import socket from "../../../../utils/socket";
 import { useAuth } from "../../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export function ChatRooms({ onBack, hackathonId }) {
+   const navigate = useNavigate();
   const { user, token } = useAuth();
   const [chatRooms, setChatRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,10 +86,13 @@ export function ChatRooms({ onBack, hackathonId }) {
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="flex items-center gap-4">
-        <Button
+         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

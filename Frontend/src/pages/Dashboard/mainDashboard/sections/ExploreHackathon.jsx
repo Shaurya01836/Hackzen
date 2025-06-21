@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   ArrowLeft,
@@ -45,6 +46,7 @@ import { Progress } from "../../AdimPage/components/ui/progress";
 import { cn } from "../../AdimPage/components/lib/utils";
 
 export function ExploreHackathons({ onBack }) {
+   const navigate = useNavigate();
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -215,7 +217,10 @@ const renderHackathonCard = (hackathon, featured = false) => (
         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />

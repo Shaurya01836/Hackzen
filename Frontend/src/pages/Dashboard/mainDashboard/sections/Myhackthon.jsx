@@ -1,22 +1,28 @@
-"use client"
+"use client";
 import {
   ArrowLeft,
   Trophy,
   Calendar,
   Users,
   Clock,
-  ExternalLink
-} from "lucide-react"
+  ExternalLink,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../../AdimPage/components/ui/card"
-import { Button } from "../../AdimPage/components/ui/button"
-import { Badge } from "../../AdimPage/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs"
+  CardTitle,
+} from "../../AdimPage/components/ui/card";
+import { useNavigate } from "react-router-dom";
+import { Button } from "../../AdimPage/components/ui/button";
+import { Badge } from "../../AdimPage/components/ui/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../AdimPage/components/ui/tabs";
 
 const hackathons = [
   {
@@ -32,7 +38,7 @@ const hackathons = [
     category: "Artificial Intelligence",
     difficulty: "Advanced",
     registered: true,
-    submitted: false
+    submitted: false,
   },
   {
     id: 2,
@@ -48,7 +54,7 @@ const hackathons = [
     category: "Blockchain",
     difficulty: "Intermediate",
     registered: true,
-    submitted: true
+    submitted: true,
   },
   {
     id: 3,
@@ -63,7 +69,7 @@ const hackathons = [
     category: "Mobile Development",
     difficulty: "Beginner",
     registered: false,
-    submitted: false
+    submitted: false,
   },
   {
     id: 4,
@@ -78,115 +84,115 @@ const hackathons = [
     category: "Security",
     difficulty: "Advanced",
     registered: true,
-    submitted: false
-  }
-]
+    submitted: false,
+  },
+];
 
 export function MyHackathons({ onBack }) {
-  const activeHackathons = hackathons.filter(h => h.status === "Live")
-  const completedHackathons = hackathons.filter(h => h.status === "Closed")
-  const upcomingHackathons = hackathons.filter(h => h.status === "Upcoming")
+  const navigate = useNavigate();
+  const activeHackathons = hackathons.filter((h) => h.status === "Live");
+  const completedHackathons = hackathons.filter((h) => h.status === "Closed");
+  const upcomingHackathons = hackathons.filter((h) => h.status === "Upcoming");
 
-  const renderHackathonCard = hackathon => (
-   <Card
-  key={hackathon.id}
-  className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md"
->
-  <CardHeader>
-    <div className="flex items-start justify-between">
-      <div>
-        <CardTitle className="text-lg font-semibold text-indigo-700">
-          {hackathon.name}
-        </CardTitle>
-        <CardDescription className="mt-1 text-gray-600">
-          {hackathon.description}
-        </CardDescription>
-      </div>
-      <Badge
-        variant={
-          hackathon.status === "Live"
-            ? "default"
-            : hackathon.status === "Closed"
-            ? "secondary"
-            : "outline"
-        }
-        className={`capitalize ${
-          hackathon.status === "Live"
-            ? "bg-green-500 text-white"
-            : hackathon.status === "Closed"
-            ? "bg-gray-400 text-white"
-            : "border-indigo-300 text-indigo-600"
-        }`}
-      >
-        {hackathon.status}
-      </Badge>
-    </div>
-  </CardHeader>
-  <CardContent className="pt-4 space-y-4">
-    <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
-      <div className="flex items-center gap-2">
-        <Calendar className="w-4 h-4 text-indigo-500" />
-        <span>
-          {hackathon.startDate} - {hackathon.endDate}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Users className="w-4 h-4 text-indigo-500" />
-        <span>{hackathon.participants} participants</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Trophy className="w-4 h-4 text-indigo-500" />
-        <span>{hackathon.prize} prize pool</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Clock className="w-4 h-4 text-indigo-500" />
-        <span>{hackathon.deadline}</span>
-      </div>
-    </div>
-
-    <div className="flex gap-2 flex-wrap">
-      <Badge className="" variant="outline">
-        {hackathon.category}
-      </Badge>
-      <Badge className="" variant="outline">
-        {hackathon.difficulty}
-      </Badge>
-    </div>
-
-    <div className="flex gap-2 pt-2 flex-wrap">
-      {hackathon.registered ? (
-        <>
-          <Button
-            size="sm"
-            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+  const renderHackathonCard = (hackathon) => (
+    <Card
+      key={hackathon.id}
+      className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md "
+    >
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold text-indigo-700">
+              {hackathon.name}
+            </CardTitle>
+            <CardDescription className="mt-1 text-gray-600">
+              {hackathon.description}
+            </CardDescription>
+          </div>
+          <Badge
+            variant={
+              hackathon.status === "Live"
+                ? "default"
+                : hackathon.status === "Closed"
+                ? "secondary"
+                : "outline"
+            }
+            className={`capitalize ${
+              hackathon.status === "Live"
+                ? "bg-green-500 text-white"
+                : hackathon.status === "Closed"
+                ? "bg-gray-400 text-white"
+                : "border-indigo-300 text-indigo-600"
+            }`}
           >
-            <ExternalLink className="w-3 h-3" />
-            View Details
-          </Button>
-          {hackathon.status === "Live" && !hackathon.submitted && (
-            <Button size="sm" variant="default">
-              Submit Project
-            </Button>
-          )}
-          {hackathon.submitted && (
-            <Button size="sm" variant="outline" disabled>
-              Submitted ✓
-            </Button>
-          )}
-        </>
-      ) : (
-        <Button
-          size="sm"
-          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90"
-        >
-          Register Now
-        </Button>
-      )}
-    </div>
-  </CardContent>
-</Card>
+            {hackathon.status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-500" />
+            <span>
+              {hackathon.startDate} - {hackathon.endDate}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.participants} participants</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.prize} prize pool</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.deadline}</span>
+          </div>
+        </div>
 
-  )
+        <div className="flex gap-2 flex-wrap">
+          <Badge className="" variant="outline">
+            {hackathon.category}
+          </Badge>
+          <Badge className="" variant="outline">
+            {hackathon.difficulty}
+          </Badge>
+        </div>
+
+        <div className="flex gap-2 pt-2 flex-wrap">
+          {hackathon.registered ? (
+            <>
+              <Button
+                size="sm"
+                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                <ExternalLink className="w-3 h-3" />
+                View Details
+              </Button>
+              {hackathon.status === "Live" && !hackathon.submitted && (
+                <Button size="sm" variant="default">
+                  Submit Project
+                </Button>
+              )}
+              {hackathon.submitted && (
+                <Button size="sm" variant="outline" disabled>
+                  Submitted ✓
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90"
+            >
+              Register Now
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -194,7 +200,10 @@ export function MyHackathons({ onBack }) {
         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -282,5 +291,5 @@ export function MyHackathons({ onBack }) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

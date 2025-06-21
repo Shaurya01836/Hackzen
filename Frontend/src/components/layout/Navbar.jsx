@@ -20,9 +20,9 @@ function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [showHackDropdown, setShowHackDropdown] = useState(false);
+
   const [notificationTimeout, setNotificationTimeout] = useState(null);
-  const [hackDropdownTimeout, setHackDropdownTimeout] = useState(null);
+
   const [showNotificationDropdown, setShowNotificationDropdown] =
     useState(false);
   const { user } = useAuth();
@@ -75,41 +75,6 @@ function Navbar() {
             >
               Home
             </Link>
-            <div
-              className="relative"
-              onMouseEnter={() => {
-                if (hackDropdownTimeout) clearTimeout(hackDropdownTimeout);
-                setShowHackDropdown(true);
-              }}
-              onMouseLeave={() => {
-                const timeout = setTimeout(() => {
-                  setShowHackDropdown(false);
-                }, 200); // 200ms delay
-                setHackDropdownTimeout(timeout);
-              }}
-            >
-              <button className="flex items-center gap-1 text-[#1b0c3f] hover:text-primary font-medium transition-all duration-150 ease-in-out hover:rotate-3">
-                Hackathons
-                <ChevronDown className="w-4 h-4" />
-              </button>
-
-              {showHackDropdown && (
-                <div className="absolute top-full mt-2 left-0 flex flex-col bg-[#1b0c3f] text-white shadow-lg rounded-md z-50 min-w-[180px] py-2 border border-white/10">
-                  <Link
-                    to="/dashboard?view=explore-hackathons"
-                    className="px-4 py-2 text-sm border-b border-white/10 hover:text-yellow-400"
-                  >
-                    Explore Hackathons
-                  </Link>
-                  <Link
-                    to="/dashboard?view=my-hackathons"
-                    className="px-4 py-2 text-sm hover:text-yellow-400 "
-                  >
-                    My Hackathons
-                  </Link>
-                </div>
-              )}
-            </div>
 
             <Link
               to="/community"

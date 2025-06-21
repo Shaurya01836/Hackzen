@@ -4,6 +4,7 @@ import { BoxReveal } from "../Magic UI/BoxReveal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 import { ScriptCopyBtn } from "../Magic UI/ScriptCopy";
 import { Terminal, TypingAnimation, AnimatedSpan } from "../Magic UI/Terminal";
+import { Link } from "react-router-dom";
 
 function Header() {
   const customCommandMap = {
@@ -34,9 +35,11 @@ function Header() {
           </BoxReveal>
 
           <BoxReveal boxColor="#5046e6" duration={0.5}>
-            <InteractiveHoverButton className="mt-2 bg-[#5046e6] hover:bg-[#403bb5] text-white font-semibold px-6 py-3 rounded-full shadow-md transition-all duration-300 w-fit">
-              ⚡ Explore Hackathons
-            </InteractiveHoverButton>
+            <Link to="/dashboard?view=explore-hackathons">
+              <InteractiveHoverButton className="mt-2 bg-[#5046e6] hover:bg-[#403bb5] text-white font-semibold px-6 py-3 rounded-full shadow-md transition-all duration-300 w-fit">
+                ⚡ Explore Hackathons
+              </InteractiveHoverButton>
+            </Link>
           </BoxReveal>
         </div>
 

@@ -1,6 +1,7 @@
 
 "use client"
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -31,6 +32,7 @@ import {
 import { Progress } from "../../AdimPage/components/ui/progress"
 
 export function CreatedHackathons({ onBack, onCreateNew }) {
+   const navigate = useNavigate();
   const [hackathons, setHackathons] = useState([])
 
   useEffect(() => {
@@ -197,14 +199,17 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            variant="default"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
+          variant="default"
+          size="sm"
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
               Created Hackathons

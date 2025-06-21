@@ -22,6 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../AdimPage/components/u
 import { Input } from "../../AdimPage/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../AdimPage/components/ui/tabs"
 import { Progress } from "../../AdimPage/components/ui/progress"
+import { useNavigate } from "react-router-dom";
 
 const participants = [
   {
@@ -112,6 +113,7 @@ const analytics = {
 }
 
 export function ParticipantOverview({ onBack }) {
+   const navigate = useNavigate();
   const activeParticipants = participants.filter(p => p.status === "Active")
   const inactiveParticipants = participants.filter(p => p.status === "Inactive")
 
@@ -226,7 +228,10 @@ export function ParticipantOverview({ onBack }) {
         <Button
           variant="default"
           size="sm"
-          onClick={onBack}
+          onClick={() => {
+            if (onBack) onBack();
+            navigate("/dashboard");
+          }}
           className="flex items-center gap-2"
         >
           <ArrowLeft className="w-4 h-4" />
