@@ -1,7 +1,7 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "./components/ui/AdminCard"
-import { Button } from "./components/ui/AdminButton"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { Button } from "../../../components/CommonUI/button"
 import {
   BarChart,
   Bar,
@@ -60,9 +60,9 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Reports & Analytics</h1>
+        <h1 className="text-3xl font-bold text-black">Reports & Analytics</h1>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" className="border-purple-500/20 text-white hover:bg-white/5">
+          <Button variant="outline" className="border-yellow-400 bg-yellow-300 text-black hover:bg-yellow-400">
             <Calendar className="w-4 h-4 mr-2" />
             Last 6 Months
           </Button>
@@ -75,43 +75,43 @@ export function AnalyticsPage() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Total Users</p>
-                <p className="text-2xl font-bold text-white">12,847</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-gray-700 text-sm">Total Users</p>
+                <p className="text-2xl font-bold text-black">12,847</p>
+                <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +18.2% from last month
                 </p>
               </div>
-              <Users className="w-8 h-8 text-purple-400" />
+              <Users className="w-8 h-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Total Hackathons</p>
-                <p className="text-2xl font-bold text-white">123</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-gray-700 text-sm">Total Hackathons</p>
+                <p className="text-2xl font-bold text-black">123</p>
+                <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +25% from last month
                 </p>
               </div>
-              <Target className="w-8 h-8 text-blue-400" />
+              <Target className="w-8 h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Total Revenue</p>
-                <p className="text-2xl font-bold text-white">$160K</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-gray-700 text-sm">Total Revenue</p>
+                <p className="text-2xl font-bold text-black">$160K</p>
+                <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +32% from last month
                 </p>
@@ -120,13 +120,13 @@ export function AnalyticsPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Avg. Engagement</p>
-                <p className="text-2xl font-bold text-white">4.2h</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-gray-700 text-sm">Avg. Engagement</p>
+                <p className="text-2xl font-bold text-black">4.2h</p>
+                <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +12% from last month
                 </p>
@@ -142,10 +142,10 @@ export function AnalyticsPage() {
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Overview */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <BarChart className="w-5 h-5 mr-2 text-purple-400" />
+            <CardTitle className="text-black flex items-center">
+              <BarChart className="w-5 h-5 mr-2 text-purple-500" />
               Monthly Overview
             </CardTitle>
           </CardHeader>
@@ -158,7 +158,7 @@ export function AnalyticsPage() {
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "rgba(0, 0, 0, 0.8)",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
+                    border: "1px solid rgba(47, 2, 89, 0.3)",
                     borderRadius: "8px",
                     color: "white",
                   }}
@@ -171,10 +171,10 @@ export function AnalyticsPage() {
         </Card>
 
         {/* User Growth */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-green-400" />
+            <CardTitle className="text-black flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
               User Growth Trend
             </CardTitle>
           </CardHeader>
@@ -205,10 +205,10 @@ export function AnalyticsPage() {
         </Card>
 
         {/* Category Distribution */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Target className="w-5 h-5 mr-2 text-blue-400" />
+            <CardTitle className="text-black flex items-center">
+              <Target className="w-5 h-5 mr-2 text-blue-500" />
               Hackathon Categories
             </CardTitle>
           </CardHeader>
@@ -229,7 +229,7 @@ export function AnalyticsPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    backgroundColor: "rgba(255, 255, 255, 0.8)",
                     border: "1px solid rgba(168, 85, 247, 0.3)",
                     borderRadius: "8px",
                     color: "white",
@@ -241,10 +241,10 @@ export function AnalyticsPage() {
         </Card>
 
         {/* Weekly Engagement */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Users className="w-5 h-5 mr-2 text-yellow-400" />
+            <CardTitle className="text-black flex items-center">
+              <Users className="w-5 h-5 mr-2 text-yellow-500" />
               Weekly Engagement
             </CardTitle>
           </CardHeader>
@@ -276,26 +276,26 @@ export function AnalyticsPage() {
       </div>
 
       {/* Performance Insights */}
-      <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Performance Insights</CardTitle>
+          <CardTitle className="text-black">Performance Insights</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
-              <h3 className="text-green-300 font-semibold mb-2">Top Performing Category</h3>
-              <p className="text-white text-lg">AI/ML Hackathons</p>
-              <p className="text-gray-400 text-sm">35% of all events, 4.8★ avg rating</p>
+            <div className="p-4 ring-1 ring-indigo-300 rounded-xl border border-white/20 bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg shadow-sm shadow-indigo-300 text-gray-900 transition-all hover:scale-[1.01]">
+              <h3 className="text-black font-semibold mb-2">Top Performing Category</h3>
+              <p className="text-black text-lg">AI/ML Hackathons</p>
+              <p className="text-gray-600 text-sm">35% of all events, 4.8★ avg rating</p>
             </div>
-            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <h3 className="text-blue-300 font-semibold mb-2">Peak Activity Day</h3>
-              <p className="text-white text-lg">Friday</p>
-              <p className="text-gray-400 text-sm">2,800 sessions, 62min avg duration</p>
+            <div className="p-4 ring-1 ring-indigo-300 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg shadow-sm shadow-indigo-300 text-gray-900 transition-all hover:scale-[1.01]">
+              <h3 className="text-black font-semibold mb-2">Peak Activity Day</h3>
+              <p className="text-black text-lg">Friday</p>
+              <p className="text-gray-600 text-sm">2,800 sessions, 62min avg duration</p>
             </div>
-            <div className="p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
-              <h3 className="text-purple-300 font-semibold mb-2">User Retention</h3>
-              <p className="text-white text-lg">78%</p>
-              <p className="text-gray-400 text-sm">30-day retention rate</p>
+            <div className="p-4 ring-1 ring-indigo-300 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg shadow-sm shadow-indigo-300 text-gray-900 transition-all hover:scale-[1.01]">
+              <h3 className="text-black font-semibold mb-2">User Retention</h3>
+              <p className="text-black text-lg">78%</p>
+              <p className="text-gray-600 text-sm">30-day retention rate</p>
             </div>
           </div>
         </CardContent>

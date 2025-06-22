@@ -10,14 +10,19 @@ import { AnnouncementsPanel } from "./sections/announcements-panel"
 import { SubmissionsPage } from "./sections/submissions-page"
 import { MentorChatPage } from "./sections/mentor-chat-page"
 import { OrganizerRequestsPage } from "./sections/organizer-requests-page"
+import { AnalyticsPage } from "./sections/analytics-page"
+import { RevenuePage } from "./sections/revenue-page"
+import { SettingsPage } from "./sections/settings-page"
+import { FlaggedContentPage } from "./sections/flagged-content-page"
 import { SupportInboxPage } from "./sections/support-inbox-page"
+import { AdminProfilePage } from "./sections/AdminProfile"
 
 
 
 export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState("dashboard")
 
-  const renderContent = () => {
+   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
         return <Dashboard />
@@ -33,8 +38,18 @@ export default function AdminPanel() {
         return <AnnouncementsPanel />
       case "organizers":
         return <OrganizerRequestsPage />
+      case "analytics":
+        return <AnalyticsPage />
+      case "revenue":
+        return <RevenuePage />
+      case "settings":
+        return <SettingsPage />
+      case "flagged":
+        return <FlaggedContentPage />
       case "support":
         return <SupportInboxPage />
+      case "profile":
+        return <AdminProfilePage />
       default:
         return <Dashboard />
     }

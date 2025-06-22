@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/AdminCard"
-import { Button } from "@/components/ui/AdminButton"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Search, Filter, Eye, Ban, Check, AlertTriangle, MoreHorizontal, Flag } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { Button } from "../../../components/CommonUI/button"
+import { Badge } from "../../../components/CommonUI/badge"
+import { Input } from "../../../components/CommonUI/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/AdminUI/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../components/AdminUI/dropdown-menu"
+import { Search, Filter, Eye, Ban, Check, AlertTriangle, MoreHorizontal, Flag, Shuffle } from "lucide-react"
 
 const flaggedContent = [
   {
@@ -78,54 +78,54 @@ export function FlaggedContentPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Under Review":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500 text-white border-yellow-500/30"
       case "Confirmed":
-        return "bg-red-500/20 text-red-300 border-red-500/30"
+        return "bg-red-500 text-white border-red-500/30"
       case "Resolved":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       case "Dismissed":
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-orange-500 text-white border-gray-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   const getSeverityColor = (severity) => {
     switch (severity) {
       case "Critical":
-        return "bg-red-500/20 text-red-300 border-red-500/30"
+        return "bg-red-500 text-white border-red-500/30"
       case "High":
-        return "bg-orange-500/20 text-orange-300 border-orange-500/30"
+        return "bg-orange-500 text-white border-orange-500/30"
       case "Medium":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500 text-white border-yellow-500/30"
       case "Low":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30"
+        return "bg-blue-500 text-white border-blue-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   const getTypeColor = (type) => {
     switch (type) {
       case "Comment":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30"
+        return "bg-purple-500 text-white border-purple-500/30"
       case "Submission":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30"
+        return "bg-blue-500 text-white border-blue-500/30"
       case "Profile":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       case "Chat Message":
-        return "bg-orange-500/20 text-orange-300 border-orange-500/30"
+        return "bg-orange-500 text-white border-orange-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Flagged Content Management</h1>
+        <h1 className="text-3xl font-bold text-black">Flagged Content Management</h1>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-red-500/20 text-red-300 border-red-500/30">
+          <Badge className="bg-red-500 text-white border-red-500">
             <AlertTriangle className="w-3 h-3 mr-1" />
             {flaggedContent.filter((item) => item.status === "Under Review").length} Pending Review
           </Badge>
@@ -134,23 +134,23 @@ export function FlaggedContentPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Total Reports</p>
-                <p className="text-2xl font-bold text-white">{flaggedContent.length}</p>
+                <p className="text-gray-700 text-sm">Total Reports</p>
+                <p className="text-2xl font-bold text-black">{flaggedContent.length}</p>
               </div>
-              <Flag className="w-8 h-8 text-red-400" />
+              <Flag className="w-8 h-8 text-red-600" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Under Review</p>
-                <p className="text-2xl font-bold text-yellow-400">
+                <p className="text-gray-700 text-sm">Under Review</p>
+                <p className="text-2xl font-bold text-black">
                   {flaggedContent.filter((item) => item.status === "Under Review").length}
                 </p>
               </div>
@@ -158,25 +158,25 @@ export function FlaggedContentPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Confirmed</p>
-                <p className="text-2xl font-bold text-red-400">
+                <p className="text-gray-700 text-sm">Confirmed</p>
+                <p className="text-2xl font-bold text-black">
                   {flaggedContent.filter((item) => item.status === "Confirmed").length}
                 </p>
               </div>
-              <Ban className="w-8 h-8 text-red-400" />
+              <Ban className="w-8 h-8 text-red-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Resolution Rate</p>
-                <p className="text-2xl font-bold text-white">85%</p>
+                <p className="text-gray-700 text-sm">Resolution Rate</p>
+                <p className="text-2xl font-bold text-black">85%</p>
               </div>
               <Check className="w-8 h-8 text-green-400" />
             </div>
@@ -185,21 +185,19 @@ export function FlaggedContentPage() {
       </div>
 
       {/* Filters */}
-      <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-        <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
               <Input
                 placeholder="Search by content, user, or reason..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
               />
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-purple-500/20 text-white hover:bg-white/5">
+                <Button variant="outline" className=" text-black hover:bg-white/5">
                   <Filter className="w-4 h-4 mr-2" />
                   Status: {statusFilter}
                 </Button>
@@ -218,7 +216,7 @@ export function FlaggedContentPage() {
             </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-purple-500/20 text-white hover:bg-white/5">
+                <Button variant="outline" className="text-black hover:bg-white/5">
                   <AlertTriangle className="w-4 h-4 mr-2" />
                   Severity: {severityFilter}
                 </Button>
@@ -236,25 +234,23 @@ export function FlaggedContentPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </CardContent>
-      </Card>
 
       {/* Flagged Content Table */}
-      <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white">Flagged Content ({filteredContent.length})</CardTitle>
+          <CardTitle className="text-black">Flagged Content ({filteredContent.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="border-purple-500/20">
-                <TableHead className="text-gray-300">Type</TableHead>
-                <TableHead className="text-gray-300">Content</TableHead>
-                <TableHead className="text-gray-300">Reported User</TableHead>
-                <TableHead className="text-gray-300">Reason</TableHead>
-                <TableHead className="text-gray-300">Severity</TableHead>
-                <TableHead className="text-gray-300">Status</TableHead>
-                <TableHead className="text-gray-300">Actions</TableHead>
+                <TableHead className="text-gray-700">Type</TableHead>
+                <TableHead className="text-gray-700">Content</TableHead>
+                <TableHead className="text-gray-700">Reported User</TableHead>
+                <TableHead className="text-gray-700">Reason</TableHead>
+                <TableHead className="text-gray-700">Severity</TableHead>
+                <TableHead className="text-gray-700">Status</TableHead>
+                <TableHead className="text-gray-700">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -265,17 +261,17 @@ export function FlaggedContentPage() {
                   </TableCell>
                   <TableCell>
                     <div className="max-w-xs">
-                      <p className="text-white text-sm line-clamp-2">{item.content}</p>
-                      <p className="text-gray-500 text-xs mt-1">
+                      <p className="text-black text-sm line-clamp-2">{item.content}</p>
+                      <p className="text-gray-700 text-xs mt-1">
                         Reported by: {item.reportedBy} • {item.reportedAt}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="text-white font-medium">{item.reportedUser}</div>
-                    {item.hackathon !== "N/A" && <div className="text-gray-400 text-xs">{item.hackathon}</div>}
+                    <div className="text-black font-medium">{item.reportedUser}</div>
+                    {item.hackathon !== "N/A" && <div className="text-gray-700 text-xs">{item.hackathon}</div>}
                   </TableCell>
-                  <TableCell className="text-gray-300">{item.reason}</TableCell>
+                  <TableCell className="text-gray-700">{item.reason}</TableCell>
                   <TableCell>
                     <Badge className={getSeverityColor(item.severity)}>{item.severity}</Badge>
                   </TableCell>
@@ -285,8 +281,8 @@ export function FlaggedContentPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white">
-                          <MoreHorizontal className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="text-gray-700 hover:text-black">
+                          <Shuffle className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">

@@ -1,9 +1,9 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/AdminCard"
-import { Button } from "@/components/ui/AdminButton"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { Button } from "../../../components/CommonUI/button"
+import { Badge } from "../../../components/CommonUI/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/AdminUI/table"
 import {
   LineChart,
   Line,
@@ -85,35 +85,35 @@ export function RevenuePage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Completed":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       case "Pending":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+        return "bg-yellow-500 text-white border-yellow-500/30"
       case "Failed":
-        return "bg-red-500/20 text-red-300 border-red-500/30"
+        return "bg-red-500 text-white border-red-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   const getTypeColor = (type) => {
     switch (type) {
       case "Subscription":
-        return "bg-purple-500/20 text-purple-300 border-purple-500/30"
+        return "bg-purple-500 text-white border-purple-500/30"
       case "Advertisement":
-        return "bg-blue-500/20 text-blue-300 border-blue-500/30"
+        return "bg-blue-500 text-white border-blue-500/30"
       case "Premium":
-        return "bg-green-500/20 text-green-300 border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30"
       default:
-        return "bg-gray-500/20 text-gray-300 border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30"
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Revenue & Ads Management</h1>
+        <h1 className="text-3xl font-bold text-black">Revenue & Ads Management</h1>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" className="border-purple-500/20 text-white hover:bg-white/5">
+          <Button variant="outline" className="border-yellow-400 bg-yellow-300 text-black hover:bg-yellow-400">
             <Calendar className="w-4 h-4 mr-2" />
             Last 6 Months
           </Button>
@@ -126,58 +126,58 @@ export function RevenuePage() {
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Total Revenue</p>
-                <p className="text-2xl font-bold text-white">$188,900</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-black text-sm">Total Revenue</p>
+                <p className="text-2xl font-bold text-black">$188,900</p>
+                <p className="text-gray-500 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +24.5% from last period
                 </p>
               </div>
-              <DollarSign className="w-8 h-8 text-green-400" />
+              <DollarSign className="w-8 h-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Monthly Recurring</p>
-                <p className="text-2xl font-bold text-white">$25,800</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-black text-sm">Monthly Recurring</p>
+                <p className="text-2xl font-bold text-black">$25,800</p>
+                <p className="text-gray-500 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +18.2% MoM growth
                 </p>
               </div>
-              <CreditCard className="w-8 h-8 text-purple-400" />
+              <CreditCard className="w-8 h-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Ad Revenue</p>
-                <p className="text-2xl font-bold text-white">$41,600</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-black text-sm">Ad Revenue</p>
+                <p className="text-2xl font-bold text-black">$41,600</p>
+                <p className="text-gray-500 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +32% from last period
                 </p>
               </div>
-              <Target className="w-8 h-8 text-blue-400" />
+              <Target className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
-          <CardContent className="p-6">
+        <Card>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400 text-sm">Avg. Transaction</p>
-                <p className="text-2xl font-bold text-white">$847</p>
-                <p className="text-green-400 text-sm flex items-center mt-1">
+                <p className="text-black text-sm">Avg. Transaction</p>
+                <p className="text-2xl font-bold text-blacke">$847</p>
+                <p className="text-gray-500 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   +12% increase
                 </p>
@@ -193,10 +193,10 @@ export function RevenuePage() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Trend */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-green-400" />
+            <CardTitle className="text-black flex items-center">
+              <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
               Revenue Trend
             </CardTitle>
           </CardHeader>
@@ -241,10 +241,10 @@ export function RevenuePage() {
         </Card>
 
         {/* Revenue Sources */}
-        <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white flex items-center">
-              <Target className="w-5 h-5 mr-2 text-blue-400" />
+            <CardTitle className="text-black flex items-center">
+              <Target className="w-5 h-5 mr-2 text-blue-500" />
               Revenue Sources
             </CardTitle>
           </CardHeader>
@@ -265,7 +265,7 @@ export function RevenuePage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.8)",
+                    backgroundColor: "rgba(255, 255, 255, 0.96)",
                     border: "1px solid rgba(168, 85, 247, 0.3)",
                     borderRadius: "8px",
                     color: "white",
@@ -278,9 +278,9 @@ export function RevenuePage() {
                 <div key={index} className="flex items-center justify-between p-2 bg-white/5 rounded">
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: source.color }} />
-                    <span className="text-gray-300 text-sm">{source.name}</span>
+                    <span className="text-gray-700 text-sm">{source.name}</span>
                   </div>
-                  <span className="text-white font-semibold">{source.amount}</span>
+                  <span className="text-black font-semibold">{source.amount}</span>
                 </div>
               ))}
             </div>
@@ -289,10 +289,10 @@ export function RevenuePage() {
       </div>
 
       {/* Recent Transactions */}
-      <Card className="bg-black/20 backdrop-blur-xl border-purple-500/20">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-white flex items-center">
-            <CreditCard className="w-5 h-5 mr-2 text-purple-400" />
+          <CardTitle className="text-black flex items-center">
+            <CreditCard className="w-5 h-5 mr-2 text-purple-500" />
             Recent Transactions
           </CardTitle>
         </CardHeader>
@@ -300,12 +300,12 @@ export function RevenuePage() {
           <Table>
             <TableHeader>
               <TableRow className="border-purple-500/20">
-                <TableHead className="text-gray-300">Type</TableHead>
-                <TableHead className="text-gray-300">Customer</TableHead>
-                <TableHead className="text-gray-300">Plan/Service</TableHead>
-                <TableHead className="text-gray-300">Amount</TableHead>
-                <TableHead className="text-gray-300">Date</TableHead>
-                <TableHead className="text-gray-300">Status</TableHead>
+                <TableHead className="text-black">Type</TableHead>
+                <TableHead className="text-black">Customer</TableHead>
+                <TableHead className="text-black">Plan/Service</TableHead>
+                <TableHead className="text-black">Amount</TableHead>
+                <TableHead className="text-black">Date</TableHead>
+                <TableHead className="text-black">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -314,10 +314,10 @@ export function RevenuePage() {
                   <TableCell>
                     <Badge className={getTypeColor(transaction.type)}>{transaction.type}</Badge>
                   </TableCell>
-                  <TableCell className="text-white font-medium">{transaction.customer}</TableCell>
-                  <TableCell className="text-gray-300">{transaction.plan}</TableCell>
-                  <TableCell className="text-green-400 font-semibold">{transaction.amount}</TableCell>
-                  <TableCell className="text-gray-300">{transaction.date}</TableCell>
+                  <TableCell className="text-black font-medium">{transaction.customer}</TableCell>
+                  <TableCell className="text-black">{transaction.plan}</TableCell>
+                  <TableCell className="text-black font-semibold">{transaction.amount}</TableCell>
+                  <TableCell className="text-black">{transaction.date}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(transaction.status)}>{transaction.status}</Badge>
                   </TableCell>
