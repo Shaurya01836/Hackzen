@@ -15,7 +15,7 @@ import { RevenuePage } from "./sections/revenue-page"
 import { SettingsPage } from "./sections/settings-page"
 import { FlaggedContentPage } from "./sections/flagged-content-page"
 import { SupportInboxPage } from "./sections/support-inbox-page"
-import { AdminProfilePage } from "./sections/AdminProfile"
+// import { AdminProfilePage } from "./sections/AdminProfile"
 
 
 
@@ -48,8 +48,8 @@ export default function AdminPanel() {
         return <FlaggedContentPage />
       case "support":
         return <SupportInboxPage />
-      case "profile":
-        return <AdminProfilePage />
+      // case "profile":
+      //   return <AdminProfilePage />
       default:
         return <Dashboard />
     }
