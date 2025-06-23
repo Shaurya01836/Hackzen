@@ -162,15 +162,21 @@ const handleSubmit = async (e) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}` // ✅ Auth token
       },
-      body: JSON.stringify({
-        ...formData,
-        difficulty: formData.difficultyLevel, // match backend schema
-        problemStatements: formData.problemStatements.filter(ps => ps.trim()),
-        requirements: formData.requirements.filter(r => r.trim()),
-        perks: formData.perks.filter(p => p.trim()),
-        tags: formData.tags,
-        status: "upcoming" // or "draft" if you have save draft
-      })
+body: JSON.stringify({
+  ...formData,
+  images: {
+    banner: formData.images.banner || { url: "", publicId: "" },
+    logo: formData.images.logo || { url: "", publicId: "" },
+    gallery: formData.images.gallery || []
+  },
+  difficulty: formData.difficultyLevel,
+  problemStatements: formData.problemStatements.filter(ps => ps.trim()),
+  requirements: formData.requirements.filter(r => r.trim()),
+  perks: formData.perks.filter(p => p.trim()),
+  tags: formData.tags,
+  status: "upcoming"
+})
+
     });
 
     if (!res.ok) {

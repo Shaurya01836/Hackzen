@@ -44,6 +44,7 @@ exports.createHackathon = async (req, res) => {
     currency: req.body.prizePool.currency,
     breakdown: req.body.prizePool.breakdown
   },
+    images: req.body.images,
       problemStatements,
       requirements,
       perks,
@@ -118,23 +119,28 @@ exports.updateHackathon = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this hackathon' });
     }
 
+    const updateFields = {
+      ...req.body,
+      prizePool: {
+        amount: req.body.prizePool?.amount || 0,
+        currency: req.body.prizePool?.currency || 'USD',
+        breakdown: req.body.prizePool?.breakdown || '',
+      },
+      images: req.body.images || hackathon.images // fallback to existing images if not updated
+    };
+
     const updated = await Hackathon.findByIdAndUpdate(
       req.params.id,
-      {
-        ...req.body,
-        "prizePool.amount": req.body.prizeAmount,
-        "prizePool.currency": req.body.prizeCurrency,
-        "prizePool.breakdown": req.body.prizeBreakdown
-      },
+      updateFields,
       { new: true }
     );
 
     res.json(updated);
   } catch (err) {
+    console.error("Error in updateHackathon:", err);
     res.status(500).json({ message: 'Error updating hackathon' });
   }
 };
-
 // ✅ Delete a hackathon (only organizer allowed)
 exports.deleteHackathon = async (req, res) => {
   try {
