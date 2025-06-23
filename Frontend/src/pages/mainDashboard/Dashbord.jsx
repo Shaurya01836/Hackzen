@@ -12,15 +12,9 @@ import {
   User,
   Plus,
   LogOut,
-  BarChart3,
   FileText,
   Settings,
-  Github,
-  Youtube,
-  Award,
-  TrendingUp,
   Eye,
-  CheckCircle,
   Search,
   Archive,
   Building,
@@ -44,15 +38,6 @@ import {
   SidebarTrigger,
 } from "../../components/DashboardUI/sidebar";
 
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../../components/DashboardUI/avatar";
-
-import { Separator } from "../../components/CommonUI/separator";
-import { Button } from "../../components/CommonUI/button";
-import { Progress } from "../../components/DashboardUI/progress";
 import SignOutModal from "../../components/SignOutModal";
 import { useAuth } from "../../context/AuthContext";
 // Sections
@@ -67,6 +52,7 @@ import { Announcements } from "./sections/Announcements";
 import { OrganizerTools } from "./sections/OrganizerTools";
 import { ExploreHackathons } from "./sections/ExploreHackathon";
 import { CreateHackathon } from "./sections/Create-hackathon";
+import { OrganizationHub } from "./sections/OrganizationHub";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -77,7 +63,7 @@ export default function HackZenDashboard() {
   const [currentView, setCurrentView] = useState(initialView);
   const [showModal, setShowModal] = useState(false);
 
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const changeView = (viewKey) => {
     setCurrentView(viewKey);
@@ -237,41 +223,44 @@ export default function HackZenDashboard() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
-              <Settings className="w-4 h-4" />
-              Organizer Menu
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {organizerMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        onClick={item.onClick}
-                        className={cn(
-                          "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                          currentView === item.key
-                            ? "bg-indigo-100 text-indigo-700"
-                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
-                        )}
-                      >
-                        <item.icon
+          
+          {user?.role !== "participant" && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
+                <Settings className="w-4 h-4" />
+                Organizer Menu
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {organizerMenuItems.map((item) => (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          onClick={item.onClick}
                           className={cn(
-                            "w-4 h-4",
+                            "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                             currentView === item.key
-                              ? "text-indigo-700"
-                              : "text-gray-500"
+                              ? "bg-indigo-100 text-indigo-700"
+                              : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
                           )}
-                        />
-                        <span>{item.title}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+                        >
+                          <item.icon
+                            className={cn(
+                              "w-4 h-4",
+                              currentView === item.key
+                                ? "text-indigo-700"
+                                : "text-gray-500"
+                            )}
+                          />
+                          <span>{item.title}</span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
 
         <SidebarFooter className="p-4">
@@ -310,6 +299,10 @@ export default function HackZenDashboard() {
           <ChatRooms onBack={() => setCurrentView("dashboard")} />
         ) : currentView === "explore-hackathons" ? (
           <ExploreHackathons onBack={() => setCurrentView("dashboard")} />
+          
+        ) : currentView === "Organization-hub" ? (
+          <OrganizationHub onBack={() => setCurrentView("dashboard")} />
+          
         ) : currentView === "created-hackathons" ? (
           <CreatedHackathons
             onBack={() => setCurrentView("dashboard")}
