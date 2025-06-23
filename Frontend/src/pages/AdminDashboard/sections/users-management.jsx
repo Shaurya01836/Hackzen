@@ -40,7 +40,7 @@ export function UsersManagement() {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://hackzen.onrender.com/api/users", {
+        const res = await axios.get("http://localhost:3000/api/users", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
