@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../../lib/utils";
+
 import {
   Users,
   CircleArrowOutDownLeft,
@@ -21,6 +22,10 @@ import {
   Eye,
   CheckCircle,
   Search,
+  Archive,
+  Building,
+  UsersRoundIcon,
+  NotebookTabs,
 } from "lucide-react";
 
 import {
@@ -106,18 +111,44 @@ export default function HackZenDashboard() {
       key: "my-submissions",
       onClick: () => changeView("my-submissions"),
     },
-    {
-      title: "Chat Rooms",
-      icon: MessageSquare,
-      key: "chat-rooms",
-      onClick: () => changeView("chat-rooms"),
-    },
 
     {
       title: "Explore Hackathons",
       icon: Search,
       key: "explore-hackathons",
       onClick: () => changeView("explore-hackathons"),
+    },
+    {
+      title: "My Community",
+      icon: UsersRoundIcon,
+      key: "my-community",
+      onClick: () => changeView("my-community"),
+    },
+    // {
+    //   title: "Chat Rooms",
+    //   icon: MessageSquare,
+    //   key: "chat-rooms",
+    //   onClick: () => changeView("chat-rooms"),
+    // },
+
+    {
+      title: "Blogs",
+      icon: NotebookTabs,
+      key: "blogs",
+      onClick: () => changeView("blogs"),
+    },
+    {
+      title: "Project Archive",
+      icon: Archive,
+      key: "project-archive",
+      onClick: () => changeView("project-archive"),
+    },
+
+    {
+      title: "Organization Hub",
+      icon: Building,
+      key: "Organization-hub",
+      onClick: () => changeView("Organization-hub"),
     },
   ];
 
@@ -167,7 +198,6 @@ export default function HackZenDashboard() {
               <p className="text-sm text-gray-500">Hackathon Platform</p>
             </div>
           </div>
-
         </SidebarHeader>
 
         <SidebarContent>

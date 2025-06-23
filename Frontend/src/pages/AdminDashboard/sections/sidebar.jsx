@@ -69,7 +69,7 @@ export function Sidebar({ activeSection, setActiveSection }) {
           </div>
 
         {/* Navigation */}
-        <nav className="p-2 space-y-1">
+        <nav className="mt-4 space-y-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
