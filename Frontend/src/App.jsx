@@ -6,11 +6,11 @@ import Page from "./pages/AdminDashboard/AdminPanel";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import DashboardPage from "./pages/mainDashboard/Page";
-// import Dashboard from "./pages/Dashboard/mainDashboard/Dashbord";
-// import other pages as needed
-import OAuthSuccess from "./pages/OAuthSuccess"; // ✅ Import the new OAuthSuccess page
+import OAuthSuccess from "./pages/OAuthSuccess";
 import Loader from "./pages/Loader";
 import About from "./pages/Home/About";
+import { ExploreHackathons } from "./pages/mainDashboard/sections/ExploreHackathon";
+
 function App() {
   return (
     <Routes>
@@ -23,6 +23,8 @@ function App() {
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/loader" element={<Loader />} />
+      <Route path="/explore" element={<ExploreHackathons />} />
+       <Route path="/dashboard/hackathon/:id" element={<DashboardPage/>} />
     </Routes>
   );
 }

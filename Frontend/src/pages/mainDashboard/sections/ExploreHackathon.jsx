@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import {
   ArrowLeft,
@@ -39,6 +40,8 @@ import { cn } from "../../../lib/utils";
 import { HackathonDetails } from "./HackathonDetails";
 
 export function ExploreHackathons({ onBack }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [hackathons, setHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,12 +51,13 @@ export function ExploreHackathons({ onBack }) {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
 
-  useEffect(() => {
+ useEffect(() => {
     const fetchHackathons = async () => {
       try {
         const res = await axios.get("http://localhost:3000/api/hackathons");
         console.log("Raw hackathons response:", res.data);
-        setHackathons(res.data);
+        const approvedHackathons = res.data.filter((h) => h.approvalStatus === "approved");
+        setHackathons(approvedHackathons);
       } catch (err) {
         console.error("Hackathon fetch error:", err.message);
         setError("Failed to fetch hackathons");
@@ -65,12 +69,89 @@ export function ExploreHackathons({ onBack }) {
     fetchHackathons();
   }, []);
 
-  // If a hackathon is selected, show the details component
+// Check URL params on component mount and when hackathons are loaded
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const hackathonId = urlParams.get('hackathon');
+    
+    if (hackathonId && hackathons.length > 0) {
+      const hackathon = hackathons.find(h => h._id === hackathonId);
+      if (hackathon) {
+        const transformedHackathon = transformHackathonData(hackathon);
+        setSelectedHackathon(transformedHackathon);
+      } else {
+        // If hackathon ID is in URL but not found, clear the URL params
+        const newParams = new URLSearchParams(location.search);
+        newParams.delete('hackathon');
+        newParams.delete('title');
+        navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+      }
+    }
+  }, [hackathons, location.search, navigate, location.pathname]);
+
+   // Transform hackathon data helper function
+  const transformHackathonData = (hackathon) => {
+    return {
+      ...hackathon,
+      name: hackathon.title,
+      prize: hackathon.prizePool?.amount
+        ? `$${hackathon.prizePool.amount.toLocaleString()} ${
+            hackathon.prizePool.currency || "USD"
+          }`
+        : "TBA",
+      participants: hackathon.participants?.length || 0,
+      maxParticipants: hackathon.maxParticipants || 100,
+      rating: 4.5,
+      reviews: 12,
+      difficulty: hackathon.difficultyLevel,
+      status:
+        hackathon.status === "upcoming"
+          ? "Registration Open"
+          : hackathon.status === "ongoing"
+          ? "Ongoing"
+          : "Ended",
+      startDate: new Date(hackathon.startDate).toLocaleDateString(),
+      endDate: new Date(hackathon.endDate).toLocaleDateString(),
+      registrationDeadline: new Date(
+        hackathon.registrationDeadline
+      ).toLocaleDateString(),
+      organizer: hackathon.organizer?.name || "Unknown Organizer",
+      organizerLogo: hackathon.organizer?.logo || null,
+      featured: hackathon.tags?.includes("featured") || false,
+      sponsored: hackathon.tags?.includes("sponsored") || false,
+      // Add default data for HackathonDetails component
+      requirements: hackathon.requirements || [
+        "Valid student/professional ID",
+        "Team size: 2-4 members",
+        "Original project submission",
+        "Attend mandatory sessions"
+      ],
+      perks: hackathon.perks || [
+        "Free accommodation",
+        "Meals included",
+        "Networking opportunities",
+        "Workshop access",
+        "Mentorship sessions"
+      ],
+      tags: hackathon.tags || [hackathon.category],
+      problemStatements: hackathon.problemStatements || []
+    };
+  };
+
+
+    // If a hackathon is selected, show the details component
   if (selectedHackathon) {
     return (
       <HackathonDetails
         hackathon={selectedHackathon}
-        onBack={() => setSelectedHackathon(null)}
+        onBack={() => {
+          setSelectedHackathon(null);
+          // Remove hackathon parameter from URL but keep other params like view=explore-hackathons
+          const newParams = new URLSearchParams(location.search);
+          newParams.delete('hackathon');
+          newParams.delete('title');
+          navigate(`${location.pathname}?${newParams.toString()}`, { replace: true });
+        }}
       />
     );
   }
@@ -136,37 +217,21 @@ export function ExploreHackathons({ onBack }) {
     (h) => h.status === "upcoming"
   );
 
-  const handleHackathonClick = (hackathon) => {
-    // Transform the hackathon data to match the expected format for HackathonDetails
-    const transformedHackathon = {
-      ...hackathon,
-      name: hackathon.title,
-      prize: hackathon.prizePool?.amount
-        ? `$${hackathon.prizePool.amount.toLocaleString()} ${
-            hackathon.prizePool.currency || "USD"
-          }`
-        : "TBA",
-      participants: hackathon.participants?.length || 0,
-      maxParticipants: hackathon.maxParticipants || 100,
-      rating: 4.5, // Default rating - you can calculate this from reviews
-      reviews: 12, // Default reviews count
-      difficulty: hackathon.difficultyLevel,
-      status:
-        hackathon.status === "upcoming"
-          ? "Registration Open"
-          : hackathon.status === "ongoing"
-          ? "Ongoing"
-          : "Ended",
-      startDate: new Date(hackathon.startDate).toLocaleDateString(),
-      endDate: new Date(hackathon.endDate).toLocaleDateString(),
-      registrationDeadline: new Date(
-        hackathon.registrationDeadline
-      ).toLocaleDateString(),
-      organizer: hackathon.organizer?.name || "Unknown Organizer",
-      organizerLogo: hackathon.organizer?.logo || null,
-      featured: hackathon.tags?.includes("featured") || false,
-      sponsored: hackathon.tags?.includes("sponsored") || false,
-    };
+   const handleHackathonClick = (hackathon) => {
+    const transformedHackathon = transformHackathonData(hackathon);
+    
+    // Create URL-friendly slug from hackathon title
+    const slug = hackathon.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    
+    // Update URL with hackathon parameters while preserving existing params
+    const newParams = new URLSearchParams(location.search);
+    newParams.set('hackathon', hackathon._id);
+    newParams.set('title', slug);
+    
+    navigate(`${location.pathname}?${newParams.toString()}`, { replace: false });
     setSelectedHackathon(transformedHackathon);
   };
 
@@ -184,7 +249,7 @@ export function ExploreHackathons({ onBack }) {
   };
 
   const renderHackathonCard = (hackathon, featured = false) => (
-    <Card
+     <Card
       key={hackathon._id}
       className={cn(
         "w-full flex flex-col md:flex-row gap-4 p-4 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]",
@@ -211,7 +276,6 @@ export function ExploreHackathons({ onBack }) {
         {/* Header with badges */}
         <div className="flex justify-between items-start">
           <div className="flex-1">
-      
             <CardTitle className="text-xl font-semibold text-indigo-700 hover:text-indigo-800">
               {hackathon.title}
             </CardTitle>
@@ -306,17 +370,18 @@ export function ExploreHackathons({ onBack }) {
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
-          <Button
-            size="sm"
-            className="gap-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleHackathonClick(hackathon);
-            }}
-          >
-            <ExternalLink className="w-4 h-4" />
-            View Details
-          </Button>
+        <Button
+          size="sm"
+          className="gap-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleHackathonClick(hackathon);
+          }}
+        >
+           <ExternalLink className="w-4 h-4" />
+          View Details
+        </Button>
+
           <Button
             size="sm"
             variant="outline"
