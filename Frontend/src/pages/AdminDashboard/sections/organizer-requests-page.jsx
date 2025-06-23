@@ -32,7 +32,6 @@ import {
   Check,
   X,
   Clock,
-  Briefcase,
   Shuffle,
 } from "lucide-react"
 
@@ -45,7 +44,11 @@ export function OrganizerRequestsPage() {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/hackathons")
+        const res = await axios.get("http://localhost:3000/api/hackathons/all", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        })
         setOrganizerRequests(res.data)
       } catch (err) {
         console.error("Failed to fetch hackathon requests", err)
@@ -58,25 +61,24 @@ export function OrganizerRequestsPage() {
   }, [])
 
   const updateApprovalStatus = async (id, status) => {
-  try {
-    await axios.patch(
-      `http://localhost:3000/api/hackathons/${id}/approval`, // ✅ correct endpoint
-      { status }, // ✅ backend expects `{ status: 'approved' | 'rejected' }`
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+    try {
+      await axios.patch(
+        `http://localhost:3000/api/hackathons/${id}/approval`,
+        { status },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      )
 
-    setOrganizerRequests((prev) =>
-      prev.map((h) => (h._id === id ? { ...h, approvalStatus: status } : h))
-    );
-  } catch (err) {
-    console.error("Failed to update approval status", err);
+      setOrganizerRequests((prev) =>
+        prev.map((h) => (h._id === id ? { ...h, approvalStatus: status } : h))
+      )
+    } catch (err) {
+      console.error("Failed to update approval status", err)
+    }
   }
-};
-
 
   const filteredRequests = organizerRequests.filter((request) => {
     const matchesSearch =
@@ -107,7 +109,7 @@ export function OrganizerRequestsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">Organizer Requests</h1>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-yellow-500 text-red-300">
+          <Badge className="bg-yellow-500 text-white">
             <Clock className="w-3 h-3 mr-1" />
             {organizerRequests.filter((r) => r.approvalStatus === "pending").length} Pending
           </Badge>
@@ -214,4 +216,4 @@ export function OrganizerRequestsPage() {
       </Card>
     </div>
   )
-} 
+}

@@ -7,8 +7,10 @@ const {
   getHackathonById,
   updateHackathon,
   deleteHackathon,
-  updateApprovalStatus
+  updateApprovalStatus,
+  getAllHackathonsRaw, // ✅ ADD THIS
 } = require('../controllers/hackathonController');
+
 
 const {
   protect,
@@ -23,6 +25,8 @@ router.delete('/:id', protect, isOrganizerOrAdmin, deleteHackathon);
 
 // ✅ Admin-only route for approving/rejecting hackathons
 router.patch('/:id/approval', protect, isAdmin, updateApprovalStatus);
+// ✅ Admin-only route to get all hackathons regardless of approval status
+router.get('/all', protect, isAdmin, getAllHackathonsRaw);
 
 // 🆓 Public routes
 router.get('/', getAllHackathons);
