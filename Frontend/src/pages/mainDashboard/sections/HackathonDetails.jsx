@@ -1,5 +1,5 @@
-"use client";
-import { useState } from "react";
+"use client"
+import { useState } from "react"
 import {
   ArrowLeft,
   Calendar,
@@ -19,67 +19,91 @@ import {
   Gift,
   MessageSquare,
   UserPlus,
-  Download,
-} from "lucide-react";
+  Download
+} from "lucide-react"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from "../../../components/CommonUI/card";
-import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
+  CardTitle
+} from "../../../components/CommonUI/card"
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../../../components/DashboardUI/avatar";
-import { Progress } from "../../../components/DashboardUI/progress";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../components/CommonUI/tabs";
+  ACard,
+  ACardContent,
+  ACardDescription,
+  ACardHeader,
+  ACardTitle
+} from "../../../components/DashboardUI/AnimatedCard"
+import { Button } from "../../../components/CommonUI/button"
+import { Badge } from "../../../components/CommonUI/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "../../../components/DashboardUI/avatar"
+import { Progress } from "../../../components/DashboardUI/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
+import { HackathonRegistration } from "./RegistrationHackathon"
 
 export function HackathonDetails({ hackathon, onBack }) {
-  const [isRegistered, setIsRegistered] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [showRegistration, setShowRegistration] = useState(false)
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = difficulty => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-500";
+        return "bg-green-500"
       case "Intermediate":
-        return "bg-yellow-500";
+        return "bg-yellow-500"
       case "Advanced":
-        return "bg-red-500";
+        return "bg-red-500"
       default:
-        return "bg-gray-500";
+        return "bg-gray-500"
     }
-  };
+  }
 
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
       case "Registration Open":
-        return "bg-green-500";
+        return "bg-green-500"
       case "Ongoing":
-        return "bg-blue-500";
+        return "bg-blue-500"
       case "Ended":
-        return "bg-gray-500";
+        return "bg-gray-500"
       default:
-        return "bg-yellow-500";
+        return "bg-yellow-500"
     }
-  };
+  }
 
   const handleRegister = () => {
-    setIsRegistered(!isRegistered);
-  };
+    if (isRegistered) {
+      setIsRegistered(false)
+    } else {
+      setShowRegistration(true)
+    }
+  }
 
   const handleSave = () => {
-    setIsSaved(!isSaved);
-  };
+    setIsSaved(!isSaved)
+  }
+
+  const handleRegistrationSuccess = () => {
+    setShowRegistration(false)
+    setIsRegistered(true)
+    // You can add a success toast/notification here
+  }
+
+  const handleBackFromRegistration = () => {
+    setShowRegistration(false)
+  }
+
+  if (showRegistration) {
+    return (
+      <HackathonRegistration
+        hackathon={hackathon}
+        onBack={handleBackFromRegistration}
+        onSuccess={handleRegistrationSuccess}
+      />
+    )
+  }
 
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-auto">
@@ -89,7 +113,7 @@ export function HackathonDetails({ hackathon, onBack }) {
           <div className="flex items-center justify-between p-6">
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="default"
                 size="sm"
                 onClick={onBack}
                 className="flex items-center gap-2"
@@ -184,32 +208,31 @@ export function HackathonDetails({ hackathon, onBack }) {
                 </div>
               </div>
             </div>
-
             {/* Quick Info Card */}
             <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <ACard>
+                <ACardHeader>
+                  <ACardTitle className="flex items-center gap-2">
                     <Trophy className="w-5 h-5 text-yellow-500" />
                     Prize Pool
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
+                  </ACardTitle>
+                </ACardHeader>
+                <ACardContent>
                   <p className="text-3xl font-bold text-green-600">
                     {hackathon.prize}
                   </p>
                   <p className="text-sm text-gray-500">Total rewards</p>
-                </CardContent>
-              </Card>
+                </ACardContent>
+              </ACard>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <ACard>
+                <ACardHeader>
+                  <ACardTitle className="flex items-center gap-2">
                     <Users className="w-5 h-5 text-blue-500" />
                     Participation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
+                  </ACardTitle>
+                </ACardHeader>
+                <ACardContent className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span>Registered</span>
                     <span>
@@ -231,17 +254,17 @@ export function HackathonDetails({ hackathon, onBack }) {
                       ({hackathon.reviews} reviews)
                     </span>
                   </div>
-                </CardContent>
-              </Card>
+                </ACardContent>
+              </ACard>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <ACard>
+                <ACardHeader>
+                  <ACardTitle className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-purple-500" />
                     Important Dates
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
+                  </ACardTitle>
+                </ACardHeader>
+                <ACardContent className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">
                       Registration Deadline:
@@ -258,8 +281,8 @@ export function HackathonDetails({ hackathon, onBack }) {
                     <span className="text-gray-600">Event End:</span>
                     <span className="font-medium">{hackathon.endDate}</span>
                   </div>
-                </CardContent>
-              </Card>
+                </ACardContent>
+              </ACard>
             </div>
           </div>
 
@@ -374,7 +397,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {hackathon.tags.map((tag) => (
+                        {hackathon.tags.map(tag => (
                           <Badge
                             key={tag}
                             variant="outline"
@@ -654,7 +677,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[1, 2, 3, 4, 5].map((i) => (
+                      {[1, 2, 3, 4, 5].map(i => (
                         <div key={i} className="flex items-center gap-3">
                           <Avatar className="w-8 h-8">
                             <AvatarImage
@@ -679,5 +702,5 @@ export function HackathonDetails({ hackathon, onBack }) {
         </div>
       </div>
     </div>
-  );
+  )
 }
