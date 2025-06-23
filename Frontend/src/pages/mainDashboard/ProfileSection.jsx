@@ -1,9 +1,10 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 // adjust path if needed
 import {
+   SquarePen,
+  Trash2,
   User,
   Settings,
   LogOut,
@@ -55,22 +56,23 @@ import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 
 export function ProfileSection() {
   const [selectedImage, setSelectedImage] = useState(null);
- const [currentView, setCurrentViewState] = useState("overview");
+  const [selectedBanner, setSelectedBanner] = useState(null); 
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-const setCurrentView = (view) => {
-  setCurrentViewState(view);
-  localStorage.setItem("currentView", view);
-};
+  const [currentView, setCurrentViewState] = useState("overview");
+  const setCurrentView = (view) => {
+    setCurrentViewState(view);
+    localStorage.setItem("currentView", view);
+  };
+
 
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+
   const { user, token, login } = useAuth();
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
-
-
 
   const [editForm, setEditForm] = useState({
     name: "",
@@ -81,7 +83,9 @@ const setCurrentView = (view) => {
     website: "",
     github: "",
     linkedin: "",
+    bannerImage: "",
   });
+
   const totalHackathons = 12;
   const totalWins = 3;
   const totalBadges = 8;
@@ -133,7 +137,9 @@ const setCurrentView = (view) => {
 
 useEffect(() => {
   const savedView = localStorage.getItem("currentView");
-  if (savedView) setCurrentViewState(savedView); // use raw setter here
+  if (savedView) {
+    setTimeout(() => setCurrentViewState(savedView), 0); // delay to avoid warning
+  }
   fetchUserProfile();
 }, []);
 
@@ -167,6 +173,7 @@ useEffect(() => {
         github: data.github || "",
         linkedin: data.linkedin || "",
         profileImage: data.profileImage || "",
+        bannerImage: data.bannerImage || "",
       });
 
       // Optional: update local context
@@ -212,9 +219,13 @@ useEffect(() => {
     <div className="flex flex-col gap-6 w-full p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <Card className="w-full overflow-hidden relative rounded-2xl">
         {/* Banner */}
-        <div className="relative h-36 w-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-2xl">
-          <div className="absolute inset-0 opacity-20 bg-[url('/banner-pattern.svg')] bg-cover bg-center" />
-        </div>
+        <div className="relative h-36 w-full rounded-t-2xl overflow-hidden">
+        <img
+  src={user?.bannerImage || "/assets/default-banner.png"}
+  alt="Banner"
+  className="w-full h-full object-cover"
+/>
+      </div>
 
         {/* Avatar */}
         <div className="flex justify-center -mt-16 z-10">
@@ -234,7 +245,7 @@ useEffect(() => {
 
           <div className="flex gap-2 pt-2 justify-center flex-wrap">
             <Badge
-              variant="default"
+              variant="outline"
               className="bg-purple-100 text-purple-800 border-purple-300"
             >
               Participant
@@ -440,189 +451,205 @@ useEffect(() => {
     </div>
   );
 
- const renderEditProfile = () => (
+
+
+const renderEditProfile = () => (
   <div className="w-full flex flex-col gap-6">
-    {/* Profile Picture Section */}
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Profile Picture</CardTitle>
-        <CardDescription>Update your profile photo</CardDescription>
-      </CardHeader>
 
-      <CardContent className="flex flex-col items-center space-y-4">
-        {isUploading ? (
-          <div className="w-32 h-32 flex items-center justify-center border rounded-full">
-            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500"></div>
-          </div>
-        ) : (
-          <Avatar className="w-32 h-32">
-            <AvatarImage
-              src={
-                editForm.profileImage ||
-                user?.profileImage ||
-                "/placeholder.svg"
-              }
-            />
-            <AvatarFallback className="text-3xl">{initials}</AvatarFallback>
-          </Avatar>
-        )}
+    {/* Card with Banner and Avatar */}
+    <Card className="w-full overflow-hidden relative">
 
+      {/* Banner with Hover Edit */}
+      <div className="relative h-48 w-full rounded-t-2xl overflow-hidden group">
+        <img
+          src={editForm.bannerImage || "/assets/default-banner.png"}
+          alt="Banner"
+          className="w-full h-full object-cover"
+        />
+
+        {/* Edit Banner Icon */}
+        <button
+          onClick={() => document.getElementById("upload-banner-edit").click()}
+          className="absolute bottom-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+          title="Edit Banner"
+        >
+          <SquarePen className="w-4 h-4" />
+        </button>
         <input
           type="file"
+          id="upload-banner-edit"
           accept="image/*"
+          className="hidden"
+          onChange={handleBannerUpload}
+        />
+      </div>
+
+      {/* Avatar with Hover Edit */}
+      <div className="relative flex justify-center -mt-16 z-10 group">
+        <Avatar className="w-28 h-28 border-[3px] border-white shadow-xl">
+          <AvatarImage src={editForm.profileImage || "/placeholder.svg"} />
+          <AvatarFallback className="text-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white">
+            {initials}
+          </AvatarFallback>
+        </Avatar>
+
+        {/* Edit Profile Icon */}
+        <button
+          onClick={() => document.getElementById("upload-avatar").click()}
+          className="absolute bottom-2 right-[calc(50%-14px)] bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+          title="Edit Profile Picture"
+        >
+          <SquarePen className="w-4 h-4" />
+        </button>
+        <input
+          type="file"
           id="upload-avatar"
+          accept="image/*"
           className="hidden"
           onChange={handleImageUpload}
         />
+      </div>
 
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              document.getElementById("upload-avatar").click()
+      {/* User Info */}
+      <CardHeader className="text-center pt-2">
+        <CardTitle className="text-xl font-semibold">{user?.name}</CardTitle>
+        <CardDescription>Participant</CardDescription>
+
+        {uploadSuccess && (
+          <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
+            ✅ Image uploaded successfully!
+          </div>
+        )}
+      </CardHeader>
+    </Card>
+
+
+    {/* Personal Information Section */}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Personal Information</CardTitle>
+        <CardDescription>Update your personal details</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+          <div className="w-full sm:w-[48%]">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm({ ...editForm, name: e.target.value })
+              }
+            />
+          </div>
+          <div className="w-full sm:w-[48%]">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={editForm.email}
+              onChange={(e) =>
+                setEditForm({ ...editForm, email: e.target.value })
+              }
+            />
+          </div>
+          <div className="w-full sm:w-[48%]">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              value={editForm.phone}
+              onChange={(e) =>
+                setEditForm({ ...editForm, phone: e.target.value })
+              }
+            />
+          </div>
+          <div className="w-full sm:w-[48%]">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={editForm.location}
+              onChange={(e) =>
+                setEditForm({ ...editForm, location: e.target.value })
+              }
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="bio">Bio</Label>
+          <Textarea
+            id="bio"
+            rows={3}
+            value={editForm.bio}
+            onChange={(e) =>
+              setEditForm({ ...editForm, bio: e.target.value })
             }
-            disabled={isUploading}
-          >
-            <Edit className="w-3 h-3 mr-1" />
-            {isUploading ? "Uploading..." : "Upload New Image"}
-          </Button>
-
-          {uploadSuccess && (
-            <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
-              ✅ Image uploaded successfully!
-            </div>
-          )}
+          />
         </div>
       </CardContent>
     </Card>
 
+    {/* Social Links Section */}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Social Links</CardTitle>
+        <CardDescription>
+          Add your social media and professional links
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="w-full">
+          <Label htmlFor="website">Website</Label>
+          <Input
+            id="website"
+            value={editForm.website}
+            onChange={(e) =>
+              setEditForm({ ...editForm, website: e.target.value })
+            }
+          />
+        </div>
+        <div className="w-full">
+          <Label htmlFor="github">GitHub</Label>
+          <Input
+            id="github"
+            value={editForm.github}
+            onChange={(e) =>
+              setEditForm({ ...editForm, github: e.target.value })
+            }
+          />
+        </div>
+        <div className="w-full">
+          <Label htmlFor="linkedin">LinkedIn</Label>
+          <Input
+            id="linkedin"
+            value={editForm.linkedin}
+            onChange={(e) =>
+              setEditForm({ ...editForm, linkedin: e.target.value })
+            }
+          />
+        </div>
+      </CardContent>
+    </Card>
 
-      {/* Personal Information Section */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>Update your personal details</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
-            <div className="w-full sm:w-[48%]">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                value={editForm.name}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="w-full sm:w-[48%]">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={editForm.email}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, email: e.target.value })
-                }
-              />
-            </div>
-            <div className="w-full sm:w-[48%]">
-              <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={editForm.phone}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, phone: e.target.value })
-                }
-              />
-            </div>
-            <div className="w-full sm:w-[48%]">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={editForm.location}
-                onChange={(e) =>
-                  setEditForm({ ...editForm, location: e.target.value })
-                }
-              />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="bio">Bio</Label>
-            <Textarea
-              id="bio"
-              rows={3}
-              value={editForm.bio}
-              onChange={(e) =>
-                setEditForm({ ...editForm, bio: e.target.value })
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Social Links Section */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Social Links</CardTitle>
-          <CardDescription>
-            Add your social media and professional links
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="w-full">
-            <Label htmlFor="website">Website</Label>
-            <Input
-              id="website"
-              value={editForm.website}
-              onChange={(e) =>
-                setEditForm({ ...editForm, website: e.target.value })
-              }
-            />
-          </div>
-          <div className="w-full">
-            <Label htmlFor="github">GitHub</Label>
-            <Input
-              id="github"
-              value={editForm.github}
-              onChange={(e) =>
-                setEditForm({ ...editForm, github: e.target.value })
-              }
-            />
-          </div>
-          <div className="w-full">
-            <Label htmlFor="linkedin">LinkedIn</Label>
-            <Input
-              id="linkedin"
-              value={editForm.linkedin}
-              onChange={(e) =>
-                setEditForm({ ...editForm, linkedin: e.target.value })
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Save + Cancel Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-start">
-        <Button
-          onClick={handleSaveChanges}
-          className="flex items-center gap-2 w-full sm:w-auto"
-        >
-          <Save className="w-4 h-4" />
-          Save Changes
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => setCurrentView("overview")}
-        >
-          Cancel
-        </Button>
-      </div>
+    {/* Save + Cancel Actions */}
+    <div className="flex flex-col sm:flex-row gap-3 justify-start">
+      <Button
+        onClick={handleSaveChanges}
+        className="flex items-center gap-2 w-full sm:w-auto"
+      >
+        <Save className="w-4 h-4" />
+        Save Changes
+      </Button>
+      <Button
+        variant="outline"
+        className="w-full sm:w-auto"
+        onClick={() => setCurrentView("overview")}
+      >
+        Cancel
+      </Button>
     </div>
-  );
+  </div>
+);
+
 
   const renderAccountSettings = () => (
     <div className="w-full flex flex-col gap-6">
@@ -942,6 +969,7 @@ const handleSaveChanges = async () => {
     github: editForm.github,
     linkedin: editForm.linkedin,
     profileImage: editForm.profileImage || selectedImage,
+    bannerImage: editForm.bannerImage || selectedBanner,
   };
 
   try {
@@ -1018,6 +1046,51 @@ const handleSaveChanges = async () => {
     alert("Failed to upload image");
   } finally {
     setIsUploading(false); // ✅ Stop loading
+  }
+};
+
+const handleBannerUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  setIsUploading(true);
+  const formData = new FormData();
+  formData.append("image", file);
+  setIsUploading(true);
+
+  try {
+    const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
+    const imageUrl = uploadRes.data.url;
+
+    setSelectedBanner(null);
+    setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
+
+    const userData = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (userData?._id && token) {
+      await axios.put(
+        `http://localhost:3000/api/users/${userData._id}`,
+        { bannerImage: imageUrl },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const updatedUser = { ...userData, bannerImage: imageUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+    }
+
+   setUploadSuccess(true);
+    setTimeout(() => setUploadSuccess(false), 3000);
+  } catch (err) {
+    console.error("Banner upload failed:", err);
+    alert("Failed to upload banner");
+  } finally {
+    setIsUploading(false);
   }
 };
 

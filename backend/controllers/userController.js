@@ -26,7 +26,8 @@ exports.registerUser = async (req, res) => {
       email,
       passwordHash,
       authProvider: 'email',
-      role: isAdminEmail ? 'admin' : undefined 
+      role: isAdminEmail ? 'admin' : undefined,
+      bannerImage: "/assets/default-banner.png" // ✅ default banner
     });
 
     res.status(201).json({
@@ -102,7 +103,8 @@ exports.updateUser = async (req, res) => {
       "github",
       "githubUsername",
       "linkedin",
-      "profileImage"
+      "profileImage",
+      "bannerImage"
     ];
 
     // Filter incoming req.body to only allow those fields

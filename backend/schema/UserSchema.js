@@ -10,6 +10,9 @@ const UserSchema = new Schema({
   type: String,
   default: "",
 },
+bannerImage: { type: String,
+   default: "/assets/default-banner.png"
+   },
 
   role: {
     type: String,
