@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import axios from "axios"
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Input } from "../../../components/CommonUI/input"
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import { Input } from "../../../components/CommonUI/input";
 import {
   Table,
   TableBody,
@@ -18,13 +18,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../../components/AdminUI/table"
+} from "../../../components/AdminUI/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "../../../components/AdminUI/dropdown-menu"
+} from "../../../components/AdminUI/dropdown-menu";
 import {
   Search,
   Filter,
@@ -33,13 +33,15 @@ import {
   X,
   Clock,
   Shuffle,
-} from "lucide-react"
+} from "lucide-react";
+import ModalHackathonDetails from "./ModalHackathonDetails";
 
 export function OrganizerRequestsPage() {
-  const [organizerRequests, setOrganizerRequests] = useState([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("All")
-  const [loading, setLoading] = useState(true)
+  const [organizerRequests, setOrganizerRequests] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [loading, setLoading] = useState(true);
+  const [selectedHackathon, setSelectedHackathon] = useState(null);
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -48,17 +50,17 @@ export function OrganizerRequestsPage() {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        })
-        setOrganizerRequests(res.data)
+        });
+        setOrganizerRequests(res.data);
       } catch (err) {
-        console.error("Failed to fetch hackathon requests", err)
+        console.error("Failed to fetch hackathon requests", err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchRequests()
-  }, [])
+    fetchRequests();
+  }, []);
 
   const updateApprovalStatus = async (id, status) => {
     try {
@@ -70,53 +72,51 @@ export function OrganizerRequestsPage() {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
-      )
+      );
 
       setOrganizerRequests((prev) =>
         prev.map((h) => (h._id === id ? { ...h, approvalStatus: status } : h))
-      )
+      );
     } catch (err) {
-      console.error("Failed to update approval status", err)
+      console.error("Failed to update approval status", err);
     }
-  }
+  };
 
   const filteredRequests = organizerRequests.filter((request) => {
     const matchesSearch =
       request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+      request.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
-      statusFilter === "All" || request.approvalStatus === statusFilter.toLowerCase()
-    return matchesSearch && matchesStatus
-  })
+      statusFilter === "All" || request.approvalStatus === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
       case "approved":
-        return "bg-green-500 text-white"
+        return "bg-green-500 text-white";
       case "pending":
-        return "bg-yellow-500 text-white"
+        return "bg-yellow-500 text-white";
       case "rejected":
-        return "bg-red-500 text-white"
+        return "bg-red-500 text-white";
       default:
-        return "bg-gray-500 text-white"
+        return "bg-gray-500 text-white";
     }
-  }
+  };
 
-  if (loading) return <p className="text-center text-black">Loading requests...</p>
+  if (loading)
+    return <p className="text-center text-black font-semibold">Loading requests...</p>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 md:p-8">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-3xl font-bold text-black">Organizer Requests</h1>
-        <div className="flex items-center space-x-2">
-          <Badge className="bg-yellow-500 text-white">
-            <Clock className="w-3 h-3 mr-1" />
-            {organizerRequests.filter((r) => r.approvalStatus === "pending").length} Pending
-          </Badge>
-        </div>
+        <Badge className="bg-yellow-500 text-white">
+          <Clock className="w-4 h-4 mr-1" />
+          {organizerRequests.filter((r) => r.approvalStatus === "pending").length} Pending
+        </Badge>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
@@ -135,7 +135,7 @@ export function OrganizerRequestsPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {["All", "Pending", "Approved", "Rejected"].map((status) => (
+            {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
               <DropdownMenuItem
                 key={status}
                 onClick={() => setStatusFilter(status)}
@@ -147,10 +147,11 @@ export function OrganizerRequestsPage() {
         </DropdownMenu>
       </div>
 
-      {/* Table */}
-      <Card>
+      <Card className="border shadow-sm">
         <CardHeader>
-          <CardTitle className="text-black">Requests ({filteredRequests.length})</CardTitle>
+          <CardTitle className="text-black text-lg">
+            Requests ({filteredRequests.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -164,15 +165,13 @@ export function OrganizerRequestsPage() {
             </TableHeader>
             <TableBody>
               {filteredRequests.map((req) => (
-                <TableRow key={req._id}>
+                <TableRow key={req._id} className="hover:bg-gray-50">
                   <TableCell>
-                    <div>
-                      <div className="text-black font-medium">
-                        {req.organizer?.name || "Unknown"}
-                      </div>
+                    <div className="text-black font-medium">
+                      {req.organizer?.name || "Unknown"}
                     </div>
                   </TableCell>
-                  <TableCell className="text-black">{req.title}</TableCell>
+                  <TableCell className="text-black font-medium">{req.title}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(req.approvalStatus)}>
                       {req.approvalStatus || "pending"}
@@ -186,7 +185,9 @@ export function OrganizerRequestsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSelectedHackathon(req)}
+                        >
                           <Eye className="w-4 h-4 mr-2" /> View
                         </DropdownMenuItem>
                         {req.approvalStatus === "pending" && (
@@ -214,6 +215,15 @@ export function OrganizerRequestsPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Modal for viewing details */}
+      {selectedHackathon && (
+        <ModalHackathonDetails
+          isOpen={!!selectedHackathon}
+          onClose={() => setSelectedHackathon(null)}
+          hackathon={selectedHackathon}
+        />
+      )}
     </div>
-  )
+  );
 }
