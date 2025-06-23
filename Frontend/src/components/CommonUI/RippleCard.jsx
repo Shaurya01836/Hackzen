@@ -1,9 +1,7 @@
 import * as React from "react";
+const cn = (...classes) => classes.filter(Boolean).join(" ");
 
-// Mock cn function for className merging
-const cn = (...classes) => classes.filter(Boolean).join(' ');
-
-const ACard = React.forwardRef(({ className, ...props }, ref) => {
+const RCard = React.forwardRef(({ className, ...props }, ref) => {
   const [isHovered, setIsHovered] = React.useState(false);
   const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
 
@@ -20,26 +18,33 @@ const ACard = React.forwardRef(({ className, ...props }, ref) => {
     setMousePosition({ x: 0, y: 0 });
   };
 
-  // Calculate rotation with limits to prevent extreme angles
   const getRotation = () => {
-    if (!isHovered) return 'perspective(600px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
-    
+    if (!isHovered)
+      return "perspective(600px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
+
     const rect = ref?.current?.getBoundingClientRect();
-    if (!rect) return 'perspective(600px) rotateX(0deg) rotateY(0deg) translateZ(0px)';
-    
+    if (!rect)
+      return "perspective(600px) rotateX(0deg) rotateY(0deg) translateZ(0px)";
+
     // Calculate center-relative position
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
-    
+
     // Normalize to -1 to 1 range
     const normalizedX = (mousePosition.x - centerX) / centerX;
     const normalizedY = (mousePosition.y - centerY) / centerY;
-    
+
     // Increased rotation for more dramatic tilt effect (max 35 degrees)
     const maxRotation = 35;
-    const rotateY = Math.max(-maxRotation, Math.min(maxRotation, normalizedX * maxRotation));
-    const rotateX = Math.max(-maxRotation, Math.min(maxRotation, -normalizedY * maxRotation));
-    
+    const rotateY = Math.max(
+      -maxRotation,
+      Math.min(maxRotation, normalizedX * maxRotation)
+    );
+    const rotateX = Math.max(
+      -maxRotation,
+      Math.min(maxRotation, -normalizedY * maxRotation)
+    );
+
     return `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(40px)`;
   };
 
@@ -65,10 +70,11 @@ const ACard = React.forwardRef(({ className, ...props }, ref) => {
       onMouseLeave={handleMouseLeave}
       style={{
         transform: getRotation(),
-        transition: isHovered ? 'all 0.05s ease-out' : 'all 0.4s ease-out'
+        transition: isHovered ? "all 0.05s ease-out" : "all 0.4s ease-out",
       }}
       {...props}
     >
+      {/* Ripple effect */}
       {isHovered && (
         <div 
           className="absolute pointer-events-none"
@@ -82,15 +88,17 @@ const ACard = React.forwardRef(({ className, ...props }, ref) => {
           <div className="w-full h-full rounded-full bg-indigo-400/20 animate-ping" />
         </div>
       )}
+      
+      {/* Content wrapper with additional hover effects */}
       <div className="relative z-10 transition-transform duration-300 group-hover:translate-y-[-2px]">
         {props.children}
       </div>
     </div>
   );
 });
-ACard.displayName = "ACard";
+RCard.displayName = "Card";
 
-const ACardHeader = React.forwardRef(({ className, ...props }, ref) => (
+const RCardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -101,49 +109,49 @@ const ACardHeader = React.forwardRef(({ className, ...props }, ref) => (
     {...props}
   />
 ));
-ACardHeader.displayName = "ACardHeader";
+RCardHeader.displayName = "CardHeader";
 
-const ACardTitle = React.forwardRef(({ className, ...props }, ref) => (
+const RCardTitle = React.forwardRef(({ className, ...props }, ref) => (
   <h3
     ref={ref}
     className={cn(
       "text-2xl font-semibold leading-none tracking-tight text-gray-900",
       "transition-all duration-300 group-hover:text-indigo-900",
-      "transform group-hover:scale-105 group-hover:translate-x-1",
+      "transform",
       className
     )}
     {...props}
   />
 ));
-ACardTitle.displayName = "ACardTitle";
+RCardTitle.displayName = "CardTitle";
 
-const ACardDescription = React.forwardRef(({ className, ...props }, ref) => (
-  <p
-    ref={ref}
+const RCardDescription = React.forwardRef(({ className, ...props }, ref) => (
+  <p 
+    ref={ref} 
     className={cn(
       "text-sm text-gray-500 transition-all duration-300 delay-75",
-      "group-hover:text-gray-600 group-hover:translate-x-2",
+      "group-hover:text-gray-600",
       className
-    )}
-    {...props}
+    )} 
+    {...props} 
   />
 ));
-ACardDescription.displayName = "ACardDescription";
+RCardDescription.displayName = "CardDescription";
 
-const ACardContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
+const RCardContent = React.forwardRef(({ className, ...props }, ref) => (
+  <div 
+    ref={ref} 
     className={cn(
       "p-6 pt-0 transition-all duration-300 delay-100",
       "group-hover:translate-x-1",
       className
-    )}
-    {...props}
+    )} 
+    {...props} 
   />
 ));
-ACardContent.displayName = "ACardContent";
+RCardContent.displayName = "CardContent";
 
-const ACardFooter = React.forwardRef(({ className, ...props }, ref) => (
+const RCardFooter = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -155,14 +163,15 @@ const ACardFooter = React.forwardRef(({ className, ...props }, ref) => (
     {...props}
   />
 ));
-ACardFooter.displayName = "ACardFooter";
+RCardFooter.displayName = "CardFooter";
 
 
 export {
-  ACard,
-  ACardHeader,
-  ACardFooter,
-  ACardTitle,
-  ACardDescription,
-  ACardContent,
+  RCard,
+  RCardHeader,
+  RCardFooter,
+  RCardTitle,
+  RCardDescription,
+  RCardContent,
 };
+
