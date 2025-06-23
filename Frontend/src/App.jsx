@@ -9,6 +9,7 @@ import DashboardPage from "./pages/mainDashboard/Page";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Loader from "./pages/Loader";
 import About from "./pages/Home/About";
+import HackathonDetailsPage from "./pages/AdminDashboard/sections/HackathonDetailsPage";
 import { ExploreHackathons } from "./pages/mainDashboard/sections/ExploreHackathon";
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
       <Route path="/admin" element={<Page />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/admin/hackathons/:id" element={<HackathonDetailsPage />} />
+
       <Route path="/oauth-success" element={<OAuthSuccess />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/about" element={<About />} />
