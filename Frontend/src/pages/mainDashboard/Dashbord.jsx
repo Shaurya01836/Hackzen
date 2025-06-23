@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
+import { cn } from "../../lib/utils";
 import {
   Users,
   CircleArrowOutDownLeft,
@@ -74,11 +74,10 @@ export default function HackZenDashboard() {
 
   const { logout } = useAuth();
 
- const changeView = (viewKey) => {
-  setCurrentView(viewKey);
-  navigate(`?view=${viewKey}`);
-};
-
+  const changeView = (viewKey) => {
+    setCurrentView(viewKey);
+    navigate(`?view=${viewKey}`);
+  };
 
   const handleSignOut = async () => {
     try {
@@ -99,7 +98,7 @@ export default function HackZenDashboard() {
       title: "My Hackathons",
       icon: Trophy,
       key: "my-hackathons",
-       onClick: () => changeView("my-hackathons"),
+      onClick: () => changeView("my-hackathons"),
     },
     {
       title: "My Submissions",
@@ -159,7 +158,7 @@ export default function HackZenDashboard() {
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         <SidebarHeader className="p-4">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">H</span>
             </div>
@@ -169,20 +168,11 @@ export default function HackZenDashboard() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">
-                Profile Completion
-              </span>
-              <span className="text-sm text-gray-500">85%</span>
-            </div>
-            <Progress value={85} className="h-2" />
-          </div>
         </SidebarHeader>
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center gap-2 text-indigo-600">
+            <SidebarGroupLabel className="flex items-center gap-3 text-indigo-600">
               <User className="w-4 h-4" />
               Participant Menu
             </SidebarGroupLabel>
@@ -190,16 +180,24 @@ export default function HackZenDashboard() {
               <SidebarMenu>
                 {participantMenuItems.map((item) => (
                   <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={currentView === item.key}
-                      className="hover:bg-indigo-50 hover:text-indigo-700"
-                    >
+                    <SidebarMenuButton asChild>
                       <button
                         onClick={item.onClick}
-                        className="flex items-center gap-3 w-full text-left"
+                        className={cn(
+                          "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                          currentView === item.key
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                        )}
                       >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon
+                          className={cn(
+                            "w-4 h-4",
+                            currentView === item.key
+                              ? "text-indigo-700"
+                              : "text-gray-500"
+                          )}
+                        />
                         <span>{item.title}</span>
                       </button>
                     </SidebarMenuButton>
@@ -218,16 +216,24 @@ export default function HackZenDashboard() {
               <SidebarMenu>
                 {organizerMenuItems.map((item) => (
                   <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={currentView === item.key}
-                      className="hover:bg-purple-50 hover:text-purple-700"
-                    >
+                    <SidebarMenuButton asChild>
                       <button
                         onClick={item.onClick}
-                        className="flex items-center gap-3 w-full text-left"
+                        className={cn(
+                          "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                          currentView === item.key
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
+                        )}
                       >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon
+                          className={cn(
+                            "w-4 h-4",
+                            currentView === item.key
+                              ? "text-indigo-700"
+                              : "text-gray-500"
+                          )}
+                        />
                         <span>{item.title}</span>
                       </button>
                     </SidebarMenuButton>

@@ -56,16 +56,17 @@ export function Sidebar({ activeSection, setActiveSection }) {
   return (
     <div className="w-64 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-r border-purple-200 flex flex-col justify-between">
       {/* Top Section */}
-      <div>
+      <div className="p-4">
         {/* Logo */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 bg-purple-500 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">HZ</span>
+        <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-lg">H</span>
             </div>
-            <span className="text-gray-800 font-semibold text-lg">HackZen</span>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">HackZen</h1>
+              <p className="text-sm text-gray-500">Hackathon Platform</p>
+            </div>
           </div>
-        </div>
 
         {/* Navigation */}
         <nav className="p-2 space-y-1">
