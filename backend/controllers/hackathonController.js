@@ -3,9 +3,6 @@ const ChatRoom = require('../model/ChatRoomModel');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
-  console.log("📥 Incoming Hackathon Create Request:");
-  console.log("👉 req.body:", req.body);
-  console.log("🔐 req.user:", req.user);
   try {
     const {
       title,
@@ -23,7 +20,8 @@ exports.createHackathon = async (req, res) => {
       problemStatements,
       requirements,
       perks,
-      tags
+      tags,
+      images
     } = req.body;
 
     const newHackathon = await Hackathon.create({
@@ -39,19 +37,19 @@ exports.createHackathon = async (req, res) => {
       difficultyLevel: difficulty || 'Beginner',
       location,
       organizer: req.user.id,
-        prizePool: {
-    amount: req.body.prizePool.amount,
-    currency: req.body.prizePool.currency,
-    breakdown: req.body.prizePool.breakdown
-  },
-    images: req.body.images,
+      prizePool: {
+        amount: prizePool?.amount || 0,
+        currency: prizePool?.currency || 'USD',
+        breakdown: prizePool?.breakdown || ''
+      },
+      images,
       problemStatements,
       requirements,
       perks,
-      tags
+      tags,
+      approvalStatus: req.user.role === 'admin' ? 'approved' : 'pending'
     });
 
-    // Optional: Create a general chat room
     await ChatRoom.create({
       hackathon: newHackathon._id,
       type: 'general'
@@ -64,98 +62,118 @@ exports.createHackathon = async (req, res) => {
   }
 };
 
-
-// ✅ Get all hackathons
+// ✅ Get all hackathons (only approved ones)
 exports.getAllHackathons = async (req, res) => {
   try {
-    const hackathons = await Hackathon.find()
+    const hackathons = await Hackathon.find({ approvalStatus: 'approved' })
       .populate('organizer', 'name email')
-      .populate('participants', '_id'); // keep this to populate array
+      .populate('participants', '_id');
 
-    const formattedHackathons = hackathons.map(h => {
-      const hObj = h.toObject();
-      return {
-        ...hObj,
-        participantCount: Array.isArray(hObj.participants) ? hObj.participants.length : 0,
-        // 👇 DO NOT remove the participants field!
-        // participants: undefined  <-- REMOVE THIS LINE if present!
-      };
-    });
+    const formatted = hackathons.map(h => ({
+      ...h.toObject(),
+      participantCount: h.participants?.length || 0
+    }));
 
-    console.log("Sending hackathons to frontend:", formattedHackathons.length);
-    res.json(formattedHackathons);
+    res.json(formatted);
   } catch (err) {
-    console.error("Error in getAllHackathons:", err);
+    console.error("getAllHackathons error:", err);
     res.status(500).json({ message: 'Error fetching hackathons' });
   }
 };
 
+// ✅ Admin or Organizer: Get all hackathons (including pending)
+exports.getAllHackathonsRaw = async (req, res) => {
+  try {
+    const hackathons = await Hackathon.find()
+      .populate('organizer', 'name email')
+      .populate('participants', '_id');
 
-// ✅ Get a single hackathon by ID
+    res.json(hackathons);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching all hackathons' });
+  }
+};
+
+// ✅ Get single hackathon by ID
 exports.getHackathonById = async (req, res) => {
   try {
     const hackathon = await Hackathon.findById(req.params.id)
       .populate('organizer', 'name');
-    
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
 
+    if (!hackathon) return res.status(404).json({ message: 'Hackathon not found' });
     res.json(hackathon);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving hackathon' });
   }
 };
 
-// ✅ Update a hackathon (only organizer allowed)
+// ✅ Update hackathon (only creator)
 exports.updateHackathon = async (req, res) => {
   try {
     const hackathon = await Hackathon.findById(req.params.id);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
+    if (!hackathon) return res.status(404).json({ message: 'Hackathon not found' });
 
     if (hackathon.organizer.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to update this hackathon' });
     }
 
-    const updateFields = {
-      ...req.body,
-      prizePool: {
-        amount: req.body.prizePool?.amount || 0,
-        currency: req.body.prizePool?.currency || 'USD',
-        breakdown: req.body.prizePool?.breakdown || '',
-      },
-      images: req.body.images || hackathon.images // fallback to existing images if not updated
-    };
-
     const updated = await Hackathon.findByIdAndUpdate(
       req.params.id,
-      updateFields,
+      {
+        ...req.body,
+        prizePool: {
+          amount: req.body.prizePool?.amount || 0,
+          currency: req.body.prizePool?.currency || 'USD',
+          breakdown: req.body.prizePool?.breakdown || ''
+        },
+        images: req.body.images || hackathon.images
+      },
       { new: true }
     );
 
     res.json(updated);
   } catch (err) {
-    console.error("Error in updateHackathon:", err);
     res.status(500).json({ message: 'Error updating hackathon' });
   }
 };
-// ✅ Delete a hackathon (only organizer allowed)
+
+// ✅ Delete hackathon (only creator)
 exports.deleteHackathon = async (req, res) => {
   try {
     const hackathon = await Hackathon.findById(req.params.id);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
+    if (!hackathon) return res.status(404).json({ message: 'Hackathon not found' });
 
     if (hackathon.organizer.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this hackathon' });
     }
 
     await Hackathon.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Hackathon deleted successfully' });
+    res.json({ message: 'Hackathon deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting hackathon' });
+  }
+};
+
+// ✅ Admin: Approve or Reject hackathon
+exports.updateApprovalStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const updated = await Hackathon.findByIdAndUpdate(
+      id,
+      { approvalStatus: status },
+      { new: true }
+    );
+
+    if (!updated) return res.status(404).json({ message: 'Hackathon not found' });
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating approval status' });
   }
 };

@@ -73,6 +73,11 @@ images: {
     currency: { type: String, default: 'USD' },
     breakdown: { type: String }
   },
+approvalStatus: {
+  type: String,
+  enum: ['pending', 'approved', 'rejected'],
+  default: 'pending',
+},
 
   status: {
     type: String,
