@@ -119,7 +119,7 @@ export function Dashboard() {
                 </CardTitle>
                 <div className="flex items-center space-x-2">
                   <Badge
-                    variant="secondary"
+                    variant="outline"
                     className="bg-purple-100 text-purple-700 border-purple-200"
                   >
                     {stat.badge}
