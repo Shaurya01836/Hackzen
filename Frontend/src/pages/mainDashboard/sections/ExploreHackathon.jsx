@@ -1,6 +1,6 @@
-"use client"
-import { useEffect, useState } from "react"
-import axios from "axios"
+"use client";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import {
   ArrowLeft,
   Search,
@@ -11,54 +11,59 @@ import {
   Clock,
   Star,
   Heart,
-  ExternalLink
-} from "lucide-react"
+  ExternalLink,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardTitle
-} from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Input } from "../../../components/CommonUI/input"
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import { Input } from "../../../components/CommonUI/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "../../../components/CommonUI/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
-import { cn } from "../../../lib/utils"
-import { HackathonDetails } from "./HackathonDetails"
+  SelectValue,
+} from "../../../components/CommonUI/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/CommonUI/tabs";
+import { cn } from "../../../lib/utils";
+import { HackathonDetails } from "./HackathonDetails";
 
 export function ExploreHackathons({ onBack }) {
-  const [hackathons, setHackathons] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [selectedHackathon, setSelectedHackathon] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all")
-  const [selectedLocation, setSelectedLocation] = useState("all")
+  const [hackathons, setHackathons] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedHackathon, setSelectedHackathon] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [selectedLocation, setSelectedLocation] = useState("all");
 
   useEffect(() => {
     const fetchHackathons = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/hackathons")
-        console.log("Raw hackathons response:", res.data)
-        setHackathons(res.data)
+        const res = await axios.get("http://localhost:3000/api/hackathons");
+        console.log("Raw hackathons response:", res.data);
+        setHackathons(res.data);
       } catch (err) {
-        console.error("Hackathon fetch error:", err.message)
-        setError("Failed to fetch hackathons")
+        console.error("Hackathon fetch error:", err.message);
+        setError("Failed to fetch hackathons");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchHackathons()
-  }, [])
+    fetchHackathons();
+  }, []);
 
   // If a hackathon is selected, show the details component
   if (selectedHackathon) {
@@ -67,7 +72,7 @@ export function ExploreHackathons({ onBack }) {
         hackathon={selectedHackathon}
         onBack={() => setSelectedHackathon(null)}
       />
-    )
+    );
   }
 
   const categories = [
@@ -83,63 +88,65 @@ export function ExploreHackathons({ onBack }) {
     "Web Development",
     "IoT",
     "Data Science",
-    "DevOps"
-  ]
+    "DevOps",
+  ];
 
-  const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"]
+  const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
   const locations = [
     "All Locations",
     "Virtual",
     "Online",
     "Hybrid",
     "New York",
-    "Delhi"
-  ]
+    "Delhi",
+  ];
 
   // Filter hackathons based on search and filters
-  const filteredHackathons = hackathons.filter(hackathon => {
+  const filteredHackathons = hackathons.filter((hackathon) => {
     const matchesSearch =
       hackathon.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      hackathon.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      hackathon.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCategory =
       selectedCategory === "all" ||
-      hackathon.category === selectedCategory.replace(/\s+/g, " ")
+      hackathon.category === selectedCategory.replace(/\s+/g, " ");
 
     const matchesDifficulty =
       selectedDifficulty === "all" ||
-      hackathon.difficultyLevel === selectedDifficulty.replace(/\s+/g, " ")
+      hackathon.difficultyLevel === selectedDifficulty.replace(/\s+/g, " ");
 
     const matchesLocation =
       selectedLocation === "all" ||
-      hackathon.location?.toLowerCase().includes(selectedLocation.toLowerCase())
+      hackathon.location
+        ?.toLowerCase()
+        .includes(selectedLocation.toLowerCase());
 
     return (
       matchesSearch && matchesCategory && matchesDifficulty && matchesLocation
-    )
-  })
+    );
+  });
 
-  const featuredHackathons = filteredHackathons.filter(h =>
+  const featuredHackathons = filteredHackathons.filter((h) =>
     h.tags?.includes("featured")
-  )
-  const sponsoredHackathons = filteredHackathons.filter(h =>
+  );
+  const sponsoredHackathons = filteredHackathons.filter((h) =>
     h.tags?.includes("sponsored")
-  )
+  );
   const upcomingHackathons = filteredHackathons.filter(
-    h => h.status === "upcoming"
-  )
+    (h) => h.status === "upcoming"
+  );
 
-  const handleHackathonClick = hackathon => {
+  const handleHackathonClick = (hackathon) => {
     // Transform the hackathon data to match the expected format for HackathonDetails
     const transformedHackathon = {
       ...hackathon,
       name: hackathon.title,
       prize: hackathon.prizePool?.amount
-        ? `$${hackathon.prizePool.amount.toLocaleString()} ${hackathon.prizePool
-            .currency || "USD"}`
+        ? `$${hackathon.prizePool.amount.toLocaleString()} ${
+            hackathon.prizePool.currency || "USD"
+          }`
         : "TBA",
       participants: hackathon.participants?.length || 0,
-      images:hackathon.image,
       maxParticipants: hackathon.maxParticipants || 100,
       rating: 4.5, // Default rating - you can calculate this from reviews
       reviews: 12, // Default reviews count
@@ -158,23 +165,23 @@ export function ExploreHackathons({ onBack }) {
       organizer: hackathon.organizer?.name || "Unknown Organizer",
       organizerLogo: hackathon.organizer?.logo || null,
       featured: hackathon.tags?.includes("featured") || false,
-      sponsored: hackathon.tags?.includes("sponsored") || false
-    }
-    setSelectedHackathon(transformedHackathon)
-  }
+      sponsored: hackathon.tags?.includes("sponsored") || false,
+    };
+    setSelectedHackathon(transformedHackathon);
+  };
 
-  const getDifficultyColor = difficulty => {
+  const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800";
       case "Intermediate":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800";
       case "Advanced":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800";
     }
-  }
+  };
 
   const renderHackathonCard = (hackathon, featured = false) => (
     <Card
@@ -190,7 +197,10 @@ export function ExploreHackathons({ onBack }) {
       {/* Left Side: Image */}
       <div className="md:w-1/3 w-full">
         <img
-          src={hackathon.image || "https://www.hackquest.io/images/layout/hackathon_cover.png"}
+          src={
+            hackathon.images?.banner?.url ||
+            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+          }
           alt={hackathon.title}
           className="rounded-md object-cover w-full h-48 md:h-full"
         />
@@ -201,19 +211,7 @@ export function ExploreHackathons({ onBack }) {
         {/* Header with badges */}
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              {featured && (
-                <Badge className="bg-purple-500 text-white">Featured</Badge>
-              )}
-              {hackathon.tags?.includes("sponsored") && (
-                <Badge
-                  variant="outline"
-                  className="border-yellow-500 text-yellow-600"
-                >
-                  Sponsored
-                </Badge>
-              )}
-            </div>
+      
             <CardTitle className="text-xl font-semibold text-indigo-700 hover:text-indigo-800">
               {hackathon.title}
             </CardTitle>
@@ -251,8 +249,9 @@ export function ExploreHackathons({ onBack }) {
             <Trophy className="w-4 h-4 text-gray-500" />
             <span>
               {hackathon.prizePool?.amount
-                ? `$${hackathon.prizePool.amount.toLocaleString()} ${hackathon
-                    .prizePool.currency || "USD"}`
+                ? `$${hackathon.prizePool.amount.toLocaleString()} ${
+                    hackathon.prizePool.currency || "USD"
+                  }`
                 : "Prize TBA"}
             </span>
           </div>
@@ -289,7 +288,7 @@ export function ExploreHackathons({ onBack }) {
           >
             {hackathon.category}
           </Badge>
-          {(hackathon.tags || []).slice(0, 3).map(tag => (
+          {(hackathon.tags || []).slice(0, 3).map((tag) => (
             <Badge
               key={tag}
               className="bg-gray-100 text-gray-700"
@@ -310,9 +309,9 @@ export function ExploreHackathons({ onBack }) {
           <Button
             size="sm"
             className="gap-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white"
-            onClick={e => {
-              e.stopPropagation()
-              handleHackathonClick(hackathon)
+            onClick={(e) => {
+              e.stopPropagation();
+              handleHackathonClick(hackathon);
             }}
           >
             <ExternalLink className="w-4 h-4" />
@@ -322,8 +321,8 @@ export function ExploreHackathons({ onBack }) {
             size="sm"
             variant="outline"
             className="gap-1 rounded-md"
-            onClick={e => {
-              e.stopPropagation()
+            onClick={(e) => {
+              e.stopPropagation();
               // Handle save functionality
             }}
           >
@@ -333,7 +332,7 @@ export function ExploreHackathons({ onBack }) {
         </div>
       </div>
     </Card>
-  )
+  );
 
   if (loading)
     return (
@@ -343,7 +342,7 @@ export function ExploreHackathons({ onBack }) {
           <p className="text-gray-500">Loading hackathons...</p>
         </div>
       </div>
-    )
+    );
 
   if (error)
     return (
@@ -353,14 +352,14 @@ export function ExploreHackathons({ onBack }) {
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
-    )
+    );
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={onBack}
           className="flex items-center gap-2"
@@ -388,7 +387,7 @@ export function ExploreHackathons({ onBack }) {
                 placeholder="Search hackathons..."
                 className="pl-10"
                 value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <Select
@@ -400,7 +399,7 @@ export function ExploreHackathons({ onBack }) {
               </SelectTrigger>
               <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.slice(1).map(category => (
+                {categories.slice(1).map((category) => (
                   <SelectItem key={category} value={category}>
                     {category}
                   </SelectItem>
@@ -416,7 +415,7 @@ export function ExploreHackathons({ onBack }) {
               </SelectTrigger>
               <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 <SelectItem value="all">All Levels</SelectItem>
-                {difficulties.slice(1).map(difficulty => (
+                {difficulties.slice(1).map((difficulty) => (
                   <SelectItem key={difficulty} value={difficulty}>
                     {difficulty}
                   </SelectItem>
@@ -432,7 +431,7 @@ export function ExploreHackathons({ onBack }) {
               </SelectTrigger>
               <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                 <SelectItem value="all">All Locations</SelectItem>
-                {locations.slice(1).map(location => (
+                {locations.slice(1).map((location) => (
                   <SelectItem key={location} value={location.toLowerCase()}>
                     {location}
                   </SelectItem>
@@ -456,10 +455,10 @@ export function ExploreHackathons({ onBack }) {
             variant="outline"
             size="sm"
             onClick={() => {
-              setSearchTerm("")
-              setSelectedCategory("all")
-              setSelectedDifficulty("all")
-              setSelectedLocation("all")
+              setSearchTerm("");
+              setSelectedCategory("all");
+              setSelectedDifficulty("all");
+              setSelectedLocation("all");
             }}
           >
             Clear Filters
@@ -487,7 +486,7 @@ export function ExploreHackathons({ onBack }) {
         <TabsContent value="all" className="space-y-4">
           {filteredHackathons.length > 0 ? (
             <div className="space-y-6">
-              {filteredHackathons.map(hackathon =>
+              {filteredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}
             </div>
@@ -509,7 +508,7 @@ export function ExploreHackathons({ onBack }) {
         <TabsContent value="featured" className="space-y-4">
           {featuredHackathons.length > 0 ? (
             <div className="space-y-6">
-              {featuredHackathons.map(hackathon =>
+              {featuredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon, true)
               )}
             </div>
@@ -531,7 +530,7 @@ export function ExploreHackathons({ onBack }) {
         <TabsContent value="sponsored" className="space-y-4">
           {sponsoredHackathons.length > 0 ? (
             <div className="space-y-6">
-              {sponsoredHackathons.map(hackathon =>
+              {sponsoredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}
             </div>
@@ -553,7 +552,7 @@ export function ExploreHackathons({ onBack }) {
         <TabsContent value="upcoming" className="space-y-4">
           {upcomingHackathons.length > 0 ? (
             <div className="space-y-6">
-              {upcomingHackathons.map(hackathon =>
+              {upcomingHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}
             </div>
@@ -573,5 +572,5 @@ export function ExploreHackathons({ onBack }) {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
