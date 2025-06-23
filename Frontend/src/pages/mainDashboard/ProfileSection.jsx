@@ -59,6 +59,13 @@ export function ProfileSection() {
   const [selectedBanner, setSelectedBanner] = useState(null); 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+const [newPassword, setNewPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [passwordMessage, setPasswordMessage] = useState("");
+const [passwordError, setPasswordError] = useState("");
+
+  
 
   const [currentView, setCurrentViewState] = useState("overview");
   const setCurrentView = (view) => {
@@ -71,6 +78,8 @@ export function ProfileSection() {
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  
+  
 
   const { user, token, login } = useAuth();
 
@@ -730,58 +739,71 @@ const renderEditProfile = () => (
     </div>
   );
 
-  const renderPrivacySecurity = () => (
-    <div className="w-full flex flex-col gap-6">
-      {/* Password Section */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Password & Authentication</CardTitle>
-          <CardDescription>Manage your login credentials</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {[
-            {
-              id: "current-password",
-              label: "Current Password",
-              type: showPassword ? "text" : "password",
-            },
-            { id: "new-password", label: "New Password", type: "password" },
-            {
-              id: "confirm-password",
-              label: "Confirm New Password",
-              type: "password",
-            },
-          ].map(({ id, label, type }) => (
-            <div key={id} className="relative">
-              <Label htmlFor={id}>{label}</Label>
-              <Input
-                id={id}
-                type={type}
-                placeholder={`Enter ${label.toLowerCase()}`}
-              />
-              {id === "current-password" && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-6 h-full px-3"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </Button>
-              )}
-            </div>
-          ))}
-          <Button className="flex items-center gap-2 w-full sm:w-auto">
-            <Lock className="w-4 h-4" />
-            Update Password
-          </Button>
-        </CardContent>
-      </Card>
+ const renderPrivacySecurity = () => (
+  <div className="w-full flex flex-col gap-6">
+    {/* Password Section */}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Password & Authentication</CardTitle>
+        <CardDescription>Manage your login credentials</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {/* Show Current Password only if registered via email */}
+        {user?.authProvider === "email" && (
+          <div className="relative">
+            <Label htmlFor="current-password">Current Password</Label>
+            <Input
+              id="current-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-6 h-full px-3"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </Button>
+          </div>
+        )}
+
+        {/* New Password */}
+        <div>
+          <Label htmlFor="new-password">New Password</Label>
+          <Input
+            id="new-password"
+            type="password"
+            placeholder="Enter new password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+          />
+        </div>
+
+        {/* Confirm New Password */}
+        <div>
+          <Label htmlFor="confirm-password">Confirm New Password</Label>
+          <Input
+            id="confirm-password"
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+        </div>
+
+        <Button
+          className="flex items-center gap-2 w-full sm:w-auto"
+          onClick={handlePasswordUpdate}
+        >
+          <Lock className="w-4 h-4" />
+          Update Password
+        </Button>
+      </CardContent>
+    </Card>
 
       {/* 2FA Section */}
       <Card className="w-full">
@@ -855,6 +877,7 @@ const renderEditProfile = () => (
     </div>
   );
 
+  
   const renderHelpSupport = () => (
     <div className="w-full flex flex-col gap-6">
       {/* FAQ */}
@@ -1093,6 +1116,45 @@ const handleBannerUpload = async (e) => {
     setIsUploading(false);
   }
 };
+
+
+const handlePasswordUpdate = async () => {
+  const userData = JSON.parse(localStorage.getItem("user"));
+  const token = localStorage.getItem("token");
+
+  if (!userData?._id || !token) {
+    alert("Missing user session. Please re-login.");
+    return;
+  }
+
+  if (!newPassword || newPassword !== confirmPassword) {
+    alert("❌ Passwords do not match or are empty");
+    return;
+  }
+
+  try {
+    const res = await axios.put(
+      `http://localhost:3000/api/users/${userData._id}/password`,
+      {
+        currentPassword, // Optional if OAuth
+        newPassword,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    alert("Password updated successfully!");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  } catch (err) {
+    alert(err.response?.data?.message || "Error updating password");
+  }
+};
+
 
 
   return (

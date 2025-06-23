@@ -5,9 +5,7 @@ const jwt = require('jsonwebtoken');
 const userController = require('../controllers/userController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 
-// ============================
-// 🌐 OAuth Initiation
-// ============================
+// OAuth Initiation
 
 router.get('/github', passport.authenticate('github', {
   scope: ['user:email'],
@@ -84,5 +82,7 @@ router.get('/:id', userController.getUserById);
 router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isAdmin, userController.changeUserRole);
+router.put('/:id/password', protect, userController.changePassword);
+
 
 module.exports = router;
