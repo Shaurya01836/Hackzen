@@ -10,7 +10,7 @@ function FeaturedHackCards({ hackathons }) {
           <div className="absolute top-0 left-0 w-full h-full rounded-2xl bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] rotate-3 z-0"></div>
 
           {/* Foreground card */}
-          <div className="relative z-10 bg-white rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col sm:flex-row gap-6 border border-gray-200 -rotate-0 hover:-rotate-3 hover:scale-105 transition-all duration-150 ease-in-out">
+          <div className="relative z-10 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-2xl shadow-lg p-6 sm:p-8 flex flex-col sm:flex-row gap-6 border border-gray-200 -rotate-0 hover:-rotate-3 hover:scale-105 transition-all duration-150 ease-in-out">
             {/* Image */}
             <div className="w-full sm:w-1/3">
               <img

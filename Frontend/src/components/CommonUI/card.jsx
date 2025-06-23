@@ -2,14 +2,25 @@ import * as React from "react";
 import { cn } from "../../lib/utils";
 
 const Card = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "ring-1 ring-indigo-300 rounded-2xl border border-white/20 bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg shadow-sm shadow-indigo-300 text-gray-900 transition-all hover:scale-[1.01]",
-      className
-    )}
-    {...props}
-  />
+  <>
+    <div
+      ref={ref}
+      className={cn(
+        "relative group cursor-pointer overflow-hidden",
+        "ring-1 ring-indigo-300 rounded-2xl border border-white/20",
+        "bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg",
+        "shadow-sm shadow-indigo-300 text-gray-900",
+        "transition-all duration-200 ease-out",
+        "hover:shadow-sm hover:shadow-indigo-400/30",
+        "hover:ring-2 hover:ring-indigo-400",
+        "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
+        "before:translate-x-[-100%] before:transition-transform before:duration-1000",
+        "hover:before:translate-x-[100%]",
+        className
+      )}
+      {...props}
+    />
+  </>
 ));
 Card.displayName = "Card";
 
