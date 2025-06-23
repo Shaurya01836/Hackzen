@@ -1,5 +1,5 @@
-"use client"
-import { useState } from "react"
+"use client";
+import { useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -19,58 +19,67 @@ import {
   Gift,
   MessageSquare,
   UserPlus,
-  Download
-} from "lucide-react"
+  Download,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/DashboardUI/avatar"
-import { Progress } from "../../../components/DashboardUI/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/DashboardUI/avatar";
+import { Progress } from "../../../components/DashboardUI/progress";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/CommonUI/tabs";
 
 export function HackathonDetails({ hackathon, onBack }) {
-  const [isRegistered, setIsRegistered] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
 
-  const getDifficultyColor = difficulty => {
+  const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-500"
+        return "bg-green-500";
       case "Intermediate":
-        return "bg-yellow-500"
+        return "bg-yellow-500";
       case "Advanced":
-        return "bg-red-500"
+        return "bg-red-500";
       default:
-        return "bg-gray-500"
+        return "bg-gray-500";
     }
-  }
+  };
 
-  const getStatusColor = status => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "Registration Open":
-        return "bg-green-500"
+        return "bg-green-500";
       case "Ongoing":
-        return "bg-blue-500"
+        return "bg-blue-500";
       case "Ended":
-        return "bg-gray-500"
+        return "bg-gray-500";
       default:
-        return "bg-yellow-500"
+        return "bg-yellow-500";
     }
-  }
+  };
 
   const handleRegister = () => {
-    setIsRegistered(!isRegistered)
-  }
+    setIsRegistered(!isRegistered);
+  };
 
   const handleSave = () => {
-    setIsSaved(!isSaved)
-  }
+    setIsSaved(!isSaved);
+  };
 
   return (
     <div className="fixed inset-0 bg-white z-50 overflow-auto">
@@ -147,10 +156,11 @@ export function HackathonDetails({ hackathon, onBack }) {
               <div className="relative">
                 <img
                   src={
-                    hackathon.image || "/placeholder.svg?height=400&width=800"
+                    hackathon.images?.banner?.url ||
+                    "https://www.hackquest.io/images/layout/hackathon_cover.png"
                   }
-                  alt={hackathon.name}
-                  className="w-full h-80 object-cover rounded-lg"
+                  alt={hackathon.title}
+                  className="rounded-md object-cover w-full h-48 md:h-full"
                 />
                 <div className="absolute top-4 left-4 flex gap-2">
                   {hackathon.featured && (
@@ -364,7 +374,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-wrap gap-2">
-                        {hackathon.tags.map(tag => (
+                        {hackathon.tags.map((tag) => (
                           <Badge
                             key={tag}
                             variant="outline"
@@ -644,7 +654,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {[1, 2, 3, 4, 5].map(i => (
+                      {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="flex items-center gap-3">
                           <Avatar className="w-8 h-8">
                             <AvatarImage
@@ -669,5 +679,5 @@ export function HackathonDetails({ hackathon, onBack }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
