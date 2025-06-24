@@ -8,7 +8,7 @@ export const InteractiveHoverButton = React.forwardRef(
       <button
         ref={ref}
         className={cn(
-          "group relative w-auto cursor-pointer overflow-hidden rounded-full bg-[#1b0c3f] text-white px-6 py-2 text-center font-semibold border-2 border-[#1b0c3f] ",
+          "group relative w-auto cursor-none overflow-hidden rounded-full bg-[#1b0c3f] text-white px-6 py-2 text-center font-semibold border-2 border-[#1b0c3f] ",
           className
         )}
         {...props}

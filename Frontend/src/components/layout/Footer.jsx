@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 
 function Footer() {
   return (
-    <footer className="text-white py-12 px-6 bg-[#0b0b1f]">
+    <footer className="text-indigo-900 pt-12 px-6 bg-white/20">
       <div className="flex flex-col md:flex-row justify-between gap-12 items-start p-10">
         {/* Newsletter Column */}
         <div className="w-full md:w-1/3">
@@ -22,22 +22,22 @@ function Footer() {
             <input
               type="email"
               placeholder="Your email address"
-              className="w-full px-6 py-3 pr-14 text-sm text-white bg-transparent border border-gray-500 rounded-full outline-none placeholder:text-gray-400"
+              className="w-full px-6 py-3 pr-14 text-sm text-indigo-900 bg-transparent border border-gray-400 rounded-full outline-none placeholder:text-gray-500"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-gray-700 p-2 rounded-full">
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-indigo-600 p-2 rounded-full">
               <Mail size={18} />
             </span>
           </div>
 
-          <p className="mt-8 mb-4 text-sm tracking-widest text-gray-400 font-medium">
+          <p className="mt-8 mb-4 text-sm tracking-widest text-gray-500 font-medium">
             FOLLOW US HERE:
           </p>
 
           <div className="flex items-center gap-4">
-            {[ Instagram, Linkedin, Github].map((Icon, i) => (
+            {[Instagram, Linkedin, Github].map((Icon, i) => (
               <span
                 key={i}
-                className="w-10 h-10 border border-gray-500 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition"
+                className="w-10 h-10 border border-gray-400 rounded-full flex items-center justify-center text-indigo-900 hover:bg-indigo-600 hover:text-white transition"
               >
                 <Icon size={20} />
               </span>
@@ -60,7 +60,7 @@ function Footer() {
               <Link
                 key={i}
                 to="/"
-                className="text-lg font-medium text-white hover:text-yellow-400 transition"
+                className="text-lg font-medium text-indigo-900 hover:text-indigo-600 transition"
               >
                 {item}
               </Link>
@@ -71,26 +71,31 @@ function Footer() {
         {/* Contact Column */}
         <div className="w-full md:w-1/3">
           <div className="mb-6">
-            <p className="text-sm text-gray-400 mb-1">DROP US A LINE</p>
-            <p className="text-lg font-semibold text-white">hackzen.dev@gmail.com</p>
+            <p className="text-sm text-gray-500 mb-1">DROP US A LINE</p>
+            <p className="text-lg font-semibold text-indigo-900">
+              hackzen.dev@gmail.com
+            </p>
           </div>
           <div>
-            <p className="text-sm text-gray-400 mb-1">CALL US</p>
+            <p className="text-sm text-gray-500 mb-1">CALL US</p>
             <div className="flex items-center gap-2">
               <img
                 src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
                 alt="WhatsApp"
                 className="w-5 h-5"
               />
-              <p className="text-lg font-semibold text-white">+1 (000) 337-8573</p>
+              <p className="text-lg font-semibold text-indigo-900">
+                +1 (000) 337-8573
+              </p>
             </div>
           </div>
         </div>
       </div>
+
       <div>
-
-       <p className="text-center border-y-2 py-4 border-gray-500 text-lg font-semibold text-white">© HackZen. All rights reserved</p>
-
+        <p className="text-center border-y-2 py-4 border-indigo-100 text-lg font-semibold text-indigo-900">
+          © HackZen. All rights reserved
+        </p>
       </div>
     </footer>
   );

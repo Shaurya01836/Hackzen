@@ -89,7 +89,7 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
 const renderHackathonCard = (hackathon) => (
   <RCard
     key={hackathon._id}
-    className="w-full overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] group bg-white border border-gray-100 shadow-lg rounded-lg"
+    className="w-full overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] group bg-white/20 border border-gray-100 shadow-lg rounded-lg"
     onClick={() => handleHackathonClick(hackathon)}
   >
     <div className="flex h-full">
