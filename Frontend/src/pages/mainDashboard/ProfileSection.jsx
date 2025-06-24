@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
-// adjust path if needed
+
 import {
    SquarePen,
   Trash2,
@@ -260,10 +260,10 @@ useEffect(() => {
   );
 
   const renderOverview = () => (
-    <div className="flex flex-col gap-6 w-full p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex flex-col gap-6 w-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <Card className="w-full overflow-hidden relative rounded-2xl">
         {/* Banner */}
-        <div className="relative h-36 w-full rounded-t-2xl overflow-hidden">
+        <div className="relative h-48 w-full rounded-t-2xl overflow-hidden">
         <img
   src={user?.bannerImage || "/assets/default-banner.png"}
   alt="Banner"
@@ -292,7 +292,7 @@ useEffect(() => {
               variant="outline"
               className="bg-purple-100 text-purple-800 border-purple-300"
             >
-              Participant
+             {user?.role || "Unknown"}
             </Badge>
           </div>
         </CardHeader>
@@ -519,7 +519,7 @@ const renderEditProfile = () => (
         {/* Edit Banner Icon */}
         <button
           onClick={() => document.getElementById("upload-banner-edit").click()}
-          className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+          className="absolute bottom-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
           title="Edit Banner"
         >
           <SquarePen className="w-4 h-4" />
@@ -562,7 +562,7 @@ const renderEditProfile = () => (
       {/* User Info */}
       <CardHeader className="text-center pt-2">
         <CardTitle className="text-xl font-semibold">{user?.name}</CardTitle>
-        <CardDescription>Participant</CardDescription>
+        <CardDescription>   {user?.role || "Unknown"}</CardDescription>
 
         {uploadSuccess && (
           <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
@@ -1124,7 +1124,7 @@ const handleBannerUpload = async (e) => {
     const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
     const imageUrl = uploadRes.data.url;
 
-    setSelectedBanner(imageUrl);
+    setSelectedBanner(null);
     setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
 
     const userData = JSON.parse(localStorage.getItem("user"));
