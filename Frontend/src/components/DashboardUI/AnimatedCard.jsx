@@ -47,7 +47,7 @@ const ACard = React.forwardRef(({ className, ...props }, ref) => {
     <div
       ref={ref}
       className={cn(
-        "relative group cursor-pointer overflow-hidden",
+        "relative group cursor-none overflow-hidden",
         "ring-1 ring-indigo-300 rounded-2xl border border-white/20",
         "bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg",
         "shadow-sm shadow-indigo-300 text-gray-900",
