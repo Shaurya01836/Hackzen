@@ -5,7 +5,6 @@ const UserSchema = new Schema({
   email: { type: String, unique: true },
   passwordHash: String,
   authProvider: { type: String, enum: ['email', 'github', 'google'] },
-  github: String,
   profileImage: {
   type: String,
   default: "",
@@ -31,6 +30,9 @@ bannerImage: { type: String,
   createdAt: { type: Date, default: Date.now },
   lastVisit: { type: Date },
 activityLog: [{ type: Date }],
+githubUsername: String,
+githubProfile: String,
+github: String,
 });
 
 module.exports = { UserSchema };

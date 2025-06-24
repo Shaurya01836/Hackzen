@@ -64,6 +64,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
 app.use("/api/users/me", protect, trackStreak, userRouter);
 app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/github", require("./routes/githubStatsRoutes"));
 
 
 // ✅ HTTP + Socket.IO server
