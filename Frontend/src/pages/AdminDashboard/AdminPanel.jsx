@@ -1,70 +1,72 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Sidebar } from "./sections/sidebar"
-import { TopNavigation } from "./sections/top-navigation"
-import { Dashboard } from "./sections/dashboard"
-import { UsersManagement } from "./sections/users-management"
-import { HackathonsPage } from "./sections/hackathons-page"
-import { AnnouncementsPanel } from "./sections/announcements-panel"
-import { SubmissionsPage } from "./sections/submissions-page"
-import { MentorChatPage } from "./sections/mentor-chat-page"
-import { OrganizerRequestsPage } from "./sections/organizer-requests-page"
-import { AnalyticsPage } from "./sections/analytics-page"
-import { RevenuePage } from "./sections/revenue-page"
-import { SettingsPage } from "./sections/settings-page"
-import { FlaggedContentPage } from "./sections/flagged-content-page"
-import { SupportInboxPage } from "./sections/support-inbox-page"
+import { useState } from "react";
+import { Sidebar } from "./sections/sidebar";
+import { TopNavigation } from "./sections/top-navigation";
+import { Dashboard } from "./sections/dashboard";
+import { UsersManagement } from "./sections/users-management";
+import { HackathonsPage } from "./sections/hackathons-page";
+import { AnnouncementsPanel } from "./sections/announcements-panel";
+import { SubmissionsPage } from "./sections/submissions-page";
+import { MentorChatPage } from "./sections/mentor-chat-page";
+import { OrganizerRequestsPage } from "./sections/organizer-requests-page";
+import { AnalyticsPage } from "./sections/analytics-page";
+import { RevenuePage } from "./sections/revenue-page";
+import { SettingsPage } from "./sections/settings-page";
+import { FlaggedContentPage } from "./sections/flagged-content-page";
+import { SupportInboxPage } from "./sections/support-inbox-page";
+import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 // import { AdminProfilePage } from "./sections/AdminProfile"
 
-
-
 export default function AdminPanel() {
-  const [activeSection, setActiveSection] = useState("dashboard")
+  const [activeSection, setActiveSection] = useState("dashboard");
 
-   const renderContent = () => {
+  const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return <Dashboard />
+        return <Dashboard />;
       case "users":
-        return <UsersManagement />
+        return <UsersManagement />;
       case "hackathons":
-        return <HackathonsPage />
+        return <HackathonsPage />;
       case "submissions":
-        return <SubmissionsPage />
+        return <SubmissionsPage />;
       case "mentors":
-        return <MentorChatPage />
+        return <MentorChatPage />;
       case "announcements":
-        return <AnnouncementsPanel />
+        return <AnnouncementsPanel />;
       case "organizers":
-        return <OrganizerRequestsPage />
+        return <OrganizerRequestsPage />;
       case "analytics":
-        return <AnalyticsPage />
+        return <AnalyticsPage />;
       case "revenue":
-        return <RevenuePage />
+        return <RevenuePage />;
       case "settings":
-        return <SettingsPage />
+        return <SettingsPage />;
       case "flagged":
-        return <FlaggedContentPage />
+        return <FlaggedContentPage />;
       case "support":
-        return <SupportInboxPage />
+        return <SupportInboxPage />;
       // case "profile":
       //   return <AdminProfilePage />
       default:
-        return <Dashboard />
+        return <Dashboard />;
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-
+      <SmoothCursor />
       <div className="flex h-screen">
-        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} />
+        <Sidebar
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
         <div className="flex-1 flex flex-col overflow-hidden">
           <TopNavigation />
           <main className="flex-1 overflow-auto p-6">{renderContent()}</main>
         </div>
       </div>
     </div>
-  )
+  );
 }
