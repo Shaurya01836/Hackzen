@@ -78,7 +78,7 @@ const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
     fetchHackathons();
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   const fetchRegistrations = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
@@ -87,6 +87,7 @@ const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
       const res = await axios.get("http://localhost:3000/api/registrations/my", {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log("Registered Hackathon IDs", res.data.registeredHackathonIds);
       setRegisteredHackathonIds(res.data.registeredHackathonIds);
     } catch (err) {
       console.error("Error fetching user registrations", err);
@@ -95,6 +96,7 @@ const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
 
   fetchRegistrations();
 }, []);
+
 
   // Check URL params on component mount and when hackathons are loaded
   useEffect(() => {
@@ -445,27 +447,20 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
           {/* Action Buttons */}
           <div className="flex gap-3">
- {registeredHackathonIds.includes(hackathon._id) ? (
-  <Button
-    size="sm"
-    disabled
-    className="flex items-center gap-2 bg-green-500 text-white px-6 py-2 rounded-lg"
-    onClick={(e) => e.stopPropagation()} // ✅ just block any action
-  >
-    ✅ Registered
+{registeredHackathonIds.includes(hackathon._id.toString()) ? (
+  <Button disabled className="bg-gray-300 text-gray-600 cursor-not-allowed">
+    Already Registered
   </Button>
 ) : (
   <Button
-    size="sm"
-    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg"
-    onClick={(e) => {
-      e.stopPropagation();
-      handleHackathonClick(hackathon);
-    }}
+    onClick={() => handleHackathonClick(hackathon)}
+    className="bg-indigo-600 text-white"
   >
     Register
   </Button>
 )}
+
+
 
 
 
