@@ -58,7 +58,7 @@ app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
 app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
-
+app.use("/api/registration", require("./routes/registrationRoutes"));
 
 // ✅ HTTP + Socket.IO server
 const server = http.createServer(app);

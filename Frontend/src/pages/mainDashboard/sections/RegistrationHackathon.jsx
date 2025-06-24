@@ -121,23 +121,40 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   }
 
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return
+  if (!validateStep(currentStep)) return;
 
-    setIsSubmitting(true)
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+  setIsSubmitting(true);
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token"); // assuming you store JWT here
 
-      // Here you would make the actual API call to register
-      console.log("Registration data:", formData)
+    if (!user || !token) {
+  alert("You must be logged in to register.");
+  return;
+}
 
-      onSuccess()
-    } catch (error) {
-      console.error("Registration failed:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
+    const response = await fetch("http://localhost:3000/api/registration", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+       Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        hackathonId: hackathon._id,
+        formData
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to register");
+
+    onSuccess(); // success handler
+  } catch (error) {
+    console.error("Registration failed:", error);
+  } finally {
+    setIsSubmitting(false);
+}
+};
 
   const renderStep = () => {
     switch (currentStep) {

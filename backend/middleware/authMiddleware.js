@@ -47,8 +47,28 @@ const isOrganizerOrAdmin = (req, res, next) => {
   return res.status(403).json({ message: "Access denied: Organizer or Admins only" });
 };
 
+const isAuthenticated = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select("-passwordHash");
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+};
+
+
+
 module.exports = {
   protect,
   isAdmin,
   isOrganizerOrAdmin,
+   isAuthenticated,
 };
