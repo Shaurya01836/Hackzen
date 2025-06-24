@@ -85,7 +85,6 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
           />
 
           {/* Overlay Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-transparent" />
 
           {/* Bottom-left Prize */}
           <div className="absolute bottom-3 left-3">

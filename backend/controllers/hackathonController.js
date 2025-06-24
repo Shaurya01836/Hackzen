@@ -62,6 +62,20 @@ exports.createHackathon = async (req, res) => {
   }
 };
 
+//get my hackathon (organizer ke liye)
+exports.getMyHackathons = async (req, res) => {
+  try {
+    const hackathons = await Hackathon.find({ organizer: req.user._id })
+      .populate('organizer', 'name email')
+      .populate('participants', '_id');
+
+    res.json(hackathons);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching your hackathons' });
+  }
+};
+
+
 // ✅ Get all hackathons (only approved ones)
 exports.getAllHackathons = async (req, res) => {
   try {
