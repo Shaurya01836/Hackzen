@@ -1,5 +1,5 @@
-"use client"
-import { useState } from "react"
+"use client";
+import { useState } from "react";
 import {
   ArrowLeft,
   Building2,
@@ -7,25 +7,30 @@ import {
   ExternalLink,
   FileText,
   CheckCircle,
-  X
-} from "lucide-react"
-import { Button } from "../../../components/CommonUI/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
-import { Input } from "../../../components/CommonUI/input"
-import { Label } from "../../../components/CommonUI/label"
-import { Textarea } from "../../../components/CommonUI/textarea"
+  X,
+} from "lucide-react";
+import { Button } from "../../../components/CommonUI/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Input } from "../../../components/CommonUI/input";
+import { Label } from "../../../components/CommonUI/label";
+import { Textarea } from "../../../components/CommonUI/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "../../../components/CommonUI/select"
-import { Checkbox } from "../../../components/DashboardUI/checkbox"
+  SelectValue,
+} from "../../../components/CommonUI/select";
+import { Checkbox } from "../../../components/DashboardUI/checkbox";
 
 export function OrganizationHub({ onBack }) {
-  const [showApplicationForm, setShowApplicationForm] = useState(false)
-  const [showStatusModal, setShowStatusModal] = useState(false)
+  const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -36,11 +41,11 @@ export function OrganizationHub({ onBack }) {
     supportNeeds: [],
     purpose: "",
     website: "",
-    github: ""
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
+    github: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const organizationTypes = ["Ecosystem", "Company", "University", "Other"]
+  const organizationTypes = ["Ecosystem", "Company", "University", "Other"];
   const supportOptions = [
     "Run a Hackathon",
     "Sponsor a Hackathon",
@@ -48,35 +53,32 @@ export function OrganizationHub({ onBack }) {
     "Mentorship Opportunities",
     "Collaborate on Events",
     "Feature Us on the Platform",
-    "Other"
-  ]
+    "Other",
+  ];
 
   const organizations = [
     {
       name: "Cryptify",
       description: "Making Crypto Disappear",
       members: "4+",
-      logo:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "BlockChain"
+      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
+      type: "BlockChain",
     },
     {
       name: "HackZen",
       description: "From 0 to Next 🔝",
       members: "11+",
-      logo:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "Platform"
+      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
+      type: "Platform",
     },
     {
       name: "AyurHerb",
       description: "Step into Nature",
       members: "2+",
-      logo:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "HealthCare"
-    }
-  ]
+      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
+      type: "HealthCare",
+    },
+  ];
 
   const applicationStatus = {
     submitted: true,
@@ -84,56 +86,56 @@ export function OrganizationHub({ onBack }) {
     submittedDate: "December 20, 2024",
     reviewDate: "Expected by December 27, 2024",
     organizationName: "TechCorp Solutions",
-    contactPerson: "John Smith"
-  }
+    contactPerson: "John Smith",
+  };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSupportNeedsChange = (option, checked) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       supportNeeds: checked
         ? [...prev.supportNeeds, option]
-        : prev.supportNeeds.filter(item => item !== option)
-    }))
-  }
+        : prev.supportNeeds.filter((item) => item !== option),
+    }));
+  };
 
-  const validateEmail = email => {
+  const validateEmail = (email) => {
     const disallowedDomains = [
       "gmail.com",
       "yahoo.com",
       "outlook.com",
       "hotmail.com",
-      "protonmail.com"
-    ]
-    const domain = email.split("@")[1]
-    return !disallowedDomains.includes(domain)
-  }
+      "protonmail.com",
+    ];
+    const domain = email.split("@")[1];
+    return !disallowedDomains.includes(domain);
+  };
 
-  const handleSubmit = async e => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
     if (!validateEmail(formData.email)) {
-      alert("Please use an official organization email address.")
-      return
+      alert("Please use an official organization email address.");
+      return;
     }
 
     if (formData.supportNeeds.length === 0) {
-      alert("Please select at least one support need.")
-      return
+      alert("Please select at least one support need.");
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       alert(
         "Application submitted successfully! We'll review it and get back to you."
-      )
-      setShowApplicationForm(false)
+      );
+      setShowApplicationForm(false);
       setFormData({
         name: "",
         contactPerson: "",
@@ -144,24 +146,24 @@ export function OrganizationHub({ onBack }) {
         supportNeeds: [],
         purpose: "",
         website: "",
-        github: ""
-      })
+        github: "",
+      });
     } catch (error) {
-      alert("Failed to submit application. Please try again.", error)
+      alert("Failed to submit application. Please try again.", error);
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Application form layout (like Create Hackathon page)
   if (showApplicationForm) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-gray-50">
+      <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className=" border-b border-gray-200 px-6 py-4">
           <div className="flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               onClick={() => setShowApplicationForm(false)}
               className="flex items-center gap-2"
@@ -204,7 +206,7 @@ export function OrganizationHub({ onBack }) {
                         <Input
                           id="name"
                           value={formData.name}
-                          onChange={e =>
+                          onChange={(e) =>
                             handleInputChange("name", e.target.value)
                           }
                           maxLength={80}
@@ -218,7 +220,7 @@ export function OrganizationHub({ onBack }) {
                         <Input
                           id="contactPerson"
                           value={formData.contactPerson}
-                          onChange={e =>
+                          onChange={(e) =>
                             handleInputChange("contactPerson", e.target.value)
                           }
                           maxLength={80}
@@ -234,7 +236,7 @@ export function OrganizationHub({ onBack }) {
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={e =>
+                        onChange={(e) =>
                           handleInputChange("email", e.target.value)
                         }
                         required
@@ -253,7 +255,7 @@ export function OrganizationHub({ onBack }) {
                         </Label>
                         <Select
                           value={formData.organizationType}
-                          onValueChange={value =>
+                          onValueChange={(value) =>
                             handleInputChange("organizationType", value)
                           }
                         >
@@ -261,7 +263,7 @@ export function OrganizationHub({ onBack }) {
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
                           <SelectContent>
-                            {organizationTypes.map(type => (
+                            {organizationTypes.map((type) => (
                               <SelectItem key={type} value={type}>
                                 {type}
                               </SelectItem>
@@ -276,7 +278,7 @@ export function OrganizationHub({ onBack }) {
                           id="website"
                           type="url"
                           value={formData.website}
-                          onChange={e =>
+                          onChange={(e) =>
                             handleInputChange("website", e.target.value)
                           }
                           placeholder="https://yourorganization.com"
@@ -290,7 +292,7 @@ export function OrganizationHub({ onBack }) {
                         <Input
                           id="whatsapp"
                           value={formData.whatsapp}
-                          onChange={e =>
+                          onChange={(e) =>
                             handleInputChange("whatsapp", e.target.value)
                           }
                           placeholder="+1234567890"
@@ -302,7 +304,7 @@ export function OrganizationHub({ onBack }) {
                         <Input
                           id="telegram"
                           value={formData.telegram}
-                          onChange={e =>
+                          onChange={(e) =>
                             handleInputChange("telegram", e.target.value)
                           }
                           placeholder="@username"
@@ -315,7 +317,7 @@ export function OrganizationHub({ onBack }) {
                       <Input
                         id="github"
                         value={formData.github}
-                        onChange={e =>
+                        onChange={(e) =>
                           handleInputChange("github", e.target.value)
                         }
                         placeholder="https://github.com/yourorganization"
@@ -337,7 +339,7 @@ export function OrganizationHub({ onBack }) {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {supportOptions.map(option => (
+                      {supportOptions.map((option) => (
                         <div
                           key={option}
                           className="flex items-center space-x-2"
@@ -345,7 +347,7 @@ export function OrganizationHub({ onBack }) {
                           <Checkbox
                             id={option}
                             checked={formData.supportNeeds.includes(option)}
-                            onCheckedChange={checked =>
+                            onCheckedChange={(checked) =>
                               handleSupportNeedsChange(option, checked)
                             }
                           />
@@ -375,7 +377,7 @@ export function OrganizationHub({ onBack }) {
                       <Textarea
                         id="purpose"
                         value={formData.purpose}
-                        onChange={e =>
+                        onChange={(e) =>
                           handleInputChange("purpose", e.target.value)
                         }
                         maxLength={1000}
@@ -488,23 +490,23 @@ export function OrganizationHub({ onBack }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   // Main Organization Hub page (unchanged)
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="px-6 py-4">
         <div className="flex items-center gap-4">
           <Button
-            variant="ghost"
+            variant="default"
             size="sm"
             onClick={onBack}
             className="flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back
+            Back to Dashboard
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -520,44 +522,48 @@ export function OrganizationHub({ onBack }) {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-7xl mx-auto p-6">
-          {/* Hero Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-8 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 max-w-2xl">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                  Organization Hub
-                </h2>
-                <p className="text-gray-600 text-lg mb-6">
-                  Discover and connect with leading Web3 ecosystems on HackZen.
-                  From Layer 1 and Layer 2 blockchains to DeFi, GameFi, and
-                  infrastructure protocols, explore a diverse range of
-                  ecosystems shaping the decentralized future.
-                </p>
-                <div className="flex gap-4">
-                  <Button
-                    onClick={() => setShowApplicationForm(true)}
-                    className="bg-yellow-400 hover:bg-yellow-500 text-black font-medium px-6"
-                  >
-                    Apply for Organizer
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="px-6"
-                    onClick={() => setShowStatusModal(true)}
-                  >
-                    Check My Application
-                  </Button>
+          {/*  Hero Section */}
+          <Card className="mb-8">
+            <CardHeader className="pb-0">
+              <CardTitle className="text-3xl font-bold text-gray-900">
+                Organization Hub
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                <div className="flex-1 max-w-2xl">
+                  <p className="text-gray-600 text-lg mb-6">
+                    Discover and connect with leading Web3 ecosystems on
+                    HackZen. From Layer 1 and Layer 2 blockchains to DeFi,
+                    GameFi, and infrastructure protocols, explore a diverse
+                    range of ecosystems shaping the decentralized future.
+                  </p>
+                  <div className="flex gap-4">
+                    <Button
+                      onClick={() => setShowApplicationForm(true)}
+                      className="font-medium px-6"
+                    >
+                      Apply for Organizer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="px-6"
+                      onClick={() => setShowStatusModal(true)}
+                    >
+                      Check My Application
+                    </Button>
+                  </div>
+                </div>
+                <div className="hidden lg:block">
+                  <img
+                    src="https://www.hackquest.io/images/layout/hackathon_cover.png"
+                    alt="Organization Hub Illustration"
+                    className="w-80 h-80 object-contain"
+                  />
                 </div>
               </div>
-              <div className="hidden lg:block">
-                <img
-                  src="https://www.hackquest.io/images/layout/hackathon_cover.png"
-                  alt="Organization Hub Illustration"
-                  className="w-80 h-80 object-contain"
-                />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* My Organization Section */}
           <div className="mb-8">
@@ -623,7 +629,7 @@ export function OrganizationHub({ onBack }) {
       {/* Application Status Modal */}
       {showStatusModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">
@@ -694,5 +700,5 @@ export function OrganizationHub({ onBack }) {
         </div>
       )}
     </div>
-  )
+  );
 }

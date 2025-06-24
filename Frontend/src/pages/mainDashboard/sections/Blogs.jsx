@@ -155,16 +155,16 @@ export function Blogs({ onBack }) {
 
   if (selectedPost) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-gray-50">
+      <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+        <header className="bg-white/20 border-b border-gray-200 px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
-                variant="ghost"
+                variant="default"
                 size="sm"
                 onClick={() => setSelectedPost(null)}
-                className="flex items-center gap-2 hover:bg-gray-100"
+                className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Back to Blogs
@@ -267,8 +267,8 @@ export function Blogs({ onBack }) {
                 {selectedPost.tags.map(tag => (
                   <Badge
                     key={tag}
-                    variant="secondary"
-                    className="px-3 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                    variant="outline"
+                    className="px-3 py-1 "
                   >
                     <Tag className="w-3 h-3 mr-1" />
                     {tag}
@@ -343,19 +343,19 @@ export function Blogs({ onBack }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+      <header className=" border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
-              variant="ghost"
+              variant="default"
               size="sm"
               onClick={onBack}
-              className="flex items-center gap-2 hover:bg-gray-100"
+              className="flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back
+              Back to Dashboard
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3">
@@ -383,7 +383,7 @@ export function Blogs({ onBack }) {
       <div className="flex-1 overflow-auto px-6 py-6">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Search and Filters */}
-          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="bg-white/20 rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -413,52 +413,11 @@ export function Blogs({ onBack }) {
             </div>
           </div>
 
-          {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <BookOpen className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {blogs.length}
-                  </p>
-                  <p className="text-sm text-gray-600">Total Articles</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-yellow-100 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {featuredBlogs.length}
-                  </p>
-                  <p className="text-sm text-gray-600">Featured Posts</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <User className="w-6 h-6 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {new Set(blogs.map(b => b.author.name)).size}
-                  </p>
-                  <p className="text-sm text-gray-600">Contributors</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      
 
           {/* Tabs */}
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-3 bg-white/20 border border-gray-200 p-1 rounded-lg">
               <TabsTrigger
                 value="all"
                 className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
@@ -501,7 +460,7 @@ export function Blogs({ onBack }) {
                   {filteredBlogs.map(blog => (
                     <Card
                       key={blog.id}
-                      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-gray-200 bg-white group"
+                      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-gray-200 bg-white/20 group"
                       onClick={() => setSelectedPost(blog)}
                     >
                       <div className="relative overflow-hidden rounded-t-xl">
@@ -544,8 +503,8 @@ export function Blogs({ onBack }) {
                           {blog.tags.slice(0, 3).map(tag => (
                             <Badge
                               key={tag}
-                              variant="secondary"
-                              className="text-xs px-2 py-1 bg-gray-100 text-gray-700"
+                              variant="outline"
+                              className="text-xs px-2 py-1"
                             >
                               {tag}
                             </Badge>
