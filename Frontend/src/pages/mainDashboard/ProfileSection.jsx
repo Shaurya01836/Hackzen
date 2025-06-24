@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import axios from "axios";
-
+// adjust path if needed
 import {
    SquarePen,
   Trash2,
@@ -83,8 +83,7 @@ const [streakData, setStreakData] = useState({
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  const [githubStats, setGithubStats] = useState(null);
-
+  
   
 
   const { user, token, login } = useAuth();
@@ -150,6 +149,14 @@ const [streakData, setStreakData] = useState({
     { name: "DevOps", level: 60 },
   ];
 
+useEffect(() => {
+  const savedView = localStorage.getItem("currentView");
+  if (savedView) {
+    setTimeout(() => setCurrentViewState(savedView), 0); // delay to avoid warning
+  }
+  fetchUserProfile();
+}, []);
+
 const fetchStreakData = async () => {
   try {
     const storedUser = JSON.parse(localStorage.getItem("user"));
@@ -169,32 +176,15 @@ const fetchStreakData = async () => {
 
 useEffect(() => {
   const savedView = localStorage.getItem("currentView");
-  if (savedView) setTimeout(() => setCurrentViewState(savedView), 0);
-
-  fetchUserProfile();
-  fetchStreakData();
-
-  const fetchGitHubStats = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3000/api/github/stats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setGithubStats(res.data);
-    } catch (err) {
-      console.error("GitHub stats load error", err);
-    }
-  };
-
- const params = new URLSearchParams(window.location.search);
-  const linked = params.get("githubLinked");
-
-  if (linked && token) {
-    fetchUserProfile(); // Re-fetch updated GitHub info
-    params.delete("githubLinked");
-    window.history.replaceState({}, "", window.location.pathname);
+  if (savedView) {
+    setTimeout(() => setCurrentViewState(savedView), 0);
   }
+  fetchUserProfile();
+  fetchStreakData(); // 👈 ADD THIS
 }, []);
+
+
+
 
 
 
@@ -270,10 +260,10 @@ useEffect(() => {
   );
 
   const renderOverview = () => (
-    <div className="flex flex-col gap-6 w-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex flex-col gap-6 w-full p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <Card className="w-full overflow-hidden relative rounded-2xl">
         {/* Banner */}
-        <div className="relative h-48 w-full rounded-t-2xl overflow-hidden">
+        <div className="relative h-36 w-full rounded-t-2xl overflow-hidden">
         <img
   src={user?.bannerImage || "/assets/default-banner.png"}
   alt="Banner"
@@ -302,7 +292,7 @@ useEffect(() => {
               variant="outline"
               className="bg-purple-100 text-purple-800 border-purple-300"
             >
-             {user?.role || "Unknown"}
+              Participant
             </Badge>
           </div>
         </CardHeader>
@@ -392,7 +382,6 @@ useEffect(() => {
           </div>
         </CardContent>
       </Card>
-
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
@@ -487,42 +476,6 @@ useEffect(() => {
 
       </section>
 
-{githubStats && (
-  <Card>
-    <CardHeader>
-      <CardTitle>Developer Profile</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <p className="font-medium text-gray-700 mb-2">Tech Stack</p>
-      <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden mb-2">
-        <div
-          className="bg-yellow-400 h-3"
-          style={{ width: `${githubStats.languageStats?.JavaScript || 0}%` }}
-        />
-      </div>
-      <div className="text-sm text-gray-600 flex flex-wrap gap-3 mb-4">
-        {Object.entries(githubStats.languageStats || {}).map(([lang, perc]) => (
-          <span key={lang}>
-            <span className="font-semibold">{lang}</span> {perc.toFixed(1)}%
-          </span>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-700">
-        <div>Total Stars: <span className="font-semibold">{githubStats.totalStars}</span></div>
-        <div>Total Commits: <span className="font-semibold">{githubStats.totalCommits}</span></div>
-        <div>Total PRs: <span className="font-semibold">{githubStats.totalPRs}</span></div>
-        <div>Total Issues: <span className="font-semibold">{githubStats.totalIssues}</span></div>
-        <div>Contributed To: <span className="font-semibold">{githubStats.totalReposContributedTo}</span></div>
-      </div>
-    </CardContent>
-  </Card>
-)}
-
-
-
-
-
       <Card>
         <CardHeader>
           <CardTitle>Skills & Technologies</CardTitle>
@@ -566,7 +519,7 @@ const renderEditProfile = () => (
         {/* Edit Banner Icon */}
         <button
           onClick={() => document.getElementById("upload-banner-edit").click()}
-          className="absolute bottom-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+          className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
           title="Edit Banner"
         >
           <SquarePen className="w-4 h-4" />
@@ -609,7 +562,7 @@ const renderEditProfile = () => (
       {/* User Info */}
       <CardHeader className="text-center pt-2">
         <CardTitle className="text-xl font-semibold">{user?.name}</CardTitle>
-        <CardDescription>   {user?.role || "Unknown"}</CardDescription>
+        <CardDescription>Participant</CardDescription>
 
         {uploadSuccess && (
           <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
@@ -1171,7 +1124,7 @@ const handleBannerUpload = async (e) => {
     const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
     const imageUrl = uploadRes.data.url;
 
-    setSelectedBanner(null);
+    setSelectedBanner(imageUrl);
     setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
 
     const userData = JSON.parse(localStorage.getItem("user"));

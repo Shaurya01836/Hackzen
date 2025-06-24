@@ -4,22 +4,8 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const userController = require('../controllers/userController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-const trackStreak = require("../middleware/trackStreak");
+
 // OAuth Initiation
-
-router.get('/link/github', (req, res, next) => {
-  const token = req.query.token;
-
-  if (!token) {
-    return res.status(400).json({ message: "Missing token in query" });
-  }
-
-  passport.authenticate('github', {
-    scope: ['user:email'],
-    state: token, // JWT passed here
-  })(req, res, next);
-});
-
 
 router.get('/github', passport.authenticate('github', {
   scope: ['user:email'],
@@ -87,24 +73,6 @@ router.get('/logout', (req, res) => {
   });
 });
 
-router.get('/track', protect, trackStreak, (req, res) => {
-  res.json({ message: 'Streak tracked successfully' });
-});
-
-// GitHub Callback
-router.get(
-  "/link/github/callback",
-  passport.authenticate("github", {
-    failureRedirect: "http://localhost:5173/dashboard?view=profile&error=github",
-    session: false,
-  }),
-  (req, res) => {
-    res.redirect("http://localhost:5173/dashboard?view=profile&githubLinked=true");
-  }
-);
-
-
-
 // ============================
 // 👤 User Management
 // ============================
@@ -115,8 +83,6 @@ router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
-router.get('/:id/streaks', protect, userController.getStreakStats);
-
 
 
 module.exports = router;

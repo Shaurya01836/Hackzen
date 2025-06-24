@@ -193,35 +193,3 @@ exports.changePassword = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-exports.getStreakStats = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("activityLog");
-    if (!user) return res.status(404).json({ message: "User not found" });
-
-    const sorted = user.activityLog.map(d => new Date(d.setHours(0,0,0,0))).sort((a, b) => a - b);
-    let maxStreak = 0, currentStreak = 0, lastDate = null;
-
-    for (let date of sorted) {
-      if (lastDate) {
-        const diff = (date - lastDate) / (1000 * 60 * 60 * 24);
-        if (diff === 1) {
-          currentStreak++;
-        } else if (diff === 0) {
-          continue;
-        } else {
-          currentStreak = 1;
-        }
-      } else {
-        currentStreak = 1;
-      }
-      maxStreak = Math.max(maxStreak, currentStreak);
-      lastDate = date;
-    }
-
-    res.json({ currentStreak, maxStreak, activityLog: user.activityLog });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-

@@ -2,39 +2,39 @@ const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const User = require('../model/UserModel');
-const jwt = require('jsonwebtoken');
 
+// GitHub Strategy
 passport.use(
   new GitHubStrategy(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
       callbackURL: process.env.GITHUB_CALLBACK_URL,
-      passReqToCallback: true, // 👈 Required to access `req.query.state`
     },
-    async (req, accessToken, refreshToken, profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
       try {
-        const token = req.query.state; // JWT passed from frontend
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
+        const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
 
-        if (!user) return done(null, false);
+        // ✅ First: check if a user with this email already exists
+        let user = await User.findOne({ email });
 
-        user.githubUsername = profile.username;
-        user.githubProfile = profile.profileUrl || `https://github.com/${profile.username}`;
-        user.profileImage = user.profileImage || profile.photos?.[0]?.value || `https://github.com/${profile.username}.png`;
+        if (!user) {
+          user = await User.create({
+            name: profile.displayName || profile.username,  email,
+            githubUsername: profile.username,
+            profileImage: profile.photos?.[0]?.value || '',
+            authProvider: 'github',
+            passwordHash: '', // No password for OAuth
+          });
+        }
 
-        await user.save();
-        done(null, user);
+        return done(null, user);
       } catch (err) {
-        console.error("GitHub linking error:", err.message);
-        done(err, null);
+        return done(err, null);
       }
     }
   )
 );
-
-
 
 
 // Google Strategy
