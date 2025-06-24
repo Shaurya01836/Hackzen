@@ -109,15 +109,15 @@ export function RevenuePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">Revenue & Ads Management</h1>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" className="border-yellow-400 bg-yellow-300 text-black hover:bg-yellow-400">
+          <Button variant="default" className="">
             <Calendar className="w-4 h-4 mr-2" />
             Last 6 Months
           </Button>
-          <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+          <Button className="bg-indigo-600 hover:bg-indigo-700">
             <Download className="w-4 h-4 mr-2" />
             Export Report
           </Button>

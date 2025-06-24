@@ -21,7 +21,7 @@ export function SettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">System Settings</h1>
-        <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+        <Button variant="default">
           <Save className="w-4 h-4 mr-2" />
           Save All Changes
         </Button>
@@ -29,19 +29,19 @@ export function SettingsPage() {
 
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="general" className="data-[state=active]:bg-purple-500">
+          <TabsTrigger value="general" className="data-[state=active]:bg-[#1b0c3f]">
             General
           </TabsTrigger>
-          <TabsTrigger value="security" className="data-[state=active]:bg-purple-500">
+          <TabsTrigger value="security" className="data-[state=active]:bg-[#1b0c3f]">
             Security
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="data-[state=active]:bg-purple-500">
+          <TabsTrigger value="notifications" className="data-[state=active]:bg-[#1b0c3f]">
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="database" className="data-[state=active]:bg-purple-500">
+          <TabsTrigger value="database" className="data-[state=active]:bg-[#1b0c3f]">
             Database
           </TabsTrigger>
-          <TabsTrigger value="integrations" className="data-[state=active]:bg-purple-500">
+          <TabsTrigger value="integrations" className="data-[state=active]:bg-[#1b0c3f]">
             Integrations
           </TabsTrigger>
         </TabsList>
@@ -51,7 +51,7 @@ export function SettingsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-black flex items-center">
-                  <Settings className="w-5 h-5 mr-2 text-purple-600" />
+                  <Settings className="w-5 h-5 mr-2 text-indigo-600" />
                   Platform Configuration
                 </CardTitle>
               </CardHeader>
@@ -339,7 +339,7 @@ export function SettingsPage() {
                       className="bg-white/5 border-purple-500/20 text-gray-400"
                     />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                  <Button >
                     Create Manual Backup
                   </Button>
                 </div>
@@ -367,7 +367,7 @@ export function SettingsPage() {
                       className="bg-white/5 border-purple-500/20 text-gray-400"
                     />
                   </div>
-                  <Button className="w-full bg-green-500 border border-green-600 text-white hover:bg-green-600">
+                  <Button >
                     Optimize Database
                   </Button>
                 </div>
@@ -443,7 +443,7 @@ export function SettingsPage() {
                       className="bg-white/5 border-purple-500/20 text-gray-400"
                     />
                   </div>
-                  <Button className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                  <Button className="w-full">
                     Test Connection
                   </Button>
                 </div>

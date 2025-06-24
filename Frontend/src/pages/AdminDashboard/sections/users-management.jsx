@@ -97,7 +97,7 @@ export function UsersManagement() {
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Users Management</h1>
-        <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+        <Button className="bg-indigo-600 hover:bg-indigo-700">
           Export Users
         </Button>
       </div>
@@ -125,7 +125,7 @@ export function UsersManagement() {
                   Role: {selectedRole}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+              <DropdownMenuContent className="bg-white/90 text-black backdrop-blur-xl border-purple-500/20">
                 {[
                   "All",
                   "Participant",
@@ -137,7 +137,7 @@ export function UsersManagement() {
                   <DropdownMenuItem
                     key={role}
                     onClick={() => setSelectedRole(role)}
-                    className="text-white hover:bg-white/5"
+                    className=" hover:bg-black hover:text-white"
                   >
                     {role}
                   </DropdownMenuItem>
@@ -164,7 +164,7 @@ export function UsersManagement() {
                   className="border-purple-500/20 hover:bg-white/5"
                 >
                   <TableCell className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
                       {user.name?.slice(0, 2).toUpperCase()}
                     </div>
                     <div>

@@ -98,7 +98,7 @@ export function Dashboard() {
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Dashboard Overview</h1>
-        <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+        <Button className="bg-indigo-600 hover:bg-indigo-700">
           <TrendingUp className="w-4 h-4 mr-2" />
           View Full Analytics
         </Button>
@@ -150,7 +150,7 @@ export function Dashboard() {
         <Card className="">
           <CardHeader>
             <CardTitle className=" flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
+              <TrendingUp className="w-5 h-5 mr-2 text-indigo-400" />
               Hackathons Created Over Time
             </CardTitle>
           </CardHeader>
@@ -185,7 +185,7 @@ export function Dashboard() {
         <Card className="">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <RechartsPieChart className="w-5 h-5 mr-2 text-blue-400" />
+              <RechartsPieChart className="w-5 h-5 mr-2 text-indigo-400" />
               User Roles Breakdown
             </CardTitle>
           </CardHeader>

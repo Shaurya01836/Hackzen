@@ -59,7 +59,7 @@ export function HackathonsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {!showCreateForm ? (
         <>
           <div className="flex items-center justify-between">
@@ -67,7 +67,7 @@ export function HackathonsPage() {
               Hackathons Management
             </h1>
             <Button
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              className="bg-indigo-600 hover:bg-indigo-700"
               onClick={() => setShowCreateForm(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -96,7 +96,7 @@ export function HackathonsPage() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-gray-800 text-lg mb-2 group-hover:text-purple-300 transition-colors">
+                      <CardTitle className="text-gray-800 text-lg mb-2  transition-colors">
                         {hackathon.title}
                       </CardTitle>
                       <p className="text-gray-600 text-sm">
@@ -133,8 +133,7 @@ export function HackathonsPage() {
                   <div className="flex space-x-2 pt-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="flex-1 text-white bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                      className="flex-1 text-white bg-indigo-600 hover:bg-indigo-700"
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       View Details

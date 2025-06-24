@@ -108,10 +108,10 @@ export function OrganizerRequestsPage() {
     return <p className="text-center text-black font-semibold">Loading requests...</p>;
 
   return (
-    <div className="space-y-6 p-4 md:p-8">
+    <div className="space-y-6 p-4 md:p-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-3xl font-bold text-black">Organizer Requests</h1>
-        <Badge className="bg-yellow-500 text-white">
+        <Badge className="" variant="outline">
           <Clock className="w-4 h-4 mr-1" />
           {organizerRequests.filter((r) => r.approvalStatus === "pending").length} Pending
         </Badge>

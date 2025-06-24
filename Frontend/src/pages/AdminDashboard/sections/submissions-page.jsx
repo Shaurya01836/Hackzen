@@ -1,13 +1,40 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Input } from "../../../components/CommonUI/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/AdminUI/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../components/AdminUI/dropdown-menu"
-import { Search, Filter, Eye, Download, Star, Code, Calendar, User, Shuffle } from "lucide-react"
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import { Input } from "../../../components/CommonUI/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/AdminUI/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../components/AdminUI/dropdown-menu";
+import {
+  Search,
+  Filter,
+  Eye,
+  Download,
+  Star,
+  Code,
+  Calendar,
+  User,
+  Shuffle,
+} from "lucide-react";
 
 const submissions = [
   {
@@ -58,75 +85,81 @@ const submissions = [
     technologies: ["Python", "NLP", "Flask"],
     githubUrl: "https://github.com/mindcare/support-bot",
   },
-]
+];
 
 export function SubmissionsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("All")
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const filteredSubmissions = submissions.filter((submission) => {
     const matchesSearch =
       submission.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.team.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      submission.hackathon.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "All" || submission.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      submission.hackathon.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "All" || submission.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusColor = (status) => {
     switch (status) {
       case "Approved":
-        return "bg-green-500 text-white border-green-500/30"
+        return "bg-green-500 text-white border-green-500/30";
       case "Under Review":
-        return "bg-yellow-500 text-white border-yellow-500/30"
+        return "bg-yellow-500 text-white border-yellow-500/30";
       case "Rejected":
-        return "bg-red-500 text-white border-red-500/30"
+        return "bg-red-500 text-white border-red-500/30";
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "bg-gray-500 text-white border-gray-500/30";
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-black">Submissions Management</h1>
-        <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+        <h1 className="text-3xl font-bold text-black">
+          Submissions Management
+        </h1>
+        <Button className="bg-indigo-600 hover:bg-indigo-700">
           <Download className="w-4 h-4 mr-2" />
           Export All
         </Button>
       </div>
 
       {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
-              <Input
-                placeholder="Search submissions, teams, or hackathons..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-purple-500/20 text-black hover:bg-white/5">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Status: {statusFilter}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                {["All", "Under Review", "Approved", "Rejected"].map((status) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className="text-white hover:bg-white/5"
-                  >
-                    {status}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
+          <Input
+            placeholder="Search submissions, teams, or hackathons..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="border-purple-500/20 text-black hover:bg-white/5"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Status: {statusFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+            {["All", "Under Review", "Approved", "Rejected"].map((status) => (
+              <DropdownMenuItem
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className="text-white hover:bg-white/5"
+              >
+                {status}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Submissions Table */}
       <Card>
@@ -151,13 +184,22 @@ export function SubmissionsPage() {
             </TableHeader>
             <TableBody>
               {filteredSubmissions.map((submission) => (
-                <TableRow key={submission.id} className="border-purple-500/20 hover:bg-white/5">
+                <TableRow
+                  key={submission.id}
+                  className="border-purple-500/20 hover:bg-white/5"
+                >
                   <TableCell>
                     <div>
-                      <div className="text-gray-700 font-medium">{submission.title}</div>
+                      <div className="text-gray-700 font-medium">
+                        {submission.title}
+                      </div>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {submission.technologies.slice(0, 3).map((tech) => (
-                          <Badge key={tech} variant="secondary" className="text-xs bg-blue-500/20 text-blue-300">
+                          <Badge
+                            key={tech}
+                            variant="outline"
+                            className="text-xs"
+                          >
                             {tech}
                           </Badge>
                         ))}
@@ -166,14 +208,18 @@ export function SubmissionsPage() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="text-gray-500 font-medium">{submission.team}</div>
+                      <div className="text-gray-500 font-medium">
+                        {submission.team}
+                      </div>
                       <div className="text-gray-700 text-sm flex items-center">
                         <User className="w-3 h-3 mr-1" />
                         {submission.submittedBy}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-gray-700">{submission.hackathon}</TableCell>
+                  <TableCell className="text-gray-700">
+                    {submission.hackathon}
+                  </TableCell>
                   <TableCell>
                     <div className="text-gray-700 text-sm flex items-center">
                       <Calendar className="w-3 h-3 mr-1" />
@@ -181,7 +227,9 @@ export function SubmissionsPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(submission.status)}>{submission.status}</Badge>
+                    <Badge className={getStatusColor(submission.status)}>
+                      {submission.status}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center text-yellow-500">
@@ -192,7 +240,11 @@ export function SubmissionsPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-gray-400 hover:text-black">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-gray-400 hover:text-black"
+                        >
                           <Shuffle className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -215,5 +267,5 @@ export function SubmissionsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
