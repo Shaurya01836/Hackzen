@@ -1,4 +1,5 @@
-const Registration = require("../schema/RegistrationFormSchema"); // ✅ direct import
+const Registration = require("../model/RegistrationFormModel"); // ✅ This is the registered Mongoose model
+
 
 
 const registerForHackathon = async (req, res) => {
@@ -25,24 +26,6 @@ const registerForHackathon = async (req, res) => {
   }
 };
 
-// in registrationController.js
-const getMyRegistration = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const registration = await Registration.find({ userId }).select("hackathonId");
-
-    const registeredHackathonIds = registration.map((r) =>
-      r.hackathonId.toString()
-    );
-
-    res.status(200).json({ registeredHackathonIds });
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching registration" });
-  }
-};
-
-
 module.exports = {
   registerForHackathon,
-  getMyRegistration,
 };

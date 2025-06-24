@@ -96,7 +96,6 @@ export function HackathonDetails({ hackathon, onBack }) {
       setActiveSection(currentSection);
     };
 
-    
     window.addEventListener("scroll", handleScroll);
     handleScroll(); // Call once on mount
     return () => window.removeEventListener("scroll", handleScroll);
@@ -108,57 +107,6 @@ export function HackathonDetails({ hackathon, onBack }) {
       block: "start",
     });
   };
-
-  useEffect(() => {
-  const checkIfUserRegistered = async () => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!token || !user || !hackathon?._id) return;
-
-    try {
-      const res = await fetch("http://localhost:3000/api/registrations/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (
-        data.registeredHackathonIds &&
-        data.registeredHackathonIds.includes(hackathon._id)
-      ) {
-        setIsRegistered(true); // ✅ Persisted across reloads
-      }
-    } catch (err) {
-      console.error("Error checking registration:", err);
-    }
-  };
-
-  checkIfUserRegistered();
-}, [hackathon]);
-
-
- useEffect(() => {
-  const checkRegistration = async () => {
-    const token = localStorage.getItem("token");
-    if (!token || !hackathon?._id) return;
-
-    try {
-      const res = await fetch(`http://localhost:3000/api/registrations/is-registered/${hackathon._id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await res.json();
-      setIsRegistered(data.registered); // ✅ Persisted registration
-    } catch (err) {
-      console.error("Error checking registration", err);
-    }
-  };
-
-  checkRegistration();
-}, [hackathon]);
-
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
@@ -346,25 +294,23 @@ export function HackathonDetails({ hackathon, onBack }) {
                 Share
               </Button>
               <Button
-  size="sm"
-  disabled={isRegistered}
-  onClick={handleRegister}
-  className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${
-    isRegistered
-      ? "bg-green-500 cursor-not-allowed"
-      : "bg-indigo-500 hover:bg-indigo-600"
-  }`}
->
-  {isRegistered ? (
-    <>
-      <CheckCircle className="w-4 h-4" />
-      Registered
-    </>
-  ) : (
-    "Register Now"
-  )}
-</Button>
-
+                size="sm"
+                onClick={handleRegister}
+                className={`${
+                  isRegistered
+                    ? "bg-green-500 hover:bg-green-600"
+                    : "bg-indigo-500 hover:bg-indigo-600"
+                }`}
+              >
+                {isRegistered ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Registered
+                  </>
+                ) : (
+                  "Register Now"
+                )}
+              </Button>
             </div>
           </div>
         </div>
