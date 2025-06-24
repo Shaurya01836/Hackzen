@@ -519,7 +519,7 @@ const renderEditProfile = () => (
         {/* Edit Banner Icon */}
         <button
           onClick={() => document.getElementById("upload-banner-edit").click()}
-          className="absolute bottom-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+          className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
           title="Edit Banner"
         >
           <SquarePen className="w-4 h-4" />
@@ -1124,7 +1124,7 @@ const handleBannerUpload = async (e) => {
     const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
     const imageUrl = uploadRes.data.url;
 
-    setSelectedBanner(null);
+    setSelectedBanner(imageUrl);
     setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
 
     const userData = JSON.parse(localStorage.getItem("user"));
