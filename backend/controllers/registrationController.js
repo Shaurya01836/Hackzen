@@ -26,23 +26,23 @@ const registerForHackathon = async (req, res) => {
 };
 
 // in registrationController.js
-const getMyRegistrations = async (req, res) => {
+const getMyRegistration = async (req, res) => {
   try {
     const userId = req.user._id;
-    const registrations = await Registration.find({ userId }).select("hackathonId");
+    const registration = await Registration.find({ userId }).select("hackathonId");
 
-    const registeredHackathonIds = registrations.map((r) =>
+    const registeredHackathonIds = registration.map((r) =>
       r.hackathonId.toString()
     );
 
     res.status(200).json({ registeredHackathonIds });
   } catch (err) {
-    res.status(500).json({ message: "Error fetching registrations" });
+    res.status(500).json({ message: "Error fetching registration" });
   }
 };
 
 
 module.exports = {
   registerForHackathon,
-  getMyRegistrations,
+  getMyRegistration,
 };

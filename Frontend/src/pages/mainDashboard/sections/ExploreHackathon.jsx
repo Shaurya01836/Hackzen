@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+
+import { HackathonRegistration } from "../sections/RegistrationHackathon";
 import {
   ArrowLeft,
   Search,

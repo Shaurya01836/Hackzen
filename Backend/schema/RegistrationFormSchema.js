@@ -1,94 +1,92 @@
-const mongoose = require('mongoose');
+const { Schema } = require('mongoose');
 
-const registrationSchema = new mongoose.Schema({
-  hackathonId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Hackathon",
+const HackathonSchema = new Schema({
+  title: { type: String, required: true },
+  description: String,
+
+  image: {
+    type: String, // optional main thumbnail (can also use banner in images)
+  },
+
+  organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+
+  category: {
+    type: String,
+    enum: [
+      'Artificial Intelligence', 'Blockchain', 'Cybersecurity',
+      'FinTech', 'Gaming', 'Healthcare', 'Sustainability',
+      'Mobile Development', 'Web Development', 'IoT', 'Data Science', 'DevOps'
+    ],
     required: true
   },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+
+  difficultyLevel: {
+    type: String,
+    enum: ['Beginner', 'Intermediate', 'Advanced'],
     required: true
   },
-  formData: {
-    fullName: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    email: {
-      type: String,
-      required: true,
-      lowercase: true
-    },
-    phone: {
-      type: String,
-      default: null
-    },
-    age: {
-      type: Number,
-      default: null
-    },
-    gender: {
-      type: String,
-      enum: ['Male', 'Female', 'Other'],
-       required: false
-    },
-    collegeOrCompany: {
-      type: String,
-      required: true
-    },
-    degreeOrRole: {
-      type: String,
-      default: null
-    },
-    yearOfStudyOrExperience: {
-      type: Number,
-      default: null
-    },
-    teamName: {
-      type: String,
-      default: null
-    },
-    teamCode: {
-      type: String,
-      default: null
-    },
-    projectIdea: {
-      type: String,
-      maxlength: 500
-    },
-    track: {
-      type: String,
-      enum: ['Web Development', 'AI/ML', 'Blockchain', 'Cybersecurity', 'Open Innovation'],
-      required: true
-    },
-    github: {
-      type: String,
-      default: null
-    },
-    linkedin: {
-      type: String,
-      default: null
-    },
-    resumeURL: {
-      type: String,
-      default: null
-    },
-    heardFrom: {
-      type: String,
-      default: null
-    }
+
+  location: { type: String },
+
+  // Dates
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  registrationDeadline: { type: Date, required: true },
+  submissionDeadline: { type: Date },
+
+  maxParticipants: { type: Number, default: 100 },
+
+  problemStatements: [String],
+  requirements: [String],
+  perks: [String],
+  tags: [String],
+
+  participants: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  mentors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  judges: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
+  submissions: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
+
+  chatRoom: { type: Schema.Types.ObjectId, ref: 'ChatRoom' },
+
+  mode: {
+    type: String,
+    enum: ['online', 'offline', 'hybrid'],
+    default: 'online'
   },
-  acceptedTerms: {
-    type: Boolean,
-    required: true
+
+  prizePool: {
+    amount: { type: Number },
+    currency: { type: String, default: 'USD' },
+    breakdown: { type: String }
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+
+  // Lifecycle status of hackathon
+  status: {
+    type: String,
+    enum: ['draft', 'submitted', 'approved', 'upcoming', 'ongoing', 'ended'],
+    default: 'draft'
+  },
+
+  // Media
+  images: {
+    banner: {
+      url: String,
+      publicId: String
+    },
+    logo: {
+      url: String,
+      publicId: String
+    },
+    gallery: [
+      {
+        url: String,
+        publicId: String
+      }
+    ]
+  },
+
+  createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('HackathonRegistration', registrationSchema);
+module.exports = HackathonSchema;

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { registerForHackathon, getUserRegistrations } = require("../controllers/registrationController");
+const { registerForHackathon, getUserRegistration } = require("../controllers/registrationController");
 const { isAuthenticated } = require("../middleware/authMiddleware");
 const Registration = require("../schema/RegistrationFormSchema");
 
@@ -13,12 +13,12 @@ router.get("/my", isAuthenticated, async (req, res) => {
   const userId = req.user._id;
 
   try {
-    const registrations = await Registration.find({ userId });
-    const registeredHackathonIds = registrations.map(reg => reg.hackathonId.toString());
+    const registration = await Registration.find({ userId });
+    const registeredHackathonIds = registration.map(reg => reg.hackathonId.toString());
     res.json({ registeredHackathonIds });
   } catch (err) {
-    console.error("Error getting registrations:", err);
-    res.status(500).json({ message: "Failed to fetch registrations" });
+    console.error("Error getting registration:", err);
+    res.status(500).json({ message: "Failed to fetch registration" });
   }
 });
 
