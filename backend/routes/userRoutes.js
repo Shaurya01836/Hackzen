@@ -4,7 +4,7 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const userController = require('../controllers/userController');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-
+const trackStreak = require("../middleware/trackStreak");
 // OAuth Initiation
 
 router.get('/github', passport.authenticate('github', {
@@ -73,6 +73,11 @@ router.get('/logout', (req, res) => {
   });
 });
 
+router.get('/track', protect, trackStreak, (req, res) => {
+  res.json({ message: 'Streak tracked successfully' });
+});
+
+
 // ============================
 // 👤 User Management
 // ============================
@@ -83,6 +88,8 @@ router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
+router.get('/:id/streaks', protect, userController.getStreakStats);
+
 
 
 module.exports = router;

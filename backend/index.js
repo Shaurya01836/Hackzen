@@ -10,6 +10,10 @@ const { Server } = require("socket.io");
 const socketHandler = require("./config/socket");
 const MongoStore = require('connect-mongo'); // ✅ persist sessions
 const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
+const { protect } = require("./middleware/authMiddleware");
+const trackStreak = require("./middleware/trackStreak");
+const userRouter = require('./routes/userRoutes');
+
 
 require("./config/passport"); // load strategies
 
@@ -58,6 +62,8 @@ app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
 app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
+app.use("/api/users/me", protect, trackStreak, userRouter);
+app.use("/api/users", require("./routes/userRoutes"));
 
 
 // ✅ HTTP + Socket.IO server

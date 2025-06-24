@@ -73,6 +73,11 @@ const [passwordError, setPasswordError] = useState("");
     localStorage.setItem("currentView", view);
   };
 
+const [streakData, setStreakData] = useState({
+  currentStreak: 0,
+  maxStreak: 0,
+  activityLog: [],
+});
 
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
@@ -151,6 +156,36 @@ useEffect(() => {
   }
   fetchUserProfile();
 }, []);
+
+const fetchStreakData = async () => {
+  try {
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+
+    if (!storedUser?._id || !token) return;
+
+    const res = await axios.get(`http://localhost:3000/api/users/${storedUser._id}/streaks`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    setStreakData(res.data);
+  } catch (err) {
+    console.error("Failed to fetch streaks:", err.message);
+  }
+};
+
+useEffect(() => {
+  const savedView = localStorage.getItem("currentView");
+  if (savedView) {
+    setTimeout(() => setCurrentViewState(savedView), 0);
+  }
+  fetchUserProfile();
+  fetchStreakData(); // 👈 ADD THIS
+}, []);
+
+
+
+
 
 
   const fetchUserProfile = async () => {
@@ -433,7 +468,12 @@ useEffect(() => {
       </Card>
 
       <section className="py-10">
-        <StreakGraphic />
+       <StreakGraphic
+  data={streakData.activityLog}
+  current={streakData.currentStreak}
+  max={streakData.maxStreak}
+/>
+
       </section>
 
       <Card>

@@ -28,7 +28,9 @@ bannerImage: { type: String,
   badges: [{ type: Schema.Types.ObjectId, ref: 'Badge' }],
   hackathonsJoined: [{ type: Schema.Types.ObjectId, ref: 'Hackathon' }],
   projects: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  lastVisit: { type: Date },
+activityLog: [{ type: Date }],
 });
 
 module.exports = { UserSchema };

@@ -1,43 +1,73 @@
 import React from "react";
+import dayjs from "dayjs";
 
-// Custom color levels (0 = no activity, 1-3 = light to heavy)
+// Color levels (0 = no activity, 1-3 = light to dark)
 const activityLevels = [
   "bg-[#1b0c3f]", 
   "bg-[#2a1c4f]", 
   "bg-[#3c2d66]", 
-  "bg-[#503f80]"  
+  "bg-[#503f80]"
 ];
 
-// 12 months (like GitHub grid)
+// Get intensity by frequency (for now 1 = visited)
+const getActivityLevel = (count) => {
+  if (count >= 3) return 3;
+  if (count === 2) return 2;
+  if (count === 1) return 1;
+  return 0;
+};
+
 const months = [
-  "Jul, 2025", "Aug, 2025", "Sep, 2025", "Oct, 2025",
-  "Nov, 2025", "Dec, 2025",
+  "Jul, 2025", "Aug, 2025", "Sep, 2025", "Oct, 2025", "Nov, 2025", "Dec, 2025"
 ];
 
-// Static sample data (0–3 contribution level)
-const sampleStreakData = Array.from({ length: 12 }, () =>
-  Array.from({ length: 28 }, () => Math.floor(Math.random() * 4))
-);
+// 📅 Helper to check if date belongs to a given month (by index)
+const getMonthRange = (monthIndex) => {
+  const start = dayjs(`2025-${monthIndex + 7}-01`);
+  const end = start.endOf("month");
+  return { start, end };
+};
 
-const StreakGraphic = () => {
+const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
+  // Convert array of Date strings into a frequency map
+  const activityMap = {};
+  data.forEach((date) => {
+    const day = dayjs(date).format("YYYY-MM-DD");
+    activityMap[day] = (activityMap[day] || 0) + 1;
+  });
+
   return (
-    <div className="rounded-lg  text-gray-900 py-6 px-40  ring-1 ring-indigo-300">
+    <div className="rounded-lg text-gray-900 py-6 px-6 md:px-24 ring-1 ring-indigo-300">
       <h2 className="text-2xl font-bold text-center mb-6">Streaks</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {months.map((month, monthIndex) => (
-          <div key={monthIndex}>
-            <h3 className="text-sm font-semibold text-center mb-2">{month}</h3>
-            <div className="grid grid-cols-7 gap-1">
-              {sampleStreakData[monthIndex].map((level, dayIndex) => (
-                <div
-                  key={dayIndex}
-                  className={`w-3.5 h-3.5 rounded-sm border ${activityLevels[level]}`}
-                />
-              ))}
+        {months.map((monthLabel, index) => {
+          const { start, end } = getMonthRange(index); // Jul = index 0 = 7
+
+          // Collect days of this month
+          const days = [];
+          for (let date = start; date.isBefore(end); date = date.add(1, "day")) {
+            const key = date.format("YYYY-MM-DD");
+            const count = activityMap[key] || 0;
+            days.push(getActivityLevel(count));
+          }
+
+          return (
+            <div key={index}>
+              <h3 className="text-sm font-semibold text-center mb-2">
+                {monthLabel}
+              </h3>
+              <div className="grid grid-cols-7 gap-1">
+                {days.map((level, i) => (
+                  <div
+                    key={i}
+                    className={`w-3.5 h-3.5 rounded-sm border ${activityLevels[level]}`}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Legend */}
@@ -54,10 +84,10 @@ const StreakGraphic = () => {
       {/* Streak Summary */}
       <div className="mt-4 text-center text-sm">
         <p>
-          <strong>Current Streak:</strong> 2 Days
+          <strong>Current Streak:</strong> {current} Days
         </p>
         <p>
-          <strong>Max Streak:</strong> 6 Days
+          <strong>Max Streak:</strong> {max} Days
         </p>
       </div>
     </div>

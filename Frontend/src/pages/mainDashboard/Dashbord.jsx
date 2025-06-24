@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../../lib/utils";
+import axios from "axios";
 
 import {
   Users,
@@ -171,6 +172,24 @@ export default function HackZenDashboard() {
     },
   ];
 
+    useEffect(() => {
+    const pingStreak = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        await axios.get("http://localhost:3000/api/users/track", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.warn("📉 Failed to track streak:", err.message);
+      }
+    };
+
+    pingStreak();
+  }, []);
+
+  
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
