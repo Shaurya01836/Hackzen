@@ -34,6 +34,7 @@ import { Checkbox } from "../../../components/DashboardUI/checkbox"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Progress } from "../../../components/DashboardUI/progress"
 
+
 export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -88,6 +89,8 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
         // Optional fields, no validation needed
         break
       case 3:
+        if (!formData.teamName.trim())
+          newErrors.teamName = "Team name is required"
         if (!formData.track) newErrors.track = "Please select a track"
         break
       case 4:
@@ -140,7 +143,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="pt-4 space-y-6">
+          <div className="space-y-6">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 Personal Information
@@ -220,10 +223,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   <SelectTrigger>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    <SelectItem className="text-white hover:bg-white/5 capitalize" value="Male">Male</SelectItem>
-                    <SelectItem className="text-white hover:bg-white/5 capitalize" value="Female">Female</SelectItem>
-                    <SelectItem className="text-white hover:bg-white/5 capitalize" value="Other">Other</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -257,7 +260,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       case 2:
         return (
-          <div className="pt-4 space-y-6">
+          <div className="space-y-6">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 Academic/Professional Details
@@ -352,7 +355,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       case 3:
         return (
-          <div className="pt-4 space-y-6">
+          <div className="space-y-6">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 Team & Project Details
@@ -367,7 +370,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <div className="space-y-2">
                   <Label htmlFor="teamName" className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    Team Name (Optional)
+                    Team Name *
                   </Label>
                   <Input
                     id="teamName"
@@ -376,7 +379,11 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                       handleInputChange("teamName", e.target.value)
                     }
                     placeholder="Enter your team name"
+                    className={errors.teamName ? "border-red-500" : ""}
                   />
+                  {errors.teamName && (
+                    <p className="text-sm text-red-500">{errors.teamName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -406,9 +413,9 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   >
                     <SelectValue placeholder="Select your preferred track" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                  <SelectContent>
                     {tracks.map(track => (
-                      <SelectItem key={track} value={track} className="text-white hover:bg-white/5 capitalize" >
+                      <SelectItem key={track} value={track}>
                         {track}
                       </SelectItem>
                     ))}
@@ -453,13 +460,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   <SelectTrigger>
                     <SelectValue placeholder="Select an option" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    <SelectItem value="Social Media" className="text-white hover:bg-white/5 capitalize" >Social Media</SelectItem>
-                    <SelectItem value="Friends" className="text-white hover:bg-white/5 capitalize" >Friends</SelectItem>
-                    <SelectItem value="College" className="text-white hover:bg-white/5 capitalize" >College</SelectItem>
-                    <SelectItem value="Website" className="text-white hover:bg-white/5 capitalize" >Website</SelectItem>
-                    <SelectItem value="Email" className="text-white hover:bg-white/5 capitalize" >Email</SelectItem>
-                    <SelectItem value="Other" className="text-white hover:bg-white/5 capitalize" >Other</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="Social Media">Social Media</SelectItem>
+                    <SelectItem value="Friends">Friends</SelectItem>
+                    <SelectItem value="College">College</SelectItem>
+                    <SelectItem value="Website">Website</SelectItem>
+                    <SelectItem value="Email">Email</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -469,7 +476,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       case 4:
         return (
-          <div className="pt-4 space-y-6">
+          <div className="space-y-6">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">
                 Review & Submit
@@ -513,16 +520,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     </h3>
                     <ul className="text-sm text-yellow-700 mt-2 space-y-1">
                       <li>
-                        • Registration deadline:{" "}
-                        {hackathon.registrationDeadline}
+                        Registration deadline: {hackathon.registrationDeadline}
                       </li>
                       <li>
-                        • You will receive a confirmation email after
-                        registration
+                        You will receive a confirmation email after registration
                       </li>
-                      <li>• Team formation can be done after registration</li>
+                      <li>Team formation can be done after registration</li>
                       <li>
-                        • All communication will be through the provided email
+                        All communication will be through the provided email
                       </li>
                     </ul>
                   </div>

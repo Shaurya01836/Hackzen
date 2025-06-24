@@ -136,7 +136,7 @@ export function Blogs({ onBack }) {
       setBlogs(mockBlogs)
       setLoading(false)
     }, 1000)
-  }, [])
+  })
 
   const filteredBlogs = blogs.filter(blog => {
     const matchesSearch =
