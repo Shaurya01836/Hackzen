@@ -1,5 +1,5 @@
-"use client"
-import { useState, useEffect, useRef } from "react"
+"use client";
+import { useState, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -23,32 +23,37 @@ import {
   HelpCircle,
   Settings,
   ChevronLeft,
-  ChevronRight
-} from "lucide-react"
+  ChevronRight,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/DashboardUI/avatar"
-import { Progress } from "../../../components/DashboardUI/progress"
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/DashboardUI/avatar";
+import { Progress } from "../../../components/DashboardUI/progress";
+import { HackathonRegistration } from "./RegistrationHackathon";
 
 // Mock animated card components
-const ACard = Card
-const ACardContent = CardContent
-const ACardHeader = CardHeader
-const ACardTitle = CardTitle
+const ACard = Card;
+const ACardContent = CardContent;
+const ACardHeader = CardHeader;
+const ACardTitle = CardTitle;
 
 export function HackathonDetails({ hackathon, onBack }) {
-  const [isRegistered, setIsRegistered] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
-  const [showRegistration, setShowRegistration] = useState(false)
-  const [activeSection, setActiveSection] = useState("overview")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const sectionRefs = {
     overview: useRef(null),
@@ -57,8 +62,8 @@ export function HackathonDetails({ hackathon, onBack }) {
     timeline: useRef(null),
     faqs: useRef(null),
     team: useRef(null),
-    community: useRef(null)
-  }
+    community: useRef(null),
+  };
 
   const sections = [
     { id: "overview", label: "Overview & Requirements", icon: Target },
@@ -67,87 +72,97 @@ export function HackathonDetails({ hackathon, onBack }) {
     { id: "timeline", label: "Timeline", icon: Clock },
     { id: "faqs", label: "FAQs", icon: HelpCircle },
     { id: "team", label: "Team Management", icon: Settings },
-    { id: "community", label: "Community", icon: Users }
-  ]
+    { id: "community", label: "Community", icon: Users },
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200 // Offset for header height
+      const scrollPosition = window.scrollY + 200; // Offset for header height
 
       // Find the section that's currently in view
-      let currentSection = "overview" // Default to first section
+      let currentSection = "overview"; // Default to first section
 
       for (let i = 0; i < sections.length; i++) {
-        const section = sections[i]
-        const element = sectionRefs[section.id].current
+        const section = sections[i];
+        const element = sectionRefs[section.id].current;
         if (element) {
-          const { offsetTop } = element
+          const { offsetTop } = element;
           if (scrollPosition >= offsetTop) {
-            currentSection = section.id
+            currentSection = section.id;
           }
         }
       }
 
-      setActiveSection(currentSection)
-    }
+      setActiveSection(currentSection);
+    };
 
-    window.addEventListener("scroll", handleScroll)
-    handleScroll() // Call once on mount
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, []) // Removed sections from dependency array
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Call once on mount
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []); // Removed sections from dependency array
 
-  const scrollToSection = sectionId => {
+  const scrollToSection = (sectionId) => {
     sectionRefs[sectionId].current?.scrollIntoView({
       behavior: "smooth",
-      block: "start"
-    })
-  }
+      block: "start",
+    });
+  };
 
-  const getDifficultyColor = difficulty => {
+  const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-500"
+        return "bg-green-500";
       case "Intermediate":
-        return "bg-yellow-500"
+        return "bg-yellow-500";
       case "Advanced":
-        return "bg-red-500"
+        return "bg-red-500";
       default:
-        return "bg-gray-500"
+        return "bg-gray-500";
     }
-  }
+  };
 
-  const getStatusColor = status => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "Registration Open":
-        return "bg-green-500"
+        return "bg-green-500";
       case "Ongoing":
-        return "bg-blue-500"
+        return "bg-blue-500";
       case "Ended":
-        return "bg-gray-500"
+        return "bg-gray-500";
       default:
-        return "bg-yellow-500"
+        return "bg-yellow-500";
     }
-  }
+  };
 
   const handleRegister = () => {
     if (isRegistered) {
-      setIsRegistered(false)
+      setIsRegistered(false);
     } else {
-      setShowRegistration(true)
+      setShowRegistration(true);
     }
-  }
+  };
 
   const handleSave = () => {
-    setIsSaved(!isSaved)
-  }
+    setIsSaved(!isSaved);
+  };
 
   const handleRegistrationSuccess = () => {
-    setShowRegistration(false)
-    setIsRegistered(true)
-  }
+    setShowRegistration(false);
+    setIsRegistered(true);
+  };
 
   const handleBackFromRegistration = () => {
-    setShowRegistration(false)
+    setShowRegistration(false);
+  };
+
+  if (showRegistration) {
+    return (
+      <HackathonRegistration
+        hackathon={hackathon}
+        onBack={handleBackFromRegistration}
+        onSuccess={handleRegistrationSuccess}
+      />
+    );
   }
 
   // Mock hackathon data for demo
@@ -172,7 +187,7 @@ export function HackathonDetails({ hackathon, onBack }) {
       "Basic programming knowledge",
       "Familiarity with AI/ML concepts",
       "Team of 2-4 members",
-      "Original code only"
+      "Original code only",
     ],
     tags: [
       "AI",
@@ -180,30 +195,30 @@ export function HackathonDetails({ hackathon, onBack }) {
       "Python",
       "TensorFlow",
       "React",
-      "Node.js"
+      "Node.js",
     ],
     perks: [
       "Mentorship from industry experts",
       "Access to premium APIs and tools",
       "Networking opportunities",
       "Certificate of participation",
-      "Swag kit for all participants"
+      "Swag kit for all participants",
     ],
     problemStatements: [
       "Develop an AI-powered solution for sustainable agriculture",
       "Create a machine learning model for healthcare diagnosis",
-      "Build an intelligent system for smart city management"
+      "Build an intelligent system for smart city management",
     ],
     featured: true,
     sponsored: true,
     images: {
       banner: {
-        url: "/placeholder.svg?height=400&width=800"
-      }
-    }
-  }
+        url: "/placeholder.svg?height=400&width=800",
+      },
+    },
+  };
 
-  const currentHackathon = hackathon || mockHackathon
+  const currentHackathon = hackathon || mockHackathon;
 
   if (showRegistration) {
     return (
@@ -230,7 +245,7 @@ export function HackathonDetails({ hackathon, onBack }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -325,8 +340,8 @@ export function HackathonDetails({ hackathon, onBack }) {
 
             <div className="p-6 h-full overflow-y-auto pt-4">
               <nav className="space-y-2">
-                {sections.map(section => {
-                  const Icon = section.icon
+                {sections.map((section) => {
+                  const Icon = section.icon;
                   return (
                     <button
                       key={section.id}
@@ -342,7 +357,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                         {section.label}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </nav>
             </div>
@@ -641,7 +656,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap gap-2">
-                          {currentHackathon.tags.map(tag => (
+                          {currentHackathon.tags.map((tag) => (
                             <Badge
                               key={tag}
                               variant="outline"
@@ -1030,7 +1045,7 @@ export function HackathonDetails({ hackathon, onBack }) {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        {[1, 2, 3, 4, 5].map(i => (
+                        {[1, 2, 3, 4, 5].map((i) => (
                           <div key={i} className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
                               <AvatarImage
@@ -1056,5 +1071,5 @@ export function HackathonDetails({ hackathon, onBack }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
