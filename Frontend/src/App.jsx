@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/Home/LandingPage";
 import NotFound from "./pages/Notfound";
 import Page from "./pages/AdminDashboard/AdminPanel";
@@ -21,13 +21,12 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/admin/hackathons/:id" element={<HackathonDetailsPage />} />
-
       <Route path="/oauth-success" element={<OAuthSuccess />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/loader" element={<Loader />} />
       <Route path="/explore" element={<ExploreHackathons />} />
-       <Route path="/dashboard/hackathon/:id" element={<DashboardPage/>} />
+      <Route path="/dashboard/hackathon/:id" element={<DashboardPage />} />
     </Routes>
   );
 }
