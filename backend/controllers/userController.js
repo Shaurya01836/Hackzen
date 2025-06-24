@@ -1,24 +1,84 @@
 const User = require('../model/UserModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Organization = require('../model/OrganizationModel');
 
-// Generate JWT
+// ✅ Generate JWT token
 const generateToken = (user) => {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
     expiresIn: '7d'
   });
 };
 
-// Register a new user (email only flow)
+// ✅ Invite user to organization
+exports.inviteToOrganization = async (req, res) => {
+  const { email, role } = req.body;
+  const inviter = req.user;
+
+  try {
+    if (!inviter.organization) {
+      return res.status(403).json({ message: "Inviter must belong to an organization." });
+    }
+
+    const domain = email.split("@")[1];
+    const inviterDomain = inviter.email.split("@")[1];
+    const isSameDomain = domain === inviterDomain;
+
+    if (inviter.role !== "admin" && !isSameDomain) {
+      return res.status(403).json({ message: "Only same-domain invitations are allowed." });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = new User({
+        email,
+        role,
+        organization: inviter.organization,
+        applicationStatus: "pending"
+      });
+    } else {
+      user.role = role;
+      user.organization = inviter.organization;
+      user.applicationStatus = "pending";
+    }
+
+    await user.save();
+    res.status(200).json({ message: "User invited successfully.", user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Register a new user (email only)
 exports.registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: 'User already exists' });
+
+    if (existingUser) {
+      if (existingUser.applicationStatus === "pending" && !existingUser.passwordHash) {
+        existingUser.name = name;
+        existingUser.passwordHash = await bcrypt.hash(password, 10);
+        existingUser.authProvider = "email";
+        await existingUser.save();
+
+        return res.status(200).json({
+          user: {
+            _id: existingUser._id,
+            name: existingUser.name,
+            email: existingUser.email,
+            role: existingUser.role
+          },
+          token: generateToken(existingUser)
+        });
+      }
+
+      return res.status(400).json({ message: 'User already exists' });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
-
     const isAdminEmail = email === 'admin@rr.dev';
 
     const newUser = await User.create({
@@ -27,7 +87,7 @@ exports.registerUser = async (req, res) => {
       passwordHash,
       authProvider: 'email',
       role: isAdminEmail ? 'admin' : undefined,
-      bannerImage: "/assets/default-banner.png" // ✅ default banner
+      bannerImage: "/assets/default-banner.png"
     });
 
     res.status(201).json({
@@ -44,7 +104,7 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// Login user
+// ✅ Login
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
@@ -68,7 +128,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// Get all users
+// ✅ Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-passwordHash');
@@ -78,44 +138,37 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
-// Get user by ID
+// ✅ Get single user by ID
 exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate('badges hackathonsJoined projects');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findById(req.params.id)
+      .populate('badges hackathonsJoined projects organization')
+      .select('-passwordHash');
 
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Update user
+// ✅ Update user
 exports.updateUser = async (req, res) => {
   try {
-    // Only allow editable fields from frontend
     const allowedFields = [
-      "name",
-      "phone",
-      "location",
-      "bio",
-      "website",
-      "github",
-      "githubUsername",
-      "linkedin",
-      "profileImage",
-      "bannerImage"
+      "name", "phone", "location", "bio", "website", "github",
+      "githubUsername", "linkedin", "profileImage", "bannerImage"
     ];
 
-    // Filter incoming req.body to only allow those fields
+    if (req.user.role === "admin") {
+      allowedFields.push("applicationStatus", "organization");
+    }
+
     const updates = Object.fromEntries(
       Object.entries(req.body).filter(([key]) => allowedFields.includes(key))
     );
 
-    const user = await User.findByIdAndUpdate(req.params.id, updates, {
-      new: true,
-    });
-
+    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
@@ -124,8 +177,7 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-
-// Delete user
+// ✅ Delete user
 exports.deleteUser = async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
@@ -135,12 +187,11 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
-// Change user role (admin only)
+// ✅ Change user role
 exports.changeUserRole = async (req, res) => {
   try {
     const { newRole } = req.body;
     const validRoles = ['participant', 'organizer', 'mentor', 'judge', 'admin'];
-
     if (!validRoles.includes(newRole)) {
       return res.status(400).json({ message: 'Invalid role specified' });
     }
@@ -150,40 +201,27 @@ exports.changeUserRole = async (req, res) => {
 
     user.role = newRole;
     await user.save();
-
     res.json({ message: `User role updated to ${newRole}`, user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-exports.getUserProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select("-passwordHash");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
+// ✅ Change password
 exports.changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const userId = req.params.id;
 
   try {
     const user = await User.findById(userId);
-
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Email/password auth → verify current password
     if (user.authProvider === "email") {
       if (!currentPassword || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
         return res.status(401).json({ message: "Incorrect current password" });
       }
     }
 
-    // Set new password
     const newHash = await bcrypt.hash(newPassword, 10);
     user.passwordHash = newHash;
     await user.save();
@@ -191,5 +229,21 @@ exports.changePassword = async (req, res) => {
     res.json({ message: "Password updated successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ✅ My org status (dashboard)
+exports.getMyOrganizationStatus = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate("organization");
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      organization: user.organization,
+      status: user.applicationStatus,
+      role: user.role,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Unable to fetch organization info" });
   }
 };

@@ -33,6 +33,15 @@ activityLog: [{ type: Date }],
 githubUsername: String,
 githubProfile: String,
 github: String,
+organization: {
+  type: Schema.Types.ObjectId,
+  ref: "Organization",
+},
+applicationStatus: {
+  type: String,
+  enum: ["pending", "approved", "rejected"],
+  default: "pending"
+}
 });
 
 module.exports = { UserSchema };
