@@ -1,25 +1,28 @@
 const express = require("express");
-const { registerForHackathon } = require("../controllers/registrationController");
+const router = express.Router();
+
+const { registerForHackathon, getUserRegistrations } = require("../controllers/registrationController");
 const { isAuthenticated } = require("../middleware/authMiddleware");
 const Registration = require("../schema/RegistrationFormSchema");
 
-const router = express.Router();
-const { getUserRegistrations } = require("../controllers/registrationController");
+// ✅ Register for a hackathon
+router.post("/", isAuthenticated, registerForHackathon);
 
-// ✅ backend/routes/registrationRoutes.js
+// ✅ Get all hackathon IDs that the logged-in user has registered for
 router.get("/my", isAuthenticated, async (req, res) => {
+  const userId = req.user._id;
+
   try {
-    const userId = req.user._id;
-    const registrations = await Registration.find({ userId }).select("hackathonId");
-    const registeredHackathonIds = registrations.map((r) => r.hackathonId.toString());
+    const registrations = await Registration.find({ userId });
+    const registeredHackathonIds = registrations.map(reg => reg.hackathonId.toString());
     res.json({ registeredHackathonIds });
   } catch (err) {
+    console.error("Error getting registrations:", err);
     res.status(500).json({ message: "Failed to fetch registrations" });
   }
 });
 
-router.post("/", isAuthenticated, registerForHackathon);
-
+// ✅ Check if a user is already registered for a specific hackathon
 router.get("/is-registered/:hackathonId", isAuthenticated, async (req, res) => {
   const userId = req.user._id;
   const hackathonId = req.params.hackathonId;
