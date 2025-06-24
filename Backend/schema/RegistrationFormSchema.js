@@ -33,7 +33,7 @@ const registrationSchema = new mongoose.Schema({
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],
-      default: null
+       required: false
     },
     collegeOrCompany: {
       type: String,

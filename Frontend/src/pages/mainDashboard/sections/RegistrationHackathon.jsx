@@ -140,9 +140,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        hackathonId: hackathon._id,
-        formData
-      })
+  hackathonId: hackathon._id,
+  formData: sanitizedFormData
+})
+
     });
 
     const data = await response.json();
@@ -155,6 +156,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     setIsSubmitting(false);
 }
 };
+
+// Clean gender field before submitting
+const sanitizedFormData = {
+  ...formData,
+  gender: formData.gender || undefined, // ✅ convert "" to undefined
+};
+
 
   const renderStep = () => {
     switch (currentStep) {

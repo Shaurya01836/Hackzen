@@ -108,6 +108,27 @@ export function HackathonDetails({ hackathon, onBack }) {
     });
   };
 
+  useEffect(() => {
+  const checkRegistration = async () => {
+    const token = localStorage.getItem("token");
+    if (!token || !hackathon?._id) return;
+
+    try {
+      const res = await fetch("http://localhost:3000/api/registrations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (Array.isArray(data.registeredHackathonIds)) {
+        setIsRegistered(data.registeredHackathonIds.includes(hackathon._id));
+      }
+    } catch (err) {
+      console.error("Failed to check registration status:", err.message);
+    }
+  };
+
+  checkRegistration();
+}, [hackathon]);
+
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
@@ -294,23 +315,25 @@ export function HackathonDetails({ hackathon, onBack }) {
                 Share
               </Button>
               <Button
-                size="sm"
-                onClick={handleRegister}
-                className={`${
-                  isRegistered
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-indigo-500 hover:bg-indigo-600"
-                }`}
-              >
-                {isRegistered ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Registered
-                  </>
-                ) : (
-                  "Register Now"
-                )}
-              </Button>
+  size="sm"
+  disabled={isRegistered}
+  onClick={handleRegister}
+  className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${
+    isRegistered
+      ? "bg-green-500 cursor-not-allowed"
+      : "bg-indigo-500 hover:bg-indigo-600"
+  }`}
+>
+  {isRegistered ? (
+    <>
+      <CheckCircle className="w-4 h-4" />
+      Registered
+    </>
+  ) : (
+    "Register Now"
+  )}
+</Button>
+
             </div>
           </div>
         </div>

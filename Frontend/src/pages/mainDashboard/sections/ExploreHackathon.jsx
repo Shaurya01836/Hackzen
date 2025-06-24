@@ -56,6 +56,7 @@ export function ExploreHackathons({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -76,6 +77,24 @@ export function ExploreHackathons({ onBack }) {
 
     fetchHackathons();
   }, []);
+
+  useEffect(() => {
+  const fetchRegistrations = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await axios.get("http://localhost:3000/api/registrations/my", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRegisteredHackathonIds(res.data.registeredHackathonIds);
+    } catch (err) {
+      console.error("Error fetching user registrations", err);
+    }
+  };
+
+  fetchRegistrations();
+}, []);
 
   // Check URL params on component mount and when hackathons are loaded
   useEffect(() => {
@@ -426,30 +445,43 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
           {/* Action Buttons */}
           <div className="flex gap-3">
-            <Button
-              size="sm"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-200 px-6 py-2 rounded-lg font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleHackathonClick(hackathon);
-              }}
-            >
-              <ExternalLink className="w-4 h-4" />
-              View Details
-            </Button>
+ {registeredHackathonIds.includes(hackathon._id) ? (
+  <Button
+    size="sm"
+    disabled
+    className="flex items-center gap-2 bg-green-500 text-white px-6 py-2 rounded-lg"
+    onClick={(e) => e.stopPropagation()} // ✅ just block any action
+  >
+    ✅ Registered
+  </Button>
+) : (
+  <Button
+    size="sm"
+    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg"
+    onClick={(e) => {
+      e.stopPropagation();
+      handleHackathonClick(hackathon);
+    }}
+  >
+    Register
+  </Button>
+)}
 
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-2 border-gray-200 hover:bg-gray-50 transition-colors duration-200 px-4 py-2 rounded-lg"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Handle save functionality
-              }}
-            >
-              <Heart className="w-4 h-4" />
-              Save
-            </Button>
+
+
+<Button
+    size="sm"
+    variant="outline"
+    className="flex items-center gap-2 border-gray-200 hover:bg-gray-50 transition-colors duration-200 px-4 py-2 rounded-lg"
+    onClick={(e) => {
+      e.stopPropagation();
+      // Handle save functionality
+    }}
+  >
+    <Heart className="w-4 h-4" />
+    Save
+  </Button>
+
           </div>
         </div>
       </div>
