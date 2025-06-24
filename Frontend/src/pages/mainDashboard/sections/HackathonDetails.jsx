@@ -96,6 +96,7 @@ export function HackathonDetails({ hackathon, onBack }) {
       setActiveSection(currentSection);
     };
 
+    
     window.addEventListener("scroll", handleScroll);
     handleScroll(); // Call once on mount
     return () => window.removeEventListener("scroll", handleScroll);
@@ -109,25 +110,55 @@ export function HackathonDetails({ hackathon, onBack }) {
   };
 
   useEffect(() => {
+  const checkIfUserRegistered = async () => {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!token || !user || !hackathon?._id) return;
+
+    try {
+      const res = await fetch("http://localhost:3000/api/registrations/my", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (
+        data.registeredHackathonIds &&
+        data.registeredHackathonIds.includes(hackathon._id)
+      ) {
+        setIsRegistered(true); // ✅ Persisted across reloads
+      }
+    } catch (err) {
+      console.error("Error checking registration:", err);
+    }
+  };
+
+  checkIfUserRegistered();
+}, [hackathon]);
+
+
+ useEffect(() => {
   const checkRegistration = async () => {
     const token = localStorage.getItem("token");
     if (!token || !hackathon?._id) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/registrations/my", {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`http://localhost:3000/api/registrations/is-registered/${hackathon._id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+
       const data = await res.json();
-      if (Array.isArray(data.registeredHackathonIds)) {
-        setIsRegistered(data.registeredHackathonIds.includes(hackathon._id));
-      }
+      setIsRegistered(data.registered); // ✅ Persisted registration
     } catch (err) {
-      console.error("Failed to check registration status:", err.message);
+      console.error("Error checking registration", err);
     }
   };
 
   checkRegistration();
 }, [hackathon]);
+
 
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
