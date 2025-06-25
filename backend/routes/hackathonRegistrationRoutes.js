@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerForHackathon } = require("../controllers/registrationController");
+const { registerForHackathon } = require("../controllers/hackathonRegistrationController");
 const { isAuthenticated } = require("../middleware/authMiddleware");
 
 const router = express.Router();

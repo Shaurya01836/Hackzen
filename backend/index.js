@@ -58,7 +58,7 @@ app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
 app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
 app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
-app.use("/api/registration", require("./routes/registrationRoutes"));
+app.use("/api/registration", require("./routes/hackathonRegistrationRoutes"));
 
 // ✅ HTTP + Socket.IO server
 const server = http.createServer(app);
@@ -71,15 +71,15 @@ const io = new Server(server, {
 
 socketHandler(io);
 
-// ✅ MongoDB and Start server
+// MongoDB and Start server
 const PORT = process.env.PORT || 3000;
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
-    console.log("✅ MongoDB connected");
+    console.log("MongoDB connected");
     server.listen(PORT, () => {
-      console.log(`🚀 Server + Socket.IO at http://localhost:${PORT}`);
+      console.log(`Server + Socket.IO at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("❌ DB connection failed:", err.message);
+    console.error("DB connection failed:", err.message);
   });

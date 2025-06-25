@@ -1,4 +1,4 @@
-const Registration = require("../model/RegistrationFormModel"); // ✅ This is the registered Mongoose model
+const Registration = require("../model/HackathonRegistrationModel"); // ✅ This is the registered Mongoose model
 
 
 
