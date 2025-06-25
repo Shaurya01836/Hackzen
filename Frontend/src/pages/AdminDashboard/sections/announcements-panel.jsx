@@ -74,18 +74,18 @@ export function AnnouncementsPanel() {
     fetchAnnouncements();
   }, []);
 
-  const getAudienceColor = (aud) => {
+  const getAudienceVariant = (aud) => {
     switch (aud) {
       case "all":
-        return "bg-purple-500 text-white border-purple-500/30";
+        return "outline";
       case "organizers":
-        return "bg-blue-500 text-white border-blue-500/30";
+        return "secondary";
       case "participants":
-        return "bg-green-500 text-white border-green-500/30";
+        return "outline";
       case "mentors":
-        return "bg-yellow-500 text-white border-yellow-500/30";
+        return "secondary";
       default:
-        return "bg-gray-500 text-white border-gray-500/30";
+        return "dark";
     }
   };
 
@@ -196,7 +196,7 @@ export function AnnouncementsPanel() {
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <h3 className="text-gray-600 font-semibold">{title}</h3>
-                      <Badge className={getAudienceColor(audience)}>
+                      <Badge className={getAudienceVariant(audience)}>
                         {audience}
                       </Badge>
                     </div>
@@ -210,48 +210,66 @@ export function AnnouncementsPanel() {
           </Card>
         </div>
 
-        {/* Right: Dynamic Recent Announcements */}
+        {/* Right: Fixed Height Recent Announcements with Scroll */}
         <div className="w-full lg:w-1/2 flex-grow">
-          <Card>
+          <Card className="">
             <CardHeader>
               <CardTitle className="text-black flex items-center">
                 <Clock className="w-5 h-5 mr-2 text-blue-600" />
                 Recent Announcements
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {announcements.map((announcement) => (
-                  <div
-                    key={announcement._id}
-                    className="p-4 bg-white/5 rounded-lg border border-purple-500/20"
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="text-black font-medium text-sm">
-                        {announcement.title}
-                      </h4>
-                      <Badge
-                        className={getAudienceColor(announcement.audience)}
+            <CardContent className="h-full">
+              {/* Fixed height container with scroll */}
+              <div className="max-h-[330px] overflow-y-auto pr-2 -mr-2 scrollbar-hide">
+                <div className="space-y-4">
+                  {announcements.length > 0 ? (
+                    announcements.map((announcement) => (
+                      <div
+                        key={announcement._id}
+                        className="p-4 bg-white/5 rounded-lg border border-purple-500/20 hover:bg-white/10 transition-colors"
                       >
-                        {announcement.audience}
-                      </Badge>
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-black font-medium text-sm leading-tight">
+                            {announcement.title}
+                          </h4>
+                          <Badge
+                            variant={getAudienceVariant(announcement.audience)}
+                            className="flex-shrink-0 ml-2"
+                          >
+                            {announcement.audience}
+                          </Badge>
+                        </div>
+                        <p className="text-gray-600 text-xs mb-3 line-clamp-3 leading-relaxed">
+                          {announcement.message}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 text-xs">
+                            {new Date(announcement.createdAt).toLocaleString()}
+                          </span>
+                        
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                      <Clock className="w-12 h-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No announcements yet
+                      </h3>
+                      <p className="text-gray-500 text-sm">
+                        Send your first announcement to see it appear here
+                      </p>
                     </div>
-                    <p className="text-gray-600 text-xs mb-3 line-clamp-2">
-                      {announcement.message}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700 text-xs">
-                        {new Date(announcement.createdAt).toLocaleString()}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-500 text-green-600 border-green-500/30"
-                      >
-                        Sent
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  )}
+                </div>
+              </div>
+              {/* Scroll indicator */}
+
+              <div className="text-center mt-2 pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Scroll to see more announcements
+                </p>
               </div>
             </CardContent>
           </Card>

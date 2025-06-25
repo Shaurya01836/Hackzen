@@ -82,7 +82,7 @@ function Header() {
               <a href="/dashboard?view=explore-hackathons">
                 <InteractiveHoverButton className="bg-[#1b0c3f] hover:bg-[#2d1a5f] text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto text-center border-2 border-transparent hover:border-indigo-200 group">
                   <span className="flex items-center justify-center space-x-2">
-                    <span>📋 View Hackathons</span>
+                    <span>View Hackathons</span>
                   </span>
                 </InteractiveHoverButton>
               </a>

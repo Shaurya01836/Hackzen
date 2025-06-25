@@ -248,18 +248,19 @@ export function ExploreHackathons({ onBack }) {
     setSelectedHackathon(transformedHackathon);
   };
 
-  const getDifficultyColor = (difficulty) => {
-    switch (difficulty) {
-      case "Beginner":
-        return "bg-green-100 text-green-800";
-      case "Intermediate":
-        return "bg-yellow-100 text-yellow-800";
-      case "Advanced":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const getDifficultyVariant = (difficulty) => {
+  switch (difficulty) {
+    case "Beginner":
+      return "default";
+    case "Intermediate":
+      return "secondary";
+    case "Advanced":
+      return "destructive";
+    default:
+      return "default";
+  }
+};
+
 
 const renderHackathonCard = (hackathon, featured = false) => (
   <RCard
@@ -288,17 +289,18 @@ const renderHackathonCard = (hackathon, featured = false) => (
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent md:hidden" />
         
         {/* Badges overlay */}
-        <div className="absolute top-3 left-3 flex flex-col gap-2">
-          <Badge className={getDifficultyColor(hackathon.difficultyLevel)}>
-            {hackathon.difficultyLevel}
-          </Badge>
-          {featured && (
-            <Badge className="bg-purple-600 text-white">
-              <Star className="w-3 h-3 mr-1" />
-              Featured
-            </Badge>
-          )}
-        </div>
+       <div className="absolute top-3 left-3 flex flex-col gap-2">
+  <Badge variant={getDifficultyVariant(hackathon.difficultyLevel)}>
+    {hackathon.difficultyLevel}
+  </Badge>
+  {featured && (
+    <Badge variant="featured">
+      <Star className="w-3 h-3 mr-1" />
+      Featured
+    </Badge>
+  )}
+</div>
+
 
         {/* Prize badge - top right */}
         <div className="absolute top-3 right-3">
