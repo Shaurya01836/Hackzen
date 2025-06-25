@@ -2,26 +2,21 @@ const User = require("../model/UserModel");
 
 const trackStreak = async (req, res, next) => {
   try {
-    const user = req.user;
-    if (!user) return next(); // skip if not logged in
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    const today = new Date().toISOString().split("T")[0];
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const lastVisit = new Date(user.lastVisit || 0);
-    lastVisit.setHours(0, 0, 0, 0);
-
-    if (lastVisit.getTime() !== today.getTime()) {
-      // Only update if it's a new day
+    if (!user.activityLog.includes(today)) {
       user.activityLog.push(today);
-      user.lastVisit = today;
-      await user.save();
     }
 
-    next();
+    user.lastVisit = today;
+    await user.save();
+
+    next(); // ✅ Must call next
   } catch (err) {
-    console.error("Error in trackStreak middleware:", err);
-    return res.status(500).json({ message: "Streak tracking failed" });
+    console.error("Track streak failed:", err);
+    res.status(500).json({ message: "Failed to track streak" });
   }
 };
 

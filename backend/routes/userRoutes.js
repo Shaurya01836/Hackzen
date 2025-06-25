@@ -4,6 +4,7 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const userController = require('../controllers/userController');
 const { protect, isAdmin, isOrganizerOrAdmin } = require('../middleware/authMiddleware');
+const trackStreak = require("../middleware/trackStreak");
 
 // OAuth: GitHub & Google
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
@@ -51,8 +52,14 @@ router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isOrganizerOrAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
 
+
 // ✅ Organization Features
 router.post('/invite', protect, isOrganizerOrAdmin, userController.inviteToOrganization);
 router.get('/me/organization', protect, userController.getMyOrganizationStatus);
+router.get('/:id/streaks', protect, userController.getUserStreakData);
+router.post("/streak", protect, trackStreak, (req, res) => {
+  res.status(200).json({ message: "Streak tracked" });
+});
+
 
 module.exports = router;

@@ -11,7 +11,7 @@ const generateToken = (user) => {
 };
 
 // ✅ Invite user to organization
-exports.inviteToOrganization = async (req, res) => {
+const inviteToOrganization = async (req, res) => {
   const { email, role } = req.body;
   const inviter = req.user;
 
@@ -51,7 +51,7 @@ exports.inviteToOrganization = async (req, res) => {
 };
 
 // ✅ Register a new user (email only)
-exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
@@ -105,7 +105,7 @@ exports.registerUser = async (req, res) => {
 };
 
 // ✅ Login
-exports.loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -129,7 +129,7 @@ exports.loginUser = async (req, res) => {
 };
 
 // ✅ Get all users
-exports.getAllUsers = async (req, res) => {
+const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().select('-passwordHash');
     res.json(users);
@@ -139,7 +139,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 // ✅ Get single user by ID
-exports.getUserById = async (req, res) => {
+const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
       .populate('badges hackathonsJoined projects organization')
@@ -153,7 +153,7 @@ exports.getUserById = async (req, res) => {
 };
 
 // ✅ Update user
-exports.updateUser = async (req, res) => {
+const updateUser = async (req, res) => {
   try {
     const allowedFields = [
       "name", "phone", "location", "bio", "website", "github",
@@ -178,7 +178,7 @@ exports.updateUser = async (req, res) => {
 };
 
 // ✅ Delete user
-exports.deleteUser = async (req, res) => {
+const deleteUser = async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted' });
@@ -188,14 +188,14 @@ exports.deleteUser = async (req, res) => {
 };
 
 // ✅ Change user role
-exports.changeUserRole = async (req, res) => {
+const changeUserRole = async (req, res) => {
   try {
     const { newRole } = req.body;
     const validRoles = ['participant', 'organizer', 'mentor', 'judge', 'admin'];
     if (!validRoles.includes(newRole)) {
       return res.status(400).json({ message: 'Invalid role specified' });
     }
-
+    
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -208,7 +208,7 @@ exports.changeUserRole = async (req, res) => {
 };
 
 // ✅ Change password
-exports.changePassword = async (req, res) => {
+const changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const userId = req.params.id;
 
@@ -233,7 +233,7 @@ exports.changePassword = async (req, res) => {
 };
 
 // ✅ My org status (dashboard)
-exports.getMyOrganizationStatus = async (req, res) => {
+const getMyOrganizationStatus = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate("organization");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -247,3 +247,50 @@ exports.getMyOrganizationStatus = async (req, res) => {
     res.status(500).json({ message: "Unable to fetch organization info" });
   }
 };
+
+const getUserStreakData = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const sortedLog = user.activityLog.sort((a, b) => new Date(a) - new Date(b));
+    let maxStreak = 0, currentStreak = 0, prevDate = null;
+
+    sortedLog.forEach(date => {
+      const currentDate = new Date(date);
+      if (prevDate) {
+        const diff = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
+        currentStreak = diff === 1 ? currentStreak + 1 : 1;
+      } else {
+        currentStreak = 1;
+      }
+      maxStreak = Math.max(maxStreak, currentStreak);
+      prevDate = currentDate;
+    });
+
+    res.status(200).json({
+      streaks: user.activityLog,
+      current: currentStreak,
+      max: maxStreak,
+    });
+  } catch (err) {
+    console.error("Get streak error:", err);
+    res.status(500).json({ message: "Failed to fetch streaks" });
+  }
+};
+
+module.exports = {
+  inviteToOrganization,
+  registerUser,
+  loginUser,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  changeUserRole,
+  changePassword,
+  getMyOrganizationStatus,
+  getUserStreakData,
+};
+
+

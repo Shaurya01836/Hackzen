@@ -177,18 +177,21 @@ export default function HackZenDashboard() {
   ];
 
   useEffect(() => {
-    const pingStreak = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+   const pingStreak = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.post("http://localhost:3000/api/users/streak", {}, {
+  headers: {
+    Authorization: `Bearer ${token}`,
+  },
+});
 
-        await axios.get("http://localhost:3000/api/users/track", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch (err) {
-        console.warn("📉 Failed to track streak:", err.message);
-      }
-    };
+    console.log("✅ Streak pinged and user fetched:", res.data);
+  } catch (err) {
+    console.error("📉 Failed to track streak:", err);
+  }
+};
+
 
     pingStreak();
   }, []);

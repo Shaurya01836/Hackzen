@@ -43,7 +43,9 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { cn } from "../../../lib/utils";
+import { HackathonRegistration } from "./RegistrationHackathon";
 import { HackathonDetails } from "./HackathonDetails";
+
 
 export function ExploreHackathons({ onBack }) {
   const navigate = useNavigate();
@@ -56,6 +58,28 @@ export function ExploreHackathons({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
+
+
+useEffect(() => {
+  const fetchRegisteredHackathons = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await axios.get("http://localhost:3000/api/registrations/my", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setRegisteredHackathonIds(res.data.registeredHackathonIds || []);
+    } catch (err) {
+      console.error("Error fetching registered hackathons", err);
+    }
+  };
+
+  fetchRegisteredHackathons();
+}, []);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -263,6 +287,7 @@ export function ExploreHackathons({ onBack }) {
 
 
 const renderHackathonCard = (hackathon, featured = false) => (
+  
   <RCard
     key={hackathon._id}
     className={cn(

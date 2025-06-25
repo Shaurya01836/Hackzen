@@ -15,7 +15,7 @@ exports.createProject = async (req, res) => {
       status: 'draft',
     });
 
-    res.status(201).json(newProject);
+   res.status(201).json(newProject);
   } catch (err) {
     res.status(500).json({ message: 'Failed to create project', error: err.message });
   }
