@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { useAuth } from "../../../context/AuthContext"; // adjust path if needed
+import { useAuth } from "../../../context/AuthContext"
 import {
   ArrowLeft,
   Plus,
@@ -38,23 +38,22 @@ import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
 
 export function CreateHackathon({ onBack }) {
-  const { user, token } = useAuth(); // Using AuthContext instead of localStorage
-  
+  const { user, token } = useAuth() // Using AuthContext instead of localStorage
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     startDate: "",
     endDate: "",
-    problemStatements: [""],
+    problemStatements: [{ statement: "", type: "" }], // Combined structure
     status: "upcoming",
     maxParticipants: 100,
     registrationDeadline: "",
     submissionDeadline: "",
     category: "",
-    difficulty: "Beginner",
-    difficultyLevel: "Beginner", // Added for backend compatibility
+    difficultyLevel: "Beginner", // Match schema field name
     location: "",
-    mode: "online", // Added mode field
+    mode: "online",
     prizePool: {
       amount: "",
       currency: "USD",
@@ -67,7 +66,18 @@ export function CreateHackathon({ onBack }) {
       banner: null,
       logo: null,
       gallery: []
-    }
+    },
+    judges: [""],
+    mentors: [""],
+    participants: [],
+    rounds: [
+      {
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: ""
+      }
+    ]
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -81,24 +91,32 @@ export function CreateHackathon({ onBack }) {
 
   const categories = [
     "Artificial Intelligence",
-    "Fintech",
-    "Healthcare",
-    "Gaming",
-    "EdTech",
-    "Social Impact",
-    "Open Innovation",
     "Blockchain",
     "Cybersecurity",
+    "Fintech",
+    "Gaming",
+    "Healthcare",
     "Sustainability",
     "Mobile Development",
     "Web Development",
     "IoT",
     "Data Science",
     "DevOps",
-    "Other"
+    "EdTech"
   ]
 
   const modes = ["online", "offline", "hybrid"]
+
+  const problemStatementTypes = [
+    "Sponsored",
+    "Industrialized",
+    "Open Innovation",
+    "Social Impact",
+    "Technical Challenge",
+    "Business Case",
+    "Research Based",
+    "Community Driven"
+  ]
 
   const validateForm = () => {
     const newErrors = {}
@@ -146,15 +164,15 @@ export function CreateHackathon({ onBack }) {
 
   // Image upload function from first file
   const handleFileSelect = async (file, type) => {
-    if (!file) return;
+    if (!file) return
 
     setUploadStates(prev => ({
       ...prev,
       [type]: { uploading: true, error: null }
-    }));
+    }))
 
-    const uploadFormData = new FormData();
-    uploadFormData.append("image", file);
+    const uploadFormData = new FormData()
+    uploadFormData.append("image", file)
 
     try {
       const res = await fetch("http://localhost:3000/api/uploads/image", {
@@ -163,35 +181,35 @@ export function CreateHackathon({ onBack }) {
           Authorization: `Bearer ${token}`
         },
         body: uploadFormData
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.message || "Upload failed");
+        throw new Error(data.message || "Upload failed")
       }
 
       // Update formData.images
-      setFormData((prev) => ({
+      setFormData(prev => ({
         ...prev,
         images: {
           ...prev.images,
           [type]: data // { url, publicId, width, height }
         }
-      }));
+      }))
 
       setUploadStates(prev => ({
         ...prev,
         [type]: { uploading: false, error: null }
-      }));
+      }))
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("Upload error:", err)
       setUploadStates(prev => ({
         ...prev,
         [type]: { uploading: false, error: err.message }
-      }));
+      }))
     }
-  };
+  }
 
   const removeImage = (type, index = null) => {
     if (type === "gallery" && index !== null) {
@@ -201,7 +219,7 @@ export function CreateHackathon({ onBack }) {
           ...prev.images,
           gallery: prev.images.gallery.filter((_, i) => i !== index)
         }
-      }));
+      }))
     } else {
       setFormData(prev => ({
         ...prev,
@@ -209,20 +227,72 @@ export function CreateHackathon({ onBack }) {
           ...prev.images,
           [type]: null
         }
-      }));
+      }))
     }
-  };
+  }
 
   // Updated submit function with proper backend integration
   const handleSubmit = async (isDraft = false) => {
-    if (!isDraft && !validateForm()) return;
+    if (!isDraft && !validateForm()) return
 
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     try {
       if (!token) {
-        alert("You must be logged in to create a hackathon.");
-        return;
+        alert("You must be logged in to create a hackathon.")
+        return
+      }
+
+      // Extract valid problem statements and types
+      const validProblems = formData.problemStatements.filter(
+        ps => ps.statement.trim() && ps.type.trim()
+      )
+
+      const submitData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        difficultyLevel: formData.difficultyLevel,
+        location: formData.location,
+        mode: formData.mode,
+        startDate: formData.startDate
+          ? new Date(formData.startDate).toISOString()
+          : null,
+        endDate: formData.endDate
+          ? new Date(formData.endDate).toISOString()
+          : null,
+        registrationDeadline: formData.registrationDeadline
+          ? new Date(formData.registrationDeadline).toISOString()
+          : null,
+        submissionDeadline: formData.submissionDeadline
+          ? new Date(formData.submissionDeadline).toISOString()
+          : null,
+        maxParticipants: Number(formData.maxParticipants) || 100,
+        problemStatements: validProblems.map(ps => ps.statement),
+        problemStatementTypes: validProblems.map(ps => ps.type),
+        rounds: formData.rounds
+          .filter(r => r.name.trim())
+          .map(r => ({
+            name: r.name,
+            description: r.description,
+            startDate: r.startDate ? new Date(r.startDate).toISOString() : null,
+            endDate: r.endDate ? new Date(r.endDate).toISOString() : null
+          })),
+        requirements: formData.requirements.filter(r => r.trim()),
+        perks: formData.perks.filter(p => p.trim()),
+        tags: formData.tags,
+        prizePool: {
+          amount: formData.prizePool.amount
+            ? Number(formData.prizePool.amount)
+            : null,
+          currency: formData.prizePool.currency || "USD",
+          breakdown: formData.prizePool.breakdown
+        },
+        images: formData.images,
+        status: isDraft ? "upcoming" : formData.status,
+        judges: formData.judges, // ✅ Include this
+        mentors: formData.mentors, // ✅ Include this
+        participants: []
       }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
@@ -231,43 +301,37 @@ export function CreateHackathon({ onBack }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...formData,
-          difficulty: formData.difficulty, // match backend schema
-          difficultyLevel: formData.difficulty, // ensure compatibility
-          problemStatements: formData.problemStatements.filter(ps => ps.trim()),
-          requirements: formData.requirements.filter(r => r.trim()),
-          perks: formData.perks.filter(p => p.trim()),
-          tags: formData.tags,
-          status: isDraft ? "draft" : formData.status,
-          // Convert string dates to proper format if needed
-          startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
-          endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-          registrationDeadline: formData.registrationDeadline ? new Date(formData.registrationDeadline).toISOString() : null,
-          submissionDeadline: formData.submissionDeadline ? new Date(formData.submissionDeadline).toISOString() : null,
-        })
-      });
+        body: JSON.stringify(submitData)
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create hackathon");
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to create hackathon")
       }
 
-      const data = await response.json();
-      alert(isDraft ? "✅ Hackathon saved as draft!" : "✅ Hackathon created successfully!");
-      onBack(); // Redirect to CreatedHackathons
+      const data = await response.json()
+      alert(
+        isDraft
+          ? "✅ Hackathon saved as draft!"
+          : "✅ Hackathon created successfully!"
+      )
+      onBack() // Redirect to CreatedHackathons
     } catch (error) {
-      console.error("❌ Submission failed:", error);
-      alert(`Error: ${error.message}`);
+      console.error("❌ Submission failed:", error)
+      alert(`Error: ${error.message}`)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
+  // Combined Problem Statement handlers
   const addProblemStatement = () => {
     setFormData({
       ...formData,
-      problemStatements: [...formData.problemStatements, ""]
+      problemStatements: [
+        ...formData.problemStatements,
+        { statement: "", type: "" }
+      ]
     })
   }
 
@@ -280,9 +344,9 @@ export function CreateHackathon({ onBack }) {
     })
   }
 
-  const updateProblemStatement = (index, value) => {
+  const updateProblemStatement = (index, field, value) => {
     const updated = [...formData.problemStatements]
-    updated[index] = value
+    updated[index] = { ...updated[index], [field]: value }
     setFormData({ ...formData, problemStatements: updated })
   }
 
@@ -326,6 +390,77 @@ export function CreateHackathon({ onBack }) {
     setFormData({ ...formData, perks: updated })
   }
 
+  // Judge/Mentor handlers
+  const addJudge = () => {
+    setFormData({
+      ...formData,
+      judges: [...formData.judges, ""]
+    })
+  }
+
+  const removeJudge = index => {
+    setFormData({
+      ...formData,
+      judges: formData.judges.filter((_, i) => i !== index)
+    })
+  }
+
+  const updateJudge = (index, value) => {
+    const updated = [...formData.judges]
+    updated[index] = value
+    setFormData({ ...formData, judges: updated })
+  }
+
+  // Mentor handlers
+  const addMentor = () => {
+    setFormData({
+      ...formData,
+      mentors: [...formData.mentors, ""]
+    })
+  }
+
+  const removeMentor = index => {
+    setFormData({
+      ...formData,
+      mentors: formData.mentors.filter((_, i) => i !== index)
+    })
+  }
+
+  const updateMentor = (index, value) => {
+    const updated = [...formData.mentors]
+    updated[index] = value
+    setFormData({ ...formData, mentors: updated })
+  }
+
+  // Rounds handlers
+  const addRound = () => {
+    setFormData({
+      ...formData,
+      rounds: [
+        ...formData.rounds,
+        {
+          name: "",
+          description: "",
+          startDate: "",
+          endDate: ""
+        }
+      ]
+    })
+  }
+
+  const removeRound = index => {
+    setFormData({
+      ...formData,
+      rounds: formData.rounds.filter((_, i) => i !== index)
+    })
+  }
+
+  const updateRound = (index, field, value) => {
+    const updated = [...formData.rounds]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, rounds: updated })
+  }
+
   const addTag = () => {
     if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
       setFormData({
@@ -351,7 +486,13 @@ export function CreateHackathon({ onBack }) {
   }
 
   // Image upload component
-  const ImageUploadCard = ({ title, description, type, currentImage, multiple = false }) => (
+  const ImageUploadCard = ({
+    title,
+    description,
+    type,
+    currentImage,
+    multiple = false
+  }) => (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="text-sm">{title}</CardTitle>
@@ -375,7 +516,8 @@ export function CreateHackathon({ onBack }) {
                 <Upload className="w-8 h-8 mb-2 text-gray-400" />
               )}
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Click to upload</span> or drag and drop
+                <span className="font-semibold">Click to upload</span> or drag
+                and drop
               </p>
               <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
             </div>
@@ -548,11 +690,11 @@ export function CreateHackathon({ onBack }) {
                 </div>
 
                 <div>
-                  <Label htmlFor="difficulty">Difficulty Level</Label>
+                  <Label htmlFor="difficultyLevel">Difficulty Level</Label>
                   <Select
-                    value={formData.difficulty}
+                    value={formData.difficultyLevel}
                     onValueChange={value =>
-                      setFormData({ ...formData, difficulty: value, difficultyLevel: value })
+                      setFormData({ ...formData, difficultyLevel: value })
                     }
                   >
                     <SelectTrigger>
@@ -581,7 +723,11 @@ export function CreateHackathon({ onBack }) {
                     </SelectTrigger>
                     <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                       {modes.map(mode => (
-                        <SelectItem key={mode} value={mode} className="capitalize">
+                        <SelectItem
+                          key={mode}
+                          value={mode}
+                          className="capitalize"
+                        >
                           {mode}
                         </SelectItem>
                       ))}
@@ -608,9 +754,12 @@ export function CreateHackathon({ onBack }) {
                     type="number"
                     value={formData.prizePool.amount}
                     onChange={e =>
-                      setFormData({ 
-                        ...formData, 
-                        prizePool: { ...formData.prizePool, amount: e.target.value }
+                      setFormData({
+                        ...formData,
+                        prizePool: {
+                          ...formData.prizePool,
+                          amount: e.target.value
+                        }
                       })
                     }
                     placeholder="10000"
@@ -624,9 +773,12 @@ export function CreateHackathon({ onBack }) {
                   id="prizeBreakdown"
                   value={formData.prizePool.breakdown}
                   onChange={e =>
-                    setFormData({ 
-                      ...formData, 
-                      prizePool: { ...formData.prizePool, breakdown: e.target.value }
+                    setFormData({
+                      ...formData,
+                      prizePool: {
+                        ...formData.prizePool,
+                        breakdown: e.target.value
+                      }
                     })
                   }
                   placeholder="1st Place: $5000, 2nd Place: $3000, 3rd Place: $2000..."
@@ -768,37 +920,71 @@ export function CreateHackathon({ onBack }) {
             </CardContent>
           </Card>
 
-          {/* Problem Statements */}
+          {/* Problem Statements - Combined */}
           <Card>
             <CardHeader>
               <CardTitle>Problem Statements</CardTitle>
               <CardDescription>
-                Define the challenges participants will work on
+                Define the challenges participants will work on and their types
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {formData.problemStatements.map((statement, index) => (
-                <div key={index} className="flex gap-2">
-                  <Textarea
-                    value={statement}
-                    onChange={e =>
-                      updateProblemStatement(index, e.target.value)
-                    }
-                    placeholder={`Problem statement ${index + 1}...`}
-                    rows={2}
-                    className="flex-1"
-                  />
-                  {formData.problemStatements.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeProblemStatement(index)}
-                      className="text-red-600 hover:text-red-700"
+              {formData.problemStatements.map((ps, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">
+                      Problem Statement {index + 1}
+                    </h4>
+                    {formData.problemStatements.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeProblemStatement(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor={`statement-${index}`}>Statement</Label>
+                    <Textarea
+                      id={`statement-${index}`}
+                      value={ps.statement}
+                      onChange={e =>
+                        updateProblemStatement(
+                          index,
+                          "statement",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Describe the problem participants need to solve..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor={`type-${index}`}>Type</Label>
+                    <Select
+                      value={ps.type}
+                      onValueChange={value =>
+                        updateProblemStatement(index, "type", value)
+                      }
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select problem statement type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {problemStatementTypes.map(type => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               ))}
               <Button
@@ -809,6 +995,188 @@ export function CreateHackathon({ onBack }) {
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Problem Statement
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Judges */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Judges</CardTitle>
+              <CardDescription>
+                Add judges by their email addresses
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.judges.map((judge, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={judge}
+                    onChange={e => updateJudge(index, e.target.value)}
+                    placeholder={`Judge email ${index + 1}...`}
+                    className="flex-1"
+                  />
+                  {formData.judges.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeJudge(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addJudge}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Judge
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Mentors */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Mentors</CardTitle>
+              <CardDescription>
+                Add mentors by their email addresses
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.mentors.map((mentor, index) => (
+                <div key={index} className="flex gap-2">
+                  <Input
+                    type="email"
+                    value={mentor}
+                    onChange={e => updateMentor(index, e.target.value)}
+                    placeholder={`Mentor email ${index + 1}...`}
+                    className="flex-1"
+                  />
+                  {formData.mentors.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeMentor(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addMentor}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Mentor
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Hackathon Rounds */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Hackathon Rounds</CardTitle>
+              <CardDescription>
+                Define the different rounds of your hackathon
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {formData.rounds.map((round, index) => (
+                <div key={index} className="p-4 border rounded-lg space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Round {index + 1}</h4>
+                    {formData.rounds.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeRound(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor={`round-name-${index}`}>Round Name</Label>
+                      <Input
+                        id={`round-name-${index}`}
+                        value={round.name}
+                        onChange={e =>
+                          updateRound(index, "name", e.target.value)
+                        }
+                        placeholder="e.g., Ideation Phase, Prototype Development..."
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`round-description-${index}`}>
+                        Description
+                      </Label>
+                      <Textarea
+                        id={`round-description-${index}`}
+                        value={round.description}
+                        onChange={e =>
+                          updateRound(index, "description", e.target.value)
+                        }
+                        placeholder="Describe what happens in this round..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor={`round-start-${index}`}>
+                        Start Date (Optional)
+                      </Label>
+                      <Input
+                        id={`round-start-${index}`}
+                        type="datetime-local"
+                        value={round.startDate}
+                        onChange={e =>
+                          updateRound(index, "startDate", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`round-end-${index}`}>
+                        End Date (Optional)
+                      </Label>
+                      <Input
+                        id={`round-end-${index}`}
+                        type="datetime-local"
+                        value={round.endDate}
+                        onChange={e =>
+                          updateRound(index, "endDate", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={addRound}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Round
               </Button>
             </CardContent>
           </Card>
@@ -1015,7 +1383,7 @@ export function CreateHackathon({ onBack }) {
                   {formData.category && (
                     <Badge variant="outline">{formData.category}</Badge>
                   )}
-                  <Badge variant="outline">{formData.difficulty}</Badge>
+                  <Badge variant="outline">{formData.difficultyLevel}</Badge>
                 </div>
               </div>
             </CardContent>

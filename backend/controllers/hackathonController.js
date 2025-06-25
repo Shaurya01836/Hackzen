@@ -1,5 +1,6 @@
 const Hackathon = require('../model/HackathonModel');
 const ChatRoom = require('../model/ChatRoomModel');
+const User = require('../model/UserModel');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -14,17 +15,23 @@ exports.createHackathon = async (req, res) => {
       maxParticipants,
       status,
       category,
-      difficulty,
+      difficultyLevel, // <-- renamed from "difficulty"
       location,
       prizePool,
       problemStatements,
+      problemStatementTypes, // ✅ MISSING FIELD
       requirements,
       perks,
       tags,
-      images
+      images,
+      mode,
+      rounds,
+      judges, 
+      mentors, 
+      participants// optional // ✅ MISSING FIELD
     } = req.body;
 
-    const newHackathon = await Hackathon.create({
+     const newHackathon = await Hackathon.create({
       title,
       description,
       startDate,
@@ -34,7 +41,7 @@ exports.createHackathon = async (req, res) => {
       maxParticipants,
       status,
       category,
-      difficultyLevel: difficulty || 'Beginner',
+      difficultyLevel: difficultyLevel || 'Beginner',
       location,
       organizer: req.user.id,
       prizePool: {
@@ -43,10 +50,16 @@ exports.createHackathon = async (req, res) => {
         breakdown: prizePool?.breakdown || ''
       },
       images,
+      mode,
       problemStatements,
+      problemStatementTypes,
       requirements,
       perks,
       tags,
+      rounds,
+      judges,
+      mentors,
+      participants,
       approvalStatus: req.user.role === 'admin' ? 'approved' : 'pending'
     });
 
@@ -57,10 +70,11 @@ exports.createHackathon = async (req, res) => {
 
     res.status(201).json(newHackathon);
   } catch (err) {
-    console.error(err);
+    console.error("❌ Error in createHackathon:", err);
     res.status(500).json({ message: 'Server error creating hackathon' });
   }
 };
+
 
 //get my hackathon (organizer ke liye)
 exports.getMyHackathons = async (req, res) => {
@@ -131,25 +145,73 @@ exports.updateHackathon = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to update this hackathon' });
     }
 
+    const {
+      title,
+      description,
+      startDate,
+      endDate,
+      registrationDeadline,
+      submissionDeadline,
+      maxParticipants,
+      status,
+      category,
+      difficultyLevel,
+      location,
+      prizePool,
+      images,
+      mode,
+      problemStatements,
+      problemStatementTypes,
+      requirements,
+      perks,
+      tags,
+      rounds,
+      judges,
+      mentors,
+      participants
+    } = req.body;
+
     const updated = await Hackathon.findByIdAndUpdate(
       req.params.id,
       {
-        ...req.body,
+        ...(title && { title }),
+        ...(description && { description }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
+        ...(registrationDeadline && { registrationDeadline }),
+        ...(submissionDeadline && { submissionDeadline }),
+        ...(maxParticipants && { maxParticipants }),
+        ...(status && { status }),
+        ...(category && { category }),
+        ...(difficultyLevel && { difficultyLevel }),
+        ...(location && { location }),
+        ...(mode && { mode }),
+        ...(problemStatements && { problemStatements }),
+        ...(problemStatementTypes && { problemStatementTypes }),
+        ...(requirements && { requirements }),
+        ...(perks && { perks }),
+        ...(tags && { tags }),
+        ...(rounds && { rounds }),
+        ...(images && { images }),
+        ...(judges && { judges }),
+        ...(mentors && { mentors }),
+        ...(participants && { participants }),
         prizePool: {
-          amount: req.body.prizePool?.amount || 0,
-          currency: req.body.prizePool?.currency || 'USD',
-          breakdown: req.body.prizePool?.breakdown || ''
-        },
-        images: req.body.images || hackathon.images
+          amount: prizePool?.amount || 0,
+          currency: prizePool?.currency || 'USD',
+          breakdown: prizePool?.breakdown || ''
+        }
       },
       { new: true }
     );
 
     res.json(updated);
   } catch (err) {
+    console.error("Error updating hackathon:", err);
     res.status(500).json({ message: 'Error updating hackathon' });
   }
 };
+
 
 // ✅ Delete hackathon (only creator)
 exports.deleteHackathon = async (req, res) => {
