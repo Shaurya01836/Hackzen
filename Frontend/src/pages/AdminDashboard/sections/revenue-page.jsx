@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/AdminUI/table"
@@ -126,8 +127,8 @@ export function RevenuePage() {
 
       {/* Revenue Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Total Revenue</p>
@@ -139,10 +140,10 @@ export function RevenuePage() {
               </div>
               <DollarSign className="w-8 h-8 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Monthly Recurring</p>
@@ -154,10 +155,10 @@ export function RevenuePage() {
               </div>
               <CreditCard className="w-8 h-8 text-purple-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Ad Revenue</p>
@@ -169,10 +170,10 @@ export function RevenuePage() {
               </div>
               <Target className="w-8 h-8 text-blue-500" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Avg. Transaction</p>
@@ -186,8 +187,8 @@ export function RevenuePage() {
                 $
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </RCardContent>
+        </RCard>
       </div>
 
       {/* Charts */}

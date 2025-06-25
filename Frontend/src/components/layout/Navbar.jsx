@@ -127,8 +127,8 @@ function Navbar() {
               </button>
 
               {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 border border-white/10 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] backdrop-blur-lg text-sm overflow-hidden">
-                  <div className="p-4 border-b border-white/10 font-semibold text-white text-lg">
+                <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 border border-gray-200 bg-white/20 backdrop-blur-lg text-sm overflow-hidden">
+                  <div className="p-4 border-b border-black/10 font-semibold text-lg">
                     Notifications
                   </div>
                   <div className="max-h-80 min-h-80 overflow-y-auto px-2 py-1 scrollbar-hide">
@@ -138,15 +138,18 @@ function Navbar() {
                       </div>
                     ) : (
                       <AnimatedList>
-                        {notifications.map((n) => (
+                       {[...notifications].reverse().map((n) => (
+
                           <div
                             key={n._id}
-                            className="group transition-all duration-200 ease-in-out hover:scale-[101%] bg-white/5 backdrop-blur-md rounded-lg px-4 py-3 mb-2 border border-white/10 shadow-sm hover:shadow-md"
+                            className="group transition-all duration-200 ease-in-out hover:scale-[101%] 
+                                     bg-white/30 backdrop-blur-lg rounded-lg px-4 py-3 mb-2 
+                                      border border-black/20 "
                           >
-                            <div className="font-medium text-white group-hover:text-yellow-400">
+                            <div className="font-medium text-black group-hover:text-indigo-600">
                               {n.message}
                             </div>
-                            <div className="text-xs text-gray-300 mt-1">
+                            <div className="text-xs text-gray-700 mt-1">
                               {new Date(n.createdAt).toLocaleString()}
                             </div>
                           </div>

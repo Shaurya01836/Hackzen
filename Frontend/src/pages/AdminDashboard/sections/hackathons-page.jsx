@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Input } from "../../../components/CommonUI/input";
@@ -90,15 +91,15 @@ export function HackathonsPage() {
           {/* Hackathons Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredHackathons.map((hackathon) => (
-              <Card
+              <RCard
                 key={hackathon._id}
               >
-                <CardHeader>
+                <RCardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-gray-800 text-lg mb-2  transition-colors">
+                      <RCardTitle className="text-gray-800 text-lg mb-2  transition-colors">
                         {hackathon.title}
-                      </CardTitle>
+                      </RCardTitle>
                       <p className="text-gray-600 text-sm">
                         by {hackathon.organizer?.name || "Unknown"}
                       </p>
@@ -107,8 +108,8 @@ export function HackathonsPage() {
                       {hackathon.status}
                     </Badge>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                </RCardHeader>
+                <RCardContent className="space-y-4">
                   <div className="flex items-center text-gray-700 text-sm">
                     <Calendar className="w-4 h-4 mr-2 text-purple-500" />
                     {hackathon.startDate} - {hackathon.endDate}
@@ -139,8 +140,8 @@ export function HackathonsPage() {
                       View Details
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </RCardContent>
+              </RCard>
             ))}
           </div>
         </>

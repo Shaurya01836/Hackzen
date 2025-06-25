@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
 import {
   BarChart,
@@ -75,8 +76,8 @@ export function AnalyticsPage() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Users</p>
@@ -88,10 +89,10 @@ export function AnalyticsPage() {
               </div>
               <Users className="w-8 h-8 text-purple-500" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Hackathons</p>
@@ -103,10 +104,10 @@ export function AnalyticsPage() {
               </div>
               <Target className="w-8 h-8 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Revenue</p>
@@ -118,10 +119,10 @@ export function AnalyticsPage() {
               </div>
               <DollarSign className="w-8 h-8 text-green-400" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Avg. Engagement</p>
@@ -135,8 +136,8 @@ export function AnalyticsPage() {
                 T
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </RCardContent>
+        </RCard>
       </div>
 
       {/* Charts Grid */}

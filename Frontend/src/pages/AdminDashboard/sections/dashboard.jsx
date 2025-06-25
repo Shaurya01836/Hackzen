@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Button } from "../../../components/CommonUI/button";
 import {
@@ -109,14 +110,14 @@ export function Dashboard() {
         {dashboardStats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card
+            <RCard
               key={index}
               className=""
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-700">
+              <RCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <RCardTitle className="text-sm font-medium text-gray-700">
                   {stat.title}
-                </CardTitle>
+                </RCardTitle>
                 <div className="flex items-center space-x-2">
                   <Badge
                     variant="outline"
@@ -130,16 +131,16 @@ export function Dashboard() {
                     <Icon className="w-4 h-4 text-white" />
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
+              </RCardHeader>
+              <RCardContent>
                 <div className="text-2xl font-bold text-gray-900">
                   {stat.value}
                 </div>
                 <p className="text-xs text-green-600 mt-1">
                   {stat.change} from last month
                 </p>
-              </CardContent>
-            </Card>
+              </RCardContent>
+            </RCard>
           );
         })}
       </div>

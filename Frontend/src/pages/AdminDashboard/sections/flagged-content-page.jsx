@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Input } from "../../../components/CommonUI/input"
@@ -134,8 +135,8 @@ export function FlaggedContentPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Reports</p>
@@ -143,10 +144,10 @@ export function FlaggedContentPage() {
               </div>
               <Flag className="w-8 h-8 text-red-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Under Review</p>
@@ -156,10 +157,10 @@ export function FlaggedContentPage() {
               </div>
               <AlertTriangle className="w-8 h-8 text-yellow-400" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Confirmed</p>
@@ -169,10 +170,10 @@ export function FlaggedContentPage() {
               </div>
               <Ban className="w-8 h-8 text-red-500" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Resolution Rate</p>
@@ -180,8 +181,8 @@ export function FlaggedContentPage() {
               </div>
               <Check className="w-8 h-8 text-green-400" />
             </div>
-          </CardContent>
-        </Card>
+          </RCardContent>
+        </RCard>
       </div>
 
       {/* Filters */}

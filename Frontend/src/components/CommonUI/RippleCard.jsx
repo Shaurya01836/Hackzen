@@ -102,8 +102,8 @@ const RCardHeader = React.forwardRef(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "flex flex-col space-y-1.5 p-6 border-b border-gray-100",
-      "transition-all duration-300 group-hover:border-indigo-200",
+      "flex flex-col space-y-1.5 p-6",
+      "transition-all duration-300",
       className
     )}
     {...props}

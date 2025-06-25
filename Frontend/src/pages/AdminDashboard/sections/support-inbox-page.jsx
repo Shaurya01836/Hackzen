@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Input } from "../../../components/CommonUI/input"
@@ -143,8 +144,8 @@ export function SupportInboxPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="pt-6">
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Total Tickets</p>
@@ -152,10 +153,10 @@ export function SupportInboxPage() {
               </div>
               <Inbox className="w-8 h-8 text-purple-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Open Tickets</p>
@@ -165,10 +166,10 @@ export function SupportInboxPage() {
               </div>
               <AlertCircle className="w-8 h-8 text-blue-600" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Resolved Today</p>
@@ -178,10 +179,10 @@ export function SupportInboxPage() {
               </div>
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
+          </RCardContent>
+        </RCard>
+        <RCard>
+          <RCardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-black text-sm">Avg Response Time</p>
@@ -189,8 +190,8 @@ export function SupportInboxPage() {
               </div>
               <Clock className="w-8 h-8 text-pink-400" />
             </div>
-          </CardContent>
-        </Card>
+          </RCardContent>
+        </RCard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

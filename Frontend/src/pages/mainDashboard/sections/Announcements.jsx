@@ -1,16 +1,12 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   MessageSquare,
   Send,
-  Users,
-  Calendar,
-  Edit,
-  Trash2,
   Eye,
+  Clock,
 } from "lucide-react";
 import {
   Card,
@@ -19,11 +15,17 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../components/CommonUI/card";
+import {
+  RCard,
+  RCardContent,
+  RCardDescription,
+  RCardHeader,
+  RCardTitle,
+} from "../../../components/CommonUI/RippleCard";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Textarea } from "../../../components/CommonUI/textarea";
 import { Input } from "../../../components/CommonUI/input";
-import { Label } from "../../../components/CommonUI/label";
 import {
   Select,
   SelectContent,
@@ -40,6 +42,7 @@ export function Announcements({ onBack }) {
   const [audience, setAudience] = useState("");
   const [priority, setPriority] = useState("");
   const [hackathon, setHackathon] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const fetchAnnouncements = async () => {
     try {
@@ -84,16 +87,32 @@ export function Announcements({ onBack }) {
       setAudience("");
       setPriority("");
       setHackathon("");
+      setShowPreview(false);
       fetchAnnouncements();
     } catch (err) {
       alert(err.message);
     }
   };
 
+  const getAudienceVariant = (aud) => {
+    switch (aud) {
+      case "all":
+        return "outline";
+      case "organizers":
+        return "secondary";
+      case "participants":
+        return "outline";
+      case "mentors":
+        return "secondary";
+      default:
+        return "dark";
+    }
+  };
+
   const sent = announcements;
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -109,150 +128,287 @@ export function Announcements({ onBack }) {
             Back to Dashboard
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Announcements</h1>
-            <p className="text-sm text-gray-500">
-              Send announcements and track performance
-            </p>
+            <h1 className="text-3xl font-bold text-black">Announcements</h1>
           </div>
         </div>
+      
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Announcement Cards */}
-        <div className="lg:col-span-2 space-y-4">
-          {sent.length > 0 ? (
-            sent.map((a) => (
-              <Card key={a._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{a.title}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {a.audience} •{" "}
-                        {new Date(a.createdAt).toLocaleDateString()}
-                      </CardDescription>
-                    </div>
-                    <Badge
-                      className={`text-white ${
-                        a.type === "alert"
-                          ? "bg-red-500"
-                          : a.type === "reminder"
-                          ? "bg-yellow-500"
-                          : "bg-green-500"
-                      }`}
-                    >
-                      {a.type}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600">{a.message}</p>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center text-gray-500">
-                No announcements yet.
-              </CardContent>
-            </Card>
-          )}
-        </div>
+      {/* Stats Card */}
+      <div className="w-full max-w-md">
+        <RCard>
+          <RCardHeader>
+            <RCardTitle className="text-lg text-black flex items-center">
+              <MessageSquare className="w-5 h-5 mr-2 text-green-600" />
+              Announcement Stats
+            </RCardTitle>
+          </RCardHeader>
+          <RCardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Total Announcements</span>
+              <span className="font-medium text-black">{sent.length}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Last Sent</span>
+              <span className="font-medium text-black">
+                {sent[0] ? new Date(sent[0].createdAt).toLocaleString() : "—"}
+              </span>
+            </div>
+          </RCardContent>
+        </RCard>
+      </div>
 
-        {/* Quick Create */}
-        <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left: Static Send Announcement Form */}
+        <div className="w-full lg:w-1/2 flex-shrink-0">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Quick Announcement</CardTitle>
-              <CardDescription>Send a message instantly</CardDescription>
+              <CardTitle className="text-black flex items-center">
+                <Send className="w-5 h-5 mr-2 text-purple-700" />
+                Send New Announcement
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="title">Title</Label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">
+                  Title
+                </label>
                 <Input
-                  id="title"
+                  placeholder="Enter announcement title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
                 />
               </div>
 
               <div>
-                <Label>Hackathon</Label>
-                <Select value={hackathon} onValueChange={setHackathon}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select hackathon" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Events</SelectItem>{" "}
-                    {/* ✅ fixed */}
-                    {/* Dynamically inject more <SelectItem />s if needed */}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="alert">High (Alert)</SelectItem>
-                    <SelectItem value="reminder">Medium (Reminder)</SelectItem>
-                    <SelectItem value="general">Low (General)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Audience</Label>
-                <Select value={audience} onValueChange={setAudience}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select audience" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
-                    <SelectItem value="organizers">Organizers</SelectItem>
-                    <SelectItem value="participants">Participants</SelectItem>
-                    <SelectItem value="mentors">Mentors</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="message">Message</Label>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">
+                  Message
+                </label>
                 <Textarea
-                  id="message"
+                  placeholder="Write your announcement message..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
+                  rows={4}
+                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 resize-none"
                 />
               </div>
 
-              <Button
-                onClick={handleQuickSend}
-                className="bg-purple-500 hover:bg-purple-600 text-white"
-              >
-                <Send className="w-4 h-4 mr-1" /> Send Now
-              </Button>
+              <div>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">
+                  Hackathon
+                </label>
+                <Select value={hackathon} onValueChange={setHackathon}>
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                    <SelectValue placeholder="Select hackathon" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                    <SelectItem
+                      value="all"
+                      className="text-white hover:bg-white/5"
+                    >
+                      All Events
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">
+                  Priority
+                </label>
+                <Select value={priority} onValueChange={setPriority}>
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                    <SelectItem
+                      value="alert"
+                      className="text-white hover:bg-white/5"
+                    >
+                      High (Alert)
+                    </SelectItem>
+                    <SelectItem
+                      value="reminder"
+                      className="text-white hover:bg-white/5"
+                    >
+                      Medium (Reminder)
+                    </SelectItem>
+                    <SelectItem
+                      value="general"
+                      className="text-white hover:bg-white/5"
+                    >
+                      Low (General)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-gray-700 text-sm font-medium mb-2 block">
+                  Audience
+                </label>
+                <Select value={audience} onValueChange={setAudience}>
+                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                    <SelectValue placeholder="Select target audience" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                    <SelectItem
+                      value="all"
+                      className="text-white hover:bg-white/5"
+                    >
+                      All Users
+                    </SelectItem>
+                    <SelectItem
+                      value="organizers"
+                      className="text-white hover:bg-white/5"
+                    >
+                      Organizers
+                    </SelectItem>
+                    <SelectItem
+                      value="participants"
+                      className="text-white hover:bg-white/5"
+                    >
+                      Participants
+                    </SelectItem>
+                    <SelectItem
+                      value="mentors"
+                      className="text-white hover:bg-white/5"
+                    >
+                      Mentors
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="flex-1 border-purple-500 text-black hover:bg-purple-600 hover:text-white"
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Preview
+                </Button>
+                <Button
+                  onClick={handleQuickSend}
+                  disabled={!title || !message || !audience}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Now
+                </Button>
+              </div>
+
+              {showPreview && title && message && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-gray-600 font-semibold">{title}</h3>
+                      <div className="flex gap-2">
+                        {priority && (
+                          <Badge
+                            className={`text-white ${
+                              priority === "alert"
+                                ? "bg-red-500"
+                                : priority === "reminder"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                          >
+                            {priority}
+                          </Badge>
+                        )}
+                        <Badge variant={getAudienceVariant(audience)}>
+                          {audience}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-500 text-sm">{message}</p>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* Stats */}
+        {/* Right: Fixed Height Recent Announcements with Scroll */}
+        <div className="w-full lg:w-1/2 flex-grow">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Announcement Stats</CardTitle>
+              <CardTitle className="text-black flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-blue-600" />
+                Recent Announcements
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>Total Announcements</span>
-                <span className="font-medium">{sent.length}</span>
+            <CardContent className="h-full">
+              {/* Fixed height container with scroll */}
+              <div className="max-h-[500px] overflow-y-auto pr-2 -mr-2 scrollbar-hide">
+                <div className="space-y-4">
+                  {sent.length > 0 ? (
+                    sent.map((announcement) => (
+                      <div
+                        key={announcement._id}
+                        className="p-4 bg-white/5 rounded-lg border border-purple-500/20 hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-black font-medium text-sm leading-tight">
+                            {announcement.title}
+                          </h4>
+                          <div className="flex gap-2 flex-shrink-0 ml-2">
+                            <Badge
+                              className={`text-white ${
+                                announcement.type === "alert"
+                                  ? "bg-red-500"
+                                  : announcement.type === "reminder"
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
+                            >
+                              {announcement.type}
+                            </Badge>
+                            <Badge
+                              variant={getAudienceVariant(
+                                announcement.audience
+                              )}
+                            >
+                              {announcement.audience}
+                            </Badge>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 text-xs mb-3 line-clamp-3 leading-relaxed">
+                          {announcement.message}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-700 text-xs">
+                            {new Date(announcement.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                      <Clock className="w-12 h-12 text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No announcements yet
+                      </h3>
+                      <p className="text-gray-500 text-sm">
+                        Send your first announcement to see it appear here
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span>Last Sent</span>
-                <span className="font-medium">
-                  {sent[0] ? new Date(sent[0].createdAt).toLocaleString() : "—"}
-                </span>
-              </div>
+              {/* Scroll indicator */}
+              {sent.length > 0 && (
+                <div className="text-center mt-2 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    Scroll to see more announcements
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
