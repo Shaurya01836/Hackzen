@@ -49,7 +49,8 @@ const OrganizationSchema = new mongoose.Schema(
         "Other",
       ],
       required: true,
-    },
+    },logo: { type: String },
+
     purpose: {
       type: String,
       maxlength: 1000,

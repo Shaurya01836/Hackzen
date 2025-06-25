@@ -8,7 +8,7 @@ import { HackathonsPage } from "./sections/hackathons-page";
 import { AnnouncementsPanel } from "./sections/announcements-panel";
 import { SubmissionsPage } from "./sections/submissions-page";
 import { MentorChatPage } from "./sections/mentor-chat-page";
-import { OrganizerRequestsPage } from "./sections/organizer-requests-page";
+import { OrganizerRequestsPage } from "./sections/organizer-requests-V1";
 import { AnalyticsPage } from "./sections/analytics-page";
 import { RevenuePage } from "./sections/revenue-page";
 import { SettingsPage } from "./sections/settings-page";

@@ -127,7 +127,33 @@ const getUsersInOrganization = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch organization users", error: err.message });
   }
 };
+const rejectOrganization = async (req, res) => {
+  const org = await Organization.findById(req.params.id);
+  if (!org) return res.status(404).json({ message: "Not found" });
+  await org.deleteOne(); // or mark as rejected
+  res.json({ message: "Rejected" });
+};
 
+const updateMyOrganization = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user.organization) return res.status(400).json({ message: "Not in an organization." });
+
+    const allowedFields = [
+      "name", "contactPerson", "email", "contactMethods", "organizationType",
+      "supportNeeds", "purpose", "website", "github", "logo"
+    ];
+
+    const updates = Object.fromEntries(
+      Object.entries(req.body).filter(([key]) => allowedFields.includes(key))
+    );
+
+    const updatedOrg = await Organization.findByIdAndUpdate(user.organization, updates, { new: true });
+    res.json({ message: "Organization updated.", updatedOrg });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update organization.", error: err.message });
+  }
+};
 module.exports = {
   registerOrganization,
   getAllOrganizations,
@@ -135,5 +161,7 @@ module.exports = {
   updateApplicationStatus,
   removeUserFromOrganization,
   getUsersInOrganization,
-  approveOrganization
+  approveOrganization,
+rejectOrganization ,
+updateMyOrganization
 };

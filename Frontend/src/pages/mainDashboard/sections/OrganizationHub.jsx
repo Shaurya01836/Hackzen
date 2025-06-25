@@ -31,6 +31,9 @@ import { Checkbox } from "../../../components/DashboardUI/checkbox";
 export function OrganizationHub({ onBack }) {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [myOrgInfo, setMyOrgInfo] = useState(null);
+const [loadingStatus, setLoadingStatus] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     contactPerson: "",
@@ -113,47 +116,113 @@ export function OrganizationHub({ onBack }) {
     const domain = email.split("@")[1];
     return !disallowedDomains.includes(domain);
   };
+const fetchMyApplicationStatus = async () => {
+  setLoadingStatus(true);
+  const token = localStorage.getItem("token");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  try {
+  const response = await fetch("http://localhost:3000/api/organizations/register", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(formData),
+  });
 
-    if (!validateEmail(formData.email)) {
-      alert("Please use an official organization email address.");
-      return;
-    }
+  const contentType = response.headers.get("content-type");
+  let data = {};
 
-    if (formData.supportNeeds.length === 0) {
-      alert("Please select at least one support need.");
-      return;
-    }
+  if (contentType && contentType.includes("application/json")) {
+    data = await response.json();
+  } else {
+    const text = await response.text();
+    throw new Error("Server error: " + text.substring(0, 100));
+  }
 
-    setIsSubmitting(true);
+  if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      alert(
-        "Application submitted successfully! We'll review it and get back to you."
-      );
-      setShowApplicationForm(false);
-      setFormData({
-        name: "",
-        contactPerson: "",
-        email: "",
-        whatsapp: "",
-        telegram: "",
-        organizationType: "",
-        supportNeeds: [],
-        purpose: "",
-        website: "",
-        github: "",
-      });
-    } catch (error) {
-      alert("Failed to submit application. Please try again.", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  alert("✅ Application submitted successfully!");
+  setShowApplicationForm(false);
+  setFormData({ ...initialValues }); // Reset form
+} catch (error) {
+  alert("❌ Submission failed: " + error.message);
+} finally {
+  setIsSubmitting(false);
+}
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!formData.name || !formData.contactPerson || !formData.email || !formData.organizationType) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  if (!validateEmail(formData.email)) {
+    alert("Please use an official organization email address.");
+    return;
+  }
+
+  if (formData.supportNeeds.length === 0) {
+    alert("Please select at least one support need.");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    alert("You're not logged in. Please log in to submit the application.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const response = await fetch("http://localhost:3000/api/organizations/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(formData),
+    });
+
+const contentType = response.headers.get("content-type");
+let data = {};
+
+if (contentType && contentType.includes("application/json")) {
+  data = await response.json();
+} else {
+  const text = await response.text();
+  throw new Error("Server error: " + text.substring(0, 100));
+}
+    if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
+
+    alert("✅ Application submitted successfully!");
+
+    setShowApplicationForm(false);
+    setFormData({
+      name: "",
+      contactPerson: "",
+      email: "",
+      whatsapp: "",
+      telegram: "",
+      organizationType: "",
+      supportNeeds: [],
+      purpose: "",
+      website: "",
+      github: "",
+    });
+  } catch (error) {
+    alert("❌ Submission failed: " + error.message);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+
 
   // Application form layout (like Create Hackathon page)
   if (showApplicationForm) {
@@ -548,7 +617,8 @@ export function OrganizationHub({ onBack }) {
                     <Button
                       variant="outline"
                       className="px-6"
-                      onClick={() => setShowStatusModal(true)}
+                     onClick={fetchMyApplicationStatus}
+
                     >
                       Check My Application
                     </Button>
@@ -649,12 +719,12 @@ export function OrganizationHub({ onBack }) {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
                   <div>
-                    <p className="font-medium text-gray-900">
-                      {applicationStatus.status}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Submitted on {applicationStatus.submittedDate}
-                    </p>
+               <p className="font-medium text-gray-900">
+  {myOrgInfo.status}
+</p>
+<p className="text-sm text-gray-600">
+  Submitted by {myOrgInfo.contactPerson}
+</p>
                   </div>
                 </div>
 
@@ -662,19 +732,19 @@ export function OrganizationHub({ onBack }) {
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Organization:</span>
                     <span className="font-medium">
-                      {applicationStatus.organizationName}
+                      {myOrgInfo.organizationName}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Contact Person:</span>
                     <span className="font-medium">
-                      {applicationStatus.contactPerson}
+                      {myOrgInfo.contactPerson}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Expected Review:</span>
                     <span className="font-medium">
-                      {applicationStatus.reviewDate}
+                      {myOrgInfo.reviewDate}
                     </span>
                   </div>
                 </div>
@@ -701,4 +771,5 @@ export function OrganizationHub({ onBack }) {
       )}
     </div>
   );
+}
 }
