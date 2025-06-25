@@ -1,5 +1,5 @@
-"use client"
-"use client"
+"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ import {
   Building,
   UsersRoundIcon,
   NotebookTabs,
-} from "lucide-react"
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -56,39 +56,38 @@ import { ExploreHackathons } from "./sections/ExploreHackathon";
 import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 
-
-import { Blogs } from "./sections/Blogs"
-import { ProjectArchive } from "./sections/ProjectArchive"
+import { Blogs } from "./sections/Blogs";
+import { ProjectArchive } from "./sections/ProjectArchive";
 
 export default function HackZenDashboard() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const queryParams = new URLSearchParams(location.search)
-  const initialView = queryParams.get("view") || "dashboard"
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const initialView = queryParams.get("view") || "dashboard";
 
-  const [currentView, setCurrentView] = useState(initialView)
-  const [showModal, setShowModal] = useState(false)
+  const [currentView, setCurrentView] = useState(initialView);
+  const [showModal, setShowModal] = useState(false);
 
   const { logout, user } = useAuth();
 
   const changeView = (viewKey) => {
-    setCurrentView(viewKey)
-    navigate(`?view=${viewKey}`)
-  }
+    setCurrentView(viewKey);
+    navigate(`?view=${viewKey}`);
+  };
 
   const handleSignOut = async () => {
     try {
       await fetch("http://localhost:3000/api/users/logout", {
         method: "GET",
         credentials: "include",
-      })
+      });
     } catch (err) {
-      console.error("Logout failed:", err)
+      console.error("Logout failed:", err);
     } finally {
-      logout()
-      navigate("/")
+      logout();
+      navigate("/");
     }
-  }
+  };
 
   const participantMenuItems = [
     {
@@ -142,7 +141,7 @@ export default function HackZenDashboard() {
       key: "Organization-hub",
       onClick: () => changeView("Organization-hub"),
     },
-  ]
+  ];
 
   const organizerMenuItems = [
     {
@@ -175,9 +174,9 @@ export default function HackZenDashboard() {
       key: "organizer-tools",
       onClick: () => changeView("organizer-tools"),
     },
-  ]
+  ];
 
-    useEffect(() => {
+  useEffect(() => {
     const pingStreak = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -194,7 +193,6 @@ export default function HackZenDashboard() {
     pingStreak();
   }, []);
 
-  
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -227,11 +225,16 @@ export default function HackZenDashboard() {
                           "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
                           currentView === item.key
                             ? "bg-indigo-100 text-indigo-700"
-                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700",
+                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-700"
                         )}
                       >
                         <item.icon
-                          className={cn("w-4 h-4", currentView === item.key ? "text-indigo-700" : "text-gray-500")}
+                          className={cn(
+                            "w-4 h-4",
+                            currentView === item.key
+                              ? "text-indigo-700"
+                              : "text-gray-500"
+                          )}
                         />
                         <span>{item.title}</span>
                       </button>
@@ -242,7 +245,6 @@ export default function HackZenDashboard() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          
           {user?.role !== "participant" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
@@ -288,7 +290,9 @@ export default function HackZenDashboard() {
             className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] hover:bg-black transition"
           >
             <CircleArrowOutDownLeft className="w-5 h-5 text-white" />
-            <span className="text-sm font-medium text-white">Back to Home Page</span>
+            <span className="text-sm font-medium text-white">
+              Back to Home Page
+            </span>
           </button>
           <button
             onClick={() => setShowModal(true)}
@@ -306,42 +310,44 @@ export default function HackZenDashboard() {
             userName="John Doe"
             userEmail="john@example.com"
             userAvatar="/placeholder.svg?height=96&width=96"
-            onBack={() => setCurrentView("dashboard")}
+            onBack={() => changeView("dashboard")}
           />
         ) : currentView === "my-hackathons" ? (
-          <MyHackathons onBack={() => setCurrentView("dashboard")} />
+          <MyHackathons onBack={() => changeView("dashboard")} />
         ) : currentView === "my-submissions" ? (
-          <MySubmissions onBack={() => setCurrentView("dashboard")} />
+          <MySubmissions onBack={() => changeView("dashboard")} />
         ) : currentView === "chat-rooms" ? (
-          <ChatRooms onBack={() => setCurrentView("dashboard")} />
+          <ChatRooms onBack={() => changeView("dashboard")} />
         ) : currentView === "explore-hackathons" ? (
-          <ExploreHackathons onBack={() => setCurrentView("dashboard")} />
-          
+          <ExploreHackathons onBack={() => changeView("dashboard")} />
         ) : currentView === "Organization-hub" ? (
-          <OrganizationHub onBack={() => setCurrentView("dashboard")} />
-          
+          <OrganizationHub onBack={() => changeView("dashboard")} />
         ) : currentView === "created-hackathons" ? (
           <CreatedHackathons
-            onBack={() => setCurrentView("dashboard")}
-            onCreateNew={() => setCurrentView("create-hackathon")}
+            onBack={() => changeView("dashboard")}
+            onCreateNew={() => changeView("create-hackathon")}
           />
         ) : currentView === "participant-overview" ? (
-          <ParticipantOverview onBack={() => setCurrentView("dashboard")} />
+          <ParticipantOverview onBack={() => changeView("dashboard")} />
         ) : currentView === "review-submissions" ? (
-          <ReviewSubmissions onBack={() => setCurrentView("dashboard")} />
+          <ReviewSubmissions onBack={() => changeView("dashboard")} />
         ) : currentView === "announcements" ? (
-          <Announcements onBack={() => setCurrentView("dashboard")} />
+          <Announcements onBack={() => changeView("dashboard")} />
         ) : currentView === "organizer-tools" ? (
-          <OrganizerTools onBack={() => setCurrentView("dashboard")} />
+          <OrganizerTools onBack={() => changeView("dashboard")} />
         ) : currentView === "create-hackathon" ? (
-          <CreateHackathon onBack={() => setCurrentView("created-hackathons")} />
+          <CreateHackathon onBack={() => changeView("created-hackathons")} />
         ) : currentView === "blogs" ? (
-          <Blogs onBack={() => setCurrentView("dashboard")} />
+          <Blogs onBack={() => changeView("dashboard")} />
         ) : currentView === "project-archive" ? (
-          <ProjectArchive onBack={() => setCurrentView("dashboard")} />
+          <ProjectArchive onBack={() => changeView("dashboard")} />
         ) : null}
       </SidebarInset>
-      <SignOutModal isOpen={showModal} onClose={() => setShowModal(false)} onConfirm={handleSignOut} />
+      <SignOutModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleSignOut}
+      />
     </SidebarProvider>
-  )
+  );
 }
