@@ -15,15 +15,20 @@ import {
   Inbox,
   CircleArrowOutDownLeft,
   LogOut,
+  HandHelpingIcon,
+  NotebookIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { BlogManage } from "./BlogsRequest";
 
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "users", label: "Users Management", icon: Users },
   { id: "hackathons", label: "Hackathons", icon: Flag },
   { id: "submissions", label: "Submissions", icon: Code },
+  { id: "hackathonRequest", label: "Hackathon Requests", icon: HandHelpingIcon },
   { id: "mentors", label: "Mentor & Chat Logs", icon: MessageSquare },
+  {id: "blogs", label: "Blogs Requests", icon: NotebookIcon },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "organizers", label: "Organizer Requests", icon: Briefcase },
   { id: "analytics", label: "Reports & Analytics", icon: BarChart3 },

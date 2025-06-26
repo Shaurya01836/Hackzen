@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import ModalHackathonDetails from "./ModalHackathonDetails";
 
-export function OrganizerRequestsPage() {
+export function HackathonRequest() {
   const [organizerRequests, setOrganizerRequests] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");

@@ -8,13 +8,15 @@ import { HackathonsPage } from "./sections/hackathons-page";
 import { AnnouncementsPanel } from "./sections/announcements-panel";
 import { SubmissionsPage } from "./sections/submissions-page";
 import { MentorChatPage } from "./sections/mentor-chat-page";
-import { OrganizerRequestsPage } from "./sections/organizer-requests-page";
+import { OrganizerRequestsPage } from "./sections/organizer-requests-V1";
+import { HackathonRequest } from "./sections/HackathonRequest";
 import { AnalyticsPage } from "./sections/analytics-page";
 import { RevenuePage } from "./sections/revenue-page";
 import { SettingsPage } from "./sections/settings-page";
 import { FlaggedContentPage } from "./sections/flagged-content-page";
 import { SupportInboxPage } from "./sections/support-inbox-page";
 import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
+import { BlogManage } from "./sections/BlogsRequest"
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -57,8 +59,12 @@ export default function AdminPanel() {
         return <MentorChatPage />;
       case "announcements":
         return <AnnouncementsPanel />;
+      case "hackathonRequest":
+        return <HackathonRequest />;
       case "organizers":
         return <OrganizerRequestsPage />;
+      case "blogs":
+        return <BlogManage />;
       case "analytics":
         return <AnalyticsPage />;
       case "revenue":
