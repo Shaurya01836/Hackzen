@@ -1,5 +1,5 @@
-"use client"
-import { useState, useEffect } from "react"
+"use client";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Search,
@@ -14,144 +14,94 @@ import {
   Eye,
   Filter,
   Bookmark,
-  User,
-  Tag
-} from "lucide-react"
-import { Button } from "../../../components/CommonUI/button"
-import { Input } from "../../../components/CommonUI/input"
-import { Card, CardContent } from "../../../components/CommonUI/card"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/DashboardUI/avatar"
-import { Separator } from "../../../components/CommonUI/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
+  Tag,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
+import { Button } from "../../../components/CommonUI/button";
+import { Input } from "../../../components/CommonUI/input";
+import { Card, CardContent } from "../../../components/CommonUI/card";
+import { Badge } from "../../../components/CommonUI/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../components/DashboardUI/avatar";
+import { Separator } from "../../../components/CommonUI/separator";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/CommonUI/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/DashboardUI/dialog";
+import { WriteArticle } from "./WriteArticle";
 
 export function Blogs({ onBack }) {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedPost, setSelectedPost] = useState(null)
-  const [blogs, setBlogs] = useState([])
-  const [loading, setLoading] = useState(true)
-
-  // Mock data - replace with actual API call
-  const mockBlogs = [
-    {
-      id: "1",
-      title: "Building Scalable Web Applications with React and Node.js",
-      excerpt:
-        "Learn how to create robust, scalable web applications using modern React patterns and Node.js best practices. This comprehensive guide covers everything from project setup to deployment.",
-      content: "Full blog content here...",
-      author: {
-        name: "Sarah Chen",
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: "Full Stack Developer"
-      },
-      publishedAt: "2024-01-15",
-      readTime: 8,
-      category: "Web Development",
-      tags: ["React", "Node.js", "JavaScript", "Full Stack"],
-      likes: 124,
-      comments: 23,
-      views: 1250,
-      featured: true,
-      image: "/placeholder.svg?height=300&width=600"
-    },
-    {
-      id: "2",
-      title: "Machine Learning in Healthcare: A Beginner's Guide",
-      excerpt:
-        "Explore how AI and ML are revolutionizing healthcare with practical examples and implementation strategies. Perfect for developers looking to enter the healthcare tech space.",
-      content: "Full blog content here...",
-      author: {
-        name: "Dr. Michael Rodriguez",
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: "AI Researcher"
-      },
-      publishedAt: "2024-01-12",
-      readTime: 12,
-      category: "AI/ML",
-      tags: ["Machine Learning", "Healthcare", "AI", "Python"],
-      likes: 89,
-      comments: 15,
-      views: 890,
-      featured: false,
-      image: "/placeholder.svg?height=300&width=600"
-    },
-    {
-      id: "3",
-      title: "Blockchain Development: Smart Contracts with Solidity",
-      excerpt:
-        "A comprehensive guide to developing smart contracts using Solidity and deploying them on Ethereum. Includes real-world examples and best practices.",
-      content: "Full blog content here...",
-      author: {
-        name: "Alex Thompson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: "Blockchain Developer"
-      },
-      publishedAt: "2024-01-10",
-      readTime: 15,
-      category: "Blockchain",
-      tags: ["Blockchain", "Solidity", "Ethereum", "Smart Contracts"],
-      likes: 156,
-      comments: 31,
-      views: 1680,
-      featured: true,
-      image: "/placeholder.svg?height=300&width=600"
-    },
-    {
-      id: "4",
-      title: "Cybersecurity Best Practices for Developers",
-      excerpt:
-        "Essential security practices every developer should know to build secure applications. Learn about common vulnerabilities and how to prevent them.",
-      content: "Full blog content here...",
-      author: {
-        name: "Emma Wilson",
-        avatar: "/placeholder.svg?height=40&width=40",
-        role: "Security Engineer"
-      },
-      publishedAt: "2024-01-08",
-      readTime: 10,
-      category: "Cybersecurity",
-      tags: ["Security", "Best Practices", "Development", "OWASP"],
-      likes: 78,
-      comments: 12,
-      views: 650,
-      featured: false,
-      image: "/placeholder.svg?height=300&width=600"
-    }
-  ]
-
-  const categories = [
-    "all",
-    "Web Development",
-    "AI/ML",
-    "Blockchain",
-    "Cybersecurity",
-    "Mobile",
-    "DevOps"
-  ]
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState("list"); // "list" or "write"
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [submittedArticle, setSubmittedArticle] = useState(null);
 
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
-      setBlogs(mockBlogs)
-      setLoading(false)
-    }, 1000)
-  })
+      setBlogs(mockBlogs);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
-  const filteredBlogs = blogs.filter(blog => {
+  // Handle write article navigation
+  const handleWriteArticle = () => {
+    setCurrentView("write");
+  };
+
+  const handleBackToBlogs = () => {
+    setCurrentView("list");
+  };
+
+  const handleArticleSubmit = (article) => {
+    setSubmittedArticle(article);
+    setCurrentView("list");
+    setShowApprovalDialog(true);
+  };
+
+  // If we're in write mode, show the write article component
+  if (currentView === "write") {
+    return (
+      <WriteArticle onBack={handleBackToBlogs} onSubmit={handleArticleSubmit} />
+    );
+  }
+
+  // Only show published blogs in the main view
+  const publishedBlogs = blogs.filter((blog) => blog.status === "published");
+
+  const filteredBlogs = publishedBlogs.filter((blog) => {
     const matchesSearch =
       blog.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       blog.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      blog.tags.some(tag =>
+      blog.tags.some((tag) =>
         tag.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      );
     const matchesCategory =
-      selectedCategory === "all" || blog.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
+      selectedCategory === "all" || blog.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const featuredBlogs = blogs.filter(blog => blog.featured)
-  const trendingBlogs = [...blogs].sort((a, b) => b.views - a.views).slice(0, 5)
+  const featuredBlogs = publishedBlogs.filter((blog) => blog.featured);
+  const trendingBlogs = [...publishedBlogs]
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5);
 
   if (selectedPost) {
     return (
@@ -247,7 +197,7 @@ export function Blogs({ onBack }) {
                       {
                         year: "numeric",
                         month: "long",
-                        day: "numeric"
+                        day: "numeric",
                       }
                     )}
                   </div>
@@ -264,12 +214,8 @@ export function Blogs({ onBack }) {
 
               {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-6">
-                {selectedPost.tags.map(tag => (
-                  <Badge
-                    key={tag}
-                    variant="outline"
-                    className="px-3 py-1 "
-                  >
+                {selectedPost.tags.map((tag) => (
+                  <Badge key={tag} variant="outline" className="px-3 py-1 ">
                     <Tag className="w-3 h-3 mr-1" />
                     {tag}
                   </Badge>
@@ -339,11 +285,49 @@ export function Blogs({ onBack }) {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+      {/* Approval Dialog */}
+      <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              Article Submitted Successfully!
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>
+                  Your article <strong>"{submittedArticle?.title}"</strong> has
+                  been submitted for review.
+                </p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-yellow-800">
+                        Waiting for Admin Approval
+                      </p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Your article will be reviewed by our admin team and
+                        published once approved. You'll receive a notification
+                        when the status changes.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <Button onClick={() => setShowApprovalDialog(false)}>Got it</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className=" border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
@@ -372,7 +356,10 @@ export function Blogs({ onBack }) {
               </div>
             </div>
           </div>
-          <Button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm">
+          <Button
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+            onClick={handleWriteArticle}
+          >
             <Plus className="w-4 h-4" />
             Write Article
           </Button>
@@ -390,7 +377,7 @@ export function Blogs({ onBack }) {
                 <Input
                   placeholder="Search blogs, topics, or tags..."
                   value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 h-12 text-base border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
@@ -399,10 +386,10 @@ export function Blogs({ onBack }) {
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <select
                     value={selectedCategory}
-                    onChange={e => setSelectedCategory(e.target.value)}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
                     className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"
                   >
-                    {categories.map(category => (
+                    {categories.map((category) => (
                       <option key={category} value={category}>
                         {category === "all" ? "All Categories" : category}
                       </option>
@@ -412,9 +399,6 @@ export function Blogs({ onBack }) {
               </div>
             </div>
           </div>
-
-      
-
           {/* Tabs */}
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="grid w-full grid-cols-3 bg-white/20 border border-gray-200 p-1 rounded-lg">
@@ -457,7 +441,7 @@ export function Blogs({ onBack }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredBlogs.map(blog => (
+                  {filteredBlogs.map((blog) => (
                     <Card
                       key={blog.id}
                       className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-gray-200 bg-white/20 group"
@@ -500,7 +484,7 @@ export function Blogs({ onBack }) {
                         </p>
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {blog.tags.slice(0, 3).map(tag => (
+                          {blog.tags.slice(0, 3).map((tag) => (
                             <Badge
                               key={tag}
                               variant="outline"
@@ -551,7 +535,7 @@ export function Blogs({ onBack }) {
 
             <TabsContent value="featured" className="mt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {featuredBlogs.map(blog => (
+                {featuredBlogs.map((blog) => (
                   <Card
                     key={blog.id}
                     className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-white group"
@@ -709,5 +693,5 @@ export function Blogs({ onBack }) {
         </div>
       </div>
     </div>
-  )
+  );
 }

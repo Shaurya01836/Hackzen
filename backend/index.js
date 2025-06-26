@@ -60,6 +60,7 @@ app.use('/api/announcements', require('./routes/announcementRoutes'));
 app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
 app.use("/api/registration", require("./routes/hackathonRegistrationRoutes"));
 app.use('/api/organizations', require('./routes/organizationRoutes'));
+app.use("/api/articles", require('./routes/articleRoutes'));
 
 // ✅ HTTP + Socket.IO server
 const server = http.createServer(app);

@@ -27,6 +27,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+//limit
+const bodyParser = require('body-parser');
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+
 // Mount API routes
 app.use('/api/hackathons', hackathonRoutes);
 app.use('/api/users', userRoutes);
