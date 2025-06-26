@@ -1,11 +1,8 @@
 "use client";
-"use client";
-
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import axios from "axios";
-
 import {
   Users,
   CircleArrowOutDownLeft,
@@ -55,25 +52,41 @@ import { OrganizerTools } from "./sections/OrganizerTools";
 import { ExploreHackathons } from "./sections/ExploreHackathon";
 import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
-
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
 
 export default function HackZenDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
-  const queryParams = new URLSearchParams(location.search);
-  const initialView = queryParams.get("view") || "dashboard";
+  const params = useParams();
+  
+  // Extract the active section from the current URL path
+  const getActiveSectionFromPath = () => {
+    const path = location.pathname;
+    // Extract section from /dashboard/section pattern
+    const section = params.section || path.split('/').pop() || 'profile';
+    return section;
+  };
 
-  const [currentView, setCurrentView] = useState(initialView);
+  const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
   const [showModal, setShowModal] = useState(false);
 
   const { logout, user } = useAuth();
 
+  // Function to handle section changes with nested URLs
   const changeView = (viewKey) => {
     setCurrentView(viewKey);
-    navigate(`?view=${viewKey}`);
+    navigate(`/dashboard/${viewKey}`);
   };
+
+  // Set default route on component mount
+  useEffect(() => {
+    if (location.pathname === '/dashboard' || location.pathname === '/dashboard/') {
+      navigate('/dashboard/profile', { replace: true });
+    }
+    // Update currentView when URL changes
+    setCurrentView(getActiveSectionFromPath());
+  }, [location.pathname, navigate, params.section]);
 
   const handleSignOut = async () => {
     try {
@@ -102,7 +115,6 @@ export default function HackZenDashboard() {
       key: "my-submissions",
       onClick: () => changeView("my-submissions"),
     },
-
     {
       title: "Explore Hackathons",
       icon: Search,
@@ -115,13 +127,12 @@ export default function HackZenDashboard() {
       key: "my-community",
       onClick: () => changeView("my-community"),
     },
-    // {
-    //   title: "Chat Rooms",
-    //   icon: MessageSquare,
-    //   key: "chat-rooms",
-    //   onClick: () => changeView("chat-rooms"),
-    // },
-
+    {
+      title: "Chat Rooms",
+      icon: MessageSquare,
+      key: "chat-rooms",
+      onClick: () => changeView("chat-rooms"),
+    },
     {
       title: "Blogs",
       icon: NotebookTabs,
@@ -134,12 +145,11 @@ export default function HackZenDashboard() {
       key: "project-archive",
       onClick: () => changeView("project-archive"),
     },
-
     {
       title: "Organization Hub",
       icon: Building,
-      key: "Organization-hub",
-      onClick: () => changeView("Organization-hub"),
+      key: "organization-hub",
+      onClick: () => changeView("organization-hub"),
     },
   ];
 
@@ -174,24 +184,85 @@ export default function HackZenDashboard() {
       key: "organizer-tools",
       onClick: () => changeView("organizer-tools"),
     },
+    {
+      title: "Create Hackathon",
+      icon: Plus,
+      key: "create-hackathon",
+      onClick: () => changeView("create-hackathon"),
+    },
   ];
 
+  // Function to render content based on current view
+  const renderContent = () => {
+    switch (currentView) {
+      case "profile":
+        return (
+          <ProfileSection
+            userName="John Doe"
+            userEmail="john@example.com"
+            userAvatar="/placeholder.svg?height=96&width=96"
+            onBack={() => changeView("profile")}
+          />
+        );
+      case "my-hackathons":
+        return <MyHackathons onBack={() => changeView("profile")} />;
+      case "my-submissions":
+        return <MySubmissions onBack={() => changeView("profile")} />;
+      case "chat-rooms":
+        return <ChatRooms onBack={() => changeView("profile")} />;
+      case "explore-hackathons":
+        return <ExploreHackathons onBack={() => changeView("profile")} />;
+      case "organization-hub":
+        return <OrganizationHub onBack={() => changeView("profile")} />;
+      case "created-hackathons":
+        return (
+          <CreatedHackathons
+            onBack={() => changeView("profile")}
+            onCreateNew={() => changeView("create-hackathon")}
+          />
+        );
+      case "participant-overview":
+        return <ParticipantOverview onBack={() => changeView("profile")} />;
+      case "review-submissions":
+        return <ReviewSubmissions onBack={() => changeView("profile")} />;
+      case "announcements":
+        return <Announcements onBack={() => changeView("profile")} />;
+      case "organizer-tools":
+        return <OrganizerTools onBack={() => changeView("profile")} />;
+      case "create-hackathon":
+        return <CreateHackathon onBack={() => changeView("created-hackathons")} />;
+      case "blogs":
+        return <Blogs onBack={() => changeView("profile")} />;
+      case "project-archive":
+        return <ProjectArchive onBack={() => changeView("profile")} />;
+      case "my-community":
+        return <div className="p-6">My Community Section - Coming Soon</div>;
+      default:
+        return (
+          <ProfileSection
+            userName="John Doe"
+            userEmail="john@example.com"
+            userAvatar="/placeholder.svg?height=96&width=96"
+            onBack={() => changeView("profile")}
+          />
+        );
+    }
+  };
+
   useEffect(() => {
-   const pingStreak = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const res = await axios.post("http://localhost:3000/api/users/streak", {}, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-
-    console.log("✅ Streak pinged and user fetched:", res.data);
-  } catch (err) {
-    console.error("📉 Failed to track streak:", err);
-  }
-};
-
+    const pingStreak = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.post("http://localhost:3000/api/users/streak", {}, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        console.log("✅ Streak pinged and user fetched:", res.data);
+      } catch (err) {
+        console.error("📉 Failed to track streak:", err);
+      }
+    };
 
     pingStreak();
   }, []);
@@ -308,44 +379,11 @@ export default function HackZenDashboard() {
       </Sidebar>
 
       <SidebarInset>
-        {currentView === "dashboard" ? (
-          <ProfileSection
-            userName="John Doe"
-            userEmail="john@example.com"
-            userAvatar="/placeholder.svg?height=96&width=96"
-            onBack={() => changeView("dashboard")}
-          />
-        ) : currentView === "my-hackathons" ? (
-          <MyHackathons onBack={() => changeView("dashboard")} />
-        ) : currentView === "my-submissions" ? (
-          <MySubmissions onBack={() => changeView("dashboard")} />
-        ) : currentView === "chat-rooms" ? (
-          <ChatRooms onBack={() => changeView("dashboard")} />
-        ) : currentView === "explore-hackathons" ? (
-          <ExploreHackathons onBack={() => changeView("dashboard")} />
-        ) : currentView === "Organization-hub" ? (
-          <OrganizationHub onBack={() => changeView("dashboard")} />
-        ) : currentView === "created-hackathons" ? (
-          <CreatedHackathons
-            onBack={() => changeView("dashboard")}
-            onCreateNew={() => changeView("create-hackathon")}
-          />
-        ) : currentView === "participant-overview" ? (
-          <ParticipantOverview onBack={() => changeView("dashboard")} />
-        ) : currentView === "review-submissions" ? (
-          <ReviewSubmissions onBack={() => changeView("dashboard")} />
-        ) : currentView === "announcements" ? (
-          <Announcements onBack={() => changeView("dashboard")} />
-        ) : currentView === "organizer-tools" ? (
-          <OrganizerTools onBack={() => changeView("dashboard")} />
-        ) : currentView === "create-hackathon" ? (
-          <CreateHackathon onBack={() => changeView("created-hackathons")} />
-        ) : currentView === "blogs" ? (
-          <Blogs onBack={() => changeView("dashboard")} />
-        ) : currentView === "project-archive" ? (
-          <ProjectArchive onBack={() => changeView("dashboard")} />
-        ) : null}
+        <main className="flex-1 overflow-auto">
+          {renderContent()}
+        </main>
       </SidebarInset>
+      
       <SignOutModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}

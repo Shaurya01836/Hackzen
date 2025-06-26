@@ -1,23 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
 import {
-   SquarePen,
-  Trash2,
-  User,
-  Settings,
-  LogOut,
-  Bell,
-  Shield,
-  HelpCircle,
-  ArrowLeft,
+  SquarePen,
   Save,
   Eye,
   EyeOff,
   Lock,
   Mail,
-  Edit,
   MessageSquare,
   Trophy,
   Award,
@@ -55,36 +47,75 @@ import { Progress } from "../../components/DashboardUI/progress";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 
 export function ProfileSection() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get current view from URL path
+  const getCurrentViewFromPath = () => {
+    const path = location.pathname;
+    if (path.includes("/profile/edit")) return "edit-profile";
+    if (path.includes("/profile/account-settings")) return "account-settings";
+    if (path.includes("/profile/privacy-security")) return "privacy-security";
+    if (path.includes("/profile/help-support")) return "help-support";
+    return "overview";
+  };
+
   const [selectedImage, setSelectedImage] = useState(null);
-  const [selectedBanner, setSelectedBanner] = useState(null); 
+  const [selectedBanner, setSelectedBanner] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
-const [newPassword, setNewPassword] = useState("");
-const [confirmPassword, setConfirmPassword] = useState("");
-const [passwordMessage, setPasswordMessage] = useState("");
-const [passwordError, setPasswordError] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-  
+  const [currentView, setCurrentViewState] = useState(getCurrentViewFromPath());
 
-  const [currentView, setCurrentViewState] = useState("overview");
+   // Updated setCurrentView function to handle URL navigation
   const setCurrentView = (view) => {
     setCurrentViewState(view);
-    localStorage.setItem("currentView", view);
+    
+    // Navigate to appropriate URL
+    switch(view) {
+      case 'overview':
+        navigate('/profile');
+        break;
+      case 'edit-profile':
+        navigate('/profile/edit');
+        break;
+      case 'account-settings':
+        navigate('/profile/account-settings');
+        break;
+      case 'privacy-security':
+        navigate('/profile/privacy-security');
+        break;
+      case 'help-support':
+        navigate('/profile/help-support');
+        break;
+      default:
+        navigate('/profile');
+    }
   };
 
-const [streakData, setStreakData] = useState({
-  currentStreak: 0,
-  maxStreak: 0,
-  activityLog: [],
-});
+    // Listen to URL changes and update current view
+  useEffect(() => {
+    const newView = getCurrentViewFromPath();
+    setCurrentViewState(newView);
+  }, [location.pathname]);
+
+
+
+  const [streakData, setStreakData] = useState({
+    currentStreak: 0,
+    maxStreak: 0,
+    activityLog: [],
+  });
 
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-  
-  
 
   const { user, token, login } = useAuth();
 
@@ -149,43 +180,30 @@ const [streakData, setStreakData] = useState({
     { name: "DevOps", level: 60 },
   ];
 
-useEffect(() => {
-  const savedView = localStorage.getItem("currentView");
-  if (savedView) {
-    setTimeout(() => setCurrentViewState(savedView), 0); // delay to avoid warning
-  }
-  fetchUserProfile();
-}, []);
+ useEffect(() => {
+    fetchUserProfile();
+    fetchStreakData();
+  }, []);
 
-const fetchStreakData = async () => {
-  try {
-    const storedUser = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
+  const fetchStreakData = async () => {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("token");
 
-    if (!storedUser?._id || !token) return;
+      if (!storedUser?._id || !token) return;
 
-    const res = await axios.get(`http://localhost:3000/api/users/${storedUser._id}/streaks`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+      const res = await axios.get(
+        `http://localhost:3000/api/users/${storedUser._id}/streaks`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    setStreakData(res.data);
-  } catch (err) {
-    console.error("Failed to fetch streaks:", err.message);
-  }
-};
-
-useEffect(() => {
-  const savedView = localStorage.getItem("currentView");
-  if (savedView) {
-    setTimeout(() => setCurrentViewState(savedView), 0);
-  }
-  fetchUserProfile();
-  fetchStreakData(); // 👈 ADD THIS
-}, []);
-
-
-
-
+      setStreakData(res.data);
+    } catch (err) {
+      console.error("Failed to fetch streaks:", err.message);
+    }
+  };
 
 
   const fetchUserProfile = async () => {
@@ -264,12 +282,12 @@ useEffect(() => {
       <Card className="w-full overflow-hidden relative rounded-2xl">
         {/* Banner */}
         <div className="relative h-48 w-full rounded-t-2xl overflow-hidden">
-        <img
-  src={user?.bannerImage || "/assets/default-banner.png"}
-  alt="Banner"
-  className="w-full h-full object-cover"
-/>
-      </div>
+          <img
+            src={user?.bannerImage || "/assets/default-banner.png"}
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
+        </div>
 
         {/* Avatar */}
         <div className="flex justify-center -mt-16 z-10">
@@ -292,7 +310,7 @@ useEffect(() => {
               variant="outline"
               className="bg-purple-100 text-purple-800 border-purple-300"
             >
-             {user?.role || "Unknown"}
+              {user?.role || "Unknown"}
             </Badge>
           </div>
         </CardHeader>
@@ -468,12 +486,11 @@ useEffect(() => {
       </Card>
 
       <section className="py-10">
-       <StreakGraphic
-  data={streakData.activityLog}
-  current={streakData.currentStreak}
-  max={streakData.maxStreak}
-/>
-
+        <StreakGraphic
+          data={streakData.activityLog}
+          current={streakData.currentStreak}
+          max={streakData.maxStreak}
+        />
       </section>
 
       <Card>
@@ -500,205 +517,201 @@ useEffect(() => {
     </div>
   );
 
+  const renderEditProfile = () => (
+    <div className="w-full flex flex-col gap-6">
+      {/* Card with Banner and Avatar */}
+      <Card className="w-full overflow-hidden relative">
+        {/* Banner with Hover Edit */}
+        <div className="relative h-48 w-full rounded-t-2xl overflow-hidden group">
+          <img
+            src={editForm.bannerImage || "/assets/default-banner.png"}
+            alt="Banner"
+            className="w-full h-full object-cover"
+          />
 
+          {/* Edit Banner Icon */}
+          <button
+            onClick={() =>
+              document.getElementById("upload-banner-edit").click()
+            }
+            className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+            title="Edit Banner"
+          >
+            <SquarePen className="w-4 h-4" />
+          </button>
+          <input
+            type="file"
+            id="upload-banner-edit"
+            accept="image/*"
+            className="hidden"
+            onChange={handleBannerUpload}
+          />
+        </div>
 
-const renderEditProfile = () => (
-  <div className="w-full flex flex-col gap-6">
+        {/* Avatar with Hover Edit */}
+        <div className="relative flex justify-center -mt-16 z-10 group">
+          <Avatar className="w-28 h-28 border-[3px] border-white shadow-xl">
+            <AvatarImage src={editForm.profileImage || "/placeholder.svg"} />
+            <AvatarFallback className="text-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
 
-    {/* Card with Banner and Avatar */}
-    <Card className="w-full overflow-hidden relative">
+          {/* Edit Profile Icon */}
+          <button
+            onClick={() => document.getElementById("upload-avatar").click()}
+            className="absolute bottom-2 right-[calc(50%-14px)] bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
+            title="Edit Profile Picture"
+          >
+            <SquarePen className="w-4 h-4" />
+          </button>
+          <input
+            type="file"
+            id="upload-avatar"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageUpload}
+          />
+        </div>
 
-      {/* Banner with Hover Edit */}
-      <div className="relative h-48 w-full rounded-t-2xl overflow-hidden group">
-        <img
-          src={editForm.bannerImage || "/assets/default-banner.png"}
-          alt="Banner"
-          className="w-full h-full object-cover"
-        />
+        {/* User Info */}
+        <CardHeader className="text-center pt-2">
+          <CardTitle className="text-xl font-semibold">{user?.name}</CardTitle>
+          <CardDescription> {user?.role || "Unknown"}</CardDescription>
 
-        {/* Edit Banner Icon */}
-        <button
-          onClick={() => document.getElementById("upload-banner-edit").click()}
-          className="absolute top-2 right-2 bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
-          title="Edit Banner"
+          {uploadSuccess && (
+            <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
+              ✅ Image uploaded successfully!
+            </div>
+          )}
+        </CardHeader>
+      </Card>
+
+      {/* Personal Information Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Personal Information</CardTitle>
+          <CardDescription>Update your personal details</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
+            <div className="w-full sm:w-[48%]">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                value={editForm.name}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, name: e.target.value })
+                }
+              />
+            </div>
+            <div className="w-full sm:w-[48%]">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, email: e.target.value })
+                }
+              />
+            </div>
+            <div className="w-full sm:w-[48%]">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={editForm.phone}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, phone: e.target.value })
+                }
+              />
+            </div>
+            <div className="w-full sm:w-[48%]">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={editForm.location}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, location: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              rows={3}
+              value={editForm.bio}
+              onChange={(e) =>
+                setEditForm({ ...editForm, bio: e.target.value })
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Social Links Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Social Links</CardTitle>
+          <CardDescription>
+            Add your social media and professional links
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="w-full">
+            <Label htmlFor="website">Website</Label>
+            <Input
+              id="website"
+              value={editForm.website}
+              onChange={(e) =>
+                setEditForm({ ...editForm, website: e.target.value })
+              }
+            />
+          </div>
+          <div className="w-full">
+            <Label htmlFor="github">GitHub</Label>
+            <Input
+              id="github"
+              value={editForm.github}
+              onChange={(e) =>
+                setEditForm({ ...editForm, github: e.target.value })
+              }
+            />
+          </div>
+          <div className="w-full">
+            <Label htmlFor="linkedin">LinkedIn</Label>
+            <Input
+              id="linkedin"
+              value={editForm.linkedin}
+              onChange={(e) =>
+                setEditForm({ ...editForm, linkedin: e.target.value })
+              }
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Save + Cancel Actions */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-start">
+        <Button
+          onClick={handleSaveChanges}
+          className="flex items-center gap-2 w-full sm:w-auto"
         >
-          <SquarePen className="w-4 h-4" />
-        </button>
-        <input
-          type="file"
-          id="upload-banner-edit"
-          accept="image/*"
-          className="hidden"
-          onChange={handleBannerUpload}
-        />
-      </div>
-
-      {/* Avatar with Hover Edit */}
-      <div className="relative flex justify-center -mt-16 z-10 group">
-        <Avatar className="w-28 h-28 border-[3px] border-white shadow-xl">
-          <AvatarImage src={editForm.profileImage || "/placeholder.svg"} />
-          <AvatarFallback className="text-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-
-        {/* Edit Profile Icon */}
-        <button
-          onClick={() => document.getElementById("upload-avatar").click()}
-          className="absolute bottom-2 right-[calc(50%-14px)] bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
-          title="Edit Profile Picture"
+          <Save className="w-4 h-4" />
+          Save Changes
+        </Button>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto"
+          onClick={() => setCurrentView("overview")}
         >
-          <SquarePen className="w-4 h-4" />
-        </button>
-        <input
-          type="file"
-          id="upload-avatar"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageUpload}
-        />
+          Cancel
+        </Button>
       </div>
-
-      {/* User Info */}
-      <CardHeader className="text-center pt-2">
-        <CardTitle className="text-xl font-semibold">{user?.name}</CardTitle>
-        <CardDescription>   {user?.role || "Unknown"}</CardDescription>
-
-        {uploadSuccess && (
-          <div className="mt-2 px-4 py-2 rounded bg-green-100 text-green-700 text-sm border border-green-300">
-            ✅ Image uploaded successfully!
-          </div>
-        )}
-      </CardHeader>
-    </Card>
-
-
-    {/* Personal Information Section */}
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Personal Information</CardTitle>
-        <CardDescription>Update your personal details</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4">
-          <div className="w-full sm:w-[48%]">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm({ ...editForm, name: e.target.value })
-              }
-            />
-          </div>
-          <div className="w-full sm:w-[48%]">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={editForm.email}
-              onChange={(e) =>
-                setEditForm({ ...editForm, email: e.target.value })
-              }
-            />
-          </div>
-          <div className="w-full sm:w-[48%]">
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              value={editForm.phone}
-              onChange={(e) =>
-                setEditForm({ ...editForm, phone: e.target.value })
-              }
-            />
-          </div>
-          <div className="w-full sm:w-[48%]">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              value={editForm.location}
-              onChange={(e) =>
-                setEditForm({ ...editForm, location: e.target.value })
-              }
-            />
-          </div>
-        </div>
-        <div>
-          <Label htmlFor="bio">Bio</Label>
-          <Textarea
-            id="bio"
-            rows={3}
-            value={editForm.bio}
-            onChange={(e) =>
-              setEditForm({ ...editForm, bio: e.target.value })
-            }
-          />
-        </div>
-      </CardContent>
-    </Card>
-
-    {/* Social Links Section */}
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Social Links</CardTitle>
-        <CardDescription>
-          Add your social media and professional links
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="w-full">
-          <Label htmlFor="website">Website</Label>
-          <Input
-            id="website"
-            value={editForm.website}
-            onChange={(e) =>
-              setEditForm({ ...editForm, website: e.target.value })
-            }
-          />
-        </div>
-        <div className="w-full">
-          <Label htmlFor="github">GitHub</Label>
-          <Input
-            id="github"
-            value={editForm.github}
-            onChange={(e) =>
-              setEditForm({ ...editForm, github: e.target.value })
-            }
-          />
-        </div>
-        <div className="w-full">
-          <Label htmlFor="linkedin">LinkedIn</Label>
-          <Input
-            id="linkedin"
-            value={editForm.linkedin}
-            onChange={(e) =>
-              setEditForm({ ...editForm, linkedin: e.target.value })
-            }
-          />
-        </div>
-      </CardContent>
-    </Card>
-
-    {/* Save + Cancel Actions */}
-    <div className="flex flex-col sm:flex-row gap-3 justify-start">
-      <Button
-        onClick={handleSaveChanges}
-        className="flex items-center gap-2 w-full sm:w-auto"
-      >
-        <Save className="w-4 h-4" />
-        Save Changes
-      </Button>
-      <Button
-        variant="outline"
-        className="w-full sm:w-auto"
-        onClick={() => setCurrentView("overview")}
-      >
-        Cancel
-      </Button>
     </div>
-  </div>
-);
-
+  );
 
   const renderAccountSettings = () => (
     <div className="w-full flex flex-col gap-6">
@@ -779,71 +792,75 @@ const renderEditProfile = () => (
     </div>
   );
 
- const renderPrivacySecurity = () => (
-  <div className="w-full flex flex-col gap-6">
-    {/* Password Section */}
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Password & Authentication</CardTitle>
-        <CardDescription>Manage your login credentials</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {/* Show Current Password only if registered via email */}
-        {user?.authProvider === "email" && (
-          <div className="relative">
-            <Label htmlFor="current-password">Current Password</Label>
+  const renderPrivacySecurity = () => (
+    <div className="w-full flex flex-col gap-6">
+      {/* Password Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Password & Authentication</CardTitle>
+          <CardDescription>Manage your login credentials</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {/* Show Current Password only if registered via email */}
+          {user?.authProvider === "email" && (
+            <div className="relative">
+              <Label htmlFor="current-password">Current Password</Label>
+              <Input
+                id="current-password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-6 h-full px-3"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* New Password */}
+          <div>
+            <Label htmlFor="new-password">New Password</Label>
             <Input
-              id="current-password"
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter current password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
+              id="new-password"
+              type="password"
+              placeholder="Enter new password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-0 top-6 h-full px-3"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </Button>
           </div>
-        )}
 
-        {/* New Password */}
-        <div>
-          <Label htmlFor="new-password">New Password</Label>
-          <Input
-            id="new-password"
-            type="password"
-            placeholder="Enter new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-          />
-        </div>
+          {/* Confirm New Password */}
+          <div>
+            <Label htmlFor="confirm-password">Confirm New Password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+          </div>
 
-        {/* Confirm New Password */}
-        <div>
-          <Label htmlFor="confirm-password">Confirm New Password</Label>
-          <Input
-            id="confirm-password"
-            type="password"
-            placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </div>
-
-        <Button
-          className="flex items-center gap-2 w-full sm:w-auto"
-          onClick={handlePasswordUpdate}
-        >
-          <Lock className="w-4 h-4" />
-          Update Password
-        </Button>
-      </CardContent>
-    </Card>
+          <Button
+            className="flex items-center gap-2 w-full sm:w-auto"
+            onClick={handlePasswordUpdate}
+          >
+            <Lock className="w-4 h-4" />
+            Update Password
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* 2FA Section */}
       <Card className="w-full">
@@ -917,7 +934,6 @@ const renderEditProfile = () => (
     </div>
   );
 
-  
   const renderHelpSupport = () => (
     <div className="w-full flex flex-col gap-6">
       {/* FAQ */}
@@ -1016,188 +1032,187 @@ const renderEditProfile = () => (
     </div>
   );
 
-const handleSaveChanges = async () => {
-  if (!user?._id || !token) {
-    alert("User not logged in. Please log in again.");
-    return;
-  }
+  const handleSaveChanges = async () => {
+    if (!user?._id || !token) {
+      alert("User not logged in. Please log in again.");
+      return;
+    }
 
-  const updates = {
-    name: editForm.name,
-    email: editForm.email,
-    phone: editForm.phone,
-    location: editForm.location,
-    bio: editForm.bio,
-    website: editForm.website,
-    github: editForm.github,
-    linkedin: editForm.linkedin,
-    profileImage: editForm.profileImage || selectedImage,
-    bannerImage: editForm.bannerImage || selectedBanner,
+    const updates = {
+      name: editForm.name,
+      email: editForm.email,
+      phone: editForm.phone,
+      location: editForm.location,
+      bio: editForm.bio,
+      website: editForm.website,
+      github: editForm.github,
+      linkedin: editForm.linkedin,
+      profileImage: editForm.profileImage || selectedImage,
+      bannerImage: editForm.bannerImage || selectedBanner,
+    };
+
+    try {
+      const res = await axios.put(
+        `http://localhost:3000/api/users/${user._id}`,
+        updates,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const updatedUser = res.data;
+
+      // 🔄 Sync context and localStorage
+      login(updatedUser, token);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      setCurrentView("overview");
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Failed to update profile");
+    }
   };
 
-  try {
-    const res = await axios.put(
-      `http://localhost:3000/api/users/${user._id}`,
-      updates,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    setIsUploading(true); // ⏳ Start loading
+
+    try {
+      const uploadRes = await axios.post(
+        "http://localhost:3000/api/uploads/image",
+        formData
+      );
+      const imageUrl = uploadRes.data.url;
+
+      setSelectedImage(null);
+      setEditForm((prev) => ({ ...prev, profileImage: imageUrl }));
+
+      const userData = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("token");
+
+      if (userData?._id && token) {
+        await axios.put(
+          `http://localhost:3000/api/users/${userData._id}`,
+          { profileImage: imageUrl },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        // ✅ Update local storage and auth context
+        const updatedUser = { ...userData, profileImage: imageUrl };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        login(updatedUser, token);
       }
-    );
 
-    const updatedUser = res.data;
+      // ✅ Show success notification
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000); // Auto-hide after 3s
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      alert("Failed to upload image");
+    } finally {
+      setIsUploading(false); // ✅ Stop loading
+    }
+  };
 
-    // 🔄 Sync context and localStorage
-    login(updatedUser, token);
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+  const handleBannerUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+    setIsUploading(true);
 
-    setCurrentView("overview");
-    alert("Profile updated successfully!");
-  } catch (err) {
-    console.error("Error updating profile:", err);
-    alert("Failed to update profile");
-  }
-};
+    try {
+      const uploadRes = await axios.post(
+        "http://localhost:3000/api/uploads/image",
+        formData
+      );
+      const imageUrl = uploadRes.data.url;
 
+      setSelectedBanner(imageUrl);
+      setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
 
- const handleImageUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+      const userData = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("token");
 
-  const formData = new FormData();
-  formData.append("image", file);
+      if (userData?._id && token) {
+        await axios.put(
+          `http://localhost:3000/api/users/${userData._id}`,
+          { bannerImage: imageUrl },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-  setIsUploading(true); // ⏳ Start loading
+        const updatedUser = { ...userData, bannerImage: imageUrl };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        login(updatedUser, token);
+      }
 
-  try {
-    const uploadRes = await axios.post(
-      "http://localhost:3000/api/uploads/image",
-      formData
-    );
-    const imageUrl = uploadRes.data.url;
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
+    } catch (err) {
+      console.error("Banner upload failed:", err);
+      alert("Failed to upload banner");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
-    setSelectedImage(null);
-    setEditForm((prev) => ({ ...prev, profileImage: imageUrl }));
-
+  const handlePasswordUpdate = async () => {
     const userData = JSON.parse(localStorage.getItem("user"));
     const token = localStorage.getItem("token");
 
-    if (userData?._id && token) {
-      await axios.put(
-        `http://localhost:3000/api/users/${userData._id}`,
-        { profileImage: imageUrl },
+    if (!userData?._id || !token) {
+      alert("Missing user session. Please re-login.");
+      return;
+    }
+
+    if (!newPassword || newPassword !== confirmPassword) {
+      alert("❌ Passwords do not match or are empty");
+      return;
+    }
+
+    try {
+      const res = await axios.put(
+        `http://localhost:3000/api/users/${userData._id}/password`,
+        {
+          currentPassword, // Optional if OAuth
+          newPassword,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
           },
         }
       );
 
-      // ✅ Update local storage and auth context
-      const updatedUser = { ...userData, profileImage: imageUrl };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      login(updatedUser, token);
+      alert("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      alert(err.response?.data?.message || "Error updating password");
     }
+  };
 
-    // ✅ Show success notification
-    setUploadSuccess(true);
-    setTimeout(() => setUploadSuccess(false), 3000); // Auto-hide after 3s
-  } catch (err) {
-    console.error("Image upload failed:", err);
-    alert("Failed to upload image");
-  } finally {
-    setIsUploading(false); // ✅ Stop loading
-  }
-};
-
-const handleBannerUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setIsUploading(true);
-  const formData = new FormData();
-  formData.append("image", file);
-  setIsUploading(true);
-
-  try {
-    const uploadRes = await axios.post("http://localhost:3000/api/uploads/image", formData);
-    const imageUrl = uploadRes.data.url;
-
-    setSelectedBanner(imageUrl);
-    setEditForm((prev) => ({ ...prev, bannerImage: imageUrl }));
-
-    const userData = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-
-    if (userData?._id && token) {
-      await axios.put(
-        `http://localhost:3000/api/users/${userData._id}`,
-        { bannerImage: imageUrl },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const updatedUser = { ...userData, bannerImage: imageUrl };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      login(updatedUser, token);
-    }
-
-   setUploadSuccess(true);
-    setTimeout(() => setUploadSuccess(false), 3000);
-  } catch (err) {
-    console.error("Banner upload failed:", err);
-    alert("Failed to upload banner");
-  } finally {
-    setIsUploading(false);
-  }
-};
-
-
-const handlePasswordUpdate = async () => {
-  const userData = JSON.parse(localStorage.getItem("user"));
-  const token = localStorage.getItem("token");
-
-  if (!userData?._id || !token) {
-    alert("Missing user session. Please re-login.");
-    return;
-  }
-
-  if (!newPassword || newPassword !== confirmPassword) {
-    alert("❌ Passwords do not match or are empty");
-    return;
-  }
-
-  try {
-    const res = await axios.put(
-      `http://localhost:3000/api/users/${userData._id}/password`,
-      {
-        currentPassword, // Optional if OAuth
-        newPassword,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    alert("Password updated successfully!");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  } catch (err) {
-    alert(err.response?.data?.message || "Error updating password");
-  }
-};
-
-
-
-  return (
+ return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-10">
         {renderHeader()}
