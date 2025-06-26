@@ -53,6 +53,108 @@ export function Blogs({ onBack }) {
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [submittedArticle, setSubmittedArticle] = useState(null);
 
+  // Mock data - replace with actual API call
+  const mockBlogs = [
+    {
+      id: "1",
+      title: "Building Scalable Web Applications with React and Node.js",
+      excerpt:
+        "Learn how to create robust, scalable web applications using modern React patterns and Node.js best practices. This comprehensive guide covers everything from project setup to deployment.",
+      content: "Full blog content here...",
+      author: {
+        name: "Sarah Chen",
+        avatar: "/placeholder.svg?height=40&width=40",
+        role: "Full Stack Developer",
+      },
+      publishedAt: "2024-01-15",
+      readTime: 8,
+      category: "Web Development",
+      tags: ["React", "Node.js", "JavaScript", "Full Stack"],
+      likes: 124,
+      comments: 23,
+      views: 1250,
+      featured: true,
+      image: "/placeholder.svg?height=300&width=600",
+      status: "published",
+    },
+    {
+      id: "2",
+      title: "Machine Learning in Healthcare: A Beginner's Guide",
+      excerpt:
+        "Explore how AI and ML are revolutionizing healthcare with practical examples and implementation strategies. Perfect for developers looking to enter the healthcare tech space.",
+      content: "Full blog content here...",
+      author: {
+        name: "Dr. Michael Rodriguez",
+        avatar: "/placeholder.svg?height=40&width=40",
+        role: "AI Researcher",
+      },
+      publishedAt: "2024-01-12",
+      readTime: 12,
+      category: "AI/ML",
+      tags: ["Machine Learning", "Healthcare", "AI", "Python"],
+      likes: 89,
+      comments: 15,
+      views: 890,
+      featured: false,
+      image: "/placeholder.svg?height=300&width=600",
+      status: "published",
+    },
+    {
+      id: "3",
+      title: "Blockchain Development: Smart Contracts with Solidity",
+      excerpt:
+        "A comprehensive guide to developing smart contracts using Solidity and deploying them on Ethereum. Includes real-world examples and best practices.",
+      content: "Full blog content here...",
+      author: {
+        name: "Alex Thompson",
+        avatar: "/placeholder.svg?height=40&width=40",
+        role: "Blockchain Developer",
+      },
+      publishedAt: "2024-01-10",
+      readTime: 15,
+      category: "Blockchain",
+      tags: ["Blockchain", "Solidity", "Ethereum", "Smart Contracts"],
+      likes: 156,
+      comments: 31,
+      views: 1680,
+      featured: true,
+      image: "/placeholder.svg?height=300&width=600",
+      status: "published",
+    },
+    {
+      id: "4",
+      title: "Cybersecurity Best Practices for Developers",
+      excerpt:
+        "Essential security practices every developer should know to build secure applications. Learn about common vulnerabilities and how to prevent them.",
+      content: "Full blog content here...",
+      author: {
+        name: "Emma Wilson",
+        avatar: "/placeholder.svg?height=40&width=40",
+        role: "Security Engineer",
+      },
+      publishedAt: "2024-01-08",
+      readTime: 10,
+      category: "Cybersecurity",
+      tags: ["Security", "Best Practices", "Development", "OWASP"],
+      likes: 78,
+      comments: 12,
+      views: 650,
+      featured: false,
+      image: "/placeholder.svg?height=300&width=600",
+      status: "published",
+    },
+  ];
+
+  const categories = [
+    "all",
+    "Web Development",
+    "AI/ML",
+    "Blockchain",
+    "Cybersecurity",
+    "Mobile",
+    "DevOps",
+  ];
+
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
