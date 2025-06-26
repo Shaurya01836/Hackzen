@@ -46,7 +46,6 @@ import { cn } from "../../../lib/utils";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import { HackathonDetails } from "./HackathonDetails";
 
-
 export function ExploreHackathons() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,28 +57,30 @@ export function ExploreHackathons() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
-const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
+  const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
 
+  useEffect(() => {
+    const fetchRegisteredHackathons = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
-useEffect(() => {
-  const fetchRegisteredHackathons = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) return;
+      try {
+        const res = await axios.get(
+          "http://localhost:3000/api/registrations/my",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setRegisteredHackathonIds(res.data.registeredHackathonIds || []);
+      } catch (err) {
+        console.error("Error fetching registered hackathons", err);
+      }
+    };
 
-    try {
-      const res = await axios.get("http://localhost:3000/api/registrations/my", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setRegisteredHackathonIds(res.data.registeredHackathonIds || []);
-    } catch (err) {
-      console.error("Error fetching registered hackathons", err);
-    }
-  };
-
-  fetchRegisteredHackathons();
-}, []);
+    fetchRegisteredHackathons();
+  }, []);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -272,217 +273,83 @@ useEffect(() => {
     setSelectedHackathon(transformedHackathon);
   };
 
-  const getDifficultyVariant = (difficulty) => {
-  switch (difficulty) {
-    case "Beginner":
-      return "default";
-    case "Intermediate":
-      return "secondary";
-    case "Advanced":
-      return "destructive";
-    default:
-      return "default";
-  }
-};
+  const renderHackathonCard = (hackathon, featured = false) => {
+    const registrationDeadline = new Date(hackathon.registrationDeadline);
+    const today = new Date();
+    const daysLeft = Math.ceil(
+      (registrationDeadline - today) / (1000 * 60 * 60 * 24)
+    );
+    const deadlineLabel = isNaN(daysLeft)
+      ? "TBA"
+      : daysLeft > 0
+      ? `${daysLeft} day${daysLeft > 1 ? "s" : ""} left`
+      : "Closed";
 
+    return (
+      <RCard
+        key={hackathon._id}
+        className={cn(
+          "w-full max-w-xs flex flex-col overflow-hidden cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg",
+          featured && "ring-2 ring-purple-300"
+        )}
+        onClick={() => handleHackathonClick(hackathon)}
+      >
+        {/* Thumbnail */}
+        <div className="relative h-40 w-full">
+          <img
+            src={
+              hackathon.images?.banner?.url ||
+              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+            }
+            alt={hackathon.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
 
-const renderHackathonCard = (hackathon, featured = false) => (
-  
-  <RCard
-    key={hackathon._id}
-    className={cn(
-      "w-full overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.01] group",
-      featured
-        ? "ring-2 ring-purple-300 bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 shadow-lg"
-        : "shadow-md hover:shadow-xl bg-white border border-gray-100"
-    )}
-    onClick={() => handleHackathonClick(hackathon)}
-  >
-    <div className="flex flex-col md:flex-row h-full">
-      {/* Left Side: Image Section */}
-      <div className="relative md:w-80 w-full md:h-auto h-48 flex-shrink-0">
-        <img
-          src={
-            hackathon.images?.banner?.url ||
-            "https://www.hackquest.io/images/layout/hackathon_cover.png"
-          }
-          alt={hackathon.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
-        
-        {/* Gradient overlay for mobile */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent md:hidden" />
-        
-        {/* Badges overlay */}
-       <div className="absolute top-3 left-3 flex flex-col gap-2">
-  <Badge variant={getDifficultyVariant(hackathon.difficultyLevel)}>
-    {hackathon.difficultyLevel}
-  </Badge>
-  {featured && (
-    <Badge variant="featured">
-      <Star className="w-3 h-3 mr-1" />
-      Featured
-    </Badge>
-  )}
-</div>
-
-
-        {/* Prize badge - top right */}
-        <div className="absolute top-3 right-3">
-          <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-semibold shadow-lg">
-            <Trophy className="w-3 h-3 mr-1" />
-            {hackathon.prizePool?.amount
-              ? `$${hackathon.prizePool.amount.toLocaleString()}`
-              : "TBA"}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Right Side: Content Section */}
-      <div className="flex-1 p-6 flex flex-col justify-between min-h-0">
-        {/* Header Section */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <RCardTitle className="text-xl font-semibold text-indigo-700 hover:text-indigo-800 transition-colors leading-tight">
-                {hackathon.title}
-              </RCardTitle>
-              <RCardDescription className="text-sm text-gray-600 mt-1">
-                by <span className="font-medium text-gray-800">{hackathon.organizer?.name || "Unknown Organizer"}</span>
-              </RCardDescription>
-            </div>
-            
-            {/* Rating */}
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold text-gray-800">4.5</span>
-              <span className="text-sm text-gray-500">(12)</span>
-            </div>
-          </div>
-
-          {/* Description */}
-          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-            {hackathon.description || "No description available"}
-          </p>
-        </div>
-
-        {/* Info Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-indigo-100 rounded-xl flex-shrink-0">
-              <Calendar className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
-                {new Date(hackathon.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(hackathon.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-xl flex-shrink-0">
-              <MapPin className="w-5 h-5 text-green-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">{hackathon.location || "TBA"}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl flex-shrink-0">
-              <Users className="w-5 h-5 text-orange-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Participants</p>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-gray-800">
-                  {hackathon.participants?.length || 0}/{hackathon.maxParticipants || 100}
-                </p>
-                <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-orange-500 transition-all duration-300"
-                    style={{ 
-                      width: `${Math.min(((hackathon.participants?.length || 0) / (hackathon.maxParticipants || 100)) * 100, 100)}%` 
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-red-100 rounded-xl flex-shrink-0">
-              <Clock className="w-5 h-5 text-red-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</p>
-              <p className="text-sm font-semibold text-gray-800 truncate">
-                {new Date(hackathon.registrationDeadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Section */}
-        <div className="space-y-4 pt-4 border-t border-gray-100">
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2">
-            <Badge
-              variant="outline"
-              className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors"
-            >
-              {hackathon.category}
+          {/* Prize Pool Badge */}
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
+              <Trophy className="w-3 h-3 mr-1" />
+              {hackathon.prizePool?.amount
+                ? `$${hackathon.prizePool.amount.toLocaleString()}`
+                : "TBA"}
             </Badge>
-            {(hackathon.tags || []).slice(0, 3).map((tag) => (
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-2">
+          {/* Title */}
+          <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-2 h-10">
+            {hackathon.title}
+          </h3>
+          {/* Location + Deadline */}
+          <div className="text-xs text-gray-500 flex justify-between items-center">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {hackathon.location || "TBA"}
+            </span>
+            <span className="flex items-center gap-1 text-red-600 font-medium">
+              <Clock className="w-3 h-3" />
+              {deadlineLabel}
+            </span>
+          </div>
+
+          {/* Tags */}
+          <div className="flex gap-1 overflow-hidden whitespace-nowrap text-ellipsis">
+            {hackathon.tags?.slice(0, 3).map((tag) => (
               <Badge
                 key={tag}
-                className="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
                 variant="outline"
+                className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200 shrink-0"
               >
                 {tag}
               </Badge>
             ))}
-            {hackathon.tags?.length > 3 && (
-              <Badge variant="outline" className="bg-gray-50 text-gray-500">
-                +{hackathon.tags.length - 3} more
-              </Badge>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              size="sm"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors duration-200 px-6 py-2 rounded-lg font-medium"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleHackathonClick(hackathon);
-              }}
-            >
-              <ExternalLink className="w-4 h-4" />
-              View Details
-            </Button>
-
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-2 border-gray-200 hover:bg-gray-50 transition-colors duration-200 px-4 py-2 rounded-lg"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Handle save functionality
-              }}
-            >
-              <Heart className="w-4 h-4" />
-              Save
-            </Button>
           </div>
         </div>
-      </div>
-    </div>
-  </RCard>
-);
+      </RCard>
+    );
+  };
 
   if (loading)
     return (
@@ -626,7 +493,7 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
         <TabsContent value="all" className="space-y-4">
           {filteredHackathons.length > 0 ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}
@@ -648,7 +515,7 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
         <TabsContent value="featured" className="space-y-4">
           {featuredHackathons.length > 0 ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {featuredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon, true)
               )}
@@ -670,7 +537,7 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
         <TabsContent value="sponsored" className="space-y-4">
           {sponsoredHackathons.length > 0 ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {sponsoredHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}
@@ -692,7 +559,7 @@ const renderHackathonCard = (hackathon, featured = false) => (
 
         <TabsContent value="upcoming" className="space-y-4">
           {upcomingHackathons.length > 0 ? (
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {upcomingHackathons.map((hackathon) =>
                 renderHackathonCard(hackathon)
               )}

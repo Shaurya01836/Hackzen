@@ -52,32 +52,27 @@ export function Blogs({ onBack }) {
   const [currentView, setCurrentView] = useState("list"); // "list" or "write"
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [submittedArticle, setSubmittedArticle] = useState(null);
-
-  const categories = [
-    "all",
-    "Web Development",
-    "AI/ML",
-    "Blockchain",
-    "Cybersecurity",
-    "Mobile",
-    "DevOps",
-  ];
+  const [categories, setCategories] = useState(["all"]);
 
    useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/articles");
-        const data = await res.json();
-        setBlogs(data);
-      } catch (error) {
-        console.error("Error fetching blogs:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchBlogs = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/articles");
+      const data = await res.json();
+      setBlogs(data);
 
-    fetchBlogs();
-  }, []);
+      // extract categories from published blogs
+      const published = data.filter((b) => b.status === "published");
+      const uniqueCategories = Array.from(new Set(published.map((b) => b.category)));
+      setCategories(["all", ...uniqueCategories]);
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchBlogs();
+}, []);
 
   // Handle write article navigation
   const handleWriteArticle = () => {
@@ -249,23 +244,7 @@ export function Blogs({ onBack }) {
             {/* Article Content */}
             <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 mb-8">
               <div className="prose prose-lg max-w-none">
-                <p className="text-gray-800 leading-relaxed mb-6">
-                  This is where the full blog content would be displayed. You
-                  can integrate with a rich text editor or markdown parser to
-                  render the complete blog post content.
-                </p>
-                <p className="text-gray-800 leading-relaxed mb-6">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
-                  do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                  Ut enim ad minim veniam, quis nostrud exercitation ullamco
-                  laboris nisi ut aliquip ex ea commodo consequat.
-                </p>
-                <p className="text-gray-800 leading-relaxed">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse
-                  cillum dolore eu fugiat nulla pariatur. Excepteur sint
-                  occaecat cupidatat non proident, sunt in culpa qui officia
-                  deserunt mollit anim id est laborum.
-                </p>
+                <div className="text-gray-800 leading-relaxed prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
               </div>
             </div>
 
@@ -461,7 +440,7 @@ export function Blogs({ onBack }) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {filteredBlogs.map((blog) => (
                     <Card
-                      key={blog.id}
+                      key={blog._id}
                       className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-gray-200 bg-white/20 group"
                       onClick={() => setSelectedPost(blog)}
                     >
@@ -555,7 +534,7 @@ export function Blogs({ onBack }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {featuredBlogs.map((blog) => (
                   <Card
-                    key={blog.id}
+                    key={blog._id}
                     className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-white group"
                     onClick={() => setSelectedPost(blog)}
                   >
@@ -633,7 +612,7 @@ export function Blogs({ onBack }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {trendingBlogs.map((blog, index) => (
                   <Card
-                    key={blog.id}
+                    key={blog._id}
                     className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-red-200 bg-gradient-to-br from-red-50 to-white group relative"
                     onClick={() => setSelectedPost(blog)}
                   >

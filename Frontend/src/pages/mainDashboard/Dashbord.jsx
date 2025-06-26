@@ -5,7 +5,6 @@ import { cn } from "../../lib/utils";
 import axios from "axios";
 import {
   Users,
-  CircleArrowOutDownLeft,
   Trophy,
   MessageSquare,
   User,
@@ -19,6 +18,7 @@ import {
   Building,
   UsersRoundIcon,
   NotebookTabs,
+  Wrench,
 } from "lucide-react";
 
 import {
@@ -37,7 +37,7 @@ import {
   SidebarTrigger,
 } from "../../components/DashboardUI/sidebar";
 
-import SignOutModal from "../../components/SignOutModal";
+
 import { useAuth } from "../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
@@ -54,7 +54,7 @@ import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
-import { Button } from "../../components/CommonUI/button";
+
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -155,6 +155,12 @@ export default function HackZenDashboard() {
 
   const organizerMenuItems = [
     {
+      title: "Organizer Tools",
+      icon: Settings,
+      key: "organizer-tools",
+      onClick: () => changeView("organizer-tools"),
+    },
+    {
       title: "Created Hackathons",
       icon: Plus,
       key: "created-hackathons",
@@ -177,12 +183,6 @@ export default function HackZenDashboard() {
       icon: MessageSquare,
       key: "announcements",
       onClick: () => changeView("announcements"),
-    },
-    {
-      title: "Organizer Tools",
-      icon: Settings,
-      key: "organizer-tools",
-      onClick: () => changeView("organizer-tools"),
     },
   ];
 
@@ -321,7 +321,7 @@ export default function HackZenDashboard() {
           {user?.role !== "participant" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
-                <Settings className="w-4 h-4" />
+                <Wrench className="w-4 h-4" />
                 Organizer Menu
               </SidebarGroupLabel>
               <SidebarGroupContent>

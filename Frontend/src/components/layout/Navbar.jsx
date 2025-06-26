@@ -5,7 +5,6 @@ import {
   GitGraphIcon,
   Menu,
   X,
-  LayoutDashboard,
   ChevronDown,
   LogOut,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import RegisterModal from "../RegisterModal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 import { AnimatedList } from "../Magic UI/AnimatedList";
 import SignOutModal from "../SignOutModal";
+import useDropdownTimeout from "../../hooks/useDropdownTimeout";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,33 +23,38 @@ function Navbar() {
   const [showRegister, setShowRegister] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [notificationTimeout, setNotificationTimeout] = useState(null);
-  const [profileTimeout, setProfileTimeout] = useState(null);
-
   const [showNotificationDropdown, setShowNotificationDropdown] =
     useState(false);
-  const { user, logout } = useAuth(); // Add logout from useAuth
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showHackathonDropdown, setShowHackathonDropdown] = useState(false);
+  const [showResourceDropdown, setShowResourceDropdown] = useState(false);
 
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleDashboard = () => {
-    navigate("/dashboard");
-  };
+  const { handleMouseEnter: notifEnter, handleMouseLeave: notifLeave } =
+    useDropdownTimeout(setShowNotificationDropdown);
+  const { handleMouseEnter: profileEnter, handleMouseLeave: profileLeave } =
+    useDropdownTimeout(setShowProfileDropdown);
+  const { handleMouseEnter: hackathonEnter, handleMouseLeave: hackathonLeave } =
+    useDropdownTimeout(setShowHackathonDropdown);
+  const { handleMouseEnter: resourceEnter, handleMouseLeave: resourceLeave } =
+    useDropdownTimeout(setShowResourceDropdown);
 
-  // Sign out handler
+  const handleDashboard = () => navigate("/dashboard");
+
   const handleSignOut = () => {
-    logout(); // Clear auth context
+    logout();
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    setIsOpen(false); // Close dropdown
-    setShowSignOutConfirm(false); // Close confirmation modal
-    navigate("/"); // Redirect to home
+    setShowProfileDropdown(false);
+    setShowSignOutConfirm(false);
+    navigate("/");
   };
 
-  // Show sign out confirmation
   const showSignOutConfirmation = () => {
     setShowSignOutConfirm(true);
-    setIsOpen(false); // Close profile dropdown
+    setShowProfileDropdown(false);
   };
 
   const fetchNotifications = async () => {
@@ -77,7 +82,6 @@ function Navbar() {
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
 
-      {/* Sign Out Confirmation Modal */}
       <SignOutModal
         isOpen={showSignOutConfirm}
         onClose={() => setShowSignOutConfirm(false)}
@@ -93,30 +97,87 @@ function Navbar() {
             </h1>
           </div>
 
-          {/* Desktop Nav Items */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex gap-6 items-center">
             <Link
               to="/"
-              className="text-[#1b0c3f] hover:text-primary font-medium transition-all duration-150 ease-in-out hover:rotate-3"
+              className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
             >
               Home
             </Link>
 
-            <Link
-              to="/community"
-              className="text-[#1b0c3f] hover:text-primary font-medium transition-all duration-150 ease-in-out hover:rotate-3"
+            {/* Hackathons Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={hackathonEnter}
+              onMouseLeave={hackathonLeave}
             >
-              Community
-            </Link>
+              <button className="text-[#1b0c3f] hover:text-primary font-medium flex items-center gap-1">
+                Hackathons <ChevronDown className="w-4 h-4" />
+              </button>
+              {showHackathonDropdown && (
+                <div className="absolute top-full mt-2 left-0 bg-white/30 border border-gray-200 rounded-xl shadow-lg w-56 z-50 py-2">
+                  <Link
+                    to="dashboard/explore-hackathons"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Explore Hackathons
+                  </Link>
+                  {user && (
+                    <>
+                      <Link
+                        to="dashboard/my-hackathons"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        My Hackathons
+                      </Link>
+                      <Link
+                        to="dashboard/my-submissions"
+                        className="block px-4 py-2 hover:bg-gray-100"
+                      >
+                        My Submissions
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
             <Link
-              to="/more"
-              className="text-[#1b0c3f] hover:text-primary font-medium transition-all duration-150 ease-in-out hover:rotate-3"
+              to="dashboard/organization-hub"
+              className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
             >
-              More
+              Organisation Hub
             </Link>
+            {/* Resources Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={resourceEnter}
+              onMouseLeave={resourceLeave}
+            >
+              <button className="text-[#1b0c3f] hover:text-primary font-medium flex items-center gap-1">
+                Resources <ChevronDown className="w-4 h-4" />
+              </button>
+              {showResourceDropdown && (
+                <div className="absolute top-full mt-2 left-0 bg-white/30 border border-gray-200 rounded-xl shadow-lg w-56 z-50 py-2">
+                  <Link
+                    to="dashboard/project-archive"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Project Archive
+                  </Link>
+                  <Link
+                    to="dashboard/blogs"
+                    className="block px-4 py-2 hover:bg-gray-100"
+                  >
+                    Blogs
+                  </Link>
+                </div>
+              )}
+            </div>
             <Link
               to="/about"
-              className="text-[#1b0c3f] hover:text-primary font-medium transition-all duration-150 ease-in-out hover:rotate-3"
+              className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
             >
               About
             </Link>
@@ -127,21 +188,13 @@ function Navbar() {
             <RegisterModal onClose={() => setShowRegister(false)} />
           )}
 
-          {/* Icons + Auth Buttons */}
+          {/* Right Section */}
           <div className="hidden md:flex items-center gap-4">
-            {/* Notification Bell */}
+            {/* Notifications */}
             <div
               className="relative"
-              onMouseEnter={() => {
-                if (notificationTimeout) clearTimeout(notificationTimeout);
-                setShowNotificationDropdown(true);
-              }}
-              onMouseLeave={() => {
-                const timeout = setTimeout(() => {
-                  setShowNotificationDropdown(false);
-                }, 200); // 200ms delay
-                setNotificationTimeout(timeout);
-              }}
+              onMouseEnter={notifEnter}
+              onMouseLeave={notifLeave}
             >
               <button>
                 <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
@@ -151,7 +204,6 @@ function Navbar() {
                   </span>
                 )}
               </button>
-
               {showNotificationDropdown && (
                 <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 border border-gray-200 bg-white/20 backdrop-blur-lg text-sm overflow-hidden">
                   <div className="p-4 border-b border-black/10 font-semibold text-lg">
@@ -167,9 +219,7 @@ function Navbar() {
                         {[...notifications].reverse().map((n) => (
                           <div
                             key={n._id}
-                            className="group transition-all duration-200 ease-in-out hover:scale-[101%] 
-                                     bg-white/30 backdrop-blur-lg rounded-lg px-4 py-3 mb-2 
-                                      border border-black/10 "
+                            className="group bg-white/30 rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%]"
                           >
                             <div className="font-medium text-black group-hover:text-indigo-600">
                               {n.message}
@@ -199,20 +249,11 @@ function Navbar() {
             ) : (
               <div
                 className="relative"
-                onMouseEnter={() => {
-                  if (profileTimeout) clearTimeout(profileTimeout);
-                  setIsOpen(true);
-                }}
-                onMouseLeave={() => {
-                  const timeout = setTimeout(() => {
-                    setIsOpen(false);
-                  }, 200); // You can adjust this timeout
-                  setProfileTimeout(timeout);
-                }}
+                onMouseEnter={profileEnter}
+                onMouseLeave={profileLeave}
               >
                 <div
-                  className="cursor-pointer w-10 h-10 rounded-full bg-[#1b0c3f] overflow-hidden text-white flex items-center justify-center font-semibold text-sm uppercase"
-                  onClick={() => setIsOpen((prev) => !prev)}
+                  className="cursor-pointer w-10 h-10 rounded-full bg-[#1b0c3f] text-white flex items-center justify-center font-semibold text-sm uppercase overflow-hidden"
                   title={user?.name || user?.email}
                 >
                   {user?.profilePic ? (
@@ -223,38 +264,30 @@ function Navbar() {
                     />
                   ) : (
                     <span>
-                      {user?.name
-                        ? user.name.charAt(0)
-                        : user?.email?.charAt(0)}
+                      {user?.name?.charAt(0) || user?.email?.charAt(0)}
                     </span>
                   )}
                 </div>
-
-                {isOpen && (
+                {showProfileDropdown && (
                   <div className="absolute right-0 mt-2 w-48 bg-white/20 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg z-50 text-sm overflow-hidden">
                     <Link
                       to="/dashboard"
                       className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
-                      onClick={() => setIsOpen(false)}
                     >
                       Profile
                     </Link>
-
                     {user?.role === "admin" && (
                       <Link
                         to="/admin"
                         className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
-                        onClick={() => setIsOpen(false)}
                       >
                         Admin Panel
                       </Link>
                     )}
-
                     {user?.role === "organizer" && (
                       <Link
-                        to="/dashboard?view=organizer-tools"
+                        to="dashboard/organizer-tools"
                         className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
-                        onClick={() => setIsOpen(false)}
                       >
                         Organizer Tools
                       </Link>
@@ -262,18 +295,14 @@ function Navbar() {
                     <Link
                       to="/profile/account-settings"
                       className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
-                      onClick={() => setIsOpen(false)}
                     >
                       Settings
                     </Link>
-
-                    {/* Sign Out Option */}
                     <button
                       onClick={showSignOutConfirmation}
-                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors duration-150"
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2"
                     >
-                      <LogOut className="w-4 h-4" />
-                      Sign Out
+                      <LogOut className="w-4 h-4" /> Sign Out
                     </button>
                   </div>
                 )}
@@ -281,7 +310,7 @@ function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Toggle */}
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)}>
               {isOpen ? (
@@ -293,7 +322,7 @@ function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Nav */}
         {isOpen && (
           <div className="md:hidden flex flex-col gap-4 pb-4">
             <Link
@@ -303,28 +332,45 @@ function Navbar() {
               Home
             </Link>
             <Link
-              to="/dashboard?view=explore-hackathons"
+              to="dashboard/explore-hackathons"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Explore Hackathons
             </Link>
+            {user && (
+              <>
+                <Link
+                  to="dashboard/my-hackathons"
+                  className="text-gray-800 hover:text-indigo-600 font-medium"
+                >
+                  My Hackathons
+                </Link>
+                <Link
+                  to="dashboard/my-submissions"
+                  className="text-gray-800 hover:text-indigo-600 font-medium"
+                >
+                  My Submissions
+                </Link>
+              </>
+            )}
+
             <Link
-              to="/dashboard?view=my-hackathons"
+              to="dashboard/project-archive"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
-              My Hackathons
+              Project Archive
             </Link>
             <Link
-              to="/community"
+              to="dashboard/blogs"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
-              Community
+              Blogs
             </Link>
             <Link
-              to="/more"
+              to="dashboard/organization-hub"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
-              More
+              Organisation Hub
             </Link>
             <Link
               to="/about"
@@ -355,13 +401,11 @@ function Navbar() {
                 >
                   Dashboard
                 </button>
-                {/* Mobile Sign Out */}
                 <button
                   onClick={showSignOutConfirmation}
                   className="text-left text-red-600 font-medium flex items-center gap-2"
                 >
-                  <LogOut className="w-4 h-4" />
-                  Sign Out
+                  <LogOut className="w-4 h-4" /> Sign Out
                 </button>
               </>
             )}
