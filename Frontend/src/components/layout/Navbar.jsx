@@ -7,6 +7,7 @@ import {
   X,
   LayoutDashboard,
   ChevronDown,
+  LogOut,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
@@ -14,23 +15,41 @@ import LoginModal from "../LoginModal";
 import RegisterModal from "../RegisterModal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 import { AnimatedList } from "../Magic UI/AnimatedList";
+import SignOutModal from "../SignOutModal";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [notifications, setNotifications] = useState([]);
-
   const [notificationTimeout, setNotificationTimeout] = useState(null);
+  const [profileTimeout, setProfileTimeout] = useState(null);
 
   const [showNotificationDropdown, setShowNotificationDropdown] =
     useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth(); // Add logout from useAuth
 
   const navigate = useNavigate();
 
   const handleDashboard = () => {
     navigate("/dashboard");
+  };
+
+  // Sign out handler
+  const handleSignOut = () => {
+    logout(); // Clear auth context
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsOpen(false); // Close dropdown
+    setShowSignOutConfirm(false); // Close confirmation modal
+    navigate("/"); // Redirect to home
+  };
+
+  // Show sign out confirmation
+  const showSignOutConfirmation = () => {
+    setShowSignOutConfirm(true);
+    setIsOpen(false); // Close profile dropdown
   };
 
   const fetchNotifications = async () => {
@@ -54,9 +73,16 @@ function Navbar() {
 
   return (
     <div className="relative">
-      {(showLogin || showRegister) && (
+      {(showLogin || showRegister || showSignOutConfirm) && (
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
+
+      {/* Sign Out Confirmation Modal */}
+      <SignOutModal
+        isOpen={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={handleSignOut}
+      />
 
       <nav className="px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between">
@@ -143,7 +169,7 @@ function Navbar() {
                             key={n._id}
                             className="group transition-all duration-200 ease-in-out hover:scale-[101%] 
                                      bg-white/30 backdrop-blur-lg rounded-lg px-4 py-3 mb-2 
-                                      border border-black/20 "
+                                      border border-black/10 "
                           >
                             <div className="font-medium text-black group-hover:text-indigo-600">
                               {n.message}
@@ -171,7 +197,19 @@ function Navbar() {
                 </InteractiveHoverButton>
               </>
             ) : (
-              <div className="relative">
+              <div
+                className="relative"
+                onMouseEnter={() => {
+                  if (profileTimeout) clearTimeout(profileTimeout);
+                  setIsOpen(true);
+                }}
+                onMouseLeave={() => {
+                  const timeout = setTimeout(() => {
+                    setIsOpen(false);
+                  }, 200); // You can adjust this timeout
+                  setProfileTimeout(timeout);
+                }}
+              >
                 <div
                   className="cursor-pointer w-10 h-10 rounded-full bg-[#1b0c3f] overflow-hidden text-white flex items-center justify-center font-semibold text-sm uppercase"
                   onClick={() => setIsOpen((prev) => !prev)}
@@ -223,11 +261,20 @@ function Navbar() {
                     )}
                     <Link
                       to="/profile/account-settings"
-                      className="block px-4 py-2 hover:bg-gray-100 text-gray-900"
+                      className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
                       onClick={() => setIsOpen(false)}
                     >
                       Settings
                     </Link>
+
+                    {/* Sign Out Option */}
+                    <button
+                      onClick={showSignOutConfirmation}
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 flex items-center gap-2 transition-colors duration-150"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
                   </div>
                 )}
               </div>
@@ -301,12 +348,22 @@ function Navbar() {
                 </button>
               </>
             ) : (
-              <button
-                onClick={handleDashboard}
-                className="text-left text-red-600 font-medium"
-              >
-                Dashboard
-              </button>
+              <>
+                <button
+                  onClick={handleDashboard}
+                  className="text-left text-indigo-600 font-medium"
+                >
+                  Dashboard
+                </button>
+                {/* Mobile Sign Out */}
+                <button
+                  onClick={showSignOutConfirmation}
+                  className="text-left text-red-600 font-medium flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
+                </button>
+              </>
             )}
           </div>
         )}

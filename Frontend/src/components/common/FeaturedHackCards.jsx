@@ -63,7 +63,7 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
       .replace(/(^-|-$)/g, "");
 
     // Navigate to the explore page with hackathon parameters
-    navigate(`/explore?hackathon=${hackathon._id}&title=${slug}`);
+     navigate(`/dashboard/explore-hackathons?hackathon=${hackathon._id}&title=${slug}`);
   };
 
   const renderHackathonCard = (hackathon) => (

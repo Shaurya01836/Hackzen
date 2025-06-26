@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../../../components/Dashboa
 import { Separator } from "../../../components/CommonUI/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
 
-export function ProjectArchive({ onBack }) {
+export function ProjectArchive() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedProject, setSelectedProject] = useState(null)
@@ -495,15 +495,7 @@ export function ProjectArchive({ onBack }) {
       <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="flex items-center gap-2 hover:bg-gray-100"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
+          
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-100 rounded-lg">

@@ -54,24 +54,24 @@ import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
+import { Button } from "../../components/CommonUI/button";
 
 export default function HackZenDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  
+
   // Extract the active section from the current URL path
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
     // Extract section from /dashboard/section pattern
-    const section = params.section || path.split('/').pop() || 'profile';
+    const section = params.section || path.split("/").pop() || "profile";
     return section;
   };
 
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
-  const [showModal, setShowModal] = useState(false);
 
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
 
   // Function to handle section changes with nested URLs
   const changeView = (viewKey) => {
@@ -79,30 +79,30 @@ export default function HackZenDashboard() {
     navigate(`/dashboard/${viewKey}`);
   };
 
+  // Function to navigate to home page
+  const navigateToHome = () => {
+    navigate("/");
+  };
+
   // Set default route on component mount
   useEffect(() => {
-    if (location.pathname === '/dashboard' || location.pathname === '/dashboard/') {
-      navigate('/dashboard/profile', { replace: true });
+    if (
+      location.pathname === "/dashboard" ||
+      location.pathname === "/dashboard/"
+    ) {
+      navigate("/dashboard/profile", { replace: true });
     }
     // Update currentView when URL changes
     setCurrentView(getActiveSectionFromPath());
   }, [location.pathname, navigate, params.section]);
 
-  const handleSignOut = async () => {
-    try {
-      await fetch("http://localhost:3000/api/users/logout", {
-        method: "GET",
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error("Logout failed:", err);
-    } finally {
-      logout();
-      navigate("/");
-    }
-  };
-
   const participantMenuItems = [
+    {
+      title: "Profile",
+      icon: User,
+      key: "profile",
+      onClick: () => changeView("profile"),
+    },
     {
       title: "My Hackathons",
       icon: Trophy,
@@ -184,12 +184,6 @@ export default function HackZenDashboard() {
       key: "organizer-tools",
       onClick: () => changeView("organizer-tools"),
     },
-    {
-      title: "Create Hackathon",
-      icon: Plus,
-      key: "create-hackathon",
-      onClick: () => changeView("create-hackathon"),
-    },
   ];
 
   // Function to render content based on current view
@@ -230,7 +224,9 @@ export default function HackZenDashboard() {
       case "organizer-tools":
         return <OrganizerTools onBack={() => changeView("profile")} />;
       case "create-hackathon":
-        return <CreateHackathon onBack={() => changeView("created-hackathons")} />;
+        return (
+          <CreateHackathon onBack={() => changeView("created-hackathons")} />
+        );
       case "blogs":
         return <Blogs onBack={() => changeView("profile")} />;
       case "project-archive":
@@ -253,11 +249,15 @@ export default function HackZenDashboard() {
     const pingStreak = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.post("http://localhost:3000/api/users/streak", {}, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const res = await axios.post(
+          "http://localhost:3000/api/users/streak",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
         console.log("✅ Streak pinged and user fetched:", res.data);
       } catch (err) {
         console.error("📉 Failed to track streak:", err);
@@ -271,7 +271,10 @@ export default function HackZenDashboard() {
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         <SidebarHeader className="p-4">
-          <div className="flex items-center gap-4">
+          <div
+            className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={navigateToHome}
+          >
             <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
               <span className="text-white font-bold text-lg">H</span>
             </div>
@@ -284,10 +287,6 @@ export default function HackZenDashboard() {
 
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center gap-3 text-indigo-600">
-              <User className="w-4 h-4" />
-              Participant Menu
-            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {participantMenuItems.map((item) => (
@@ -358,37 +357,21 @@ export default function HackZenDashboard() {
           )}
         </SidebarContent>
 
-        <SidebarFooter className="p-4">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] hover:bg-black transition"
-          >
-            <CircleArrowOutDownLeft className="w-5 h-5 text-white" />
-            <span className="text-sm font-medium text-white">
-              Back to Home Page
-            </span>
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-md border border-gray-200 bg-red-600 hover:bg-red-700 transition"
-          >
-            <LogOut className="w-5 h-5 text-white" />
-            <span className="text-sm font-medium text-white">Sign Out</span>
-          </button>
-        </SidebarFooter>
+        <SidebarFooter className="p-4"></SidebarFooter>
       </Sidebar>
 
       <SidebarInset>
-        <main className="flex-1 overflow-auto">
-          {renderContent()}
-        </main>
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+          <SidebarTrigger className="-ml-1" />
+          <div className="h-4 w-px bg-gray-200" />
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>Dashboard</span>
+            <span>/</span>
+            <span className="capitalize">{currentView.replace("-", " ")}</span>
+          </div>
+        </header>
+        <main className="flex-1 overflow-auto">{renderContent()}</main>
       </SidebarInset>
-      
-      <SignOutModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onConfirm={handleSignOut}
-      />
     </SidebarProvider>
   );
 }

@@ -63,6 +63,7 @@ function App() {
       <Route path="/profile/account-settings" element={<DashboardPage />} />
       <Route path="/profile/privacy-security" element={<DashboardPage />} />
       <Route path="/profile/help-support" element={<DashboardPage />} />
+      
     </Routes>
   );
 }

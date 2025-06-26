@@ -47,7 +47,7 @@ import { HackathonRegistration } from "./RegistrationHackathon";
 import { HackathonDetails } from "./HackathonDetails";
 
 
-export function ExploreHackathons({ onBack }) {
+export function ExploreHackathons() {
   const navigate = useNavigate();
   const location = useLocation();
   const [hackathons, setHackathons] = useState([]);
@@ -508,15 +508,6 @@ const renderHackathonCard = (hackathon, featured = false) => (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={onBack}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
             Explore Hackathons

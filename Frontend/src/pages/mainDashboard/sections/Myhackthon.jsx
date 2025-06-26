@@ -14,7 +14,6 @@ import {
   ACardHeader,
   ACardTitle,
 } from "../../../components/DashboardUI/AnimatedCard";
-import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
 import {
@@ -87,8 +86,8 @@ const hackathons = [
   },
 ];
 
-export function MyHackathons({ onBack }) {
-  const navigate = useNavigate();
+export function MyHackathons() {
+  
   const activeHackathons = hackathons.filter((h) => h.status === "Live");
   const completedHackathons = hackathons.filter((h) => h.status === "Closed");
   const upcomingHackathons = hackathons.filter((h) => h.status === "Upcoming");
@@ -192,18 +191,7 @@ export function MyHackathons({ onBack }) {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => {
-            if (onBack) onBack();
-            navigate("/dashboard");
-          }}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Button>
+    
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Hackathons</h1>
           <p className="text-sm text-gray-500">

@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   MessageSquare,
@@ -34,8 +33,8 @@ import {
   SelectValue,
 } from "../../../components/CommonUI/select";
 
-export function Announcements({ onBack }) {
-  const navigate = useNavigate();
+export function Announcements() {
+
   const [announcements, setAnnouncements] = useState([]);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
@@ -115,18 +114,7 @@ export function Announcements({ onBack }) {
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => {
-              if (onBack) onBack();
-              navigate("/dashboard");
-            }}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
+      
           <div>
             <h1 className="text-3xl font-bold text-black">Announcements</h1>
           </div>

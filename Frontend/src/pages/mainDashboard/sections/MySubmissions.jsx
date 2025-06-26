@@ -23,7 +23,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
-import { useNavigate } from "react-router-dom";
 
 const submissions = [
   {
@@ -76,8 +75,8 @@ const submissions = [
   },
 ];
 
-export function MySubmissions({ onBack }) {
-  const navigate = useNavigate();
+export function MySubmissions() {
+ 
   const judgedSubmissions = submissions.filter((s) => s.status === "Judged");
   const pendingSubmissions = submissions.filter(
     (s) => s.status === "Submitted"
@@ -162,18 +161,7 @@ export function MySubmissions({ onBack }) {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => {
-            if (onBack) onBack();
-            navigate("/dashboard");
-          }}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Button>
+      
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Submissions</h1>
           <p className="text-sm text-gray-500">

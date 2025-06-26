@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -37,8 +36,8 @@ import {
 } from "../../../components/CommonUI/tabs";
 import { Progress } from "../../../components/DashboardUI/progress";
 
-export function CreatedHackathons({ onBack, onCreateNew }) {
-  const navigate = useNavigate();
+export function CreatedHackathons({  onCreateNew }) {
+ 
   const [hackathons, setHackathons] = useState([]);
 
   useEffect(() => {
@@ -205,18 +204,7 @@ export function CreatedHackathons({ onBack, onCreateNew }) {
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => {
-              if (onBack) onBack();
-              navigate("/dashboard");
-            }}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
+        
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
               Created Hackathons
