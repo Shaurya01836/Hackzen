@@ -2,6 +2,7 @@
 import React from "react";
 import { BoxReveal } from "../Magic UI/BoxReveal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
+import { Link } from "react-router-dom";
 
 function Header() {
   return (
@@ -79,13 +80,13 @@ function Header() {
           {/* CTA Buttons */}
           <BoxReveal boxColor="#6366f1" duration={0.5}>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <a href="dashboard/explore-hackathons">
+              <Link to="dashboard/explore-hackathons">
                 <InteractiveHoverButton className="bg-[#1b0c3f] hover:bg-[#2d1a5f] text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto text-center border-2 border-transparent hover:border-indigo-200 group">
                   <span className="flex items-center justify-center space-x-2">
                     <span>View Hackathons</span>
                   </span>
                 </InteractiveHoverButton>
-              </a>
+              </Link>
             </div>
           </BoxReveal>
         </div>

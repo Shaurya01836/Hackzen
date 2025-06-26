@@ -63,7 +63,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
       .replace(/(^-|-$)/g, "");
 
     // Navigate to the explore page with hackathon parameters
-     navigate(`/dashboard/explore-hackathons?hackathon=${hackathon._id}&title=${slug}`);
+    navigate(
+      `/dashboard/explore-hackathons?hackathon=${hackathon._id}&title=${slug}`
+    );
   };
 
   const renderHackathonCard = (hackathon) => (
@@ -74,7 +76,7 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
     >
       <div className="flex h-full">
         {/* Left Side: Image Section */}
-        <div className="relative w-64 flex-shrink-0 rounded-l-xl overflow-hidden">
+        <div className="relative w-64 h-52 flex-shrink-0 rounded-l-xl overflow-hidden">
           <img
             src={
               hackathon.images?.banner?.url ||
@@ -114,29 +116,11 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
             {/* Header: Title & Organizer */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
-                <RCardTitle className="text-xl font-bold text-indigo-700 hover:text-indigo-800 transition-colors leading-tight group-hover:text-indigo-900">
+                <RCardTitle className="text-xl font-bold text-indigo-700 hover:text-indigo-800 transition-colors leading-tight group-hover:text-indigo-900 line-clamp-2 min-h-[3.5rem]">
                   {hackathon.title}
                 </RCardTitle>
-                <RCardDescription className="text-sm text-gray-600 mt-2">
-                  by{" "}
-                  <span className="font-semibold text-gray-800">
-                    {hackathon.organizer?.name || "Unknown Organizer"}
-                  </span>
-                </RCardDescription>
-              </div>
-
-              {/* Rating */}
-              <div className="flex items-center gap-1 flex-shrink-0 bg-gray-50 px-3 py-1 rounded-full">
-                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                <span className="font-semibold text-gray-800">4.5</span>
-                <span className="text-sm text-gray-500">(12)</span>
               </div>
             </div>
-
-            {/* Description */}
-            <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-              {hackathon.description || "Join this exciting hackathon and showcase your innovative ideas with fellow developers and creators."}
-            </p>
 
             {/* Info Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -146,7 +130,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
                   <Calendar className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Duration</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Duration
+                  </p>
                   <p className="text-sm font-semibold text-gray-800 truncate">
                     {new Date(hackathon.startDate).toLocaleDateString("en-US", {
                       month: "short",
@@ -167,7 +153,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
                   <MapPin className="w-5 h-5 text-green-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Location</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Location
+                  </p>
                   <p className="text-sm font-semibold text-gray-800 truncate">
                     {hackathon.location || "TBA"}
                   </p>
@@ -180,17 +168,24 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
                   <Users className="w-5 h-5 text-orange-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Participants</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Participants
+                  </p>
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-gray-800">
                       {hackathon.participants?.length || 0}/
                       {hackathon.maxParticipants || 100}
                     </p>
                     <div className="w-8 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full bg-orange-500 transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(((hackathon.participants?.length || 0) / (hackathon.maxParticipants || 100)) * 100, 100)}%` 
+                        style={{
+                          width: `${Math.min(
+                            ((hackathon.participants?.length || 0) /
+                              (hackathon.maxParticipants || 100)) *
+                              100,
+                            100
+                          )}%`,
                         }}
                       />
                     </div>
@@ -204,7 +199,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
                   <Clock className="w-5 h-5 text-red-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Deadline</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Deadline
+                  </p>
                   <p className="text-sm font-semibold text-gray-800 truncate">
                     {new Date(
                       hackathon.registrationDeadline
@@ -219,9 +216,8 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
           </div>
 
           {/* Bottom Section: Tags & Buttons */}
-          <div className="flex items-center justify-between flex-wrap gap-4 mt-6 pt-4 border-t border-gray-100">
-            {/* Tags */}
-            <div className="flex flex-wrap gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 max-w-full overflow-hidden">
               <Badge
                 variant="outline"
                 className="bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 transition-colors font-medium"
@@ -231,46 +227,20 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
               {(hackathon.tags || []).slice(0, 2).map((tag) => (
                 <Badge
                   key={tag}
-                  className="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  className="bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors whitespace-nowrap"
                   variant="outline"
                 >
                   {tag}
                 </Badge>
               ))}
               {hackathon.tags?.length > 2 && (
-                <Badge variant="outline" className="bg-gray-50 text-gray-500">
+                <Badge
+                  variant="outline"
+                  className="bg-gray-50 text-gray-500 whitespace-nowrap"
+                >
                   +{hackathon.tags.length - 2} more
                 </Badge>
               )}
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <Button
-                size="sm"
-                className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-indigo-600 hover:from-indigo-700 hover:to-indigo-700 text-white transition-all duration-300 px-6 py-2 rounded-lg font-medium shadow-md hover:shadow-lg"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleHackathonClick(hackathon);
-                }}
-              >
-                <ExternalLink className="w-4 h-4" />
-                View Details
-              </Button>
-
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 px-4 py-2 rounded-lg group"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle save functionality
-                  console.log("Saved hackathon:", hackathon.title);
-                }}
-              >
-                <Heart className="w-4 h-4 group-hover:text-red-500 transition-colors" />
-                Save
-              </Button>
             </div>
           </div>
         </div>
@@ -283,7 +253,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
       <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-6"></div>
-          <p className="text-gray-500 text-lg">Loading featured hackathons...</p>
+          <p className="text-gray-500 text-lg">
+            Loading featured hackathons...
+          </p>
         </div>
       </div>
     );
@@ -294,7 +266,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
       <div className="text-center py-16">
         <div className="max-w-md mx-auto">
           <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Featured Hackathons</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            No Featured Hackathons
+          </h3>
           <p className="text-gray-500">
             Check back soon for exciting hackathons to join!
           </p>
