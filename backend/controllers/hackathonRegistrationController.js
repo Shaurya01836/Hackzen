@@ -7,13 +7,24 @@ const registerForHackathon = async (req, res) => {
     const { hackathonId, formData } = req.body;
     const userId = req.user._id;
 
-    // Prevent duplicate registration
+    // Check if already registered
     const existing = await Registration.findOne({ hackathonId, userId });
     if (existing) {
       return res.status(400).json({ message: "Already registered." });
     }
 
-    // 1. Save the registration entry
+    // Fetch the hackathon
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found." });
+    }
+
+    // Check if maxParticipants is reached
+    if (hackathon.participants.length >= hackathon.maxParticipants) {
+      return res.status(400).json({ message: "Registration closed. Max participants reached." });
+    }
+
+    // Proceed with registration
     const registration = await Registration.create({
       hackathonId,
       userId,
@@ -21,12 +32,9 @@ const registerForHackathon = async (req, res) => {
       acceptedTerms: formData.acceptedTerms,
     });
 
-    // 2. Push userId to Hackathon.participants[]
-    await Hackathon.findByIdAndUpdate(
-      hackathonId,
-      { $addToSet: { participants: userId.toString() } }, // avoids duplicates
-      { new: true }
-    );
+    // Update Hackathon participants
+    hackathon.participants.push(userId.toString());
+    await hackathon.save();
 
     res.status(201).json({ success: true, registration });
   } catch (err) {
@@ -34,6 +42,18 @@ const registerForHackathon = async (req, res) => {
   }
 };
 
+const getMyRegistrations = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const registrations = await Registration.find({ userId }).select("hackathonId");
+    res.json(registrations);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 module.exports = {
   registerForHackathon,
+   getMyRegistrations
 };

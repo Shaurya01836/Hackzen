@@ -15,11 +15,11 @@ exports.createHackathon = async (req, res) => {
       maxParticipants,
       status,
       category,
-      difficultyLevel, // <-- renamed from "difficulty"
+      difficultyLevel,
       location,
       prizePool,
       problemStatements,
-      problemStatementTypes, // ✅ MISSING FIELD
+      problemStatementTypes,
       requirements,
       perks,
       tags,
@@ -28,7 +28,7 @@ exports.createHackathon = async (req, res) => {
       rounds,
       judges, 
       mentors, 
-      participants// optional // ✅ MISSING FIELD
+      participants
     } = req.body;
 
      const newHackathon = await Hackathon.create({
@@ -251,5 +251,20 @@ exports.updateApprovalStatus = async (req, res) => {
     res.json(updated);
   } catch (err) {
     res.status(500).json({ message: 'Error updating approval status' });
+  }
+};
+
+exports.getAllHackathons = async (req, res) => {
+  try {
+    const hackathons = await Hackathon.find().lean();
+
+    const enriched = hackathons.map((hackathon) => ({
+      ...hackathon,
+      participantsCount: hackathon.participants?.length || 0,
+    }));
+
+    res.status(200).json(enriched);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
