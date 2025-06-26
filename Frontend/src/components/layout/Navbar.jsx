@@ -138,8 +138,7 @@ function Navbar() {
                       </div>
                     ) : (
                       <AnimatedList>
-                       {[...notifications].reverse().map((n) => (
-
+                        {[...notifications].reverse().map((n) => (
                           <div
                             key={n._id}
                             className="group transition-all duration-200 ease-in-out hover:scale-[101%] 
@@ -172,12 +171,66 @@ function Navbar() {
                 </InteractiveHoverButton>
               </>
             ) : (
-              <button
-                onClick={handleDashboard}
-                className="px-4 py-2 bg-gradient-to-b from-[#1b0c3f] to-[#0d061f] text-white rounded-3xl font-semibold flex gap-3 items-center"
-              >
-                Dashboard <LayoutDashboard className="w-5 h-5" />
-              </button>
+              <div className="relative">
+                <div
+                  className="cursor-pointer w-10 h-10 rounded-full bg-[#1b0c3f] overflow-hidden text-white flex items-center justify-center font-semibold text-sm uppercase"
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  title={user?.name || user?.email}
+                >
+                  {user?.profilePic ? (
+                    <img
+                      src={user.profilePic}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>
+                      {user?.name
+                        ? user.name.charAt(0)
+                        : user?.email?.charAt(0)}
+                    </span>
+                  )}
+                </div>
+
+                {isOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white/20 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg z-50 text-sm overflow-hidden">
+                    <Link
+                      to="/dashboard"
+                      className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Profile
+                    </Link>
+
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Admin Panel
+                      </Link>
+                    )}
+
+                    {user?.role === "organizer" && (
+                      <Link
+                        to="/dashboard?view=organizer-tools"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Organizer Tools
+                      </Link>
+                    )}
+                    <Link
+                      to="/profile/account-settings"
+                      className="block px-4 py-2 hover:bg-gray-100 text-gray-900"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Settings
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
