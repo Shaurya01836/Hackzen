@@ -20,7 +20,14 @@ import {
 } from "lucide-react";
 import { Button } from "../../../components/CommonUI/button";
 import { Input } from "../../../components/CommonUI/input";
-import { Card, CardContent } from "../../../components/CommonUI/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+} from "../../../components/CommonUI/card";
 import { Badge } from "../../../components/CommonUI/badge";
 import {
   Avatar,
@@ -43,7 +50,7 @@ import {
 } from "../../../components/DashboardUI/dialog";
 import { WriteArticle } from "./WriteArticle";
 
-export function Blogs({ onBack }) {
+export function Blogs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedPost, setSelectedPost] = useState(null);
@@ -54,25 +61,27 @@ export function Blogs({ onBack }) {
   const [submittedArticle, setSubmittedArticle] = useState(null);
   const [categories, setCategories] = useState(["all"]);
 
-   useEffect(() => {
-  const fetchBlogs = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/articles");
-      const data = await res.json();
-      setBlogs(data);
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/articles");
+        const data = await res.json();
+        setBlogs(data);
 
-      // extract categories from published blogs
-      const published = data.filter((b) => b.status === "published");
-      const uniqueCategories = Array.from(new Set(published.map((b) => b.category)));
-      setCategories(["all", ...uniqueCategories]);
-    } catch (error) {
-      console.error("Error fetching blogs:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchBlogs();
-}, []);
+        // extract categories from published blogs
+        const published = data.filter((b) => b.status === "published");
+        const uniqueCategories = Array.from(
+          new Set(published.map((b) => b.category))
+        );
+        setCategories(["all", ...uniqueCategories]);
+      } catch (error) {
+        console.error("Error fetching blogs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBlogs();
+  }, []);
 
   // Handle write article navigation
   const handleWriteArticle = () => {
@@ -120,7 +129,7 @@ export function Blogs({ onBack }) {
     return (
       <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         {/* Header */}
-        <header className="bg-white/20 border-b border-gray-200 px-6 py-4 shadow-sm">
+        <header className="bg-white/20 px-6 py-4 ">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -141,144 +150,127 @@ export function Blogs({ onBack }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Bookmark className="w-4 h-4" />
-                Save
+              <Button variant="outline" size="sm">
+                <Bookmark className="w-4 h-4" /> Save
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
+              <Button variant="outline" size="sm">
+                <Share2 className="w-4 h-4" /> Share
               </Button>
             </div>
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-4xl mx-auto px-6 py-8">
-            {/* Hero Image */}
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto px-6 py-8 ">
+          <div className="max-w-full mx-auto space-y-8">
+            {/* Cover Image */}
             {selectedPost.image && (
-              <div className="mb-8 rounded-xl overflow-hidden shadow-lg">
+              <Card className="overflow-hidden rounded-xl shadow-lg">
                 <img
-                  src={selectedPost.image || "/placeholder.svg"}
+                  src={selectedPost.image}
                   alt={selectedPost.title}
-                  className="w-full h-80 object-cover"
+                  className="w-full h-96 object-cover"
                 />
-              </div>
+              </Card>
             )}
 
-            {/* Article Header */}
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 mb-8">
-              <h1 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
-                {selectedPost.title}
-              </h1>
-
-              {/* Author Info */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12 ring-2 ring-indigo-100">
-                    <AvatarImage
-                      src={selectedPost.author.avatar || "/placeholder.svg"}
-                    />
-                    <AvatarFallback className="bg-indigo-100 text-indigo-600 font-semibold">
-                      {selectedPost.author.name[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-gray-900">
-                      {selectedPost.author.name}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {selectedPost.author.role}
-                    </p>
+            {/* Article Meta & Title */}
+            <Card className="border border-gray-200 bg-white/70">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-3xl font-bold text-gray-900 ">
+                  {selectedPost.title}
+                </CardTitle>
+                <CardDescription className="text-lg text-gray-600 py-2">
+                  {selectedPost.excerpt}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Author + Meta */}
+                <div className="flex items-center justify-between flex-wrap gap-4 my-6">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10 ring-2 ring-indigo-100">
+                      <AvatarImage src={selectedPost.author.avatar} />
+                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm font-bold">
+                        {selectedPost.author.name[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedPost.author.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {selectedPost.author.role}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-6 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />{" "}
+                      {new Date(selectedPost.publishedAt).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" /> {selectedPost.readTime} min
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Eye className="w-4 h-4" />{" "}
+                      {selectedPost.views.toLocaleString()} views
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    {new Date(selectedPost.publishedAt).toLocaleDateString(
-                      "en-US",
-                      {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      }
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    {selectedPost.readTime} min read
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Eye className="w-4 h-4" />
-                    {selectedPost.views.toLocaleString()} views
-                  </div>
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2">
+                  {selectedPost.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="outline"
+                      className="px-2 py-1 text-sm"
+                    >
+                      <Tag className="w-3 h-3 mr-1" /> {tag}
+                    </Badge>
+                  ))}
                 </div>
-              </div>
+              </CardContent>
+            </Card>
 
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {selectedPost.tags.map((tag) => (
-                  <Badge key={tag} variant="outline" className="px-3 py-1 ">
-                    <Tag className="w-3 h-3 mr-1" />
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
+            {/* Full Content */}
+            <Card className="border border-gray-200 bg-white/70 py-4">
+              <CardContent className="prose max-w-none text-gray-800 prose-lg leading-relaxed">
+                <div
+                  dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+                />
+              </CardContent>
+            </Card>
 
-              {/* Excerpt */}
-              <p className="text-xl text-gray-700 leading-relaxed font-light">
-                {selectedPost.excerpt}
-              </p>
-            </div>
-
-            {/* Article Content */}
-            <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 mb-8">
-              <div className="prose prose-lg max-w-none">
-                <div className="text-gray-800 leading-relaxed prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: selectedPost.content }} />
-              </div>
-            </div>
-
-            {/* Engagement Actions */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            {/* Engagement Footer */}
+            <Card className="border border-gray-200 bg-white/70 pt-4">
+              <CardFooter className="flex justify-between items-center flex-wrap gap-4">
+                <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                    className="hover:bg-red-100 text-red-600"
                   >
-                    <Heart className="w-4 h-4" />
-                    {selectedPost.likes} Likes
+                    <Heart className="w-4 h-4" /> {selectedPost.likes}
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+                    className="hover:bg-blue-100 text-blue-600"
                   >
-                    <MessageCircle className="w-4 h-4" />
-                    {selectedPost.comments} Comments
+                    <MessageCircle className="w-4 h-4" />{" "}
+                    {selectedPost.comments}
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex items-center gap-2 hover:bg-green-50 hover:text-green-600 hover:border-green-200"
+                    className="hover:bg-green-100 text-green-600"
                   >
-                    <Share2 className="w-4 h-4" />
-                    Share
+                    <Share2 className="w-4 h-4" /> Share
                   </Button>
                 </div>
-                <Badge variant="outline" className="px-3 py-1">
+                <Badge variant="outline" className="text-sm px-3 py-1">
                   {selectedPost.category}
                 </Badge>
-              </div>
-            </div>
+              </CardFooter>
+            </Card>
           </div>
         </div>
       </div>
@@ -289,29 +281,29 @@ export function Blogs({ onBack }) {
     <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Approval Dialog */}
       <Dialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md space-y-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-600" />
               Article Submitted Successfully!
             </DialogTitle>
             <DialogDescription asChild>
-              <div className="space-y-3 text-sm text-muted-foreground">
+              <div className="space-y-4 text-sm text-muted-foreground">
                 <p>
                   Your article <strong>"{submittedArticle?.title}"</strong> has
                   been submitted for review.
                 </p>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-yellow-800">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-yellow-800">
                         Waiting for Admin Approval
                       </p>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Your article will be reviewed by our admin team and
-                        published once approved. You'll receive a notification
-                        when the status changes.
+                      <p className="text-sm text-yellow-700">
+                        Your article will be reviewed and published once
+                        approved. You’ll receive a notification when the status
+                        changes.
                       </p>
                     </div>
                   </div>
@@ -326,18 +318,9 @@ export function Blogs({ onBack }) {
       </Dialog>
 
       {/* Header */}
-      <header className=" border-b border-gray-200 px-6 py-4 shadow-sm">
+      <header className="px-6 pt-5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onBack}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
-            </Button>
+          <div className="flex items-center gap-5">
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-100 rounded-lg">
@@ -364,11 +347,12 @@ export function Blogs({ onBack }) {
       </header>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-6 py-6">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="flex-1 overflow-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto space-y-10">
           {/* Search and Filters */}
-          <div className="bg-white/20 rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex flex-col lg:flex-row gap-4">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 pt-5 space-y-5">
+            <div className="flex flex-col lg:flex-row gap-5">
+              {/* Search Bar */}
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
@@ -378,56 +362,59 @@ export function Blogs({ onBack }) {
                   className="pl-12 h-12 text-base border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
-              <div className="flex gap-3">
-                <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900"
-                  >
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
-                        {category === "all" ? "All Categories" : category}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              {/* Category Dropdown */}
+              <div className="relative min-w-[200px]">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 w-full"
+                >
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category === "all" ? "All Categories" : category}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
+
           {/* Tabs */}
           <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white/20 border border-gray-200 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-3 bg-white/20 rounded-lg px-5">
               <TabsTrigger
                 value="all"
-                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
               >
                 All Posts
               </TabsTrigger>
               <TabsTrigger
                 value="featured"
-                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
               >
                 Featured
               </TabsTrigger>
               <TabsTrigger
                 value="trending"
-                className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white"
+                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
               >
                 Trending
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="all" className="mt-8">
+            <TabsContent value="all" className="mt-8 px-6">
               {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {[...Array(6)].map((_, i) => (
-                    <Card key={i} className="animate-pulse border-gray-200">
+                    <Card
+                      key={i}
+                      className="animate-pulse border-gray-200 rounded-xl"
+                    >
                       <div className="h-48 bg-gray-200 rounded-t-xl"></div>
-                      <CardContent className="p-6">
-                        <div className="h-4 bg-gray-200 rounded mb-3"></div>
-                        <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                      <CardContent className="p-6 space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
                         <div className="flex justify-between">
                           <div className="h-3 bg-gray-200 rounded w-20"></div>
                           <div className="h-3 bg-gray-200 rounded w-16"></div>
@@ -441,69 +428,76 @@ export function Blogs({ onBack }) {
                   {filteredBlogs.map((blog) => (
                     <Card
                       key={blog._id}
-                      className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-gray-200 bg-white/20 group"
                       onClick={() => setSelectedPost(blog)}
+                      className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                     >
-                      <div className="relative overflow-hidden rounded-t-xl">
+                      {/* Image Section */}
+                      <div className="relative h-48 overflow-hidden rounded-t-2xl">
                         <img
                           src={blog.image || "/placeholder.svg"}
                           alt={blog.title}
-                          className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         {blog.featured && (
-                          <Badge className="absolute top-3 left-3 bg-yellow-500 text-white shadow-lg">
+                          <Badge className="absolute top-3 left-3 bg-yellow-400 text-white text-xs shadow-md">
                             ⭐ Featured
                           </Badge>
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 
-                      <CardContent className="p-6">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Badge
-                            variant="outline"
-                            className="px-2 py-1 text-xs font-medium border-indigo-200 text-indigo-700"
-                          >
+                      {/* Content */}
+                      <CardContent className="p-5 space-y-4 pt-2">
+                        {/* Meta: Category + Read Time */}
+                        <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+                          <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md">
                             {blog.category}
-                          </Badge>
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {blog.readTime} min read
                           </span>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            <span>{blog.readTime} min read</span>
+                          </div>
                         </div>
 
-                        <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 group-hover:text-indigo-600 transition-colors">
+                        {/* Title */}
+                        <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-snug group-hover:text-indigo-700 transition-colors">
                           {blog.title}
                         </h3>
 
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+                        {/* Excerpt */}
+                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-1">
                           {blog.excerpt}
                         </p>
 
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {blog.tags.slice(0, 3).map((tag) => (
-                            <Badge
-                              key={tag}
-                              variant="outline"
-                              className="text-xs px-2 py-1"
-                            >
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
+                        {/* Tags */}
+                        {blog.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {blog.tags.slice(0, 3).map((tag) => (
+                              <span
+                                key={tag}
+                                className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                        {/* Footer: Author + Stats */}
+                        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
+                          {/* Author */}
                           <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8 ring-2 ring-gray-100">
+                            <Avatar className="w-9 h-9 ring-2 ring-white shadow-md">
                               <AvatarImage
                                 src={blog.author.avatar || "/placeholder.svg"}
+                                alt={blog.author.name}
                               />
-                              <AvatarFallback className="bg-indigo-100 text-indigo-600 text-xs font-semibold">
+                              <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
                                 {blog.author.name[0]}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="text-sm font-medium text-gray-900">
+                              <p className="text-sm font-semibold text-gray-800">
                                 {blog.author.name}
                               </p>
                               <p className="text-xs text-gray-500">
@@ -512,6 +506,7 @@ export function Blogs({ onBack }) {
                             </div>
                           </div>
 
+                          {/* Stats */}
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <div className="flex items-center gap-1">
                               <Heart className="w-4 h-4" />
@@ -530,59 +525,81 @@ export function Blogs({ onBack }) {
               )}
             </TabsContent>
 
-            <TabsContent value="featured" className="mt-8">
+            <TabsContent value="featured" className="mt-8 px-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {featuredBlogs.map((blog) => (
                   <Card
                     key={blog._id}
-                    className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-white group"
                     onClick={() => setSelectedPost(blog)}
+                    className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
-                    <div className="relative overflow-hidden rounded-t-xl">
+                    {/* Image Section */}
+                    <div className="relative h-48 overflow-hidden rounded-t-2xl">
                       <img
                         src={blog.image || "/placeholder.svg"}
                         alt={blog.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                      <Badge className="absolute top-3 left-3 bg-yellow-500 text-white shadow-lg">
-                        ⭐ Featured
-                      </Badge>
+                      {blog.featured && (
+                        <Badge className="absolute top-3 left-3 bg-yellow-400 text-white text-xs shadow-md">
+                          ⭐ Featured
+                        </Badge>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
 
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge
-                          variant="outline"
-                          className="px-2 py-1 text-xs font-medium border-yellow-300 text-yellow-700"
-                        >
+                    {/* Content */}
+                    <CardContent className="p-5 space-y-4 pt-2">
+                      {/* Meta: Category + Read Time */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+                        <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md">
                           {blog.category}
-                        </Badge>
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {blog.readTime} min read
                         </span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{blog.readTime} min read</span>
+                        </div>
                       </div>
 
-                      <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 group-hover:text-yellow-600 transition-colors">
+                      {/* Title */}
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-snug group-hover:text-indigo-700 transition-colors">
                         {blog.title}
                       </h3>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+                      {/* Excerpt */}
+                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-1">
                         {blog.excerpt}
                       </p>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-yellow-100">
+                      {/* Tags */}
+                      {blog.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {blog.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer: Author + Stats */}
+                      <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
+                        {/* Author */}
                         <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8 ring-2 ring-yellow-100">
+                          <Avatar className="w-9 h-9 ring-2 ring-white shadow-md">
                             <AvatarImage
                               src={blog.author.avatar || "/placeholder.svg"}
+                              alt={blog.author.name}
                             />
-                            <AvatarFallback className="bg-yellow-100 text-yellow-600 text-xs font-semibold">
+                            <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
                               {blog.author.name[0]}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-semibold text-gray-800">
                               {blog.author.name}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -591,6 +608,7 @@ export function Blogs({ onBack }) {
                           </div>
                         </div>
 
+                        {/* Stats */}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Heart className="w-4 h-4" />
@@ -608,60 +626,81 @@ export function Blogs({ onBack }) {
               </div>
             </TabsContent>
 
-            <TabsContent value="trending" className="mt-8">
+            <TabsContent value="trending" className="mt-8 px-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {trendingBlogs.map((blog, index) => (
                   <Card
                     key={blog._id}
-                    className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-red-200 bg-gradient-to-br from-red-50 to-white group relative"
                     onClick={() => setSelectedPost(blog)}
+                    className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg z-10">
                       🔥 #{index + 1} Trending
                     </Badge>
 
-                    <div className="relative overflow-hidden rounded-t-xl">
+                    {/* Image Section */}
+                    <div className="relative h-48 overflow-hidden rounded-t-2xl">
                       <img
                         src={blog.image || "/placeholder.svg"}
                         alt={blog.title}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
+
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </div>
 
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge
-                          variant="outline"
-                          className="px-2 py-1 text-xs font-medium border-red-300 text-red-700"
-                        >
+                    {/* Content */}
+                    <CardContent className="p-5 space-y-4 pt-2">
+                      {/* Meta: Category + Read Time */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+                        <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md">
                           {blog.category}
-                        </Badge>
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <TrendingUp className="w-3 h-3" />
-                          {blog.views.toLocaleString()} views
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{blog.readTime} min read</span>
                         </div>
                       </div>
 
-                      <h3 className="font-bold text-lg mb-3 line-clamp-2 text-gray-900 group-hover:text-red-600 transition-colors">
+                      {/* Title */}
+                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-snug group-hover:text-indigo-700 transition-colors">
                         {blog.title}
                       </h3>
 
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+                      {/* Excerpt */}
+                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-1">
                         {blog.excerpt}
                       </p>
 
-                      <div className="flex items-center justify-between pt-4 border-t border-red-100">
+                      {/* Tags */}
+                      {blog.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {blog.tags.slice(0, 3).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Footer: Author + Stats */}
+                      <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
+                        {/* Author */}
                         <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8 ring-2 ring-red-100">
+                          <Avatar className="w-9 h-9 ring-2 ring-white shadow-md">
                             <AvatarImage
                               src={blog.author.avatar || "/placeholder.svg"}
+                              alt={blog.author.name}
                             />
-                            <AvatarFallback className="bg-red-100 text-red-600 text-xs font-semibold">
+                            <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
                               {blog.author.name[0]}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium text-gray-900">
+                            <p className="text-sm font-semibold text-gray-800">
                               {blog.author.name}
                             </p>
                             <p className="text-xs text-gray-500">
@@ -670,6 +709,7 @@ export function Blogs({ onBack }) {
                           </div>
                         </div>
 
+                        {/* Stats */}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Heart className="w-4 h-4" />
