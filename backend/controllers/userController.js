@@ -139,10 +139,11 @@ const getAllUsers = async (req, res) => {
 };
 
 // ✅ Get single user by ID
+// ✅ Get single user by ID (now includes registeredHackathonIds)
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('badges hackathonsJoined projects organization')
+      .populate('badges hackathonsJoined projects organization registeredHackathonIds')
       .select('-passwordHash');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -151,6 +152,7 @@ const getUserById = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // ✅ Update user
 const updateUser = async (req, res) => {

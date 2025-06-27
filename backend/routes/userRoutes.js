@@ -60,6 +60,15 @@ router.get('/:id/streaks', protect, userController.getUserStreakData);
 router.post("/streak", protect, trackStreak, (req, res) => {
   res.status(200).json({ message: "Streak tracked" });
 });
+// ✅ GET registered hackathon IDs for current user
+router.get('/me/registered-hackathons', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('registeredHackathonIds');
+    res.json(user.registeredHackathonIds || []);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch registered hackathons" });
+  }
+});
 
 
 module.exports = router;

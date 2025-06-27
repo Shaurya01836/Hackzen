@@ -1,4 +1,6 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Trophy,
@@ -23,74 +25,51 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 
-const hackathons = [
-  {
-    id: 1,
-    name: "AI Innovation Challenge",
-    status: "Live",
-    deadline: "2 days left",
-    participants: 156,
-    description: "Build innovative AI solutions for real-world problems",
-    prize: "$10,000",
-    startDate: "Dec 15, 2024",
-    endDate: "Dec 22, 2024",
-    category: "Artificial Intelligence",
-    difficulty: "Advanced",
-    registered: true,
-    submitted: false,
-  },
-  {
-    id: 2,
-    name: "Web3 Builder Fest",
-    status: "Closed",
-    deadline: "Ended",
-    participants: 89,
-    description: "Create decentralized applications using blockchain technology",
-    prize: "$5,000",
-    startDate: "Nov 20, 2024",
-    endDate: "Nov 27, 2024",
-    category: "Blockchain",
-    difficulty: "Intermediate",
-    registered: true,
-    submitted: true,
-  },
-  {
-    id: 3,
-    name: "Mobile App Marathon",
-    status: "Upcoming",
-    deadline: "5 days to start",
-    participants: 234,
-    description: "Develop mobile applications for iOS and Android",
-    prize: "$7,500",
-    startDate: "Jan 10, 2025",
-    endDate: "Jan 17, 2025",
-    category: "Mobile Development",
-    difficulty: "Beginner",
-    registered: false,
-    submitted: false,
-  },
-  {
-    id: 4,
-    name: "Cybersecurity Challenge",
-    status: "Live",
-    deadline: "1 week left",
-    participants: 78,
-    description: "Solve security vulnerabilities and build secure systems",
-    prize: "$12,000",
-    startDate: "Dec 10, 2024",
-    endDate: "Dec 24, 2024",
-    category: "Security",
-    difficulty: "Advanced",
-    registered: true,
-    submitted: false,
-  },
-];
-
 export function MyHackathons() {
-  
-  const activeHackathons = hackathons.filter((h) => h.status === "Live");
-  const completedHackathons = hackathons.filter((h) => h.status === "Closed");
-  const upcomingHackathons = hackathons.filter((h) => h.status === "Upcoming");
+  const [hackathons, setHackathons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRegisteredHackathons = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/registration/my", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        const data = await res.json();
+        const formatted = data.map((reg) => {
+          const h = reg.hackathonId;
+          return {
+            id: h._id,
+            name: h.title,
+            status: h.status,
+            deadline: new Date(h.registrationDeadline).toDateString(),
+            participants: h.participants?.length || 0,
+            description: h.description,
+            prize: `$${h.prizePool?.amount?.toLocaleString()}`,
+            startDate: new Date(h.startDate).toDateString(),
+            endDate: new Date(h.endDate).toDateString(),
+            category: h.category,
+            difficulty: h.difficultyLevel,
+            registered: true,
+            submitted: false, // replace with real logic if needed
+          };
+        });
+        setHackathons(formatted);
+      } catch (err) {
+        console.error("Failed to fetch registered hackathons", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRegisteredHackathons();
+  }, []);
+
+  const activeHackathons = hackathons.filter((h) => h.status === "live");
+  const completedHackathons = hackathons.filter((h) => h.status === "closed");
+  const upcomingHackathons = hackathons.filter((h) => h.status === "upcoming");
 
   const renderHackathonCard = (hackathon) => (
     <ACard
@@ -108,15 +87,8 @@ export function MyHackathons() {
             </ACardDescription>
           </div>
           <Badge
-            variant={
-              hackathon.status === "Live"
-                ? "default"
-                : hackathon.status === "Closed"
-                ? "secondary"
-                : "outline"
-            }
             className={`capitalize ${
-              hackathon.status === "Live"
+              hackathon.status === "live"
                 ? "bg-green-500 text-white"
                 : hackathon.status === "Closed"
                 ? "bg-gray-400 text-white"
@@ -155,32 +127,21 @@ export function MyHackathons() {
         </div>
 
         <div className="flex gap-2 pt-2 flex-wrap">
-          {hackathon.registered ? (
-            <>
-              <Button
-                size="sm"
-                className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
-              >
-                <ExternalLink className="w-3 h-3" />
-                View Details
-              </Button>
-              {hackathon.status === "Live" && !hackathon.submitted && (
-                <Button size="sm" variant="default">
-                  Submit Project
-                </Button>
-              )}
-              {hackathon.submitted && (
-                <Button size="sm" variant="outline" disabled>
-                  Submitted ✓
-                </Button>
-              )}
-            </>
-          ) : (
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white hover:opacity-90"
-            >
-              Register Now
+          <Button
+            size="sm"
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            <ExternalLink className="w-3 h-3" />
+            View Details
+          </Button>
+          {hackathon.status === "live" && !hackathon.submitted && (
+            <Button size="sm" variant="default">
+              Submit Project
+            </Button>
+          )}
+          {hackathon.submitted && (
+            <Button size="sm" variant="outline" disabled>
+              Submitted ✓
             </Button>
           )}
         </div>
@@ -191,7 +152,6 @@ export function MyHackathons() {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
-    
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Hackathons</h1>
           <p className="text-sm text-gray-500">
