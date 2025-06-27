@@ -1,9 +1,15 @@
 const Organization = require("../model/OrganizationModel");
 const User = require("../model/UserModel");
 
+
+
+
 // ✅ Register a new organization
 const registerOrganization = async (req, res) => {
   try {
+    console.log("👉 Org data from frontend:", req.body);
+console.log("👉 User from token:", req.user);
+
     const {
       name,
       contactPerson,
@@ -16,11 +22,17 @@ const registerOrganization = async (req, res) => {
       github
     } = req.body;
 
-    const email = req.user.email; // ✅ Automatically use logged-in user's email
+    const email = req.body.email?.toLowerCase();
+
+    const existing = await Organization.findOne({ email });
+if (existing) {
+  return res.status(409).json({ message: "You’ve already submitted an organization application." });
+}
 
     if (!name || !contactPerson || !organizationType || !supportNeeds?.length || !email) {
       return res.status(400).json({ message: "Missing required fields" });
     }
+
 
     const newOrg = new Organization({
       name,
@@ -45,10 +57,10 @@ const registerOrganization = async (req, res) => {
 
     res.status(201).json({ message: "Application submitted successfully", organization: newOrg });
   } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
+    console.error("Org registration error:", err);
+    res.status(500).json({ message: "Server error during registration" });
   }
 };
-
 
 // ✅ Get all organizations (Admin only)
 const getAllOrganizations = async (req, res) => {

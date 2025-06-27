@@ -18,15 +18,16 @@ const OrganizationSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       validate: {
-        validator: function (email) {
-          const domain = email.split("@")[1];
-          return !disallowedDomains.includes(domain);
-        },
-        message: "Please use an official organization email address.",
-      },
+  validator: function (email) {
+    const domain = email.split("@")[1];
+    const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    return isValidFormat && !disallowedDomains.includes(domain);
+  },
+  message: "Please use an official organization email address.",
+},
+
     },
     contactMethods: {
       whatsapp: { type: String },

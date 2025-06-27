@@ -22,7 +22,7 @@ const UserSchema = new Schema({
     enum: ['participant', 'organizer', 'mentor', 'judge', 'admin'],
     default: 'participant'
   },
-
+savedHackathons: [{ type: Schema.Types.ObjectId, ref: "Hackathon"}],
   phone: String,
   location: String,
   bio: String,
@@ -50,7 +50,7 @@ const UserSchema = new Schema({
 
   applicationStatus: {
     type: String,
-    enum: ["pending", "approved", "rejected"],
+    enum: ["pending", "submitted", "approved", "rejected"],
     default: "pending"
   }
 });

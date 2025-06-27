@@ -19,7 +19,7 @@ const validateOrgEmail = require("../middleware/validateOrgEmail");
 const { protect, isAdmin, isOrganizerOrAdmin } = require("../middleware/authMiddleware");
 
 // ✅ Register new organization (Public route)
-router.post("/register", validateOrgEmail, registerOrganization);
+router.post("/register", protect, validateOrgEmail, registerOrganization);
 
 // ✅ Upload org logo (Organizer/Admin only)
 router.post("/upload-logo", protect, upload.single("logo"), (req, res) => {
