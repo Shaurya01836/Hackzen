@@ -28,7 +28,7 @@ import {
 } from "../../../components/CommonUI/select";
 import { Checkbox } from "../../../components/DashboardUI/checkbox";
 
-export function OrganizationHub({ onBack }) {
+export function OrganizationHub() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [myOrgInfo, setMyOrgInfo] = useState(null);
@@ -571,15 +571,6 @@ const fetchMyApplicationStatus = async () => {
       {/* Header */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Organization Hub
