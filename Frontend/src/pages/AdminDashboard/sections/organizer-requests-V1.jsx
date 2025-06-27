@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../../components/CommonUI/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
-import { Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Loader2, Globe, Mail, Github, CalendarDays } from "lucide-react";
 import { toast } from "react-hot-toast";
 
 export function OrganizerRequestsPage() {
@@ -36,12 +41,15 @@ export function OrganizerRequestsPage() {
     setUpdatingId(id);
     const endpoint = decision === "approve" ? `approve` : `reject`;
     try {
-      const res = await fetch(`http://localhost:3000/api/organizations/${id}/${endpoint}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await fetch(
+        `http://localhost:3000/api/organizations/${id}/${endpoint}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update status");
       toast.success(`✅ Application ${decision}d`);
@@ -64,21 +72,62 @@ export function OrganizerRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Pending Organization Applications</h2>
+      <h2 className="text-2xl font-bold text-gray-900">
+        Pending Organization Applications
+      </h2>
+
       {requests.length === 0 ? (
         <p className="text-gray-600">No pending applications right now.</p>
       ) : (
         requests.map((org) => (
           <Card key={org._id}>
             <CardHeader>
-              <CardTitle>{org.name}</CardTitle>
-              <p className="text-sm text-gray-500">Submitted by {org.contactPerson}</p>
+              <CardTitle className="text-xl font-semibold">{org.name}</CardTitle>
+              <p className="text-sm text-gray-500">
+                Submitted by <span className="font-medium">{org.contactPerson}</span>
+              </p>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p><strong>Email:</strong> {org.email}</p>
-              <p><strong>Type:</strong> {org.organizationType}</p>
-              <p><strong>Support:</strong> {org.supportNeeds.join(", ")}</p>
-              <p><strong>Purpose:</strong> {org.purpose}</p>
+
+            <CardContent className="space-y-3 text-sm text-gray-700">
+              <p><Mail className="inline-block w-4 h-4 mr-1" /> <strong>Email:</strong> {org.email}</p>
+              <p><strong>Type:</strong> {org.organizationType || "N/A"}</p>
+              <p><strong>Support Needs:</strong> {org.supportNeeds?.join(", ") || "None"}</p>
+              <p><strong>Purpose:</strong> {org.purpose || "N/A"}</p>
+
+              {org.website && (
+                <p>
+                  <Globe className="inline-block w-4 h-4 mr-1" />
+                  <a
+                    href={org.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    {org.website}
+                  </a>
+                </p>
+              )}
+
+              {org.github && (
+                <p>
+                  <Github className="inline-block w-4 h-4 mr-1" />
+                  <a
+                    href={org.github}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline"
+                  >
+                    {org.github}
+                  </a>
+                </p>
+              )}
+
+              <p>
+                <CalendarDays className="inline-block w-4 h-4 mr-1" />
+                <strong>Created At:</strong>{" "}
+                {new Date(org.createdAt).toLocaleString()}
+              </p>
+
               <div className="flex gap-4 mt-4">
                 <Button
                   onClick={() => handleDecision(org._id, "approve")}

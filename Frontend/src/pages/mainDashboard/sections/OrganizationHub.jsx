@@ -8,7 +8,7 @@ import {
   FileText,
   CheckCircle,
   X,
-} from "lucide-react";
+} from "lucide-react"
 import { Button } from "../../../components/CommonUI/button";
 import {
   Card,
@@ -95,16 +95,16 @@ const [loadingStatus, setLoadingStatus] = useState(false);
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
+  
   const handleSupportNeedsChange = (option, checked) => {
     setFormData((prev) => ({
       ...prev,
       supportNeeds: checked
-        ? [...prev.supportNeeds, option]
-        : prev.supportNeeds.filter((item) => item !== option),
+      ? [...prev.supportNeeds, option]
+      : prev.supportNeeds.filter((item) => item !== option),
     }));
   };
-
+  
   const validateEmail = (email) => {
     const disallowedDomains = [
       "gmail.com",
@@ -116,110 +116,113 @@ const [loadingStatus, setLoadingStatus] = useState(false);
     const domain = email.split("@")[1];
     return !disallowedDomains.includes(domain);
   };
-const fetchMyApplicationStatus = async () => {
-  setLoadingStatus(true);
-  const token = localStorage.getItem("token");
-
-  try {
-  const response = await fetch("http://localhost:3000/api/organizations/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(formData),
-  });
-
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    if (!formData.name || !formData.contactPerson || !formData.email || !formData.organizationType) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+  
+    if (!validateEmail(formData.email)) {
+      alert("Please use an official organization email address.");
+      return;
+    }
+  
+    if (formData.supportNeeds.length === 0) {
+      alert("Please select at least one support need.");
+      return;
+    }
+  
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You're not logged in. Please log in to submit the application.");
+      return;
+    }
+  
+    setIsSubmitting(true);
+  
+    try {
+      const response = await fetch("http://localhost:3000/api/organizations/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+  
   const contentType = response.headers.get("content-type");
   let data = {};
-
+  
   if (contentType && contentType.includes("application/json")) {
     data = await response.json();
   } else {
     const text = await response.text();
     throw new Error("Server error: " + text.substring(0, 100));
   }
-
-  if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
-
-  alert("✅ Application submitted successfully!");
-  setShowApplicationForm(false);
-  setFormData({ ...initialValues }); // Reset form
-} catch (error) {
-  alert("❌ Submission failed: " + error.message);
-} finally {
-  setIsSubmitting(false);
-}
-
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  if (!formData.name || !formData.contactPerson || !formData.email || !formData.organizationType) {
-    alert("Please fill in all required fields.");
-    return;
-  }
-
-  if (!validateEmail(formData.email)) {
-    alert("Please use an official organization email address.");
-    return;
-  }
-
-  if (formData.supportNeeds.length === 0) {
-    alert("Please select at least one support need.");
-    return;
-  }
-
+      if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
+  
+      alert("✅ Application submitted successfully!");
+  
+      setShowApplicationForm(false);
+      setFormData({
+        name: "",
+        contactPerson: "",
+        email: "",
+        whatsapp: "",
+        telegram: "",
+        organizationType: "",
+        supportNeeds: [],
+        purpose: "",
+        website: "",
+        github: "",
+      });
+    } catch (error) {
+      alert("❌ Submission failed: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+const fetchMyApplicationStatus = async () => {
+  setLoadingStatus(true);
   const token = localStorage.getItem("token");
-  if (!token) {
-    alert("You're not logged in. Please log in to submit the application.");
-    return;
-  }
-
-  setIsSubmitting(true);
 
   try {
-    const response = await fetch("http://localhost:3000/api/organizations/register", {
-      method: "POST",
+    const response = await fetch("http://localhost:3000/api/organizations/my", {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(formData),
     });
 
-const contentType = response.headers.get("content-type");
-let data = {};
+    const contentType = response.headers.get("content-type");
+    let data = {};
 
-if (contentType && contentType.includes("application/json")) {
-  data = await response.json();
-} else {
-  const text = await response.text();
-  throw new Error("Server error: " + text.substring(0, 100));
-}
-    if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      throw new Error("Server error: " + text.substring(0, 100));
+    }
 
-    alert("✅ Application submitted successfully!");
+    if (!response.ok) throw new Error(data.message || "Something went wrong.");
 
-    setShowApplicationForm(false);
-    setFormData({
-      name: "",
-      contactPerson: "",
-      email: "",
-      whatsapp: "",
-      telegram: "",
-      organizationType: "",
-      supportNeeds: [],
-      purpose: "",
-      website: "",
-      github: "",
+    // ✅ Set modal state
+    setMyOrgInfo({
+      status: data.applicationStatus || "Under Review",
+      contactPerson: data.contactPerson,
+      organizationName: data.name,
+      reviewDate: "3-5 days",
     });
+    setShowStatusModal(true);
   } catch (error) {
-    alert("❌ Submission failed: " + error.message);
+    alert("❌ Failed to fetch status: " + error.message);
   } finally {
-    setIsSubmitting(false);
+    setLoadingStatus(false);
   }
 };
+
 
 
 
@@ -697,79 +700,79 @@ if (contentType && contentType.includes("application/json")) {
         </div>
       </div>
       {/* Application Status Modal */}
-      {showStatusModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Application Status
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowStatusModal(false)}
-                  className="p-1"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+     {showStatusModal && myOrgInfo && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Application Status
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowStatusModal(false)}
+            className="p-1"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                  <div>
-               <p className="font-medium text-gray-900">
-  {myOrgInfo.status}
-</p>
-<p className="text-sm text-gray-600">
-  Submitted by {myOrgInfo.contactPerson}
-</p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Organization:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.organizationName}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Contact Person:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.contactPerson}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Expected Review:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.reviewDate}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    We'll notify you via email once your application is
-                    reviewed.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex justify-end">
-                <Button
-                  onClick={() => setShowStatusModal(false)}
-                  className="px-6"
-                >
-                  Close
-                </Button>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <div>
+              <p className="font-medium text-gray-900">
+                {myOrgInfo.status}
+              </p>
+              <p className="text-sm text-gray-600">
+                Submitted by {myOrgInfo.contactPerson}
+              </p>
             </div>
           </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Organization:</span>
+              <span className="font-medium">
+                {myOrgInfo.organizationName}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Contact Person:</span>
+              <span className="font-medium">
+                {myOrgInfo.contactPerson}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Expected Review:</span>
+              <span className="font-medium">
+                {myOrgInfo.reviewDate || "3-5 days"}
+              </span>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              We'll notify you via email once your application is reviewed.
+            </p>
+          </div>
         </div>
-      )}
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            onClick={() => setShowStatusModal(false)}
+            className="px-6"
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
-}
+
 }
