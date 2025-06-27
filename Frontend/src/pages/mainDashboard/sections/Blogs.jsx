@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Search,
@@ -53,13 +54,16 @@ import { WriteArticle } from "./WriteArticle";
 export function Blogs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedPost, setSelectedPost] = useState(null);
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState("list"); // "list" or "write"
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [submittedArticle, setSubmittedArticle] = useState(null);
   const [categories, setCategories] = useState(["all"]);
+
+  const navigate = useNavigate();
+  const { id: blogId } = useParams();
+  const location = useLocation();
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -88,9 +92,6 @@ export function Blogs() {
     setCurrentView("write");
   };
 
-  const handleBackToBlogs = () => {
-    setCurrentView("list");
-  };
 
   const handleArticleSubmit = (article) => {
     setSubmittedArticle(article);
@@ -120,6 +121,28 @@ export function Blogs() {
     return matchesSearch && matchesCategory;
   });
 
+  // Find the selected blog if blogId is present in the URL
+  const selectedPost = blogId
+    ? publishedBlogs.find((b) => b._id === blogId)
+    : null;
+
+  // When a blog card is clicked, navigate to its URL
+  const handleBlogClick = (blog) => {
+    navigate(`/dashboard/blogs/${blog._id}`);
+  };
+
+  // When back is clicked, go back to the blogs list URL
+  const handleBackToBlogs = () => {
+    navigate("/dashboard/blogs");
+  };
+
+  // If we're in write mode, show the write article component
+  if (currentView === "write") {
+    return (
+      <WriteArticle onBack={handleBackToBlogs} onSubmit={handleArticleSubmit} />
+    );
+  }
+
   const featuredBlogs = publishedBlogs.filter((blog) => blog.featured);
   const trendingBlogs = [...publishedBlogs]
     .sort((a, b) => b.views - a.views)
@@ -135,7 +158,7 @@ export function Blogs() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setSelectedPost(null)}
+                onClick={handleBackToBlogs}
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
@@ -428,7 +451,7 @@ export function Blogs() {
                   {filteredBlogs.map((blog) => (
                     <Card
                       key={blog._id}
-                      onClick={() => setSelectedPost(blog)}
+                      onClick={() => handleBlogClick(blog)}
                       className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                     >
                       {/* Image Section */}
@@ -530,7 +553,7 @@ export function Blogs() {
                 {featuredBlogs.map((blog) => (
                   <Card
                     key={blog._id}
-                    onClick={() => setSelectedPost(blog)}
+               onClick={() => handleBlogClick(blog)}
                     className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     {/* Image Section */}
@@ -631,7 +654,7 @@ export function Blogs() {
                 {trendingBlogs.map((blog, index) => (
                   <Card
                     key={blog._id}
-                    onClick={() => setSelectedPost(blog)}
+                onClick={() => handleBlogClick(blog)}
                     className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg z-10">

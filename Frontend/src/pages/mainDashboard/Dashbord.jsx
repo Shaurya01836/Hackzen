@@ -37,7 +37,6 @@ import {
   SidebarTrigger,
 } from "../../components/DashboardUI/sidebar";
 
-
 import { useAuth } from "../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
@@ -55,7 +54,6 @@ import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
 
-
 export default function HackZenDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,8 +63,8 @@ export default function HackZenDashboard() {
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
     // Extract section from /dashboard/section pattern
-    const section = params.section || path.split("/").pop() || "profile";
-    return section;
+    const match = path.match(/^\/dashboard\/([^\/]+)/);
+    return match ? match[1] : "profile";
   };
 
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());

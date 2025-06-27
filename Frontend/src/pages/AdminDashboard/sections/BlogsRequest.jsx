@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "../../../components/AdminUI/dropdown-menu"
-import { Search, Filter, Eye, Check, Clock, FileText } from "lucide-react"
+import { Search, Filter, Eye, Check, Clock, FileText, ActivityIcon } from "lucide-react"
 
 import ModalBlogDetails from "./ModalBlogDetails"
 
@@ -176,7 +176,7 @@ export function BlogManage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
-                          <FileText className="w-4 h-4 text-black" />
+                          <ActivityIcon className="w-4 h-4 text-black" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>

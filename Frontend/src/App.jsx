@@ -18,6 +18,7 @@ import HackathonDetailsPage from "./pages/AdminDashboard/sections/HackathonDetai
 import { ExploreHackathons } from "./pages/mainDashboard/sections/ExploreHackathon";
 import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
+import { Blogs } from "./pages/mainDashboard/sections/Blogs";
 
 function App() {
   return (
@@ -63,7 +64,7 @@ function App() {
       <Route path="/profile/account-settings" element={<DashboardPage />} />
       <Route path="/profile/privacy-security" element={<DashboardPage />} />
       <Route path="/profile/help-support" element={<DashboardPage />} />
-      
+      <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
     </Routes>
   );
 }
