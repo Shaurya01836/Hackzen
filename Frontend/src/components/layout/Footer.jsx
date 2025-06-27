@@ -1,14 +1,34 @@
-import React from "react";
-import {
-  Instagram,
-  Linkedin,
-  Github,
-  Dribbble,
-  Mail,
-} from "lucide-react";
+import React, { useState } from "react";
+import { Instagram, Linkedin, Github, Dribbble, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function Footer() {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const handleSubscribe = async () => {
+    if (!email || !email.includes("@")) {
+      setMessage("Please enter a valid email.");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://your-api.com/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setMessage("Subscribed successfully!");
+        setEmail("");
+      } else {
+        setMessage("Failed to subscribe. Try again.");
+      }
+    } catch (err) {
+      setMessage("An error occurred.");
+    }
+  };
+
   return (
     <footer className="text-indigo-900 pt-12 px-6 bg-white/20">
       <div className="flex flex-col md:flex-row justify-between gap-12 items-start p-10">
@@ -17,17 +37,27 @@ function Footer() {
           <h3 className="text-2xl sm:text-3xl font-semibold mb-6">
             Subscribe to our newsletter to <br /> stay in touch with the latest.
           </h3>
-
           <div className="relative w-full">
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Your email address"
               className="w-full px-6 py-3 pr-14 text-sm text-indigo-900 bg-transparent border border-gray-400 rounded-full outline-none placeholder:text-gray-500"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-indigo-600 p-2 rounded-full">
+            <button
+              onClick={handleSubscribe}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white bg-indigo-600 p-2 rounded-full hover:bg-indigo-700 transition"
+            >
               <Mail size={18} />
-            </span>
+            </button>
           </div>
+
+          {message && (
+            <p className="mt-4 text-sm text-indigo-700 font-medium">
+              {message}
+            </p>
+          )}
 
           <p className="mt-8 mb-4 text-sm tracking-widest text-gray-500 font-medium">
             FOLLOW US HERE:
