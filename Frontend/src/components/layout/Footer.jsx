@@ -5,14 +5,15 @@ import { Link } from "react-router-dom";
 function Footer() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  const handleSubscribe = async () => {
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
     if (!email || !email.includes("@")) {
       setMessage("Please enter a valid email.");
       return;
     }
 
     try {
-      const res = await fetch("https://your-api.com/newsletter", {
+      const res = await fetch("http://localhost:3000/api/newsletter/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -25,7 +26,7 @@ function Footer() {
         setMessage("Failed to subscribe. Try again.");
       }
     } catch (err) {
-      setMessage("An error occurred.");
+      setMessage("An error occurred. Please try again.");
     }
   };
 

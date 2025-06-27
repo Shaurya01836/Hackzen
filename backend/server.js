@@ -14,15 +14,16 @@ const teamInviteRoutes = require('./routes/teamInviteRoutes');
 const submissionHistoryRoutes = require('./routes/submissionHistoryRoutes');
 const projectRoutes = require('./routes/projectRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
-const chatRoomRoutes = require('./routes/chatRoomRoutes');          // ✅ NEW
-const messageRoutes = require('./routes/messageRoutes');            // ✅ NEW
+const chatRoomRoutes = require('./routes/chatRoomRoutes');    
+const messageRoutes = require('./routes/messageRoutes');      
+const newsletterRoutes = require('./routes/newsletterRoutes'); 
 
 // Middleware
 app.use(express.json());
 app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false
+secret: process.env.SESSION_SECRET,
+resave: false,
+saveUninitialized: false
 }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -40,8 +41,10 @@ app.use('/api/team-invites', teamInviteRoutes);
 app.use('/api/submissions', submissionHistoryRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/chatrooms', chatRoomRoutes);     // ✅ NEW
-app.use('/api/messages', messageRoutes);       // ✅ NEW
+app.use('/api/chatrooms', chatRoomRoutes);   
+app.use('/api/messages', messageRoutes);       
+app.use('/api/newsletter', newsletterRoutes);
+
 
 // MongoDB URI and port
 const PORT = process.env.PORT || 3000;
