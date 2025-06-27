@@ -9,7 +9,6 @@ import {
   Clock,
   ExternalLink,
   Heart,
-  MapPin,
 } from "lucide-react";
 import {
   ACard,
@@ -103,76 +102,83 @@ export function MyHackathons() {
     fetchSavedHackathons();
   }, []);
 
- const renderHackathonCard = (hackathon) => {
-    return (
-      <ACard
-        key={hackathon.id}
-        className="w-full max-w-xs flex flex-col overflow-hidden cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
-      >
-        {/* Thumbnail Section (You can add dynamic images later) */}
-        <div className="relative h-40 w-full">
-          <img
-            src={
-              hackathon.image ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
-            }
-            alt={hackathon.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-
-        
-
-          {/* Prize Pool Badge */}
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
-              <Trophy className="w-3 h-3 mr-1" />
-              {hackathon.prize || "TBA"}
-            </Badge>
+  const renderHackathonCard = (hackathon) => (
+    <ACard
+      key={hackathon.id}
+      className="hover:scale-[1.01] transition-all duration-200 ease-in-out shadow-md "
+    >
+      <ACardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <ACardTitle className="text-lg font-semibold text-indigo-700">
+              {hackathon.name}
+            </ACardTitle>
+            <ACardDescription className="mt-1 text-gray-600">
+              {hackathon.description}
+            </ACardDescription>
+          </div>
+          <Badge
+            className={`capitalize ${
+              hackathon.status === "live"
+                ? "bg-green-500 text-white"
+                : hackathon.status === "Closed"
+                ? "bg-gray-400 text-white"
+                : "border-indigo-300 text-indigo-600"
+            }`}
+          >
+            {hackathon.status}
+          </Badge>
+        </div>
+      </ACardHeader>
+      <ACardContent className="pt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-4 text-sm text-gray-700">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-indigo-500" />
+            <span>
+              {hackathon.startDate} - {hackathon.endDate}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.participants} participants</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.prize} prize pool</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-indigo-500" />
+            <span>{hackathon.deadline}</span>
           </div>
         </div>
 
-        {/* Card Content */}
-        <div className="p-4 flex flex-col gap-3">
-          {/* Title */}
-          <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-1 ">
-            {hackathon.name}
-          </h3>
-
-          {/* Meta Info */}
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-          
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4 text-indigo-500" />
-             {hackathon.deadline}
-            </div>
-         
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-indigo-500" />
-              {hackathon.location || "Online"}
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="flex gap-2 flex-wrap mt-1">
-            <Badge
-              variant="outline"
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-            >
-              {hackathon.category}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-            >
-              {hackathon.difficulty}
-            </Badge>
-          </div>
-
-        
+        <div className="flex gap-2 flex-wrap">
+          <Badge variant="outline">{hackathon.category}</Badge>
+          <Badge variant="outline">{hackathon.difficulty}</Badge>
         </div>
-      </ACard>
-    );
-  };
+
+        <div className="flex gap-2 pt-2 flex-wrap">
+          <Button
+            size="sm"
+            className="flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+          >
+            <ExternalLink className="w-3 h-3" />
+            View Details
+          </Button>
+          {hackathon.status === "live" && !hackathon.submitted && (
+            <Button size="sm" variant="default">
+              Submit Project
+            </Button>
+          )}
+          {hackathon.submitted && (
+            <Button size="sm" variant="outline" disabled>
+              Submitted ✓
+            </Button>
+          )}
+        </div>
+      </ACardContent>
+    </ACard>
+  );
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">

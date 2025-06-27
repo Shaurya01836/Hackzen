@@ -5,8 +5,9 @@ const jwt = require('jsonwebtoken');
 const userController = require('../controllers/userController');
 const { protect, isAdmin, isOrganizerOrAdmin } = require('../middleware/authMiddleware');
 const trackStreak = require("../middleware/trackStreak");
+const User = require('../model/UserModel');
 
-// OAuth: GitHub & Google
+// 🔐 OAuth Routes
 router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
@@ -30,11 +31,11 @@ router.get('/google/callback', passport.authenticate('google', {
   res.redirect(redirectUrl);
 });
 
-// Email/Password Auth
+// ✉️ Auth
 router.post('/register', userController.registerUser);
 router.post('/login', userController.loginUser);
 
-// Logout
+// 🚪 Logout
 router.get('/logout', (req, res) => {
   req.logout(() => {
     req.session.destroy(() => {
@@ -44,7 +45,7 @@ router.get('/logout', (req, res) => {
   });
 });
 
-// User CRUD
+// 👤 User Routes
 router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUserById);
 router.put('/:id', protect, userController.updateUser);
@@ -52,15 +53,17 @@ router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isOrganizerOrAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
 
-
-// ✅ Organization Features
+// 🏢 Organization
 router.post('/invite', protect, isOrganizerOrAdmin, userController.inviteToOrganization);
 router.get('/me/organization', protect, userController.getMyOrganizationStatus);
+
+// 🔥 Streak
 router.get('/:id/streaks', protect, userController.getUserStreakData);
 router.post("/streak", protect, trackStreak, (req, res) => {
   res.status(200).json({ message: "Streak tracked" });
 });
-// ✅ GET registered hackathon IDs for current user
+
+// ✅ My Registered Hackathons (IDs only)
 router.get('/me/registered-hackathons', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('registeredHackathonIds');
@@ -70,5 +73,17 @@ router.get('/me/registered-hackathons', protect, async (req, res) => {
   }
 });
 
+// ✅ Save / Unsave Hackathon
+router.post('/save-hackathon', protect, userController.saveHackathon);
+
+// ✅ Get Saved Hackathons List (full populated data)
+router.get('/me/saved-hackathons', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('savedHackathons');
+    res.status(200).json(user.savedHackathons || []);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch saved hackathons" });
+  }
+});
 
 module.exports = router;
