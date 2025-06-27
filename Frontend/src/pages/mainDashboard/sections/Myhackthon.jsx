@@ -175,7 +175,7 @@ export function MyHackathons() {
   };
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">
       <div className="flex items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Hackathons</h1>

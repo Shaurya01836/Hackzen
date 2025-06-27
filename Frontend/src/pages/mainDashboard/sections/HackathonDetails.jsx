@@ -41,6 +41,7 @@ import {
 } from "../../../components/DashboardUI/avatar";
 import { Progress } from "../../../components/DashboardUI/progress";
 import { HackathonRegistration } from "./RegistrationHackathon";
+import axios from "axios";
 
 // Mock animated card components
 const ACard = Card;
@@ -94,6 +95,31 @@ export function HackathonDetails({ hackathon, onBack }) {
   ];
 
   useEffect(() => {
+    const fetchRegisteredHackathons = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:3000/api/registration/my",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        const registered = res.data.some(
+          (r) => r.hackathonId._id === hackathon._id // or r.hackathonId === hackathon._id if not populated
+        );
+
+        setIsRegistered(registered);
+      } catch (err) {
+        console.error("Error fetching registered hackathons", err);
+      }
+    };
+
+    fetchRegisteredHackathons();
+  }, [hackathon._id]);
+
+  useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       if (currentScrollY < lastScrollY || currentScrollY < 10) {
@@ -140,17 +166,50 @@ export function HackathonDetails({ hackathon, onBack }) {
     }
   };
 
-  const handleRegister = () => {
-    if (isRegistered) {
-      setIsRegistered(false);
-    } else {
-      setShowRegistration(true);
+  const handleRegister = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:3000/api/registration',
+        {
+          hackathonId: hackathon._id,
+          formData: { acceptedTerms: true }, // if your backend needs formData
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setIsRegistered(true);
+    } catch (err) {
+      console.error("Failed to register:", err);
     }
   };
+  
+  const handleSave = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-  const handleSave = () => {
-    setIsSaved(!isSaved);
-  };
+    const res = await fetch("http://localhost:3000/api/users/save-hackathon", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ hackathonId: hackathon._id }),
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      setIsSaved(data.savedHackathons.includes(hackathon._id));
+    }
+  } catch (err) {
+    console.error("Error saving hackathon:", err);
+  }
+};
+
 
   const handleRegistrationSuccess = () => {
     setShowRegistration(false);
