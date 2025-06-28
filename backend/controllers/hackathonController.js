@@ -171,37 +171,52 @@ exports.updateHackathon = async (req, res) => {
       participants
     } = req.body;
 
+
+    console.log("Judges from request:", judges);
+    console.log("Mentors from request:", mentors);
+
+    // Saari fields ko bina condition ke ek object mein daalo
+    const updateFields = {
+      title,
+      description,
+      startDate,
+      endDate,
+      registrationDeadline,
+      submissionDeadline,
+      maxParticipants,
+      status,
+      category,
+      difficultyLevel,
+      location,
+      mode,
+      problemStatements,
+      problemStatementTypes,
+      requirements,
+      perks,
+      tags,
+      rounds,
+      images,
+      judges,
+      mentors,
+      participants,
+      prizePool: {
+        amount: prizePool?.amount || 0,
+        currency: prizePool?.currency || 'USD',
+        breakdown: prizePool?.breakdown || ''
+      }
+    };
+    
+
+    // Jo fields undefined hai unko hata do taaki wo update na kare
+    Object.keys(updateFields).forEach(key => {
+      if (updateFields[key] === undefined) {
+        delete updateFields[key];
+      }
+    });
+
     const updated = await Hackathon.findByIdAndUpdate(
       req.params.id,
-      {
-        ...(title && { title }),
-        ...(description && { description }),
-        ...(startDate && { startDate }),
-        ...(endDate && { endDate }),
-        ...(registrationDeadline && { registrationDeadline }),
-        ...(submissionDeadline && { submissionDeadline }),
-        ...(maxParticipants && { maxParticipants }),
-        ...(status && { status }),
-        ...(category && { category }),
-        ...(difficultyLevel && { difficultyLevel }),
-        ...(location && { location }),
-        ...(mode && { mode }),
-        ...(problemStatements && { problemStatements }),
-        ...(problemStatementTypes && { problemStatementTypes }),
-        ...(requirements && { requirements }),
-        ...(perks && { perks }),
-        ...(tags && { tags }),
-        ...(rounds && { rounds }),
-        ...(images && { images }),
-        ...(judges && { judges }),
-        ...(mentors && { mentors }),
-        ...(participants && { participants }),
-        prizePool: {
-          amount: prizePool?.amount || 0,
-          currency: prizePool?.currency || 'USD',
-          breakdown: prizePool?.breakdown || ''
-        }
-      },
+      updateFields,
       { new: true }
     );
 
