@@ -35,9 +35,10 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { Progress } from "../../../components/DashboardUI/progress";
+import HackathonDetailModal from "./HackathonDetailModal";
+import HackathonEditModal from "./HackathonEditModal"; // Adjust path
 
-export function CreatedHackathons({  onCreateNew }) {
- 
+export function CreatedHackathons({ onCreateNew }) {
   const [hackathons, setHackathons] = useState([]);
 
   useEffect(() => {
@@ -62,6 +63,19 @@ export function CreatedHackathons({  onCreateNew }) {
   const liveHackathons = hackathons.filter((h) => h.status === "ongoing");
   const completedHackathons = hackathons.filter((h) => h.status === "ended");
   const draftHackathons = hackathons.filter((h) => h.status === "draft");
+  const [selectedHackathon, setSelectedHackathon] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+const [editHackathon, setEditHackathon] = useState(null);
+// const [refresh, setRefresh] = useState(false); 
+
+  const handleEdit = (hackathon) => {
+    setEditHackathon(hackathon);
+  };
+
+  const handleViewDetails = (hackathon) => {
+    setSelectedHackathon(hackathon);
+    setShowModal(true);
+  };
   const registrationOpenHackathons = hackathons.filter(
     (h) => new Date(h.registrationDeadline) > new Date()
   );
@@ -165,7 +179,11 @@ export function CreatedHackathons({  onCreateNew }) {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button size="sm" className="flex items-center gap-1">
+          <Button
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => handleViewDetails(hackathon)}
+          >
             <Eye className="w-3 h-3" />
             View Details
           </Button>
@@ -173,6 +191,7 @@ export function CreatedHackathons({  onCreateNew }) {
             size="sm"
             variant="outline"
             className="flex items-center gap-1"
+            onClick={() => handleEdit(hackathon)}
           >
             <Edit className="w-3 h-3" />
             Edit
@@ -204,7 +223,6 @@ export function CreatedHackathons({  onCreateNew }) {
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-        
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
               Created Hackathons
@@ -313,6 +331,23 @@ export function CreatedHackathons({  onCreateNew }) {
           </div>
         </TabsContent>
       </Tabs>
+      <HackathonDetailModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        hackathon={selectedHackathon}
+      />
+
+      {editHackathon && (
+  <HackathonEditModal
+    hackathon={editHackathon}
+    onClose={() => setEditHackathon(null)}
+    onUpdated={() => {
+      setEditHackathon(null);
+      window.location.reload(); // OR re-fetch if you prefer
+    }}
+  />
+)}
+
     </div>
   );
 }
