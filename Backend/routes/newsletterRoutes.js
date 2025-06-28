@@ -1,5 +1,3 @@
-console.log("✅ newsletterRoutes.js loaded");
-
 const express = require("express");
 const Newsletter = require("../model/NewsletterModel");
 const nodemailer = require("nodemailer");
