@@ -3,11 +3,13 @@ import dayjs from "dayjs";
 
 // Color levels (0 = no activity, 1-3 = light to dark)
 const activityLevels = [
-  "bg-[#1b0c3f]", 
-  "bg-[#2a1c4f]", 
-  "bg-[#3c2d66]", 
-  "bg-[#503f80]"
+  "bg-[#f1f5f9]", // 0 - very light gray (no activity)
+  "bg-[#90cdf4]", // 1 - light blue
+  "bg-[#4299e1]", // 2 - medium blue
+  "bg-[#1e40af]"  // 3+ - deep blue
 ];
+const maxStreakColor = "bg-[#fbbf24]"; // gold
+const todayColor = "bg-[#a78bfa]"; // purple
 
 // Get intensity by frequency (for now 1 = visited)
 const getActivityLevel = (count) => {
@@ -28,13 +30,40 @@ const getMonthRange = (monthIndex) => {
   return { start, end };
 };
 
+function getMaxStreakDays(normalizedData) {
+  // Find the longest consecutive streak in the data
+  const sorted = [...normalizedData].sort();
+  let maxStreak = 0, currentStreak = 0, prev = null, streakDays = [], maxStreakDays = [];
+  for (let date of sorted) {
+    if (prev && dayjs(date).diff(dayjs(prev), 'day') === 1) {
+      currentStreak++;
+      streakDays.push(date);
+    } else {
+      currentStreak = 1;
+      streakDays = [date];
+    }
+    if (currentStreak > maxStreak) {
+      maxStreak = currentStreak;
+      maxStreakDays = [...streakDays];
+    }
+    prev = date;
+  }
+  return new Set(maxStreakDays);
+}
+
 const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
+  // Normalize all dates to YYYY-MM-DD
+  const normalizedData = data.map(date => dayjs(date).format("YYYY-MM-DD"));
+
   // Convert array of Date strings into a frequency map
   const activityMap = {};
-  data.forEach((date) => {
-    const day = dayjs(date).format("YYYY-MM-DD");
+  normalizedData.forEach((day) => {
     activityMap[day] = (activityMap[day] || 0) + 1;
   });
+
+  // Find max streak days
+  const maxStreakDays = getMaxStreakDays(normalizedData);
+  const today = dayjs().format("YYYY-MM-DD");
 
   return (
     <div className="rounded-lg text-gray-900 py-6 px-6 md:px-24 ring-1 ring-indigo-300">
@@ -49,7 +78,10 @@ const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
           for (let date = start; date.isBefore(end); date = date.add(1, "day")) {
             const key = date.format("YYYY-MM-DD");
             const count = activityMap[key] || 0;
-            days.push(getActivityLevel(count));
+            let colorClass = activityLevels[getActivityLevel(count)];
+            if (maxStreakDays.has(key) && count > 0) colorClass = maxStreakColor;
+            if (key === today && count > 0) colorClass = todayColor;
+            days.push(colorClass);
           }
 
           return (
@@ -58,10 +90,10 @@ const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
                 {monthLabel}
               </h3>
               <div className="grid grid-cols-7 gap-1">
-                {days.map((level, i) => (
+                {days.map((colorClass, i) => (
                   <div
                     key={i}
-                    className={`w-3.5 h-3.5 rounded-sm border ${activityLevels[level]}`}
+                    className={`w-3.5 h-3.5 rounded-sm border border-gray-300 ${colorClass}`}
                   />
                 ))}
               </div>
@@ -73,12 +105,14 @@ const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
       {/* Legend */}
       <div className="mt-6 flex items-center justify-center space-x-2 text-sm">
         <span>Activity:</span>
-        {activityLevels.map((bg, i) => (
-          <div
-            key={i}
-            className={`w-4 h-4 ${bg} rounded-sm border border-gray-300`}
-          />
-        ))}
+        <div className="w-4 h-4 bg-[#f1f5f9] rounded-sm border border-gray-300" />
+        <div className="w-4 h-4 bg-[#90cdf4] rounded-sm border border-gray-300" />
+        <div className="w-4 h-4 bg-[#4299e1] rounded-sm border border-gray-300" />
+        <div className="w-4 h-4 bg-[#1e40af] rounded-sm border border-gray-300" />
+        <span>Max Streak</span>
+        <div className="w-4 h-4 bg-[#fbbf24] rounded-sm border border-gray-300" />
+        <span>Today</span>
+        <div className="w-4 h-4 bg-[#a78bfa] rounded-sm border border-gray-300" />
       </div>
 
       {/* Streak Summary */}
