@@ -146,8 +146,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Failed to register");
-
+    if (!response.ok) {
+      if (data.message && data.message.includes("Already registered")) {
+        onSuccess(); // treat as success
+        return;
+      }
+      throw new Error(data.message || "Failed to register");
+    }
     onSuccess(); // success handler
   } catch (error) {
     console.error("Registration failed:", error);

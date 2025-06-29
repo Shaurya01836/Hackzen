@@ -49,7 +49,7 @@ const ACardContent = CardContent;
 const ACardHeader = CardHeader;
 const ACardTitle = CardTitle;
 
-export function HackathonDetails({ hackathon, onBack }) {
+export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
@@ -93,30 +93,6 @@ export function HackathonDetails({ hackathon, onBack }) {
     { id: "team", label: "Team Management", icon: Settings },
     { id: "community", label: "Community", icon: Users },
   ];
-useEffect(() => {
-  const fetchSavedHackathons = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const savedHackathons = await res.json();
-
-      setIsSaved(
-        savedHackathons.map((h) => h._id.toString()).includes(hackathon._id.toString())
-      );
-    } catch (err) {
-      console.error("Failed to fetch saved hackathons:", err);
-    }
-  };
-
-  fetchSavedHackathons();
-}, [hackathon._id]);
 
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
@@ -190,12 +166,26 @@ useEffect(() => {
     }
   };
 
-const handleRegister = () => {
-  if (!isRegistered) {
-    setShowRegistration(true); // ✅ open the registration form
-  }
-};
-
+  const handleRegister = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:3000/api/registration',
+        {
+          hackathonId: hackathon._id,
+          formData: { acceptedTerms: true }, // if your backend needs formData
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      setIsRegistered(true);
+    } catch (err) {
+      console.error("Failed to register:", err);
+    }
+  };
   
   const handleSave = async () => {
   try {
@@ -229,6 +219,15 @@ const handleRegister = () => {
   const handleBackFromRegistration = () => {
     setShowRegistration(false);
   };
+
+  // Registration status logic
+  const now = new Date();
+  const registrationDeadline = new Date(hackathon.registrationDeadline || hackathon.registrationDeadline);
+  const maxParticipants = hackathon.maxParticipants || 100;
+  const currentParticipants = hackathon.participants || 0;
+
+  const isRegistrationClosed = registrationDeadline < now;
+  const isRegistrationFull = currentParticipants >= maxParticipants;
 
   if (showRegistration) {
     return (
@@ -385,7 +384,7 @@ const handleRegister = () => {
                 className="flex items-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Explore
+                {backButtonLabel || "Back to Explore"}
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
@@ -416,24 +415,21 @@ const handleRegister = () => {
                 <Share2 className="w-4 h-4" />
                 Share
               </Button>
-              <Button
-                size="sm"
-                onClick={handleRegister}
-                className={
-                  isRegistered
-                    ? "bg-green-500 hover:bg-green-600"
-                    : "bg-indigo-500 hover:bg-indigo-600"
-                }
-              >
-                {isRegistered ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Registered
-                  </>
-                ) : (
-                  "Register Now"
-                )}
-              </Button>
+              {isRegistrationClosed ? (
+                <Badge className="bg-red-500 text-white">Registration Closed</Badge>
+              ) : isRegistrationFull && !isRegistered ? (
+                <Badge className="bg-red-500 text-white">Registration Full</Badge>
+              ) : isRegistered ? (
+                <Badge className="bg-green-500 text-white">Registered</Badge>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => setShowRegistration(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Register
+                </Button>
+              )}
             </div>
           </div>
         </div>

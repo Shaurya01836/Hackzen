@@ -253,6 +253,11 @@ export function ExploreHackathons() {
     (h) => h.status === "upcoming"
   );
 
+  const now = new Date();
+  const closedHackathons = filteredHackathons.filter(
+    (h) => new Date(h.registrationDeadline) < now
+  );
+
   const handleHackathonClick = (hackathon) => {
     const transformedHackathon = transformHackathonData(hackathon);
 
@@ -489,6 +494,9 @@ export function ExploreHackathons() {
           <TabsTrigger value="upcoming">
             Registration Open ({upcomingHackathons.length})
           </TabsTrigger>
+          <TabsTrigger value="closed">
+            Closed ({closedHackathons.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -573,6 +581,28 @@ export function ExploreHackathons() {
                 </h3>
                 <p className="text-gray-500 text-center">
                   All hackathons are currently closed for registration.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="closed" className="space-y-4">
+          {closedHackathons.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {closedHackathons.map((hackathon) =>
+                renderHackathonCard(hackathon)
+              )}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Clock className="w-12 h-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Closed Hackathons
+                </h3>
+                <p className="text-gray-500 text-center">
+                  All hackathons are currently open for registration.
                 </p>
               </CardContent>
             </Card>
