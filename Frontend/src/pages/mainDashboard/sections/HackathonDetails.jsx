@@ -93,6 +93,30 @@ export function HackathonDetails({ hackathon, onBack }) {
     { id: "team", label: "Team Management", icon: Settings },
     { id: "community", label: "Community", icon: Users },
   ];
+useEffect(() => {
+  const fetchSavedHackathons = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const savedHackathons = await res.json();
+
+      setIsSaved(
+        savedHackathons.map((h) => h._id.toString()).includes(hackathon._id.toString())
+      );
+    } catch (err) {
+      console.error("Failed to fetch saved hackathons:", err);
+    }
+  };
+
+  fetchSavedHackathons();
+}, [hackathon._id]);
 
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
@@ -166,26 +190,12 @@ export function HackathonDetails({ hackathon, onBack }) {
     }
   };
 
-  const handleRegister = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        'http://localhost:3000/api/registration',
-        {
-          hackathonId: hackathon._id,
-          formData: { acceptedTerms: true }, // if your backend needs formData
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      setIsRegistered(true);
-    } catch (err) {
-      console.error("Failed to register:", err);
-    }
-  };
+const handleRegister = () => {
+  if (!isRegistered) {
+    setShowRegistration(true); // ✅ open the registration form
+  }
+};
+
   
   const handleSave = async () => {
   try {
