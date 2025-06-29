@@ -230,33 +230,17 @@ export function OrganizationHub() {
   const fetchMyApplicationStatus = async () => {
     setLoadingStatus(true);
     const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch("http://localhost:3000/api/organizations/my", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await fetch("http://localhost:3000/api/organizations/my-application", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      const contentType = response.headers.get("content-type");
-      let data = {};
-
-      if (contentType && contentType.includes("application/json")) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        throw new Error("Server error: " + text.substring(0, 100));
-      }
-
-      if (!response.ok) throw new Error(data.message || "Something went wrong.");
-
-      // ✅ Set modal state
+      if (!response.ok) throw new Error("No application found");
+      const data = await response.json();
       setMyOrgInfo({
-        status: data.applicationStatus || "Under Review",
+        status: data.status,
         contactPerson: data.contactPerson,
-        organizationName: data.name,
-        reviewDate: "3-5 days",
+        organizationName: data.organizationName,
+        // ...other fields
       });
       setShowStatusModal(true);
     } catch (error) {
@@ -987,9 +971,15 @@ export function OrganizationHub() {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    myOrgInfo.status === "approved"
+                      ? "bg-green-500"
+                      : myOrgInfo.status === "rejected"
+                      ? "bg-red-500"
+                      : "bg-yellow-400"
+                  }`}></div>
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 capitalize">
                       {myOrgInfo.status}
                     </p>
                     <p className="text-sm text-gray-600">
@@ -998,26 +988,25 @@ export function OrganizationHub() {
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Organization:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.organizationName}
-                    </span>
+                {myOrgInfo.status === "approved" ? (
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Organization:</span>
+                      <span className="font-medium">
+                        {myOrgInfo.organizationName}
+                      </span>
+                    </div>
+                    {/* Add more org details here if needed */}
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Contact Person:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.contactPerson}
-                    </span>
+                ) : myOrgInfo.status === "rejected" ? (
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-red-600">
+                    Your application was rejected.
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Expected Review:</span>
-                    <span className="font-medium">
-                      {myOrgInfo.reviewDate || "3-5 days"}
-                    </span>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-yellow-600">
+                    Your application is under review.
                   </div>
-                </div>
+                )}
 
                 <div className="text-center">
                   <p className="text-sm text-gray-600">

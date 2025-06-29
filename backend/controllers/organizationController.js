@@ -257,6 +257,23 @@ const removeUserFromOrganization = async (req, res) => {
   }
 };
 
+const getMyApplicationStatus = async (req, res) => {
+  try {
+    const org = await Organization.findOne({ createdBy: req.user._id });
+    if (!org) {
+      return res.status(404).json({ message: "No application found" });
+    }
+    res.json({
+      status: org.approved ? "approved" : "pending",
+      organizationName: org.name,
+      contactPerson: org.contactPerson,
+      // add more org fields if needed
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch application status" });
+  }
+};
+
 module.exports = {
   registerOrganization,
   getAllOrganizations,
@@ -268,4 +285,5 @@ module.exports = {
   rejectOrganization,
   updateMyOrganization,
   getMyOrganization,
+  getMyApplicationStatus,
 };
