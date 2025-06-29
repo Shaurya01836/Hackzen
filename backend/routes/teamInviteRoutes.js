@@ -12,4 +12,7 @@ router.put('/:id/respond', protect, teamInviteController.respondToInvite);
 // Get all invites for the logged-in user
 router.get('/my', protect, teamInviteController.getMyInvites);
 
+// Accept invite by id (for invite link)
+router.post('/:id/accept', protect, teamInviteController.acceptInviteById);
+
 module.exports = router;

@@ -34,6 +34,14 @@ import { Checkbox } from "../../../components/DashboardUI/checkbox"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Progress } from "../../../components/DashboardUI/progress"
 
+function generateTeamCode(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   const [currentStep, setCurrentStep] = useState(1)
@@ -48,7 +56,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     degreeOrRole: "",
     yearOfStudyOrExperience: "",
     teamName: "",
-    teamCode: "",
+    teamCode: generateTeamCode(),
     projectIdea: "",
     track: "",
     github: "",
@@ -413,10 +421,8 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   <Input
                     id="teamCode"
                     value={formData.teamCode}
-                    onChange={e =>
-                      handleInputChange("teamCode", e.target.value)
-                    }
-                    placeholder="Enter team code to join existing team"
+                    readOnly
+                    placeholder="Team code will be generated automatically"
                   />
                 </div>
               </div>
