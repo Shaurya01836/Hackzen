@@ -36,6 +36,9 @@ export function OrganizationHub() {
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [orgDetails, setOrgDetails] = useState(null);
   const [loadingOrg, setLoadingOrg] = useState(true);
+  const { token, refreshUser } = useAuth();
+  const [editMode, setEditMode] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -94,8 +97,6 @@ export function OrganizationHub() {
     organizationName: "TechCorp Solutions",
     contactPerson: "John Smith",
   };
-
-  const { refreshUser } = useAuth();
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -262,6 +263,56 @@ export function OrganizationHub() {
       alert("❌ Failed to fetch status: " + error.message);
     } finally {
       setLoadingStatus(false);
+    }
+  };
+
+  // Start editing
+  const startEdit = () => {
+    setEditFormData(orgDetails);
+    setEditMode(true);
+  };
+
+  // Handle edit input changes
+  const handleEditChange = (field, value) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle support needs change
+  const handleEditSupportNeedsChange = (option, checked) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      supportNeeds: checked
+        ? [...(prev.supportNeeds || []), option]
+        : (prev.supportNeeds || []).filter(item => item !== option),
+    }));
+  };
+
+  // Submit the edit
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://localhost:3000/api/organizations/edit", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editFormData),
+      });
+      if (!res.ok) throw new Error("Failed to update organization");
+      setEditMode(false);
+      await refreshUser();
+      setLoadingOrg(true);
+      const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        setOrgDetails(refreshData);
+      }
+      setLoadingOrg(false);
+    } catch (err) {
+      alert("Update failed: " + err.message);
     }
   };
 
@@ -680,6 +731,96 @@ export function OrganizationHub() {
                   </div>
                 </CardContent>
               </Card>
+            ) : editMode ? (
+              <Card>
+                <CardContent className="py-8">
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div>
+                      <Label>Organization Name</Label>
+                      <Input
+                        value={editFormData?.name || ""}
+                        onChange={e => handleEditChange("name", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Contact Person</Label>
+                      <Input
+                        value={editFormData?.contactPerson || ""}
+                        onChange={e => handleEditChange("contactPerson", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        value={editFormData?.email || ""}
+                        onChange={e => handleEditChange("email", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Organization Type</Label>
+                      <Select
+                        value={editFormData?.organizationType || ""}
+                        onValueChange={value => handleEditChange("organizationType", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {organizationTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Support Needs</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {supportOptions.map(option => (
+                          <label key={option} className="flex items-center gap-2">
+                            <Checkbox
+                              checked={editFormData?.supportNeeds?.includes(option)}
+                              onCheckedChange={checked =>
+                                handleEditSupportNeedsChange(option, checked)
+                              }
+                            />
+                            {option}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Purpose</Label>
+                      <Textarea
+                        value={editFormData?.purpose || ""}
+                        onChange={e => handleEditChange("purpose", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Website</Label>
+                      <Input
+                        value={editFormData?.website || ""}
+                        onChange={e => handleEditChange("website", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>GitHub</Label>
+                      <Input
+                        value={editFormData?.github || ""}
+                        onChange={e => handleEditChange("github", e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button type="submit" className="bg-indigo-600 text-white">Save</Button>
+                      <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             ) : orgDetails ? (
               <Card>
                 <CardContent className="py-8">
@@ -762,6 +903,7 @@ export function OrganizationHub() {
                           </div>
                         </div>
                       )}
+                      <Button className="mt-4" onClick={startEdit}>Edit</Button>
                     </div>
                   </div>
                 </CardContent>
