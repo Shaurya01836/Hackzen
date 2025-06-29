@@ -444,7 +444,7 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
               {/* Main Image */}
               <div className="lg:col-span-2">
-                <div className="relative rounded-xl overflow-hidden shadow">
+                <div className="relative w-full max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-lg mb-8">
                   <img
                     src={
                       currentHackathon.images?.banner?.url ||
@@ -467,13 +467,15 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
                     )}
                   </div>
                   <div className="absolute bottom-4 right-4">
-                    <Badge
-                      className={`${getStatusColor(
-                        currentHackathon.status
-                      )} text-white`}
-                    >
-                      {currentHackathon.status}
-                    </Badge>
+                    {isRegistrationClosed ? (
+                      <Badge className="bg-red-500 text-white">Registration Closed</Badge>
+                    ) : isRegistrationFull && !isRegistered ? (
+                      <Badge className="bg-red-500 text-white">Registration Full</Badge>
+                    ) : isRegistered ? (
+                      <Badge className="bg-green-500 text-white">Registered</Badge>
+                    ) : (
+                      <Badge className="bg-green-500 text-white">Registration Open</Badge>
+                    )}
                   </div>
                 </div>
               </div>
