@@ -1,4 +1,5 @@
 "use client"
+import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
   BarChart3,
@@ -22,17 +23,6 @@ import { Button } from "../../../components/CommonUI/button"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
 import { Progress } from "../../../components/DashboardUI/progress"
-
-const analyticsData = {
-  totalEvents: 12,
-  activeEvents: 3,
-  totalParticipants: 1247,
-  totalSubmissions: 892,
-  averageRating: 4.7,
-  completionRate: 78,
-  monthlyGrowth: 23,
-  topPerformingEvent: "AI Innovation Challenge"
-}
 
 const recentActivity = [
   {
@@ -125,6 +115,58 @@ const quickActions = [
 ]
 
 export function OrganizerTools() {
+  const [analyticsData, setAnalyticsData] = useState({
+    totalEvents: 0,
+    activeEvents: 0,
+    totalParticipants: 0,
+    totalSubmissions: 0,
+    averageRating: 0,
+    completionRate: 0,
+    monthlyGrowth: 0,
+    topPerformingEvent: "-"
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("http://localhost:3000/api/hackathons/my", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const hackathons = await res.json();
+        // Calculate analytics
+        const totalEvents = hackathons.length;
+        const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants?.length || 0), 0);
+        const totalSubmissions = hackathons.reduce((sum, h) => sum + (h.submissions?.length || 0), 0);
+        // You can add more analytics calculations here
+        setAnalyticsData({
+          totalEvents,
+          activeEvents: hackathons.filter(h => h.status === "ongoing").length,
+          totalParticipants,
+          totalSubmissions,
+          averageRating: 0, // Placeholder, unless you have ratings
+          completionRate: 0, // Placeholder
+          monthlyGrowth: 0, // Placeholder
+          topPerformingEvent: hackathons[0]?.title || "-"
+        });
+      } catch (err) {
+        setAnalyticsData({
+          totalEvents: 0,
+          activeEvents: 0,
+          totalParticipants: 0,
+          totalSubmissions: 0,
+          averageRating: 0,
+          completionRate: 0,
+          monthlyGrowth: 0,
+          topPerformingEvent: "-"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
   const getActivityIcon = type => {
     switch (type) {
