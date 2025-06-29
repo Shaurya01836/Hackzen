@@ -37,27 +37,49 @@ export function OrganizerRequestsPage() {
     }
   };
 
-  const handleDecision = async (id, decision) => {
-    setUpdatingId(id);
-    const endpoint = decision === "approve" ? `approve` : `reject`;
-    try {
-      const res = await fetch(
-        `http://localhost:3000/api/organizations/${id}/${endpoint}`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Failed to update status");
-      toast.success(`✅ Application ${decision}d`);
-      setRequests((prev) => prev.filter((org) => org._id !== id));
-    } catch (err) {
-      toast.error(`❌ Failed to ${decision}`);
-    } finally {
-      setUpdatingId(null);
+  const handleDecision = async (org, decision) => {
+    setUpdatingId(org._id);
+    if (decision === "approve") {
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/organizations/${org._id}/approve`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to update status");
+        toast.success(`✅ Application approved`);
+        setRequests((prev) => prev.filter((o) => o._id !== org._id));
+      } catch (err) {
+        toast.error(`❌ Failed to approve`);
+      } finally {
+        setUpdatingId(null);
+      }
+    } else {
+      // Reject logic (existing)
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/organizations/${org._id}/reject`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Failed to update status");
+        toast.success(`✅ Application rejected`);
+        setRequests((prev) => prev.filter((o) => o._id !== org._id));
+      } catch (err) {
+        toast.error(`❌ Failed to reject`);
+      } finally {
+        setUpdatingId(null);
+      }
     }
   };
 
@@ -130,14 +152,14 @@ export function OrganizerRequestsPage() {
 
               <div className="flex gap-4 mt-4">
                 <Button
-                  onClick={() => handleDecision(org._id, "approve")}
+                  onClick={() => handleDecision(org, "approve")}
                   disabled={updatingId === org._id}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
                   {updatingId === org._id ? "Approving..." : "Approve"}
                 </Button>
                 <Button
-                  onClick={() => handleDecision(org._id, "reject")}
+                  onClick={() => handleDecision(org, "reject")}
                   disabled={updatingId === org._id}
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >

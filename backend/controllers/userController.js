@@ -303,6 +303,17 @@ const getUserStreakData = async (req, res) => {
   }
 };
 
+// ✅ Get current user info (for session refresh)
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('organization');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch user info' });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
@@ -315,7 +326,8 @@ module.exports = {
   changePassword,
   getMyOrganizationStatus,
   getUserStreakData,
-  saveHackathon
+  saveHackathon,
+  getMe
 };
 
 

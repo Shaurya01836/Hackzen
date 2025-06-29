@@ -12,6 +12,7 @@ const {
   rejectOrganization,
   updateMyOrganization,
   getMyOrganization,
+  getMyApplicationStatus,
 } = require("../controllers/organizationController");
 
 const upload = require("../middleware/cloudinaryUpload");
@@ -47,5 +48,7 @@ router.get("/my", protect, getMyOrganization);
 // ✅ Admin: Approve or Reject entire organization
 router.patch("/:id/approve", protect, isAdmin, approveOrganization);
 router.patch("/:id/reject", protect, isAdmin, rejectOrganization);
+
+router.get("/my-application", protect, getMyApplicationStatus);
 
 module.exports = router;

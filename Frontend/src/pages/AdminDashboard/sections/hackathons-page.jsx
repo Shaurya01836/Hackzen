@@ -2,12 +2,30 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
-import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import {
+  RCard,
+  RCardContent,
+  RCardHeader,
+  RCardTitle,
+} from "../../../components/CommonUI/RippleCard";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Input } from "../../../components/CommonUI/input";
-import { Plus, Search, Calendar, Users, Trophy, Eye, FolderCode } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Calendar,
+  Users,
+  Trophy,
+  Eye,
+  FolderCode,
+} from "lucide-react";
 import { CreateHackathonForm } from "./CreateHackathon";
 
 export function HackathonsPage() {
@@ -38,19 +56,23 @@ export function HackathonsPage() {
       hackathon.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <p className="text-gray-700">Loading hackathons...</p>;
-  if (error) return <p className="text-red-500">{error}</p>;
+  const formatDate = (date) =>
+    new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
 
   const getStatusColor = (status) => {
     switch (status) {
       case "upcoming":
-        return "bg-orange-500 text-green-300 border-green-500/30";
+        return "bg-orange-500 text-white border-orange-500/30";
       case "ended":
-        return "bg-red-600 text-gray-300 border-gray-500/30";
-        case "ongoing":
-        return "bg-green-500 text-gray-300 border-gray-500/30";
+        return "bg-red-600 text-white border-red-500/30";
+      case "ongoing":
+        return "bg-green-500 text-white border-green-500/30";
       default:
-        return "bg-gray-500 text-gray-300 border-gray-500/30";
+        return "bg-gray-500 text-white border-gray-500/30";
     }
   };
 
@@ -58,6 +80,9 @@ export function HackathonsPage() {
     console.log("Creating hackathon:", hackathonData);
     setShowCreateForm(false);
   };
+
+  if (loading) return <p className="text-gray-700">Loading hackathons...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -76,28 +101,25 @@ export function HackathonsPage() {
             </Button>
           </div>
 
-          {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
-                <Input
-                  placeholder="Search hackathons by title or organizer..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-                />
-              </div>
-    
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
+            <Input
+              placeholder="Search hackathons by title or organizer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
+            />
+          </div>
 
-          {/* Hackathons Grid */}
+          {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredHackathons.map((hackathon) => (
-              <RCard
-                key={hackathon._id}
-              >
+              <RCard key={hackathon._id}>
                 <RCardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <RCardTitle className="text-gray-800 text-lg mb-2  transition-colors">
+                      <RCardTitle className="text-gray-800 text-lg mb-2 transition-colors">
                         {hackathon.title}
                       </RCardTitle>
                       <p className="text-gray-600 text-sm">
@@ -112,33 +134,26 @@ export function HackathonsPage() {
                 <RCardContent className="space-y-4">
                   <div className="flex items-center text-gray-700 text-sm">
                     <Calendar className="w-4 h-4 mr-2 text-purple-500" />
-                    {hackathon.startDate} - {hackathon.endDate}
+                    {formatDate(hackathon.startDate)} — {formatDate(hackathon.endDate)}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center text-gray-700 text-sm">
                       <Users className="w-4 h-4 mr-2 text-blue-500" />
-                      {hackathon.participants} participants
+                      {hackathon.participants?.length || 0} participants
                     </div>
                     <div className="flex items-center text-gray-700 text-sm">
                       <Trophy className="w-4 h-4 mr-2 text-yellow-500" />
-                      {hackathon.prize} pool
+                      {hackathon.prizePool?.amount
+                        ? `${hackathon.prizePool.amount} ${hackathon.prizePool.currency}`
+                        : "N/A"}{" "}
+                      pool
                     </div>
                   </div>
 
                   <div className="flex items-center text-gray-600 text-sm">
                     <FolderCode className="w-4 h-4 mr-2 text-yellow-500" />
-                      {hackathon.submissions}  submissions received
-                  </div>
-
-                  <div className="flex space-x-2 pt-2">
-                    <Button
-                      size="sm"
-                      className="flex-1 text-white bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View Details
-                    </Button>
+                    {hackathon.submissions?.length || 0} submissions received
                   </div>
                 </RCardContent>
               </RCard>

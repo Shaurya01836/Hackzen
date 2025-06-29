@@ -20,14 +20,13 @@ const OrganizationSchema = new mongoose.Schema(
       required: true,
       lowercase: true,
       validate: {
-  validator: function (email) {
-    const domain = email.split("@")[1];
-    const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    return isValidFormat && !disallowedDomains.includes(domain);
-  },
-  message: "Please use an official organization email address.",
-},
-
+        validator: function (email) {
+          const domain = email.split("@")[1];
+          const isValidFormat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+          return isValidFormat && !disallowedDomains.includes(domain);
+        },
+        message: "Please use an official organization email address.",
+      },
     },
     contactMethods: {
       whatsapp: { type: String },
@@ -50,8 +49,8 @@ const OrganizationSchema = new mongoose.Schema(
         "Other",
       ],
       required: true,
-    },logo: { type: String },
-
+    },
+    logo: { type: String },
     purpose: {
       type: String,
       maxlength: 1000,
@@ -61,6 +60,11 @@ const OrganizationSchema = new mongoose.Schema(
     approved: {
       type: Boolean,
       default: false,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
     },
   },
   { timestamps: true }

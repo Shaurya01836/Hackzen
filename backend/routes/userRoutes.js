@@ -53,6 +53,9 @@ router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isOrganizerOrAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
 
+// ✅ Get current user info (for session refresh)
+router.get('/me', protect, userController.getMe);
+
 // 🏢 Organization
 router.post('/invite', protect, isOrganizerOrAdmin, userController.inviteToOrganization);
 router.get('/me/organization', protect, userController.getMyOrganizationStatus);

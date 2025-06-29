@@ -1,43 +1,56 @@
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "../../components/CommonUI/card";
 import React from "react";
 import Navbar from "../../components/layout/Navbar";
+import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 
 const team = [
   {
-    name: "Shaurya Upadhyay",
-    role: "Frontend Developer",
-    description:
-      "Leads the UI development using React and Tailwind, ensuring a smooth user experience.",
-  },
-  {
     name: "Nitin Jain",
-    role: "Backend Developer",
-    description:
-      "Built APIs and handled database operations, authentication, and server logic.",
+    role: "Frontend Dev + Backend Integration",
+    image: "https://avatars.githubusercontent.com/u/156602031?v=4",
+
+    skills: ["React", "APIs", "MongoDB"],
   },
   {
     name: "Dhruv Pancholi",
-    role: "UI/UX Designer",
-    description:
-      "Designed user-friendly layouts, color schemes, and ensured accessibility across the platform.",
+    role: "Backend Dev",
+    image: "https://avatars.githubusercontent.com/u/160162577?v=4",
+
+    skills: ["Node.js", "Express", "DB Design"],
   },
   {
     name: "Gaurav Jain",
-    role: "Project Manager & QA",
-    description:
-      "Managed the project workflow, ensured timely completion and tested the application thoroughly.",
+    role: "Backend Developer",
+    image: "https://avatars.githubusercontent.com/u/170131884?v=4",
+
+    skills: ["Server Logic", "Testing", "Security"],
+  },
+  {
+    name: "Shaurya Upadhyay",
+    role: "UI/UX Designer",
+    image: "https://avatars.githubusercontent.com/u/153098108?v=4",
+
+    skills: ["React", "Tailwind", "Figma"],
   },
 ];
 
-function About() {
+export default function TeamCards() {
   return (
     <>
+      <SmoothCursor />
       <Navbar />
-      <div className="min-h-screen px-6 py-12 bg-gradient-to-br from-[#0d0d2b] to-[#1b0c3f] text-white">
+      <div className="min-h-screen px-6 py-12 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-100 text-gray-800">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-6 font-heading1">
+          <h1 className="text-4xl font-bold text-center mb-6 text-indigo-600 font-heading1">
             About the Project
           </h1>
-          <p className="text-center text-gray-300 mb-10 text-lg">
+          <p className="text-center text-gray-600 mb-10 text-lg max-w-3xl mx-auto">
             Our Hackathon Management System is a full-featured platform built to
             simplify the organization, registration, and tracking of hackathon
             events. From managing participants to judging and final results —
@@ -45,33 +58,50 @@ function About() {
           </p>
 
           <div className="my-12">
-            <h2 className="text-2xl font-semibold mb-6 text-center">
+            <h2 className="text-2xl font-semibold mb-6 text-center text-indigo-500">
               Meet the Team
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4 py-10">
               {team.map((member, idx) => (
-                <a
+                <Card
                   key={idx}
-                  href={`https://stpitasks.vercel.app/logs?user=${encodeURIComponent(member.name)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-white/10 backdrop-blur-md p-6 rounded-xl shadow-md border border-white/10 hover:scale-[1.02] transition-all block hover:border-yellow-400"
+                  className="overflow-hidden hover:scale-[1.02] transition-all duration-200"
                 >
-                  <h3 className="text-xl font-semibold text-yellow-400 mb-1">
-                    {member.name}
-                  </h3>
-                  <p className="text-sm text-indigo-300 mb-2">{member.role}</p>
-                  <p className="text-sm text-gray-200">{member.description}</p>
-                </a>
+                  <img
+                    src={member.image}
+                    alt={member.name}
+                    className="h-44 w-full object-cover border-b border-white/20"
+                  />
+                  <CardHeader className="items-center text-center">
+                    <CardTitle className="text-indigo-700">
+                      {member.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-gray-600">
+                      {member.role}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <div className="flex justify-center gap-2 flex-wrap">
+                      {member.skills.map((skill, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </div>
 
           <div className="text-center mt-16">
-            <h3 className="text-xl font-semibold mb-2 text-purple-300">
+            <h3 className="text-xl font-semibold mb-2 text-indigo-600">
               Vision
             </h3>
-            <p className="text-sm text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm text-gray-600 max-w-2xl mx-auto">
               We aim to make hackathon management effortless for both organizers
               and participants. Our platform is scalable, secure, and built with
               modern technologies to ensure a seamless experience.
@@ -82,5 +112,3 @@ function About() {
     </>
   );
 }
-
-export default About;

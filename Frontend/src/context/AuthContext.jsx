@@ -17,12 +17,11 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Login helper
   const login = (userData, authToken) => {
-  setUser(userData);
-  setToken(authToken);
-  localStorage.setItem("user", JSON.stringify(userData));
-  localStorage.setItem("token", authToken);
-};
-
+    setUser(userData);
+    setToken(authToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("token", authToken);
+  };
 
   // ✅ Logout handler
   const logout = async () => {
@@ -41,41 +40,57 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ✅ OAuth redirect handling (token in URL)
- // ✅ 1. Handle OAuth redirect from URL
-useEffect(() => {
-  const url = new URLSearchParams(location.search);
-  const oauthToken = url.get("token");
-  const name = url.get("name");
-  const email = url.get("email");
-  const id = url.get("id");
+  // ✅ 1. Handle OAuth redirect from URL
+  useEffect(() => {
+    const url = new URLSearchParams(location.search);
+    const oauthToken = url.get("token");
+    const name = url.get("name");
+    const email = url.get("email");
+    const id = url.get("id");
 
-  if (oauthToken && name && email && id) {
-    const userData = {
-      _id: id,
-      name,
-      email,
+    if (oauthToken && name && email && id) {
+      const userData = {
+        _id: id,
+        name,
+        email,
+      };
+      login(userData, oauthToken);
+      navigate("/dashboard");
+    }
+  }, [location]);
+
+  // ✅ 2. Sync user/token from localStorage across tabs
+  useEffect(() => {
+    const sync = () => {
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("token");
+      setUser(storedUser ? JSON.parse(storedUser) : null);
+      setToken(storedToken || null);
     };
-    login(userData, oauthToken);
-    navigate("/dashboard");
-  }
-}, [location]);
 
-// ✅ 2. Sync user/token from localStorage across tabs
-useEffect(() => {
-  const sync = () => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("token");
-    setUser(storedUser ? JSON.parse(storedUser) : null);
-    setToken(storedToken || null);
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
+  // ✅ Refresh user info from backend
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await axios.get("http://localhost:3000/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.data) {
+        setUser(res.data);
+        localStorage.setItem("user", JSON.stringify(res.data));
+      }
+    } catch (err) {
+      console.error("Failed to refresh user info:", err.message);
+    }
   };
 
-  window.addEventListener("storage", sync);
-  return () => window.removeEventListener("storage", sync);
-}, []);
-
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

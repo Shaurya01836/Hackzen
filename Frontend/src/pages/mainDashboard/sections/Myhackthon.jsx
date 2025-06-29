@@ -70,11 +70,14 @@ export function MyHackathons() {
 
     const fetchSavedHackathons = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
+        const res = await fetch(
+          "http://localhost:3000/api/users/me/saved-hackathons",
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         const data = await res.json();
         const formatted = data.map((h) => ({
           id: h._id,
@@ -103,7 +106,7 @@ export function MyHackathons() {
     fetchSavedHackathons();
   }, []);
 
- const renderHackathonCard = (hackathon) => {
+  const renderHackathonCard = (hackathon) => {
     return (
       <ACard
         key={hackathon.id}
@@ -119,8 +122,6 @@ export function MyHackathons() {
             alt={hackathon.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
-
-        
 
           {/* Prize Pool Badge */}
           <div className="absolute top-2 right-2">
@@ -140,12 +141,11 @@ export function MyHackathons() {
 
           {/* Meta Info */}
           <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-          
             <div className="flex items-center gap-1">
               <Clock className="w-4 h-4 text-indigo-500" />
-             {hackathon.deadline}
+              {hackathon.deadline}
             </div>
-         
+
             <div className="flex items-center gap-1">
               <MapPin className="w-4 h-4 text-indigo-500" />
               {hackathon.location || "Online"}
@@ -167,8 +167,6 @@ export function MyHackathons() {
               {hackathon.difficulty}
             </Badge>
           </div>
-
-        
         </div>
       </ACard>
     );
@@ -194,10 +192,9 @@ export function MyHackathons() {
             Saved ({savedHackathons.length})
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="active" className="space-y-4">
           {hackathons.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex gap-4 pb-4">
               {hackathons.map(renderHackathonCard)}
             </div>
           ) : (
@@ -217,7 +214,7 @@ export function MyHackathons() {
 
         <TabsContent value="saved" className="space-y-4">
           {savedHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex gap-4 pb-4">
               {savedHackathons.map(renderHackathonCard)}
             </div>
           ) : (

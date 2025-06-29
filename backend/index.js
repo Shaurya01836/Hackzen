@@ -10,6 +10,8 @@ const { Server } = require("socket.io");
 const socketHandler = require("./config/socket");
 const MongoStore = require('connect-mongo'); // ✅ persist sessions
 const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
+const newsletterRoutes = require("./routes/newsletterRoutes");
+
 
 require("./config/passport"); // load strategies
 
@@ -61,6 +63,7 @@ app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
 app.use("/api/registration", require("./routes/hackathonRegistrationRoutes"));
 app.use('/api/organizations', require('./routes/organizationRoutes'));
 app.use("/api/articles", require('./routes/articleRoutes'));
+app.use("/api/newsletter", newsletterRoutes);
 
 // ✅ HTTP + Socket.IO server
 const server = http.createServer(app);

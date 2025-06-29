@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import ChangeRoleDialog from "../../../components/AdminUI/ChangeRoleDialog";
 import axios from "axios";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
 import { Input } from "../../../components/CommonUI/input";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
@@ -21,20 +26,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../../components/AdminUI/dropdown-menu";
-import {
-  Search,
-  Filter,
-  Eye,
-  Ban,
-  Shield,
-  MoreHorizontal,
-  Shuffle,
-} from "lucide-react";
+import { Search, Filter, Eye, Ban, Shuffle } from "lucide-react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 export function UsersManagement() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All");
+  const [loadingExport, setLoadingExport] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(10);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -69,18 +70,18 @@ export function UsersManagement() {
     }
   };
 
-  const getRoleColor = (role) => {
-    switch (role) {
+  const getRoleVariant = (role) => {
+    switch (role?.toLowerCase()) {
       case "organizer":
-        return "bg-purple-500 text-white border-purple-500/30";
+        return "secondary";
       case "mentor":
-        return "bg-blue-500 text-white border-blue-500/30";
+        return "secondary";
       case "judge":
-        return "bg-orange-500 text-white border-orange-500/30";
+        return "secondary";
       case "admin":
-        return "bg-red-500 text-white border-red-500/30";
+        return "destructive"; 
       default:
-        return "bg-gray-500 text-white border-gray-500/30";
+        return "outline"; 
     }
   };
 
@@ -93,12 +94,41 @@ export function UsersManagement() {
     return matchesSearch && matchesRole;
   });
 
+  const handleExport = () => {
+    setLoadingExport(true);
+
+    const dataToExport = users.map((user) => ({
+      Name: user.name,
+      Email: user.email,
+      Role: formatRole(user.role),
+      Status: "Active",
+      JoinedOn: new Date(user.createdAt).toLocaleDateString(),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, "users_export.xlsx");
+
+    setTimeout(() => setLoadingExport(false), 1500);
+  };
+
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Users Management</h1>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
-          Export Users
+        <Button
+          className="bg-indigo-600 hover:bg-indigo-700"
+          onClick={handleExport}
+          disabled={loadingExport}
+        >
+          {loadingExport ? "Exporting..." : "Export Users"}
         </Button>
       </div>
 
@@ -119,13 +149,13 @@ export function UsersManagement() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-purple-500/20 text-gray-700 hover:bg-white/5"
+                  className="border border-indigo-300 bg-white/50 hover:bg-indigo-50 text-gray-700 shadow-sm"
                 >
                   <Filter className="w-4 h-4 mr-2" />
                   Role: {selectedRole}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-white/90 text-black backdrop-blur-xl border-purple-500/20">
+              <DropdownMenuContent className="bg-white/90 text-black shadow-md border border-indigo-200 backdrop-blur-md">
                 {[
                   "All",
                   "Participant",
@@ -137,7 +167,7 @@ export function UsersManagement() {
                   <DropdownMenuItem
                     key={role}
                     onClick={() => setSelectedRole(role)}
-                    className=" hover:bg-black hover:text-white"
+                    className="hover:bg-indigo-100 text-indigo-700"
                   >
                     {role}
                   </DropdownMenuItem>
@@ -158,7 +188,7 @@ export function UsersManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.slice(0, visibleCount).map((user) => (
                 <TableRow
                   key={user._id}
                   className="border-purple-500/20 hover:bg-white/5"
@@ -175,7 +205,7 @@ export function UsersManagement() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getRoleColor(user.role)}>
+                    <Badge variant={getRoleVariant(user.role)}>
                       {formatRole(user.role)}
                     </Badge>
                   </TableCell>
@@ -223,6 +253,18 @@ export function UsersManagement() {
               ))}
             </TableBody>
           </Table>
+
+          {visibleCount < filteredUsers.length && (
+            <div className="flex justify-center mt-4">
+              <Button
+                variant="outline"
+                className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
+                onClick={() => setVisibleCount((prev) => prev + 10)}
+              >
+                View More
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

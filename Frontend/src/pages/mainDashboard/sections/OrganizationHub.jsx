@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   Building2,
@@ -27,12 +27,18 @@ import {
   SelectValue,
 } from "../../../components/CommonUI/select";
 import { Checkbox } from "../../../components/DashboardUI/checkbox";
+import { useAuth } from "../../../context/AuthContext";
 
-export function OrganizationHub({ onBack }) {
+export function OrganizationHub() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [myOrgInfo, setMyOrgInfo] = useState(null);
-const [loadingStatus, setLoadingStatus] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [orgDetails, setOrgDetails] = useState(null);
+  const [loadingOrg, setLoadingOrg] = useState(true);
+  const { token, refreshUser } = useAuth();
+  const [editMode, setEditMode] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -178,54 +184,121 @@ const [loadingStatus, setLoadingStatus] = useState(false);
         website: "",
         github: "",
       });
+      // Refresh user info and organization details after submission
+      await refreshUser();
+      setLoadingOrg(true);
+      const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        setOrgDetails(refreshData);
+      }
+      setLoadingOrg(false);
     } catch (error) {
       alert("❌ Submission failed: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
-const fetchMyApplicationStatus = async () => {
-  setLoadingStatus(true);
-  const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch("http://localhost:3000/api/organizations/my", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  useEffect(() => {
+    const fetchOrg = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoadingOrg(false);
+        return;
+      }
+      try {
+        await refreshUser(); // Refresh user info after mount
+        const response = await fetch("http://localhost:3000/api/organizations/my", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setOrgDetails(data);
+        }
+      } catch (err) {
+        console.error("Error fetching organization:", err);
+      } finally {
+        setLoadingOrg(false);
+      }
+    };
+    fetchOrg();
+  }, []);
 
-    const contentType = response.headers.get("content-type");
-    let data = {};
-
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      const text = await response.text();
-      throw new Error("Server error: " + text.substring(0, 100));
+  const fetchMyApplicationStatus = async () => {
+    setLoadingStatus(true);
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("http://localhost:3000/api/organizations/my-application", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("No application found");
+      const data = await response.json();
+      setMyOrgInfo({
+        status: data.status,
+        contactPerson: data.contactPerson,
+        organizationName: data.organizationName,
+        // ...other fields
+      });
+      setShowStatusModal(true);
+    } catch (error) {
+      alert("❌ Failed to fetch status: " + error.message);
+    } finally {
+      setLoadingStatus(false);
     }
+  };
 
-    if (!response.ok) throw new Error(data.message || "Something went wrong.");
+  // Start editing
+  const startEdit = () => {
+    setEditFormData(orgDetails);
+    setEditMode(true);
+  };
 
-    // ✅ Set modal state
-    setMyOrgInfo({
-      status: data.applicationStatus || "Under Review",
-      contactPerson: data.contactPerson,
-      organizationName: data.name,
-      reviewDate: "3-5 days",
-    });
-    setShowStatusModal(true);
-  } catch (error) {
-    alert("❌ Failed to fetch status: " + error.message);
-  } finally {
-    setLoadingStatus(false);
-  }
-};
+  // Handle edit input changes
+  const handleEditChange = (field, value) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
+  // Handle support needs change
+  const handleEditSupportNeedsChange = (option, checked) => {
+    setEditFormData((prev) => ({
+      ...prev,
+      supportNeeds: checked
+        ? [...(prev.supportNeeds || []), option]
+        : (prev.supportNeeds || []).filter(item => item !== option),
+    }));
+  };
 
-
-
+  // Submit the edit
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("http://localhost:3000/api/organizations/edit", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(editFormData),
+      });
+      if (!res.ok) throw new Error("Failed to update organization");
+      setEditMode(false);
+      await refreshUser();
+      setLoadingOrg(true);
+      const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        setOrgDetails(refreshData);
+      }
+      setLoadingOrg(false);
+    } catch (err) {
+      alert("Update failed: " + err.message);
+    }
+  };
 
   // Application form layout (like Create Hackathon page)
   if (showApplicationForm) {
@@ -571,15 +644,6 @@ const fetchMyApplicationStatus = async () => {
       {/* Header */}
       <div className="px-6 py-4">
         <div className="flex items-center gap-4">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Organization Hub
@@ -620,8 +684,7 @@ const fetchMyApplicationStatus = async () => {
                     <Button
                       variant="outline"
                       className="px-6"
-                     onClick={fetchMyApplicationStatus}
-
+                      onClick={fetchMyApplicationStatus}
                     >
                       Check My Application
                     </Button>
@@ -643,17 +706,205 @@ const fetchMyApplicationStatus = async () => {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
               My Organization
             </h3>
-            <Card>
-              <CardContent className="flex items-center justify-center py-16 pt-8">
-                <div className="text-center">
-                  <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500 text-lg">Nothing Here</p>
-                  <p className="text-gray-400 text-sm mt-2">
-                    Apply to become an organizer to see your organization
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {loadingOrg ? (
+              <Card>
+                <CardContent className="flex items-center justify-center py-16 pt-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500 text-lg">Loading organization details...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : editMode ? (
+              <Card>
+                <CardContent className="py-8">
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div>
+                      <Label>Organization Name</Label>
+                      <Input
+                        value={editFormData?.name || ""}
+                        onChange={e => handleEditChange("name", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Contact Person</Label>
+                      <Input
+                        value={editFormData?.contactPerson || ""}
+                        onChange={e => handleEditChange("contactPerson", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <Input
+                        value={editFormData?.email || ""}
+                        onChange={e => handleEditChange("email", e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Organization Type</Label>
+                      <Select
+                        value={editFormData?.organizationType || ""}
+                        onValueChange={value => handleEditChange("organizationType", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {organizationTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Support Needs</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {supportOptions.map(option => (
+                          <label key={option} className="flex items-center gap-2">
+                            <Checkbox
+                              checked={editFormData?.supportNeeds?.includes(option)}
+                              onCheckedChange={checked =>
+                                handleEditSupportNeedsChange(option, checked)
+                              }
+                            />
+                            {option}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Purpose</Label>
+                      <Textarea
+                        value={editFormData?.purpose || ""}
+                        onChange={e => handleEditChange("purpose", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Website</Label>
+                      <Input
+                        value={editFormData?.website || ""}
+                        onChange={e => handleEditChange("website", e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label>GitHub</Label>
+                      <Input
+                        value={editFormData?.github || ""}
+                        onChange={e => handleEditChange("github", e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button type="submit" className="bg-indigo-600 text-white">Save</Button>
+                      <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            ) : orgDetails ? (
+              <Card>
+                <CardContent className="py-8">
+                  <div className="flex items-start gap-6">
+                    <div className="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-xl">
+                        {orgDetails.name ? orgDetails.name.charAt(0).toUpperCase() : "O"}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xl font-bold text-gray-900">{orgDetails.name}</h4>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                          {orgDetails.approved ? "Approved" : "Pending"}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-4">
+                        {orgDetails.purpose || "No description available"}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Contact Person:</span>
+                          <p className="font-medium">{orgDetails.contactPerson}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Email:</span>
+                          <p className="font-medium">{orgDetails.email}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Type:</span>
+                          <p className="font-medium">{orgDetails.organizationType}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Status:</span>
+                          <p className="font-medium">{orgDetails.applicationStatus || "Active"}</p>
+                        </div>
+                        {orgDetails.website && (
+                          <div>
+                            <span className="text-gray-500">Website:</span>
+                            <p className="font-medium">
+                              <a 
+                                href={orgDetails.website} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:underline"
+                              >
+                                {orgDetails.website}
+                              </a>
+                            </p>
+                          </div>
+                        )}
+                        {orgDetails.github && (
+                          <div>
+                            <span className="text-gray-500">GitHub:</span>
+                            <p className="font-medium">
+                              <a 
+                                href={orgDetails.github} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-indigo-600 hover:underline"
+                              >
+                                {orgDetails.github}
+                              </a>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      {orgDetails.supportNeeds && orgDetails.supportNeeds.length > 0 && (
+                        <div className="mt-4">
+                          <span className="text-gray-500 text-sm">Support Needs:</span>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {orgDetails.supportNeeds.map((need, index) => (
+                              <span 
+                                key={index}
+                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                              >
+                                {need}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <Button className="mt-4" onClick={startEdit}>Edit</Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="flex items-center justify-center py-16 pt-8">
+                  <div className="text-center">
+                    <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">Nothing Here</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      Apply to become an organizer to see your organization
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* All Organizations Section */}
@@ -700,79 +951,82 @@ const fetchMyApplicationStatus = async () => {
         </div>
       </div>
       {/* Application Status Modal */}
-     {showStatusModal && myOrgInfo && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Application Status
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowStatusModal(false)}
-            className="p-1"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+      {showStatusModal && myOrgInfo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Application Status
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowStatusModal(false)}
+                  className="p-1"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-            <div>
-              <p className="font-medium text-gray-900">
-                {myOrgInfo.status}
-              </p>
-              <p className="text-sm text-gray-600">
-                Submitted by {myOrgInfo.contactPerson}
-              </p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    myOrgInfo.status === "approved"
+                      ? "bg-green-500"
+                      : myOrgInfo.status === "rejected"
+                      ? "bg-red-500"
+                      : "bg-yellow-400"
+                  }`}></div>
+                  <div>
+                    <p className="font-medium text-gray-900 capitalize">
+                      {myOrgInfo.status}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Submitted by {myOrgInfo.contactPerson}
+                    </p>
+                  </div>
+                </div>
+
+                {myOrgInfo.status === "approved" ? (
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Organization:</span>
+                      <span className="font-medium">
+                        {myOrgInfo.organizationName}
+                      </span>
+                    </div>
+                    {/* Add more org details here if needed */}
+                  </div>
+                ) : myOrgInfo.status === "rejected" ? (
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-red-600">
+                    Your application was rejected.
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-yellow-600">
+                    Your application is under review.
+                  </div>
+                )}
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    We'll notify you via email once your application is reviewed.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={() => setShowStatusModal(false)}
+                  className="px-6"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Organization:</span>
-              <span className="font-medium">
-                {myOrgInfo.organizationName}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Contact Person:</span>
-              <span className="font-medium">
-                {myOrgInfo.contactPerson}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Expected Review:</span>
-              <span className="font-medium">
-                {myOrgInfo.reviewDate || "3-5 days"}
-              </span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              We'll notify you via email once your application is reviewed.
-            </p>
-          </div>
         </div>
-
-        <div className="mt-6 flex justify-end">
-          <Button
-            onClick={() => setShowStatusModal(false)}
-            className="px-6"
-          >
-            Close
-          </Button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
+      )}
     </div>
   );
-
 }

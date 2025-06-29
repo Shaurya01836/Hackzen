@@ -118,7 +118,7 @@ function Navbar() {
               {showHackathonDropdown && (
                 <div className="absolute top-full mt-2 left-0 bg-white/30 border border-gray-200 rounded-xl shadow-lg w-56 z-50 py-2">
                   <Link
-                    to="dashboard/explore-hackathons"
+                    to="/dashboard/explore-hackathons"
                     className="block px-4 py-2 hover:bg-gray-100"
                   >
                     Explore Hackathons
@@ -126,13 +126,13 @@ function Navbar() {
                   {user && (
                     <>
                       <Link
-                        to="dashboard/my-hackathons"
+                        to="/dashboard/my-hackathons"
                         className="block px-4 py-2 hover:bg-gray-100"
                       >
                         My Hackathons
                       </Link>
                       <Link
-                        to="dashboard/my-submissions"
+                        to="/dashboard/my-submissions"
                         className="block px-4 py-2 hover:bg-gray-100"
                       >
                         My Submissions
@@ -144,7 +144,7 @@ function Navbar() {
             </div>
 
             <Link
-              to="dashboard/organization-hub"
+              to="/dashboard/organization-hub"
               className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
             >
               Organisation Hub
@@ -161,13 +161,13 @@ function Navbar() {
               {showResourceDropdown && (
                 <div className="absolute top-full mt-2 left-0 bg-white/30 border border-gray-200 rounded-xl shadow-lg w-56 z-50 py-2">
                   <Link
-                    to="dashboard/project-archive"
+                    to="/dashboard/project-archive"
                     className="block px-4 py-2 hover:bg-gray-100"
                   >
                     Project Archive
                   </Link>
                   <Link
-                    to="dashboard/blogs"
+                    to="/dashboard/blogs"
                     className="block px-4 py-2 hover:bg-gray-100"
                   >
                     Blogs
@@ -286,7 +286,7 @@ function Navbar() {
                     )}
                     {user?.role === "organizer" && (
                       <Link
-                        to="dashboard/organizer-tools"
+                        to="/dashboard/organizer-tools"
                         className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
                       >
                         Organizer Tools
@@ -332,7 +332,7 @@ function Navbar() {
               Home
             </Link>
             <Link
-              to="dashboard/explore-hackathons"
+              to="/dashboard/explore-hackathons"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Explore Hackathons
@@ -340,13 +340,13 @@ function Navbar() {
             {user && (
               <>
                 <Link
-                  to="dashboard/my-hackathons"
+                  to="/dashboard/my-hackathons"
                   className="text-gray-800 hover:text-indigo-600 font-medium"
                 >
                   My Hackathons
                 </Link>
                 <Link
-                  to="dashboard/my-submissions"
+                  to="/dashboard/my-submissions"
                   className="text-gray-800 hover:text-indigo-600 font-medium"
                 >
                   My Submissions
@@ -355,19 +355,19 @@ function Navbar() {
             )}
 
             <Link
-              to="dashboard/project-archive"
+              to="/dashboard/project-archive"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Project Archive
             </Link>
             <Link
-              to="dashboard/blogs"
+              to="/dashboard/blogs"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Blogs
             </Link>
             <Link
-              to="dashboard/organization-hub"
+              to="/dashboard/organization-hub"
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Organisation Hub

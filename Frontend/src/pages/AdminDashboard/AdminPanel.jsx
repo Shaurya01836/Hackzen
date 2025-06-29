@@ -16,7 +16,8 @@ import { SettingsPage } from "./sections/settings-page";
 import { FlaggedContentPage } from "./sections/flagged-content-page";
 import { SupportInboxPage } from "./sections/support-inbox-page";
 import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
-import { BlogManage } from "./sections/BlogsRequest"
+import { BlogManage } from "./sections/BlogsRequest";
+import NewsletterSender from "./sections/NewsletterSender";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -65,6 +66,8 @@ export default function AdminPanel() {
         return <OrganizerRequestsPage />;
       case "blogs":
         return <BlogManage />;
+      case "newsletter":
+        return <NewsletterSender />;
       case "analytics":
         return <AnalyticsPage />;
       case "revenue":
