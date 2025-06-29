@@ -539,6 +539,20 @@ export function ProfileSection() {
           >
             <SquarePen className="w-4 h-4" />
           </button>
+          
+          {/* Remove Banner Icon */}
+          {editForm.bannerImage && editForm.bannerImage !== "/assets/default-banner.png" && (
+            <button
+              onClick={handleRemoveBanner}
+              className="absolute top-2 right-10 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+              title="Remove Banner"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+          
           <input
             type="file"
             id="upload-banner-edit"
@@ -557,14 +571,39 @@ export function ProfileSection() {
             </AvatarFallback>
           </Avatar>
 
-          {/* Edit Profile Icon */}
-          <button
-            onClick={() => document.getElementById("upload-avatar").click()}
-            className="absolute bottom-2 right-[calc(50%-14px)] bg-white text-gray-700 p-1 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition"
-            title="Edit Profile Picture"
-          >
-            <SquarePen className="w-4 h-4" />
-          </button>
+          {/* Remove Profile Icon (centered) */}
+          {editForm.profileImage && (
+            <>
+              <button
+                onClick={handleRemoveProfileImage}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white p-2 rounded-full shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition z-20"
+                title="Remove Profile Picture"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <button
+                onClick={() => document.getElementById("upload-avatar").click()}
+                className="absolute left-1/2 top-[60%] -translate-x-1/2 bg-white text-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition z-10"
+                title="Edit Profile Picture"
+              >
+                <SquarePen className="w-5 h-5" />
+              </button>
+            </>
+          )}
+
+          {/* If no profile image, show only edit button at center bottom */}
+          {!editForm.profileImage && (
+            <button
+              onClick={() => document.getElementById("upload-avatar").click()}
+              className="absolute left-1/2 bottom-2 -translate-x-1/2 bg-white text-gray-700 p-2 rounded-full shadow-md hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition z-10"
+              title="Edit Profile Picture"
+            >
+              <SquarePen className="w-5 h-5" />
+            </button>
+          )}
+          
           <input
             type="file"
             id="upload-avatar"
@@ -1209,6 +1248,74 @@ export function ProfileSection() {
       setConfirmPassword("");
     } catch (err) {
       alert(err.response?.data?.message || "Error updating password");
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    if (!user?._id || !token) {
+      alert("User not logged in. Please log in again.");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:3000/api/users/${user._id}`,
+        { bannerImage: "/assets/default-banner.png" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setSelectedBanner(null);
+      setEditForm((prev) => ({ ...prev, bannerImage: "/assets/default-banner.png" }));
+      
+      // Update user context
+      const userData = JSON.parse(localStorage.getItem("user"));
+      const updatedUser = { ...userData, bannerImage: "/assets/default-banner.png" };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error removing banner:", error);
+      alert("Failed to remove banner");
+    }
+  };
+
+  const handleRemoveProfileImage = async () => {
+    if (!user?._id || !token) {
+      alert("User not logged in. Please log in again.");
+      return;
+    }
+
+    try {
+      await axios.put(
+        `http://localhost:3000/api/users/${user._id}`,
+        { profileImage: "" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setSelectedImage(null);
+      setEditForm((prev) => ({ ...prev, profileImage: "" }));
+      
+      // Update user context
+      const userData = JSON.parse(localStorage.getItem("user"));
+      const updatedUser = { ...userData, profileImage: "" };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
+    } catch (error) {
+      console.error("Error removing profile image:", error);
+      alert("Failed to remove profile image");
     }
   };
 
