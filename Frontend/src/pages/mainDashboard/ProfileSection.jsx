@@ -181,8 +181,23 @@ export function ProfileSection() {
   ];
 
  useEffect(() => {
+    const pingAndFetchStreak = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.post(
+          "http://localhost:3000/api/users/streak",
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        // Now fetch the updated streak data
+        fetchStreakData();
+      } catch (err) {
+        console.error("Failed to ping streak:", err);
+      }
+    };
+
     fetchUserProfile();
-    fetchStreakData();
+    pingAndFetchStreak();
   }, []);
 
   const fetchStreakData = async () => {
@@ -198,8 +213,11 @@ export function ProfileSection() {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      setStreakData(res.data);
+      setStreakData({
+        currentStreak: res.data.current,
+        maxStreak: res.data.max,
+        activityLog: res.data.streaks,
+      });
     } catch (err) {
       console.error("Failed to fetch streaks:", err.message);
     }
