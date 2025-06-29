@@ -26,7 +26,7 @@ console.log("👉 User from token:", req.user);
 
     const existing = await Organization.findOne({ email });
 if (existing) {
-  return res.status(409).json({ message: "You’ve already submitted an organization application." });
+  return res.status(409).json({ message: "You've already submitted an organization application." });
 }
 
     if (!name || !contactPerson || !organizationType || !supportNeeds?.length || !email) {
@@ -45,7 +45,8 @@ if (existing) {
       purpose,
       website,
       github,
-      approved: false
+      approved: false,
+      createdBy: req.user._id
     });
 
     await newOrg.save();
@@ -148,10 +149,10 @@ const updateMyOrganization = async (req, res) => {
   }
 };
 
-// ✅ Approve or Reject a user’s application
+// ✅ Approve or Reject a user's application
 const updateApplicationStatus = async (req, res) => {
   const { userId } = req.params;
-  const { status } = req.body;
+  const { status, organizationId } = req.body;
 
   try {
     const user = await User.findById(userId);
@@ -170,15 +171,20 @@ const updateApplicationStatus = async (req, res) => {
 
     user.applicationStatus = status;
 
-   if (status === "approved") {
-  const domain = user.email.split('@')[1];
-  const org = await Organization.findOne({ email: { $regex: new RegExp(domain, 'i') } });
-
-  if (org) {
-    user.organization = org._id;
-    user.role = "organizer"; // ✅ promote user to organizer
-  }
-}
+    if (status === "approved") {
+      if (organizationId) {
+        user.organization = organizationId;
+        user.role = "organizer";
+      } else {
+        // fallback to old domain-matching logic
+        const domain = user.email.split('@')[1];
+        const org = await Organization.findOne({ email: { $regex: new RegExp(domain, 'i') } });
+        if (org) {
+          user.organization = org._id;
+          user.role = "organizer";
+        }
+      }
+    }
 
     await user.save();
     res.json({ message: `User application ${status}.`, user });
@@ -199,6 +205,17 @@ const approveOrganization = async (req, res) => {
 
     org.approved = true;
     await org.save();
+
+    // Link the applicant user to this organization
+    if (org.createdBy) {
+      const user = await User.findById(org.createdBy);
+      if (user) {
+        user.organization = org._id;
+        user.role = "organizer";
+        user.applicationStatus = "approved";
+        await user.save();
+      }
+    }
 
     res.json({ message: "Organization approved successfully.", org });
   } catch (err) {
