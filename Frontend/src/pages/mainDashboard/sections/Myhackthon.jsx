@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Trophy,
@@ -26,14 +27,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
-import { HackathonDetails } from "./HackathonDetails";
 
 export function MyHackathons() {
+  const navigate = useNavigate();
   const [hackathons, setHackathons] = useState([]);
   const [savedHackathons, setSavedHackathons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savedLoading, setSavedLoading] = useState(true);
-  const [selectedHackathon, setSelectedHackathon] = useState(null);
 
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
@@ -112,38 +112,12 @@ export function MyHackathons() {
     fetchSavedHackathons();
   }, []);
 
-  const transformHackathonData = (hackathon) => {
-    return {
-      ...hackathon,
-      _id: hackathon.id,
-      name: hackathon.name,
-      prize: hackathon.prize,
-      participants: hackathon.participants || 0,
-      maxParticipants: hackathon.maxParticipants || 100,
-      rating: 4.5,
-      reviews: 12,
-      difficulty: hackathon.difficulty,
-      status:
-        hackathon.status === "upcoming"
-          ? "Registration Open"
-          : hackathon.status === "ongoing"
-          ? "Ongoing"
-          : "Ended",
-      startDate: hackathon.startDate,
-      endDate: hackathon.endDate,
-      registrationDeadline: hackathon.deadline,
-      organizer: hackathon.organizer || "Unknown Organizer",
-      organizerLogo: hackathon.organizerLogo || null,
-      featured: hackathon.tags?.includes("featured") || false,
-      sponsored: hackathon.tags?.includes("sponsored") || false,
-      requirements: hackathon.requirements || [],
-      perks: hackathon.perks || [],
-      tags: hackathon.tags || [hackathon.category],
-      problemStatements: hackathon.problemStatements || [],
-      images: hackathon.images,
-      description: hackathon.description,
-      location: hackathon.location,
-    };
+  const handleHackathonClick = (hackathonId, hackathonTitle) => {
+    navigate(
+      `/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodeURIComponent(
+        hackathonTitle
+      )}`
+    );
   };
 
   const renderHackathonCard = (hackathon) => {
@@ -151,12 +125,15 @@ export function MyHackathons() {
       <ACard
         key={hackathon.id}
         className="w-full max-w-xs flex flex-col overflow-hidden cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
-        onClick={() => setSelectedHackathon(transformHackathonData(hackathon))}
+        onClick={() => handleHackathonClick(hackathon.id, hackathon.name)}
       >
         {/* Thumbnail Section */}
         <div className="relative h-40 w-full">
           <img
-            src={hackathon.image || "https://www.hackquest.io/images/layout/hackathon_cover.png"}
+            src={
+              hackathon.image ||
+              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+            }
             alt={hackathon.name}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
@@ -202,16 +179,6 @@ export function MyHackathons() {
     );
   };
 
-  if (selectedHackathon) {
-    return (
-      <HackathonDetails
-        hackathon={selectedHackathon}
-        onBack={() => setSelectedHackathon(null)}
-        backButtonLabel="Go to My Hackathons"
-      />
-    );
-  }
-
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">
       <div className="flex items-center gap-4">
@@ -233,7 +200,11 @@ export function MyHackathons() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="active" className="space-y-4">
-          {hackathons.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : hackathons.length > 0 ? (
             <div className="flex gap-4 pb-4">
               {hackathons.map(renderHackathonCard)}
             </div>
@@ -253,7 +224,11 @@ export function MyHackathons() {
         </TabsContent>
 
         <TabsContent value="saved" className="space-y-4">
-          {savedHackathons.length > 0 ? (
+          {savedLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : savedHackathons.length > 0 ? (
             <div className="flex gap-4 pb-4">
               {savedHackathons.map(renderHackathonCard)}
             </div>

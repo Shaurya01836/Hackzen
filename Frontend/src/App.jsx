@@ -20,52 +20,64 @@ import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
 import { Blogs } from "./pages/mainDashboard/sections/Blogs";
 import InviteAccept from "./pages/InviteAccept";
+import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
+import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
 
 function App() {
   return (
     <Routes>
-      <Route path="*" element={<NotFound />} />
+      {/* Landing and auth */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/admin" element={<Page />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/admin/hackathons/:id" element={<HackathonDetailsPage />} />
       <Route path="/oauth-success" element={<OAuthSuccess />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/about" element={<About />} />
       <Route path="/loader" element={<Loader />} />
-      <Route path="/explore" element={<ExploreHackathons />} />
-<Route path="/invite/:inviteId" element={<InviteAccept />} />
-      {/* Redirect root to admin dashboard */}
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
 
-      {/* Admin routes - all admin sections use the same component */}
+      {/* Admin */}
+      <Route path="/admin/hackathons/:id" element={<HackathonDetailsPage />} />
       <Route path="/admin/:section" element={<AdminPanel />} />
-
-      {/* Fallback for /admin without section */}
       <Route
         path="/admin"
         element={<Navigate to="/admin/dashboard" replace />}
       />
 
-      {/* Catch all other routes */}
-      <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
-
-      {/* Dashboard routes with nested sections */}
+      {/* Dashboard */}
       <Route
         path="/dashboard"
         element={<Navigate to="/dashboard/profile" replace />}
       />
       <Route path="/dashboard/:section" element={<DashboardPage />} />
-      <Route path="/dashboard/hackathon/:id" element={<DashboardPage />} />
-      {/* Main profile route */}
-      <Route path="/profile" element={<DashboardPage />} />
-      {/* Sub-routes for different profile sections */}
-      <Route path="/profile/edit" element={<DashboardPage />} />
-      <Route path="/profile/account-settings" element={<DashboardPage />} />
-      <Route path="/profile/privacy-security" element={<DashboardPage />} />
-      <Route path="/profile/help-support" element={<DashboardPage />} />
+      <Route
+        path="/dashboard/hackathon/:id"
+        element={<HackathonDetailsPage />}
+      />
       <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
+      <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
+
+      {/* Explore */}
+      <Route path="/explore" element={<ExploreHackathons />} />
+      <Route path="/explore/:id" element={<HackathonDetailsPage />} />
+
+      {/* Profile */}
+      <Route path="/dashboard/profile" element={<DashboardPage />} />
+      <Route path="/dashboard/profile/edit" element={<DashboardPage />} />
+      <Route
+        path="/dashboard/profile/account-settings"
+        element={<DashboardPage />}
+      />
+      <Route
+        path="/dashboard/profile/privacy-security"
+        element={<DashboardPage />}
+      />
+      <Route
+        path="/dashboard/profile/help-support"
+        element={<DashboardPage />}
+      />
+      <Route path="/invite/:inviteId" element={<InviteAccept />} />
+
+      {/* Catch-all route */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

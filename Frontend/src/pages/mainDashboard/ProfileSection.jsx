@@ -53,10 +53,10 @@ export function ProfileSection() {
   // Get current view from URL path
   const getCurrentViewFromPath = () => {
     const path = location.pathname;
-    if (path.includes("/profile/edit")) return "edit-profile";
-    if (path.includes("/profile/account-settings")) return "account-settings";
-    if (path.includes("/profile/privacy-security")) return "privacy-security";
-    if (path.includes("/profile/help-support")) return "help-support";
+    if (path.includes("/dashboard/profile/edit")) return "edit-profile";
+    if (path.includes("/dashboard/profile/account-settings")) return "account-settings";
+    if (path.includes("/dashboard/profile/privacy-security")) return "privacy-security";
+    if (path.includes("/dashboard/profile/help-support")) return "help-support";
     return "overview";
   };
 
@@ -79,22 +79,22 @@ export function ProfileSection() {
     // Navigate to appropriate URL
     switch(view) {
       case 'overview':
-        navigate('/profile');
+        navigate('/dashboard/profile');
         break;
       case 'edit-profile':
-        navigate('/profile/edit');
+        navigate('/dashboard/profile/edit');
         break;
       case 'account-settings':
-        navigate('/profile/account-settings');
+        navigate('/dashboard/profile/account-settings');
         break;
       case 'privacy-security':
-        navigate('/profile/privacy-security');
+        navigate('/dashboard/profile/privacy-security');
         break;
       case 'help-support':
-        navigate('/profile/help-support');
+        navigate('/dashboard/profile/help-support');
         break;
       default:
-        navigate('/profile');
+        navigate('/dashboard/profile');
     }
   };
 
