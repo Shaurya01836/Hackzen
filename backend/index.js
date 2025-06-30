@@ -12,6 +12,14 @@ const MongoStore = require('connect-mongo'); // ✅ persist sessions
 const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 
+// Check required environment variables
+console.log('Environment check:', {
+  JWT_SECRET: process.env.JWT_SECRET ? 'Set' : 'NOT SET',
+  MONGO_URL: process.env.MONGO_URL ? 'Set' : 'NOT SET',
+  SESSION_SECRET: process.env.SESSION_SECRET ? 'Set' : 'NOT SET',
+  MAIL_USER: process.env.MAIL_USER ? 'Set' : 'NOT SET',
+  MAIL_PASS: process.env.MAIL_PASS ? 'Set' : 'NOT SET'
+});
 
 require("./config/passport"); // load strategies
 

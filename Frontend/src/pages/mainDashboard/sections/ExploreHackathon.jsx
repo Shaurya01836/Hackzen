@@ -61,21 +61,30 @@ export function ExploreHackathons() {
 
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
       try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         const res = await axios.get(
-          "http://localhost:3000/api/registrations/my",
+          "http://localhost:3000/api/registration/my",
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        setRegisteredHackathonIds(res.data.registeredHackathonIds || []);
+        
+        // Safely extract hackathon IDs from registrations, filtering out null values
+        const registeredHackathonIds = res.data
+          .filter(registration => registration.hackathonId && registration.hackathonId._id)
+          .map(registration => registration.hackathonId._id);
+        
+        console.log('Registered hackathon IDs:', registeredHackathonIds);
+        setRegisteredHackathonIds(registeredHackathonIds);
       } catch (err) {
         console.error("Error fetching registered hackathons", err);
+        // Set empty array as fallback
+        setRegisteredHackathonIds([]);
       }
     };
 
@@ -249,11 +258,10 @@ export function ExploreHackathons() {
   const sponsoredHackathons = filteredHackathons.filter((h) =>
     h.tags?.includes("sponsored")
   );
-  const upcomingHackathons = filteredHackathons.filter(
-    (h) => h.status === "upcoming"
-  );
-
   const now = new Date();
+  const upcomingHackathons = filteredHackathons.filter(
+    (h) => new Date(h.registrationDeadline) > now
+  );
   const closedHackathons = filteredHackathons.filter(
     (h) => new Date(h.registrationDeadline) < now
   );
@@ -492,7 +500,7 @@ export function ExploreHackathons() {
             Sponsored ({sponsoredHackathons.length})
           </TabsTrigger>
           <TabsTrigger value="upcoming">
-            Registration Open ({upcomingHackathons.length})
+            Upcoming ({upcomingHackathons.length})
           </TabsTrigger>
           <TabsTrigger value="closed">
             Closed ({closedHackathons.length})
@@ -575,9 +583,9 @@ export function ExploreHackathons() {
           ) : (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Calendar className="w-12 h-12 text-gray-400 mb-4" />
+                <Clock className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Open Registrations
+                  No Upcoming Hackathons
                 </h3>
                 <p className="text-gray-500 text-center">
                   All hackathons are currently closed for registration.

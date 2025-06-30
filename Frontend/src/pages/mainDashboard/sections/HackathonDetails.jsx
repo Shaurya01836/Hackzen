@@ -24,6 +24,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Copy,
 } from "lucide-react";
 import {
   Card,
@@ -58,6 +59,17 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  
+  // Team management states
+  const [userTeams, setUserTeams] = useState([]);
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showJoinTeam, setShowJoinTeam] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [teamCode, setTeamCode] = useState('');
+  const [teamInvites, setTeamInvites] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -97,22 +109,28 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
       try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
         const res = await axios.get(
           "http://localhost:3000/api/registration/my",
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
 
+        // Safely check if user is registered for this hackathon
         const registered = res.data.some(
-          (r) => r.hackathonId._id === hackathon._id // or r.hackathonId === hackathon._id if not populated
+          (r) => r.hackathonId && (r.hackathonId._id === hackathon._id || r.hackathonId === hackathon._id)
         );
 
+        console.log('Registration check:', { hackathonId: hackathon._id, registered, registrations: res.data });
         setIsRegistered(registered);
       } catch (err) {
         console.error("Error fetching registered hackathons", err);
+        setIsRegistered(false);
       }
     };
 
@@ -228,6 +246,170 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
 
   const isRegistrationClosed = registrationDeadline < now;
   const isRegistrationFull = currentParticipants >= maxParticipants;
+
+  // Fetch user's teams for this hackathon
+  useEffect(() => {
+    if (isRegistered) {
+      fetchUserTeams();
+      fetchTeamInvites();
+    } else {
+      // Clear teams if user is not registered
+      setUserTeams([]);
+      setTeamInvites([]);
+    }
+  }, [isRegistered, hackathon._id]);
+
+  const fetchUserTeams = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping team fetch');
+        return;
+      }
+
+      console.log('Fetching teams for hackathon:', hackathon._id);
+      const response = await axios.get(`http://localhost:3000/api/teams/hackathon/${hackathon._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Teams fetched:', response.data);
+      setUserTeams(response.data);
+    } catch (error) {
+      console.error('Error fetching teams:', error);
+      if (error.response?.status === 401) {
+        console.log('User not authenticated for team fetch');
+      }
+    }
+  };
+
+  const fetchTeamInvites = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping invite fetch');
+        return;
+      }
+
+      console.log('Fetching team invites for hackathon:', hackathon._id);
+      const response = await axios.get(`http://localhost:3000/api/team-invites/hackathon/${hackathon._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('Team invites fetched:', response.data);
+      setTeamInvites(response.data);
+    } catch (error) {
+      console.error('Error fetching team invites:', error);
+      if (error.response?.status === 401) {
+        console.log('User not authenticated for invite fetch');
+      }
+    }
+  };
+
+  const handleCreateTeam = async (teamData) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:3000/api/teams', {
+        ...teamData,
+        hackathonId: hackathon._id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Team created successfully:', response.data);
+      
+      // Close the modal first
+      setShowCreateTeam(false);
+      
+      // Refresh the teams list
+      await fetchUserTeams();
+      
+      // Show success message with team code
+      const teamCode = response.data.team.teamCode;
+      alert(`Team created successfully!\n\nTeam Code: ${teamCode}\n\nShare this code with your teammates so they can join your team!`);
+    } catch (error) {
+      console.error('Error creating team:', error);
+      alert(error.response?.data?.error || 'Failed to create team. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteEmail.trim() || !selectedTeam) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail.trim())) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.post('http://localhost:3000/api/team-invites', {
+        invitedEmail: inviteEmail.trim(),
+        teamId: selectedTeam._id,
+        hackathonId: hackathon._id
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Invite sent successfully:', response.data);
+      
+      // Show success message
+      alert('Invitation sent successfully! The recipient will receive an email with the invitation link.');
+      
+      // Clear form and close modal
+      setInviteEmail('');
+      setShowInviteModal(false);
+      setSelectedTeam(null);
+      
+      // Refresh invites
+      await fetchTeamInvites();
+    } catch (error) {
+      console.error('Error sending invite:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to send invitation. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinTeam = async () => {
+    if (!teamCode.trim()) {
+      alert('Please enter a team code');
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://localhost:3000/api/teams/join/${teamCode.trim().toUpperCase()}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('Joined team successfully:', response.data);
+      
+      // Close modal and clear form
+      setShowJoinTeam(false);
+      setTeamCode('');
+      
+      // Refresh teams list
+      await fetchUserTeams();
+      
+      // Show success message
+      alert(`Successfully joined team: ${response.data.team.name}`);
+    } catch (error) {
+      console.error('Error joining team:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to join team. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (showRegistration) {
     return (
@@ -993,76 +1175,318 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
               <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
                 Team Management
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {!isRegistered ? (
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5 text-indigo-500" />
-                      Team Formation
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h3 className="font-semibold text-blue-800">Team Size</h3>
-                      <p className="text-blue-700 text-sm mt-1">
-                        Teams can have 2-4 members. Solo participation is also
-                        allowed.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h3 className="font-semibold text-green-800">
-                        Role Distribution
-                      </h3>
-                      <p className="text-green-700 text-sm mt-1">
-                        Consider having developers, designers, and a project
-                        manager for balanced teams.
-                      </p>
-                    </div>
-                    <Button className="w-full">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Find Teammates
+                  <CardContent className="p-6 text-center">
+                    <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Registration Required</h3>
+                    <p className="text-gray-600 mb-4">
+                      You need to register for this hackathon before you can manage teams.
+                    </p>
+                    <Button onClick={() => setShowRegistration(true)}>
+                      Register Now
                     </Button>
                   </CardContent>
                 </Card>
+              ) : (
+                <div className="space-y-6">
+                  {/* User's Teams */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Users className="w-5 h-5 text-blue-500" />
+                          My Teams
+                        </span>
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => setShowJoinTeam(true)}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Join Team
+                          </Button>
+                          <Button 
+                            onClick={() => setShowCreateTeam(true)}
+                            size="sm"
+                          >
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Create Team
+                          </Button>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {userTeams.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No Teams Yet</h3>
+                          <p className="text-gray-500 mb-4">
+                            Create a team or join an existing one to get started.
+                          </p>
+                          <Button onClick={() => setShowCreateTeam(true)}>
+                            Create Your First Team
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {userTeams.map((team) => (
+                            <div key={team._id} className="border rounded-lg p-4 bg-white shadow-sm">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h4 className="font-semibold text-lg">{team.name}</h4>
+                                  <p className="text-sm text-gray-500">Team Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{team.teamCode}</span></p>
+                                </div>
+                                <Badge variant={team.members.length >= team.maxMembers ? "destructive" : "default"}>
+                                  {team.members.length}/{team.maxMembers} members
+                                </Badge>
+                              </div>
+                              <p className="text-gray-600 mb-3">{team.description}</p>
+                              
+                              {/* Team Members */}
+                              <div className="mb-4">
+                                <h5 className="font-medium mb-2">Team Members:</h5>
+                                <div className="flex flex-wrap gap-2">
+                                  {team.members.map((member) => (
+                                    <div key={member._id} className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full">
+                                      <Avatar className="w-6 h-6">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-sm">{member.name}</span>
+                                      {member._id === team.leader._id && (
+                                        <Badge variant="secondary" className="text-xs">Leader</Badge>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              
+                              {/* Team Actions */}
+                              <div className="flex gap-2">
+                                {team.members.length < team.maxMembers && (
+                                  <Button 
+                                    onClick={() => {
+                                      setSelectedTeam(team);
+                                      setShowInviteModal(true);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Invite Member
+                                  </Button>
+                                )}
+                                <Button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(team.teamCode);
+                                    alert(`Team code ${team.teamCode} copied to clipboard!`);
+                                  }}
+                                  variant="outline"
+                                  size="sm"
+                                >
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copy Code
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="w-5 h-5 text-green-500" />
-                      Team Guidelines
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3">
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          All team members must register individually
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          Designate one team leader for communication
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          Use collaborative tools like GitHub for code sharing
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">
-                          Submit one project per team
-                        </span>
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
+                  {/* Pending Invites */}
+                  {teamInvites.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-orange-500" />
+                          Pending Invites
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {teamInvites.map((invite) => (
+                            <div key={invite._id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div>
+                                <p className="font-medium">{invite.invitedEmail}</p>
+                                <p className="text-sm text-gray-500">
+                                  Invited to {invite.team.name} by {invite.invitedBy.name}
+                                </p>
+                              </div>
+                              <Badge variant="secondary">Pending</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
             </section>
+
+            {/* Create Team Modal */}
+            {showCreateTeam && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+                  <button
+                    onClick={() => setShowCreateTeam(false)}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    ✕
+                  </button>
+                  <h3 className="text-xl font-semibold mb-4">Create New Team</h3>
+                  <CreateTeamForm 
+                    onSubmit={handleCreateTeam}
+                    onCancel={() => setShowCreateTeam(false)}
+                    loading={loading}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Invite Modal */}
+            {showInviteModal && selectedTeam && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+                  <button
+                    onClick={() => {
+                      setShowInviteModal(false);
+                      setSelectedTeam(null);
+                      setInviteEmail('');
+                    }}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    ✕
+                  </button>
+                  <h3 className="text-xl font-semibold mb-4">Invite Team Member</h3>
+                  <p className="text-gray-600 mb-4">
+                    Invite someone to join <strong>{selectedTeam.name}</strong>
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Email Address *</label>
+                      <input
+                        type="email"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        placeholder="friend@example.com"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={loading}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        The recipient will receive an email with an invitation link
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={handleSendInvite}
+                        disabled={!inviteEmail.trim() || loading}
+                        className="flex-1"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Sending...
+                          </>
+                        ) : (
+                          'Send Invite'
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setShowInviteModal(false);
+                          setSelectedTeam(null);
+                          setInviteEmail('');
+                        }}
+                        className="flex-1"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Join Team Modal */}
+            {showJoinTeam && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+                  <button
+                    onClick={() => {
+                      setShowJoinTeam(false);
+                      setTeamCode('');
+                    }}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    ✕
+                  </button>
+                  <h3 className="text-xl font-semibold mb-4">Join a Team</h3>
+                  <p className="text-gray-600 mb-4">
+                    Enter the team code provided by your team leader to join their team.
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Team Code *</label>
+                      <input
+                        type="text"
+                        value={teamCode}
+                        onChange={(e) => setTeamCode(e.target.value.toUpperCase())}
+                        placeholder="Enter team code (e.g., A1B2C3D4)"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                        disabled={loading}
+                        required
+                        maxLength={8}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Team codes are 8 characters long and case-insensitive
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={handleJoinTeam}
+                        disabled={!teamCode.trim() || loading}
+                        className="flex-1"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Joining...
+                          </>
+                        ) : (
+                          'Join Team'
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setShowJoinTeam(false);
+                          setTeamCode('');
+                        }}
+                        className="flex-1"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Community Section */}
             <section ref={sectionRefs.community} className="space-y-8">
@@ -1127,5 +1551,96 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
         </main>
       </div>
     </div>
+  );
+}
+
+// Create Team Form Component
+function CreateTeamForm({ onSubmit, onCancel, loading }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    maxMembers: 4
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.description.trim()) {
+      alert('Please fill in all required fields');
+      return;
+    }
+    onSubmit(formData);
+  };
+
+  const handleCancel = () => {
+    // Reset form data
+    setFormData({
+      name: '',
+      description: '',
+      maxMembers: 4
+    });
+    onCancel();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium mb-2">Team Name *</label>
+        <input
+          type="text"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          placeholder="Enter team name"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+          disabled={loading}
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-2">Description *</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Describe your team's goals and skills"
+          rows={3}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          required
+          disabled={loading}
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium mb-2">Maximum Members</label>
+        <select
+          value={formData.maxMembers}
+          onChange={(e) => setFormData({ ...formData, maxMembers: parseInt(e.target.value) })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={loading}
+        >
+          <option value={2}>2 members</option>
+          <option value={3}>3 members</option>
+          <option value={4}>4 members</option>
+        </select>
+      </div>
+      
+      <div className="flex gap-3">
+        <Button 
+          type="submit"
+          disabled={loading || !formData.name.trim() || !formData.description.trim()}
+          className="flex-1"
+        >
+          {loading ? 'Creating...' : 'Create Team'}
+        </Button>
+        <Button 
+          type="button"
+          variant="outline"
+          onClick={handleCancel}
+          className="flex-1"
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+      </div>
+    </form>
   );
 }

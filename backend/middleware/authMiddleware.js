@@ -5,6 +5,13 @@ const User = require("../model/UserModel"); // Adjust if needed
 const protect = async (req, res, next) => {
   let token;
 
+  console.log('Auth middleware called:', {
+    hasAuthHeader: !!req.headers.authorization,
+    authHeader: req.headers.authorization ? req.headers.authorization.substring(0, 20) + '...' : 'none',
+    method: req.method,
+    path: req.path
+  });
+
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer ")
@@ -12,13 +19,21 @@ const protect = async (req, res, next) => {
     token = req.headers.authorization.split(" ")[1];
 
     try {
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not set in environment variables');
+        return res.status(500).json({ message: "Server configuration error" });
+      }
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded successfully:', { userId: decoded.id });
 
       const user = await User.findById(decoded.id).select("-passwordHash");
       if (!user) {
+        console.error('User not found for token:', decoded.id);
         return res.status(401).json({ message: "User not found for token" });
       }
 
+      console.log('User authenticated:', { userId: user._id, email: user.email });
       req.user = user;
       next();
     } catch (err) {
@@ -26,6 +41,7 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: "Invalid or expired token" });
     }
   } else {
+    console.error('No Bearer token provided');
     return res.status(401).json({ message: "No token provided in Authorization header" });
   }
 };

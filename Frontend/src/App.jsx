@@ -19,6 +19,7 @@ import { ExploreHackathons } from "./pages/mainDashboard/sections/ExploreHackath
 import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
 import { Blogs } from "./pages/mainDashboard/sections/Blogs";
+import InviteAccept from "./pages/InviteAccept";
 
 function App() {
   return (
@@ -34,7 +35,7 @@ function App() {
       <Route path="/about" element={<About />} />
       <Route path="/loader" element={<Loader />} />
       <Route path="/explore" element={<ExploreHackathons />} />
-
+<Route path="/invite/:inviteId" element={<InviteAccept />} />
       {/* Redirect root to admin dashboard */}
       <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
 

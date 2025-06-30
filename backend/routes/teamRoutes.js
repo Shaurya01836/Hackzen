@@ -9,8 +9,11 @@ router.post('/', protect, teamController.createTeam);
 // Join a team
 router.put('/:id/add-member', protect, teamController.addMember);
 
+// Join team by code
+router.get('/join/:teamCode', protect, teamController.joinTeamByCode);
+
 // Get all teams in a hackathon
-router.get('/hackathon/:hackathonId', teamController.getTeamsByHackathon);
+router.get('/hackathon/:hackathonId', protect, teamController.getTeamsByHackathon);
 
 // Get one team by ID
 router.get('/:id', teamController.getTeamById);
