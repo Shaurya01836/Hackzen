@@ -2,6 +2,7 @@ const TeamInvite = require('../model/TeamInviteModel');
 const Team = require('../model/TeamModel');
 const User = require('../model/UserModel');
 const Hackathon = require('../model/HackathonModel');
+const HackathonRegistration = require('../model/HackathonRegistrationModel');
 const nodemailer = require('nodemailer');
 
 // POST /api/team-invites
@@ -48,14 +49,29 @@ const createInvite = async (req, res) => {
 
     const inviteLink = `http://localhost:5173/invite/${invite._id}`;
 
+    // Check if email credentials are set
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      console.error('Email credentials not configured');
+      return res.status(500).json({ error: 'Email service not configured' });
+    }
+
     // Setup nodemailer with user's email credentials
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASS
       }
     });
+
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('Email transporter verified successfully');
+    } catch (verifyError) {
+      console.error('Email transporter verification failed:', verifyError);
+      return res.status(500).json({ error: 'Email service configuration error' });
+    }
 
     const emailTemplate = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -74,6 +90,7 @@ const createInvite = async (req, res) => {
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
             <h3 style="color: #667eea; margin: 0 0 10px 0;">🏆 ${hackathon.title}</h3>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Team:</strong> ${team.name}</p>
+            <p style="color: #666; margin: 0 0 5px 0;"><strong>Team Code:</strong> ${team.teamCode}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Prize Pool:</strong> $${hackathon.prizePool}</p>
             <p style="color: #666; margin: 0;"><strong>Deadline:</strong> ${new Date(hackathon.endDate).toLocaleDateString()}</p>
           </div>
@@ -101,16 +118,22 @@ const createInvite = async (req, res) => {
       </div>
     `;
 
-    await transporter.sendMail({
-      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
-      to: invitedEmail,
-      subject: `🎉 You're invited to join ${team.name} for ${hackathon.title}!`,
-      html: emailTemplate
-    });
+    try {
+      const mailResult = await transporter.sendMail({
+        from: `"HackZen Team" <${process.env.MAIL_USER}>`,
+        to: invitedEmail,
+        subject: `🎉 You're invited to join ${team.name} for ${hackathon.title}!`,
+        html: emailTemplate
+      });
 
-    res.status(201).json({ message: 'Invite sent successfully', invite });
+      console.log('Email sent successfully:', mailResult.messageId);
+      res.status(201).json({ message: 'Invite sent successfully', invite });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      res.status(500).json({ error: 'Failed to send email', details: emailError.message });
+    }
   } catch (err) {
-    console.error('Email error:', err);
+    console.error('General error in createInvite:', err);
     res.status(500).json({ error: 'Failed to send invite', details: err.message });
   }
 };
@@ -226,7 +249,25 @@ const acceptInviteById = async (req, res) => {
       await team.save();
     }
 
-    res.json({ message: 'Invite accepted' });
+    // Register user for hackathon if not already registered
+    const hackathonId = invite.hackathon;
+    const existingReg = await HackathonRegistration.findOne({ hackathonId, userId });
+    if (!existingReg) {
+      // Get user info for autofill
+      const user = await User.findById(userId);
+      await HackathonRegistration.create({
+        hackathonId,
+        userId,
+        formData: {
+          fullName: user.name,
+          email: user.email,
+          phone: user.phone || '',
+        },
+        acceptedTerms: true
+      });
+    }
+
+    res.json({ message: 'Invite accepted and user registered for hackathon' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to accept invite', details: err.message });
   }

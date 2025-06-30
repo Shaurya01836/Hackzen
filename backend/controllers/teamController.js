@@ -218,6 +218,38 @@ const deleteTeam = async (req, res) => {
   }
 };
 
+// DELETE /api/teams/:teamId/members/:memberId
+const removeMember = async (req, res) => {
+  try {
+    const { teamId, memberId } = req.params;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+
+    // Only leader can remove members
+    if (team.leader.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ error: 'Only the team leader can remove members' });
+    }
+
+    // Leader cannot remove themselves
+    if (memberId === team.leader.toString()) {
+      return res.status(400).json({ error: 'Leader cannot remove themselves' });
+    }
+
+    // Remove member
+    team.members = team.members.filter(id => id.toString() !== memberId);
+    await team.save();
+
+    const populatedTeam = await Team.findById(team._id)
+      .populate('members', 'name email avatar')
+      .populate('leader', 'name email');
+
+    res.json({ message: 'Member removed successfully', team: populatedTeam });
+  } catch (err) {
+    console.error('Error removing member:', err);
+    res.status(500).json({ error: 'Failed to remove member', details: err.message });
+  }
+};
+
 module.exports = {
   createTeam,
   addMember,
@@ -225,4 +257,5 @@ module.exports = {
   getTeamById,
   joinTeamByCode,
   deleteTeam,
+  removeMember,
 };

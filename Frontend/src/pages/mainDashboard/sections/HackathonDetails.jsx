@@ -43,6 +43,19 @@ import {
 import { Progress } from "../../../components/DashboardUI/progress";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import axios from "axios";
+import { useToast } from '../../../hooks/use-toast';
+import { useAuth } from '../../../context/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '../../../components/DashboardUI/alert-dialog';
 
 // Mock animated card components
 const ACard = Card;
@@ -70,6 +83,12 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [teamCode, setTeamCode] = useState('');
   const [teamInvites, setTeamInvites] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Add state for dialog
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, teamId: null });
+  const [removeDialog, setRemoveDialog] = useState({ open: false, teamId: null, memberId: null });
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -105,30 +124,7 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
     { id: "team", label: "Team Management", icon: Settings },
     { id: "community", label: "Community", icon: Users },
   ];
-useEffect(() => {
-  const fetchSavedHackathons = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
 
-      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const savedHackathons = await res.json();
-
-      setIsSaved(
-        savedHackathons.map((h) => h._id.toString()).includes(hackathon._id.toString())
-      );
-    } catch (err) {
-      console.error("Failed to fetch saved hackathons:", err);
-    }
-  };
-
-  fetchSavedHackathons();
-}, [hackathon._id]);
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
       try {
@@ -330,6 +326,12 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        alert('Please log in to create a team');
+        return;
+      }
+      
       const response = await axios.post('http://localhost:3000/api/teams', {
         ...teamData,
         hackathonId: hackathon._id
@@ -350,7 +352,8 @@ useEffect(() => {
       alert(`Team created successfully!\n\nTeam Code: ${teamCode}\n\nShare this code with your teammates so they can join your team!`);
     } catch (error) {
       console.error('Error creating team:', error);
-      alert(error.response?.data?.error || 'Failed to create team. Please try again.');
+      const errorMessage = error.response?.data?.error || 'Failed to create team. Please try again.';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -434,6 +437,46 @@ useEffect(() => {
     }
   };
 
+  // Update handleDeleteTeam to not use window.confirm
+ 
+  const confirmDeleteTeam = async () => {
+    const teamId = deleteDialog.teamId;
+    setDeleteDialog({ open: false, teamId: null });
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/teams/${teamId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Team deleted', description: 'The team was deleted successfully.' });
+      await fetchUserTeams();
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.error || 'Failed to delete team.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update handleRemoveMember to not use window.confirm
+ 
+  const confirmRemoveMember = async () => {
+    const { teamId, memberId } = removeDialog;
+    setRemoveDialog({ open: false, teamId: null, memberId: null });
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/teams/${teamId}/members/${memberId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Member removed', description: 'The member was removed from the team.' });
+      await fetchUserTeams();
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.error || 'Failed to remove member.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showRegistration) {
     return (
       <HackathonRegistration
@@ -444,60 +487,9 @@ useEffect(() => {
     );
   }
 
-  // Mock hackathon data for demo
-  const mockHackathon = {
-    name: "AI Innovation Challenge 2024",
-    organizer: "TechCorp",
-    prize: "$50,000",
-    participants: 1250,
-    maxParticipants: 2000,
-    rating: 4.8,
-    reviews: 324,
-    registrationDeadline: "Dec 15, 2024",
-    startDate: "Jan 10, 2025",
-    endDate: "Jan 12, 2025",
-    location: "Virtual Event",
-    category: "Artificial Intelligence",
-    difficulty: "Intermediate",
-    status: "Registration Open",
-    description:
-      "Join us for an exciting 48-hour hackathon focused on building innovative AI solutions that can make a real impact on society. Whether you're interested in machine learning, natural language processing, computer vision, or any other AI domain, this is your chance to showcase your skills and creativity.",
-    requirements: [
-      "Basic programming knowledge",
-      "Familiarity with AI/ML concepts",
-      "Team of 2-4 members",
-      "Original code only",
-    ],
-    tags: [
-      "AI",
-      "Machine Learning",
-      "Python",
-      "TensorFlow",
-      "React",
-      "Node.js",
-    ],
-    perks: [
-      "Mentorship from industry experts",
-      "Access to premium APIs and tools",
-      "Networking opportunities",
-      "Certificate of participation",
-      "Swag kit for all participants",
-    ],
-    problemStatements: [
-      "Develop an AI-powered solution for sustainable agriculture",
-      "Create a machine learning model for healthcare diagnosis",
-      "Build an intelligent system for smart city management",
-    ],
-    featured: true,
-    sponsored: true,
-    images: {
-      banner: {
-        url: "/placeholder.svg?height=400&width=800",
-      },
-    },
-  };
+  
 
-  const currentHackathon = hackathon || mockHackathon;
+  const currentHackathon = hackathon;
 
   if (showRegistration) {
     return (
@@ -1223,21 +1215,25 @@ useEffect(() => {
                           My Teams
                         </span>
                         <div className="flex gap-2">
-                          <Button 
-                            onClick={() => setShowJoinTeam(true)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Join Team
-                          </Button>
-                          <Button 
-                            onClick={() => setShowCreateTeam(true)}
-                            size="sm"
-                          >
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Create Team
-                          </Button>
+                          {userTeams.length === 0 && (
+                            <>
+                              <Button 
+                                onClick={() => setShowJoinTeam(true)}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Join Team
+                              </Button>
+                              <Button 
+                                onClick={() => setShowCreateTeam(true)}
+                                size="sm"
+                              >
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Create Team
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -1256,7 +1252,7 @@ useEffect(() => {
                       ) : (
                         <div className="space-y-4">
                           {userTeams.map((team) => (
-                            <div key={team._id} className="border rounded-lg p-4 bg-white shadow-sm">
+                            <div key={team._id} className="mb-6 p-4 border rounded-lg bg-gray-50">
                               <div className="flex items-center justify-between mb-3">
                                 <div>
                                   <h4 className="font-semibold text-lg">{team.name}</h4>
@@ -1267,7 +1263,6 @@ useEffect(() => {
                                 </Badge>
                               </div>
                               <p className="text-gray-600 mb-3">{team.description}</p>
-                              
                               {/* Team Members */}
                               <div className="mb-4">
                                 <h5 className="font-medium mb-2">Team Members:</h5>
@@ -1282,13 +1277,31 @@ useEffect(() => {
                                       {member._id === team.leader._id && (
                                         <Badge variant="secondary" className="text-xs">Leader</Badge>
                                       )}
+                                      {team.leader._id === user?._id && member._id !== user?._id && (
+                                        <AlertDialog open={removeDialog.open && removeDialog.teamId === team._id && removeDialog.memberId === member._id} onOpenChange={open => setRemoveDialog(open ? { open: true, teamId: team._id, memberId: member._id } : { open: false, teamId: null, memberId: null })}>
+                                          <AlertDialogTrigger asChild>
+                                            <Button size="xs" variant="destructive">Remove</Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Remove Team Member?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Are you sure you want to remove <b>{member.name}</b> from the team? This action cannot be undone.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={confirmRemoveMember} disabled={loading}>Remove</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
                                     </div>
                                   ))}
                                 </div>
                               </div>
-                              
                               {/* Team Actions */}
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 mb-2">
                                 {team.members.length < team.maxMembers && (
                                   <Button 
                                     onClick={() => {
@@ -1305,7 +1318,7 @@ useEffect(() => {
                                 <Button 
                                   onClick={() => {
                                     navigator.clipboard.writeText(team.teamCode);
-                                    alert(`Team code ${team.teamCode} copied to clipboard!`);
+                                    toast({ title: 'Code copied!', description: 'Team code copied to clipboard.' });
                                   }}
                                   variant="outline"
                                   size="sm"
@@ -1313,6 +1326,26 @@ useEffect(() => {
                                   <Copy className="w-4 h-4 mr-2" />
                                   Copy Code
                                 </Button>
+                                {/* Delete team button for leader only */}
+                                {team.leader._id === user?._id && (
+                                  <AlertDialog open={deleteDialog.open && deleteDialog.teamId === team._id} onOpenChange={open => setDeleteDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="destructive" size="sm" disabled={loading}>Delete Team</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this team? This action cannot be undone and all members will be removed.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={confirmDeleteTeam} disabled={loading}>Delete</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -1322,7 +1355,7 @@ useEffect(() => {
                   </Card>
 
                   {/* Pending Invites */}
-                  {teamInvites.length > 0 && (
+                  {teamInvites.filter(invite => invite.status === 'pending').length > 0 && (
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -1332,7 +1365,7 @@ useEffect(() => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3">
-                          {teamInvites.map((invite) => (
+                          {teamInvites.filter(invite => invite.status === 'pending').map((invite) => (
                             <div key={invite._id} className="flex items-center justify-between p-3 border rounded-lg">
                               <div>
                                 <p className="font-medium">{invite.invitedEmail}</p>
@@ -1591,7 +1624,16 @@ function CreateTeamForm({ onSubmit, onCancel, loading }) {
       alert('Please fill in all required fields');
       return;
     }
+    
+    // Call onSubmit and then reset form
     onSubmit(formData);
+    
+    // Reset form data after submission
+    setFormData({
+      name: '',
+      description: '',
+      maxMembers: 4
+    });
   };
 
   const handleCancel = () => {
@@ -1652,7 +1694,14 @@ function CreateTeamForm({ onSubmit, onCancel, loading }) {
           disabled={loading || !formData.name.trim() || !formData.description.trim()}
           className="flex-1"
         >
-          {loading ? 'Creating...' : 'Create Team'}
+          {loading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Creating...
+            </>
+          ) : (
+            'Create Team'
+          )}
         </Button>
         <Button 
           type="button"
