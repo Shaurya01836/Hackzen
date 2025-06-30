@@ -20,7 +20,7 @@ import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
 import { Blogs } from "./pages/mainDashboard/sections/Blogs";
 import InviteAccept from "./pages/InviteAccept";
-import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
+// import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
 
 function App() {

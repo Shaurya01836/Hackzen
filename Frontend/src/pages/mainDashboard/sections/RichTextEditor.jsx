@@ -70,7 +70,7 @@ export function RichTextEditor({
       if (document.queryCommandState("justifyFull"))
         formats.add("align-justify")
     } catch (e) {
-      // Handle any errors with queryCommandState
+      console.log(e);
     }
 
     setActiveFormats(formats)

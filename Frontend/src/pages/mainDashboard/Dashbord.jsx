@@ -42,7 +42,6 @@ import {
 import { useAuth } from "../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
-import { MyHackathons } from "./sections/Myhackthon";
 import { MySubmissions } from "./sections/MySubmissions";
 import { ChatRooms } from "./sections/Chat-rooms";
 import { CreatedHackathons } from "./sections/Created-hackathons";
@@ -55,7 +54,7 @@ import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
-import ProjectSubmission from "./sections/ProjectSubmission";
+import MyHackathon from "./sections/Myhackthon"
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -147,12 +146,6 @@ export default function HackZenDashboard() {
       onClick: () => changeView("project-archive"),
     },
     {
-      title: "Project Submission",
-      icon: Fuel,
-      key: "project-submission",
-      onClick: () => changeView("project-submission"),
-    },
-    {
       title: "Organization Hub",
       icon: Building,
       key: "organization-hub",
@@ -213,7 +206,7 @@ export default function HackZenDashboard() {
           />
         );
       case "my-hackathons":
-        return <MyHackathons onBack={() => changeView("profile")} />;
+        return <MyHackathon onBack={() => changeView("profile")} />;
       case "my-submissions":
         return <MySubmissions onBack={() => changeView("profile")} />;
       case "chat-rooms":
@@ -245,8 +238,6 @@ export default function HackZenDashboard() {
         return <Blogs onBack={() => changeView("profile")} />;
       case "project-archive":
         return <ProjectArchive onBack={() => changeView("profile")} />;
-      case "project-submission":
-        return <ProjectSubmission onBack={() => changeView("profile")} />;
       case "my-community":
         return <div className="p-6">My Community Section - Coming Soon</div>;
       default:
