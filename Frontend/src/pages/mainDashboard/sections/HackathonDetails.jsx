@@ -105,7 +105,30 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
     { id: "team", label: "Team Management", icon: Settings },
     { id: "community", label: "Community", icon: Users },
   ];
+useEffect(() => {
+  const fetchSavedHackathons = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
 
+      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const savedHackathons = await res.json();
+
+      setIsSaved(
+        savedHackathons.map((h) => h._id.toString()).includes(hackathon._id.toString())
+      );
+    } catch (err) {
+      console.error("Failed to fetch saved hackathons:", err);
+    }
+  };
+
+  fetchSavedHackathons();
+}, [hackathon._id]);
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
       try {

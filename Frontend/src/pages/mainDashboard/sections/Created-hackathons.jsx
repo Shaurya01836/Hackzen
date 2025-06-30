@@ -220,7 +220,7 @@ const [editHackathon, setEditHackathon] = useState(null);
   );
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="min-h-screen flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div>

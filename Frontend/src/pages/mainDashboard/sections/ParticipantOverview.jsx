@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Users,
@@ -45,6 +46,11 @@ export function ParticipantOverview() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState("all")
+  const navigate = useNavigate();
+
+const createHackathonPage = () => {
+  navigate("/dashboard/create-hackathon");
+};
 
   // Fetch hackathons created by the organizer
   useEffect(() => {
@@ -221,7 +227,7 @@ export function ParticipantOverview() {
       className="cursor-pointer hover:shadow-lg transition-shadow"
       onClick={() => handleHackathonClick(hackathon)}
     >
-      <CardContent className="p-6">
+      <CardContent className="pt-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3 className="text-xl font-semibold mb-2">{hackathon.title}</h3>
@@ -273,17 +279,15 @@ export function ParticipantOverview() {
   )
 
   if (loading) {
-    return (
-      <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-500">Loading...</p>
-          </div>
-        </div>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p className="text-gray-500">Loading...</p>
       </div>
-    )
-  }
+    </div>
+  );
+}
 
   // Show hackathon participants view
   if (selectedHackathon) {
@@ -517,7 +521,7 @@ export function ParticipantOverview() {
 
   // Show hackathons list view
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="min-h-screen flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">
@@ -540,7 +544,7 @@ export function ParticipantOverview() {
           <p className="text-gray-500 mb-4">
             You haven't created any hackathons yet. Create your first hackathon to start managing participants.
           </p>
-          <Button>
+          <Button onClick={createHackathonPage}>
             Create Hackathon
           </Button>
         </div>

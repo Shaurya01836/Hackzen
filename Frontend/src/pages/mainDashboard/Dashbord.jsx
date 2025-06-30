@@ -19,6 +19,7 @@ import {
   UsersRoundIcon,
   NotebookTabs,
   Wrench,
+  PencilRulerIcon,
 } from "lucide-react";
 
 import {
@@ -152,37 +153,44 @@ export default function HackZenDashboard() {
   ];
 
   const organizerMenuItems = [
-    {
-      title: "Organizer Tools",
-      icon: Settings,
-      key: "organizer-tools",
-      onClick: () => changeView("organizer-tools"),
-    },
-    {
-      title: "Created Hackathons",
-      icon: Plus,
-      key: "created-hackathons",
-      onClick: () => changeView("created-hackathons"),
-    },
-    {
-      title: "Participant Overview",
-      icon: Users,
-      key: "participant-overview",
-      onClick: () => changeView("participant-overview"),
-    },
-    {
-      title: "Review Submissions",
-      icon: Eye,
-      key: "review-submissions",
-      onClick: () => changeView("review-submissions"),
-    },
-    {
-      title: "Announcements",
-      icon: MessageSquare,
-      key: "announcements",
-      onClick: () => changeView("announcements"),
-    },
-  ];
+  {
+    title: "Organizer Tools",
+    icon: Settings,
+    key: "organizer-tools",
+    onClick: () => changeView("organizer-tools"),
+  },
+  {
+    title: "Created Hackathons",
+    icon: Plus,
+    key: "created-hackathons", // ✅ keep this
+    onClick: () => changeView("created-hackathons"),
+  },
+  {
+    title: "Participant Overview",
+    icon: Users,
+    key: "participant-overview",
+    onClick: () => changeView("participant-overview"),
+  },
+  {
+    title: "Create Hackathons",
+    icon: PencilRulerIcon,
+    key: "create-hackathon", // ✅ FIX this key!
+    onClick: () => changeView("create-hackathon"),
+  },
+  {
+    title: "Review Submissions",
+    icon: Eye,
+    key: "review-submissions",
+    onClick: () => changeView("review-submissions"),
+  },
+  {
+    title: "Announcements",
+    icon: MessageSquare,
+    key: "announcements",
+    onClick: () => changeView("announcements"),
+  },
+];
+
 
   // Function to render content based on current view
   const renderContent = () => {
@@ -223,7 +231,7 @@ export default function HackZenDashboard() {
         return <OrganizerTools onBack={() => changeView("profile")} />;
       case "create-hackathon":
         return (
-          <CreateHackathon onBack={() => changeView("created-hackathons")} />
+          <CreateHackathon onBack={() => changeView("profile")} />
         );
       case "blogs":
         return <Blogs onBack={() => changeView("profile")} />;
