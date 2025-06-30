@@ -500,7 +500,7 @@ export function ExploreHackathons() {
             Sponsored ({sponsoredHackathons.length})
           </TabsTrigger>
           <TabsTrigger value="upcoming">
-            Upcoming ({upcomingHackathons.length})
+            Registration Open ({upcomingHackathons.length})
           </TabsTrigger>
           <TabsTrigger value="closed">
             Closed ({closedHackathons.length})

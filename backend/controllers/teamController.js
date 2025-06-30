@@ -250,6 +250,25 @@ const removeMember = async (req, res) => {
   }
 };
 
+// DELETE /api/teams/:teamId/leave
+const leaveTeam = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const userId = req.user._id;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!team.members.includes(userId)) {
+      return res.status(403).json({ error: 'You are not a member of this team' });
+    }
+    // Allow member to remove themselves
+    team.members = team.members.filter(id => id.toString() !== userId.toString());
+    await team.save();
+    res.json({ message: 'You have left the team.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to leave team', details: err.message });
+  }
+};
+
 module.exports = {
   createTeam,
   addMember,
@@ -258,4 +277,5 @@ module.exports = {
   joinTeamByCode,
   deleteTeam,
   removeMember,
+  leaveTeam,
 };

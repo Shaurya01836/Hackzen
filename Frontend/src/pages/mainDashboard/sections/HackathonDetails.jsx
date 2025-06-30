@@ -90,6 +90,12 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, teamId: null });
   const [removeDialog, setRemoveDialog] = useState({ open: false, teamId: null, memberId: null });
 
+  // Add state for copy code feedback
+  const [copiedTeamId, setCopiedTeamId] = useState(null);
+
+  // Add state for leave team dialog
+  const [leaveDialog, setLeaveDialog] = useState({ open: false, teamId: null });
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
@@ -438,7 +444,9 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   };
 
   // Update handleDeleteTeam to not use window.confirm
- 
+  const handleDeleteTeam = (teamId) => {
+    setDeleteDialog({ open: true, teamId });
+  };
   const confirmDeleteTeam = async () => {
     const teamId = deleteDialog.teamId;
     setDeleteDialog({ open: false, teamId: null });
@@ -458,7 +466,9 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   };
 
   // Update handleRemoveMember to not use window.confirm
- 
+  const handleRemoveMember = (teamId, memberId) => {
+    setRemoveDialog({ open: true, teamId, memberId });
+  };
   const confirmRemoveMember = async () => {
     const { teamId, memberId } = removeDialog;
     setRemoveDialog({ open: false, teamId: null, memberId: null });
@@ -477,6 +487,28 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
     }
   };
 
+  // Add leave team handler
+  const handleLeaveTeam = (teamId) => {
+    setLeaveDialog({ open: true, teamId });
+  };
+  const confirmLeaveTeam = async () => {
+    const teamId = leaveDialog.teamId;
+    setLeaveDialog({ open: false, teamId: null });
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/teams/${teamId}/leave`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Left team', description: 'You have left the team.' });
+      await fetchUserTeams();
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.error || 'Failed to leave team.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showRegistration) {
     return (
       <HackathonRegistration
@@ -487,9 +519,60 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
     );
   }
 
-  
+  // Mock hackathon data for demo
+  const mockHackathon = {
+    name: "AI Innovation Challenge 2024",
+    organizer: "TechCorp",
+    prize: "$50,000",
+    participants: 1250,
+    maxParticipants: 2000,
+    rating: 4.8,
+    reviews: 324,
+    registrationDeadline: "Dec 15, 2024",
+    startDate: "Jan 10, 2025",
+    endDate: "Jan 12, 2025",
+    location: "Virtual Event",
+    category: "Artificial Intelligence",
+    difficulty: "Intermediate",
+    status: "Registration Open",
+    description:
+      "Join us for an exciting 48-hour hackathon focused on building innovative AI solutions that can make a real impact on society. Whether you're interested in machine learning, natural language processing, computer vision, or any other AI domain, this is your chance to showcase your skills and creativity.",
+    requirements: [
+      "Basic programming knowledge",
+      "Familiarity with AI/ML concepts",
+      "Team of 2-4 members",
+      "Original code only",
+    ],
+    tags: [
+      "AI",
+      "Machine Learning",
+      "Python",
+      "TensorFlow",
+      "React",
+      "Node.js",
+    ],
+    perks: [
+      "Mentorship from industry experts",
+      "Access to premium APIs and tools",
+      "Networking opportunities",
+      "Certificate of participation",
+      "Swag kit for all participants",
+    ],
+    problemStatements: [
+      "Develop an AI-powered solution for sustainable agriculture",
+      "Create a machine learning model for healthcare diagnosis",
+      "Build an intelligent system for smart city management",
+    ],
+    featured: true,
+    sponsored: true,
+    images: {
+      banner: {
+        url: "/placeholder.svg?height=400&width=800",
+      },
+    },
+  };
 
-  const currentHackathon = hackathon;
+  const currentHackathon = hackathon || mockHackathon;
 
   if (showRegistration) {
     return (
@@ -1315,33 +1398,43 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
                                     Invite Member
                                   </Button>
                                 )}
-                                <Button 
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(team.teamCode);
-                                    toast({ title: 'Code copied!', description: 'Team code copied to clipboard.' });
-                                  }}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy Code
-                                </Button>
-                                {/* Delete team button for leader only */}
-                                {team.leader._id === user?._id && (
-                                  <AlertDialog open={deleteDialog.open && deleteDialog.teamId === team._id} onOpenChange={open => setDeleteDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
+                                <div className="relative inline-block">
+                                  <Button 
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(team.teamCode);
+                                      setCopiedTeamId(team._id);
+                                      toast({ title: 'Code copied!', description: 'Team code copied to clipboard.' });
+                                      setTimeout(() => setCopiedTeamId(null), 1500);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy Code
+                                  </Button>
+                                  {copiedTeamId === team._id && (
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full shadow-lg flex items-center gap-1 text-xs font-semibold animate-fade-in-out z-10" style={{ pointerEvents: 'none' }}>
+                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                      Code Copied!
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Leave team button for logged-in user (not leader) */}
+                                {team.members.some(m => m._id === user?._id) && team.leader._id !== user?._id && (
+                                  <AlertDialog open={leaveDialog.open && leaveDialog.teamId === team._id} onOpenChange={open => setLeaveDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="destructive" size="sm" disabled={loading}>Delete Team</Button>
+                                      <Button variant="destructive" size="sm" disabled={loading}>Leave Team</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Team?</AlertDialogTitle>
+                                        <AlertDialogTitle>Leave Team?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Are you sure you want to delete this team? This action cannot be undone and all members will be removed.
+                                          Are you sure you want to leave this team? You will be removed from the team and cannot rejoin unless invited again.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={confirmDeleteTeam} disabled={loading}>Delete</AlertDialogAction>
+                                        <AlertDialogAction onClick={confirmLeaveTeam} disabled={loading}>Leave</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>

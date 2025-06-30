@@ -148,7 +148,7 @@ const respondToInvite = async (req, res) => {
     const invite = await TeamInvite.findById(inviteId);
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
 
-    if (invite.invitedUser.toString() !== userId.toString()) {
+    if (invite.invitedUser && invite.invitedUser.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'You are not the invited user' });
     }
 
@@ -156,14 +156,11 @@ const respondToInvite = async (req, res) => {
     invite.respondedAt = new Date();
     await invite.save();
 
-    if (status === 'accepted') {
-      const team = await Team.findById(invite.team);
-      if (!team.members.includes(userId)) {
-        team.members.push(userId);
-        await team.save();
-      }
+    if (status === 'declined') {
+      return res.json({ message: 'You have declined the invitation.' });
     }
 
+    // Accept logic handled in acceptInviteById
     res.json({ message: `Invite ${status}` });
   } catch (err) {
     res.status(500).json({ error: 'Failed to respond to invite', details: err.message });
@@ -223,8 +220,13 @@ const acceptInviteById = async (req, res) => {
     const inviteId = req.params.id;
     const userId = req.user._id;
 
-    const invite = await TeamInvite.findById(inviteId);
+    const invite = await TeamInvite.findById(inviteId).populate('team');
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
+
+    // If already accepted or user is already a member
+    if (invite.status === 'accepted' || (invite.team && invite.team.members && invite.team.members.includes(userId))) {
+      return res.status(200).json({ message: 'You are already a member of this team!' });
+    }
 
     // If not already accepted/declined
     if (invite.status !== 'pending') {
@@ -243,7 +245,7 @@ const acceptInviteById = async (req, res) => {
     await invite.save();
 
     // Add user to team
-    const team = await Team.findById(invite.team);
+    const team = await Team.findById(invite.team._id);
     if (!team.members.includes(userId)) {
       team.members.push(userId);
       await team.save();

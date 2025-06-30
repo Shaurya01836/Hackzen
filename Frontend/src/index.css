@@ -302,3 +302,14 @@ html {
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
+
+
+.animate-fade-in-out {
+  animation: fadeInOut 1.5s;
+}
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+  10% { opacity: 1; transform: translateY(0) scale(1); }
+  90% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-8px) scale(0.95); }
+}

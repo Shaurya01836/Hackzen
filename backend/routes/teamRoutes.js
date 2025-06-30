@@ -24,4 +24,7 @@ router.delete('/:id', protect, teamController.deleteTeam);
 // Remove a member from a team (leader only)
 router.delete('/:teamId/members/:memberId', protect, teamController.removeMember);
 
+// Member leaves team (remove self)
+router.delete('/:teamId/leave', protect, teamController.leaveTeam);
+
 module.exports = router;
