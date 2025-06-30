@@ -20,6 +20,7 @@ import {
   NotebookTabs,
   Wrench,
   PencilRulerIcon,
+  Fuel,
 } from "lucide-react";
 
 import {
@@ -54,6 +55,7 @@ import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
+import ProjectSubmission from "./sections/ProjectSubmission";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -143,6 +145,12 @@ export default function HackZenDashboard() {
       icon: Archive,
       key: "project-archive",
       onClick: () => changeView("project-archive"),
+    },
+    {
+      title: "Project Submission",
+      icon: Fuel,
+      key: "project-submission",
+      onClick: () => changeView("project-submission"),
     },
     {
       title: "Organization Hub",
@@ -237,6 +245,8 @@ export default function HackZenDashboard() {
         return <Blogs onBack={() => changeView("profile")} />;
       case "project-archive":
         return <ProjectArchive onBack={() => changeView("profile")} />;
+      case "project-submission":
+        return <ProjectSubmission onBack={() => changeView("profile")} />;
       case "my-community":
         return <div className="p-6">My Community Section - Coming Soon</div>;
       default:
