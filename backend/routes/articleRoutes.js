@@ -12,7 +12,7 @@ const { isAuthenticated, isAdmin } = require("../middleware/authMiddleware");
 const router = require("express").Router();
 
 router.post("/", isAuthenticated, createArticle);
-router.get("/", getPublishedArticles);
+router.get("/", isAuthenticated, getPublishedArticles);
 router.get("/all", isAuthenticated, isAdmin, getAllArticles);
 
 router.patch("/approve/:id", isAuthenticated, isAdmin, approveArticle);

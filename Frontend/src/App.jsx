@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/Home/LandingPage";
 import NotFound from "./pages/Notfound";
 import Page from "./pages/AdminDashboard/AdminPanel";
@@ -25,6 +26,8 @@ import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetail
 
 function App() {
   return (
+    <>
+    <Toaster position="top-center" reverseOrder={false} />
     <Routes>
       {/* Landing and auth */}
       <Route path="/" element={<LandingPage />} />
@@ -79,6 +82,7 @@ function App() {
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 }
 

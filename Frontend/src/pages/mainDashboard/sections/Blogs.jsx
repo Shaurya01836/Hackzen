@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import {
   ArrowLeft,
   Search,
   Plus,
   Heart,
-  MessageCircle,
   Share2,
   BookOpen,
   Calendar,
@@ -18,6 +18,7 @@ import {
   Tag,
   CheckCircle,
   AlertCircle,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "../../../components/CommonUI/button";
 import { Input } from "../../../components/CommonUI/input";
@@ -71,11 +72,17 @@ export function Blogs() {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/articles");
+        const token = localStorage.getItem("token"); // 👈 token uthao
+        const res = await fetch("http://localhost:3000/api/articles", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // 👈 yeh jaruri hai
+          },
+        });
+
         const data = await res.json();
         setBlogs(data);
 
-        // extract categories from published blogs
         const published = data.filter((b) => b.status === "published");
         const uniqueCategories = Array.from(
           new Set(published.map((b) => b.category))
@@ -87,6 +94,7 @@ export function Blogs() {
         setLoading(false);
       }
     };
+
     fetchBlogs();
   }, []);
 
@@ -137,41 +145,39 @@ export function Blogs() {
     }
   }, [selectedPost]);
 
- const handleLike = async () => {
-  const token = localStorage.getItem("token"); // or sessionStorage
+  const handleLike = async () => {
+    const token = localStorage.getItem("token"); // or sessionStorage
 
-  if (!token) {
-    console.error("User not logged in");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `http://localhost:3000/api/articles/${selectedPost._id}/like`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ add this line
-        },
-      }
-    );
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      console.error("Like error:", errorData.message);
+    if (!token) {
+      console.error("User not logged in");
       return;
     }
 
-    const data = await res.json();
-    setIsLiked(data.liked); // true or false
-    setLikeCount(data.likes);
-  } catch (error) {
-    console.error("Like request failed:", error);
-  }
-};
+    try {
+      const res = await fetch(
+        `http://localhost:3000/api/articles/${selectedPost._id}/like`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // ✅ add this line
+          },
+        }
+      );
 
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Like error:", errorData.message);
+        return;
+      }
 
+      const data = await res.json();
+      setIsLiked(data.liked); // true or false
+      setLikeCount(data.likes);
+    } catch (error) {
+      console.error("Like request failed:", error);
+    }
+  };
 
   // If we're in write mode, show the write article component
   if (currentView === "write") {
@@ -202,20 +208,6 @@ export function Blogs() {
                 Back to Blogs
               </Button>
               <Separator orientation="vertical" className="h-6" />
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
-                <h1 className="text-xl font-semibold text-gray-900">
-                  Blog Post
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm">
-                <Bookmark className="w-4 h-4" /> Save
-              </Button>
-              <Button variant="outline" size="sm">
-                <Share2 className="w-4 h-4" /> Share
-              </Button>
             </div>
           </div>
         </header>
@@ -236,14 +228,58 @@ export function Blogs() {
 
             {/* Article Meta & Title */}
             <Card className="border border-gray-200 bg-white/70">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-3xl font-bold text-gray-900 ">
-                  {selectedPost.title}
-                </CardTitle>
-                <CardDescription className="text-lg text-gray-600 py-2">
-                  {selectedPost.excerpt}
-                </CardDescription>
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-3xl font-bold text-gray-900 mb-3">
+                      {selectedPost.title}
+                    </CardTitle>
+                    <CardDescription className="text-lg text-gray-600">
+                      {selectedPost.excerpt}
+                    </CardDescription>
+                  </div>
+
+                  {/* Like and Share buttons positioned at top right */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleLike}
+                      className={`flex gap-2 items-center transition-all ${
+                        isLiked
+                          ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                          : "text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${isLiked ? "fill-red-600" : ""}`}
+                      />
+                      {likeCount}
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
+                      onClick={() => {
+                        navigator.clipboard
+                          .writeText(window.location.href)
+                          .then(() => {
+                            toast.success("🔗 Link copied to clipboard!");
+                          })
+                          .catch((err) => {
+                            toast.error("❌ Failed to copy link");
+                            console.error("Clipboard error:", err);
+                          });
+                      }}
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
+
               <CardContent>
                 {/* Author + Meta */}
                 <div className="flex items-center justify-between flex-wrap gap-4 my-6">
@@ -301,43 +337,6 @@ export function Blogs() {
                 />
               </CardContent>
             </Card>
-
-            {/* Engagement Footer */}
-            <Card className="border border-gray-200 bg-white/70 pt-4">
-              <CardFooter className="flex justify-between items-center flex-wrap gap-4">
-                <div className="flex items-center gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={handleLike}
-                    className={`flex gap-1 items-center ${
-                      isLiked ? "bg-red-100 text-red-600" : "text-gray-600"
-                    }`}
-                  >
-                    <Heart
-                      className={`w-4 h-4 ${isLiked ? "fill-red-600" : ""}`}
-                    />
-                    {likeCount}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="hover:bg-blue-100 text-blue-600"
-                  >
-                    <MessageCircle className="w-4 h-4" />{" "}
-                    {selectedPost.comments}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="hover:bg-green-100 text-green-600"
-                  >
-                    <Share2 className="w-4 h-4" /> Share
-                  </Button>
-                </div>
-                <Badge variant="outline" className="text-sm px-3 py-1">
-                  {selectedPost.category}
-                </Badge>
-              </CardFooter>
-            </Card>
           </div>
         </div>
       </div>
@@ -369,7 +368,7 @@ export function Blogs() {
                       </p>
                       <p className="text-sm text-yellow-700">
                         Your article will be reviewed and published once
-                        approved. You’ll receive a notification when the status
+                        approved. You'll receive a notification when the status
                         changes.
                       </p>
                     </div>
@@ -573,15 +572,11 @@ export function Blogs() {
                             </div>
                           </div>
 
-                          {/* Stats */}
+                          {/* Stats - Removed MessageCircle (comments) */}
                           <div className="flex items-center gap-4 text-sm text-gray-500">
                             <div className="flex items-center gap-1">
                               <Heart className="w-4 h-4" />
                               {blog.likes}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MessageCircle className="w-4 h-4" />
-                              {blog.comments}
                             </div>
                           </div>
                         </div>
@@ -675,15 +670,11 @@ export function Blogs() {
                           </div>
                         </div>
 
-                        {/* Stats */}
+                        {/* Stats - Removed MessageCircle (comments) */}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Heart className="w-4 h-4" />
                             {blog.likes}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MessageCircle className="w-4 h-4" />
-                            {blog.comments}
                           </div>
                         </div>
                       </div>
