@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Registration = require("../model/HackathonRegistrationModel");
 const Hackathon = require("../model/HackathonModel");
 const User = require("../model/UserModel"); // ✅ required for syncing
+const Team = require("../model/TeamModel");
 
 const registerForHackathon = async (req, res) => {
   try {
@@ -181,17 +182,67 @@ const unregisterFromHackathon = async (req, res) => {
     const { hackathonId } = req.params;
     const userId = req.user._id;
 
-    // Remove registration
-    await Registration.deleteOne({ hackathonId, userId });
+    // Check if user is a team leader for this hackathon
+    const team = await Team.findOne({ 
+      hackathon: hackathonId, 
+      leader: userId,
+      status: 'active'
+    });
 
-    // Remove from hackathon participants
-    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+    if (team) {
+      // User is a team leader - delete the entire team and unregister all members
+      console.log(`Team leader ${userId} unregistering from hackathon ${hackathonId}. Deleting team ${team._id}`);
+      
+      // Unregister all team members from the hackathon
+      for (const memberId of team.members) {
+        // Remove registration
+        await Registration.deleteOne({ hackathonId, userId: memberId });
+        // Remove from hackathon participants
+        await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+        // Remove from user's registeredHackathonIds
+        await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+      }
 
-    // Remove from user's registeredHackathonIds
-    await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+      // Delete the team
+      await Team.findByIdAndDelete(team._id);
 
-    res.json({ message: 'You have been unregistered from the hackathon.' });
+      res.json({ 
+        message: 'You have been unregistered from the hackathon and your team has been deleted.',
+        teamDeleted: true
+      });
+    } else {
+      // User is not a team leader - just unregister them
+      console.log(`Team member ${userId} unregistering from hackathon ${hackathonId}`);
+      
+      // Check if user is a member of any team for this hackathon
+      const memberTeam = await Team.findOne({ 
+        hackathon: hackathonId, 
+        members: userId,
+        status: 'active'
+      });
+
+      if (memberTeam) {
+        // Remove user from team
+        memberTeam.members = memberTeam.members.filter(id => id.toString() !== userId.toString());
+        await memberTeam.save();
+      }
+
+      // Remove registration
+      await Registration.deleteOne({ hackathonId, userId });
+
+      // Remove from hackathon participants
+      await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+
+      // Remove from user's registeredHackathonIds
+      await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+
+      res.json({ 
+        message: 'You have been unregistered from the hackathon.',
+        teamDeleted: false
+      });
+    }
   } catch (err) {
+    console.error('Error unregistering from hackathon:', err);
     res.status(500).json({ error: 'Failed to unregister from hackathon', details: err.message });
   }
 };

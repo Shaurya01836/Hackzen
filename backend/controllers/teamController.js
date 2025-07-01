@@ -36,6 +36,20 @@ const createTeam = async (req, res) => {
       return res.status(404).json({ error: 'Hackathon not found' });
     }
 
+    // Check if user is already a member of any team for this hackathon
+    const existingTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId,
+      status: 'active'
+    });
+
+    if (existingTeam) {
+      return res.status(400).json({ 
+        error: 'You are already a member of a team for this hackathon.',
+        existingTeamId: existingTeam._id
+      });
+    }
+
     // Generate unique team code
     const teamCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
@@ -303,15 +317,35 @@ const removeMember = async (req, res) => {
       return res.status(400).json({ error: 'Leader cannot remove themselves' });
     }
 
-    // Remove member
+    // Check if member exists in team
+    if (!team.members.includes(memberId)) {
+      return res.status(400).json({ error: 'Member is not in this team' });
+    }
+
+    // Remove member from team
     team.members = team.members.filter(id => id.toString() !== memberId);
     await team.save();
+
+    // Unregister the removed member from the hackathon
+    const hackathonId = team.hackathon;
+    
+    // Remove registration
+    await HackathonRegistration.deleteOne({ hackathonId, userId: memberId });
+    
+    // Remove from hackathon participants
+    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+    
+    // Remove from user's registeredHackathonIds
+    await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
 
     const populatedTeam = await Team.findById(team._id)
       .populate('members', 'name email avatar')
       .populate('leader', 'name email');
 
-    res.json({ message: 'Member removed successfully', team: populatedTeam });
+    res.json({ 
+      message: 'Member removed successfully and unregistered from the hackathon', 
+      team: populatedTeam 
+    });
   } catch (err) {
     console.error('Error removing member:', err);
     res.status(500).json({ error: 'Failed to remove member', details: err.message });

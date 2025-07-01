@@ -25,6 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Copy,
+  LogOut,
 } from "lucide-react";
 import {
   Card,
@@ -470,7 +471,7 @@ useEffect(() => {
       toast({ title: 'Error', description: 'Please enter a team code' });
       return;
     }
-
+    
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
@@ -480,7 +481,7 @@ useEffect(() => {
         `http://localhost:3000/api/teams/join/${teamCode.trim().toUpperCase()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
+      
       console.log('Joined team successfully:', response.data);
       console.log('Registration status:', response.data.registrationStatus);
 
@@ -497,7 +498,7 @@ useEffect(() => {
       } else if (registrationStatus === 'registration_failed') {
         toast({ title: 'Team Joined', description: `Successfully joined team: ${response.data.team.name}. Please register for the hackathon separately.` });
       }
-
+      
       // Close modal and clear form
       setShowJoinTeam(false);
       setTeamCode('');
@@ -542,11 +543,13 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/teams/${teamId}/members/${memberId}`, {
+      const response = await axios.delete(`http://localhost:3000/api/teams/${teamId}/members/${memberId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: 'Member removed', description: 'The member was removed from the team.' });
+      toast({ title: 'Member removed', description: response.data.message || 'The member was removed from the team and unregistered from the hackathon.' });
       await fetchUserTeams();
+      // Note: We don't need to refresh registration status here since the removed member
+      // is not the current user, so their registration status doesn't change
     } catch (error) {
       toast({ title: 'Error', description: error.response?.data?.error || 'Failed to remove member.' });
     } finally {
@@ -567,8 +570,9 @@ useEffect(() => {
       await axios.delete(`http://localhost:3000/api/teams/${teamId}/leave`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: 'Left team', description: 'You have left the team.' });
+      toast({ title: 'Left team', description: 'You have left the team and been unregistered from the hackathon.' });
       await fetchUserTeams();
+      await refreshRegistrationStatus();
     } catch (error) {
       toast({ title: 'Error', description: error.response?.data?.error || 'Failed to leave team.' });
     } finally {
@@ -581,10 +585,16 @@ useEffect(() => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/registration/${hackathon._id}`, {
+      const response = await axios.delete(`http://localhost:3000/api/registration/${hackathon._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: 'Unregistered', description: 'You have been unregistered from the hackathon.' });
+      
+      // Handle different messages based on whether team was deleted
+      const message = response.data.teamDeleted 
+        ? 'You have been unregistered from the hackathon and your team has been deleted.'
+        : 'You have been unregistered from the hackathon.';
+      
+      toast({ title: 'Unregistered', description: message });
       await refreshRegistrationStatus();
       await fetchUserTeams();
     } catch (err) {
@@ -806,7 +816,10 @@ useEffect(() => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Unregister from Hackathon?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to unregister from this hackathon? You will lose your spot and need to register again if you want to participate.
+                          {userTeams.some(team => team.leader._id === localStorage.getItem('userId') && team.hackathon._id === hackathon._id) 
+                            ? "Are you sure you want to unregister from this hackathon? This will delete your entire team and unregister all team members. This action cannot be undone."
+                            : "Are you sure you want to unregister from this hackathon? You will lose your spot and need to register again if you want to participate."
+                          }
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -1406,7 +1419,7 @@ useEffect(() => {
                       <Button onClick={() => setShowRegistration(true)} className="flex-1 sm:flex-none">
                         <UserPlus className="w-4 h-4 mr-2" />
                         Register for Hackathon
-                      </Button>
+                    </Button>
                       <Button 
                         onClick={() => setShowJoinTeam(true)} 
                         variant="outline" 
@@ -1506,7 +1519,7 @@ useEffect(() => {
                                             <AlertDialogHeader>
                                               <AlertDialogTitle>Remove Team Member?</AlertDialogTitle>
                                               <AlertDialogDescription>
-                                                Are you sure you want to remove <b>{member.name}</b> from the team? This action cannot be undone.
+                                                Are you sure you want to remove <b>{member.name}</b> from the team? They will be unregistered from the hackathon and need to register again if they want to participate. This action cannot be undone.
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
@@ -1556,6 +1569,29 @@ useEffect(() => {
                                     </span>
                                   )}
                                 </div>
+                                {/* Leave team button for members (not leader) */}
+                                {team.leader._id !== user?._id && (
+                                  <AlertDialog open={leaveDialog.open && leaveDialog.teamId === team._id} onOpenChange={open => setLeaveDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" size="sm" disabled={loading} className="text-orange-600 border-orange-600 hover:bg-orange-50">
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        Leave Team
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Leave Team?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to leave this team? You will be unregistered from the hackathon and need to register again if you want to participate.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={confirmLeaveTeam} disabled={loading}>Leave Team</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                                 {/* Delete team button for leader */}
                                 {team.leader._id === user?._id && (
                                   <AlertDialog open={deleteDialog.open && deleteDialog.teamId === team._id} onOpenChange={open => setDeleteDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
@@ -1721,7 +1757,7 @@ useEffect(() => {
                   </button>
                   <h3 className="text-xl font-semibold mb-4">Join a Team</h3>
                   <p className="text-gray-600 mb-4">
-                    Enter the team code provided by your team leader to join their team. 
+                    Enter the team code provided by your team leader to join their team.
                     {!isRegistered && (
                       <span className="block mt-2 text-sm text-blue-600 font-medium">
                         Joining a team will automatically register you for this hackathon.
