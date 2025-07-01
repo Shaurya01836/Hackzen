@@ -99,12 +99,29 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
 
   // Add state for unregister dialog
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
+  
+  // Add state for invalid team code popup
+  const [showInvalidCodePopup, setShowInvalidCodePopup] = useState(false);
+  const [invalidCodeMessage, setInvalidCodeMessage] = useState('');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Handle Escape key for invalid code popup
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && showInvalidCodePopup) {
+        setShowInvalidCodePopup(false);
+        setInvalidCodeMessage('');
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showInvalidCodePopup]);
 
   const toggleSidebar = () => setSidebarOpen((open) => !open);
 
@@ -505,7 +522,20 @@ useEffect(() => {
     } catch (error) {
       console.error('Error joining team:', error);
       const errorMessage = error.response?.data?.error || 'Failed to join team. Please try again.';
-      toast({ title: 'Error', description: errorMessage });
+      
+      // Show popup for invalid team code errors
+      if (error.response?.status === 404 || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('invalid')) {
+        setInvalidCodeMessage(errorMessage);
+        setShowInvalidCodePopup(true);
+        // Auto-hide popup after 3 seconds
+        setTimeout(() => {
+          setShowInvalidCodePopup(false);
+          setInvalidCodeMessage('');
+        }, 3000);
+      } else {
+        // Show toast for other errors
+        toast({ title: 'Error', description: errorMessage });
+      }
     } finally {
       setLoading(false);
     }
@@ -1810,6 +1840,39 @@ useEffect(() => {
                         Cancel
                       </Button>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Invalid Team Code Popup */}
+            {showInvalidCodePopup && (
+              <div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                onClick={() => {
+                  setShowInvalidCodePopup(false);
+                  setInvalidCodeMessage('');
+                }}
+              >
+                <div 
+                  className="bg-white rounded-lg p-6 w-full max-w-md relative animate-in fade-in-0 zoom-in-95 duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="text-center">
+                    <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                      <AlertCircle className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Invalid Team Code</h3>
+                    <p className="text-gray-600 mb-4">{invalidCodeMessage}</p>
+                    <Button 
+                      onClick={() => {
+                        setShowInvalidCodePopup(false);
+                        setInvalidCodeMessage('');
+                      }}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      OK
+                    </Button>
                   </div>
                 </div>
               </div>

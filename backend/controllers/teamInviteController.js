@@ -103,7 +103,8 @@ const createInvite = async (req, res) => {
           
           <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p style="color: #0c5460; margin: 0; font-size: 14px;">
-              <strong>Note:</strong> If you don't have an account yet, you'll need to register first before accepting the invitation.
+              <strong>Note:</strong> If you don't have an account yet, you'll need to register first before accepting the invitation. 
+              <br><strong>Flexible Invitation:</strong> Anyone with this link can accept the invitation, so feel free to share it with your preferred team member!
             </p>
           </div>
           
@@ -148,12 +149,17 @@ const respondToInvite = async (req, res) => {
     const invite = await TeamInvite.findById(inviteId);
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
 
-    if (invite.invitedUser && invite.invitedUser.toString() !== userId.toString()) {
-      return res.status(403).json({ error: 'You are not the invited user' });
-    }
+    // Allow any logged-in user to respond to the invite
+    // No longer check if user matches invitedUser or invitedEmail
 
     invite.status = status;
     invite.respondedAt = new Date();
+    
+    // Set the invitedUser to whoever responds to the invite
+    if (!invite.invitedUser) {
+      invite.invitedUser = userId;
+    }
+    
     await invite.save();
 
     if (status === 'declined') {
@@ -170,7 +176,16 @@ const respondToInvite = async (req, res) => {
 // GET /api/team-invites/my
 const getMyInvites = async (req, res) => {
   try {
-    const invites = await TeamInvite.find({ invitedEmail: req.user.email })
+    // Get all pending invites that the user can accept
+    // This includes invites sent to their email and any other pending invites
+    const invites = await TeamInvite.find({ 
+      status: 'pending',
+      $or: [
+        { invitedEmail: req.user.email },
+        { invitedUser: req.user._id },
+        { invitedUser: { $exists: false } } // Invites not yet accepted by anyone
+      ]
+    })
       .populate('team', 'name')
       .populate('invitedBy', 'name')
       .populate('hackathon', 'title');
