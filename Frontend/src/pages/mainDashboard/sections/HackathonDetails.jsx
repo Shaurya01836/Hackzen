@@ -154,6 +154,35 @@ useEffect(() => {
 
   fetchSavedHackathons();
 }, [hackathon._id]);
+  // Helper function to refresh registration status
+  const refreshRegistrationStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return false;
+
+      const res = await axios.get(
+        "http://localhost:3000/api/registration/my",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const registered = res.data.some(
+        (r) => r.hackathonId && (r.hackathonId._id === hackathon._id || r.hackathonId === hackathon._id)
+      );
+
+      console.log('Registration status refreshed:', { registered, registrations: res.data });
+      setIsRegistered(registered);
+      return registered;
+    } catch (err) {
+      console.error("Error refreshing registration status", err);
+      setIsRegistered(false);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
       try {
@@ -247,7 +276,7 @@ useEffect(() => {
           },
         }
       );
-      setIsRegistered(true);
+      await refreshRegistrationStatus();
     } catch (err) {
       console.error("Failed to register:", err);
     }
@@ -277,9 +306,9 @@ useEffect(() => {
 };
 
 
-  const handleRegistrationSuccess = () => {
+  const handleRegistrationSuccess = async () => {
     setShowRegistration(false);
-    setIsRegistered(true);
+    await refreshRegistrationStatus();
   };
 
   const handleBackFromRegistration = () => {
@@ -435,32 +464,44 @@ useEffect(() => {
 
   const handleJoinTeam = async () => {
     if (!teamCode.trim()) {
-      alert('Please enter a team code');
+      toast({ title: 'Error', description: 'Please enter a team code' });
       return;
     }
-    
+
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3000/api/teams/join/${teamCode.trim().toUpperCase()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+
+      // Join the team (backend will handle registration automatically)
+      const response = await axios.get(
+        `http://localhost:3000/api/teams/join/${teamCode.trim().toUpperCase()}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       console.log('Joined team successfully:', response.data);
-      
+      console.log('Registration status:', response.data.registrationStatus);
+
+      // Always refresh registration status and teams
+      await refreshRegistrationStatus();
+      await fetchUserTeams();
+
+      // Handle registration status from backend
+      const { registrationStatus } = response.data;
+      if (registrationStatus === 'registered') {
+        toast({ title: 'Success', description: `Registered for hackathon and joined team: ${response.data.team.name}` });
+      } else if (registrationStatus === 'already_registered') {
+        toast({ title: 'Success', description: `Successfully joined team: ${response.data.team.name}` });
+      } else if (registrationStatus === 'registration_failed') {
+        toast({ title: 'Team Joined', description: `Successfully joined team: ${response.data.team.name}. Please register for the hackathon separately.` });
+      }
+
       // Close modal and clear form
       setShowJoinTeam(false);
       setTeamCode('');
-      
-      // Refresh teams list
-      await fetchUserTeams();
-      
-      // Show success message
-      alert(`Successfully joined team: ${response.data.team.name}`);
     } catch (error) {
       console.error('Error joining team:', error);
       const errorMessage = error.response?.data?.error || 'Failed to join team. Please try again.';
-      alert(errorMessage);
+      toast({ title: 'Error', description: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -1301,13 +1342,30 @@ useEffect(() => {
                 <Card>
                   <CardContent className="p-6 text-center">
                     <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Registration Required</h3>
+                    <h3 className="text-xl font-semibold mb-2">Get Started with Team Management</h3>
                     <p className="text-gray-600 mb-4">
-                      You need to register for this hackathon before you can manage teams.
+                      Choose how you'd like to participate in this hackathon.
                     </p>
-                    <Button onClick={() => setShowRegistration(true)}>
-                      Register Now
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button onClick={() => setShowRegistration(true)} className="flex-1 sm:flex-none">
+                        <UserPlus className="w-4 h-4 mr-2" />
+                        Register for Hackathon
+                      </Button>
+                      <Button 
+                        onClick={() => setShowJoinTeam(true)} 
+                        variant="outline" 
+                        className="flex-1 sm:flex-none"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Join Team
+                      </Button>
+                    </div>
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        <strong>Pro tip:</strong> Joining a team will automatically register you for this hackathon, 
+                        so you can skip the registration step if you have a team code!
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               ) : (
@@ -1442,22 +1500,22 @@ useEffect(() => {
                                     </span>
                                   )}
                                 </div>
-                                {/* Leave team button for logged-in user (not leader) */}
-                                {team.members.some(m => m._id === user?._id) && team.leader._id !== user?._id && (
-                                  <AlertDialog open={leaveDialog.open && leaveDialog.teamId === team._id} onOpenChange={open => setLeaveDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
+                                {/* Delete team button for leader */}
+                                {team.leader._id === user?._id && (
+                                  <AlertDialog open={deleteDialog.open && deleteDialog.teamId === team._id} onOpenChange={open => setDeleteDialog(open ? { open: true, teamId: team._id } : { open: false, teamId: null })}>
                                     <AlertDialogTrigger asChild>
-                                      <Button variant="destructive" size="sm" disabled={loading}>Leave Team</Button>
+                                      <Button variant="destructive" size="sm" disabled={loading}>Delete Team</Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Leave Team?</AlertDialogTitle>
+                                        <AlertDialogTitle>Delete Team?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Are you sure you want to leave this team? You will be removed from the team and cannot rejoin unless invited again.
+                                          Are you sure you want to delete this team? All members will be unregistered from the hackathon. This action cannot be undone.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={confirmLeaveTeam} disabled={loading}>Leave</AlertDialogAction>
+                                        <AlertDialogAction onClick={confirmDeleteTeam} disabled={loading}>Delete</AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
                                   </AlertDialog>
@@ -1607,7 +1665,12 @@ useEffect(() => {
                   </button>
                   <h3 className="text-xl font-semibold mb-4">Join a Team</h3>
                   <p className="text-gray-600 mb-4">
-                    Enter the team code provided by your team leader to join their team.
+                    Enter the team code provided by your team leader to join their team. 
+                    {!isRegistered && (
+                      <span className="block mt-2 text-sm text-blue-600 font-medium">
+                        Joining a team will automatically register you for this hackathon.
+                      </span>
+                    )}
                   </p>
                   
                   <div className="space-y-4">

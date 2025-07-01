@@ -1,4 +1,7 @@
 const Team = require('../model/TeamModel');
+const HackathonRegistration = require('../model/HackathonRegistrationModel');
+const User = require('../model/UserModel');
+const Hackathon = require('../model/HackathonModel');
 const crypto = require('crypto');
 
 const createTeam = async (req, res) => {
@@ -184,15 +187,68 @@ const joinTeamByCode = async (req, res) => {
       return res.status(400).json({ error: 'Team is full' });
     }
 
+    // Add user to team
     team.members.push(userId);
     await team.save();
+
+    // Register user for hackathon if not already registered
+    const hackathonId = team.hackathon;
+    const existingReg = await HackathonRegistration.findOne({ hackathonId, userId });
+    let registrationStatus = 'already_registered';
+    
+    if (!existingReg) {
+      try {
+        // Get user info for autofill
+        const user = await User.findById(userId);
+        const hackathon = await Hackathon.findById(hackathonId);
+        
+        if (!hackathon) {
+          throw new Error('Hackathon not found');
+        }
+        
+        // Create registration
+        await HackathonRegistration.create({
+          hackathonId,
+          userId,
+          formData: {
+            fullName: user.name,
+            email: user.email,
+            phone: user.phone || '',
+            teamName: team.name,
+            teamCode: teamCode.toUpperCase(),
+            acceptedTerms: true
+          },
+          acceptedTerms: true
+        });
+        
+        // Update Hackathon participants
+        if (!hackathon.participants.includes(userId)) {
+          hackathon.participants.push(userId);
+          await hackathon.save();
+        }
+        
+        // Update User's registeredHackathonIds
+        await User.findByIdAndUpdate(userId, {
+          $addToSet: { registeredHackathonIds: hackathonId },
+        });
+        
+        registrationStatus = 'registered';
+      } catch (regError) {
+        console.error('Auto-registration failed:', regError);
+        registrationStatus = 'registration_failed';
+      }
+    }
 
     const populatedTeam = await Team.findById(team._id)
       .populate('members', 'name email avatar')
       .populate('leader', 'name email')
       .populate('hackathon', 'title');
 
-    res.json({ message: 'Successfully joined team', team: populatedTeam });
+    res.json({ 
+      message: 'Successfully joined team', 
+      team: populatedTeam,
+      registrationStatus 
+    });
   } catch (err) {
     console.error('Error joining team:', err);
     res.status(500).json({ error: 'Failed to join team', details: err.message });
@@ -205,9 +261,21 @@ const deleteTeam = async (req, res) => {
     const team = await Team.findById(req.params.id);
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
+    // Only the leader can delete the team
     const userId = req.user._id.toString();
     if (team.leader.toString() !== userId) {
       return res.status(403).json({ error: 'Only the team leader can delete the team' });
+    }
+
+    // Optionally: Unregister all members from the hackathon when the team is deleted
+    const hackathonId = team.hackathon;
+    for (const memberId of team.members) {
+      // Remove registration
+      await HackathonRegistration.deleteOne({ hackathonId, userId: memberId });
+      // Remove from hackathon participants
+      await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+      // Remove from user's registeredHackathonIds
+      await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
     }
 
     await Team.findByIdAndDelete(req.params.id);
@@ -260,10 +328,20 @@ const leaveTeam = async (req, res) => {
     if (!team.members.includes(userId)) {
       return res.status(403).json({ error: 'You are not a member of this team' });
     }
-    // Allow member to remove themselves
+    // Remove member from team
     team.members = team.members.filter(id => id.toString() !== userId.toString());
     await team.save();
-    res.json({ message: 'You have left the team.' });
+
+    // Unregister user from hackathon if they leave the team
+    const hackathonId = team.hackathon;
+    // Remove registration
+    await HackathonRegistration.deleteOne({ hackathonId, userId });
+    // Remove from hackathon participants
+    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+    // Remove from user's registeredHackathonIds
+    await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+
+    res.json({ message: 'You have left the team and have been unregistered from the hackathon.' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to leave team', details: err.message });
   }
