@@ -233,12 +233,11 @@ const acceptInviteById = async (req, res) => {
       return res.status(400).json({ error: 'Invite already responded to' });
     }
 
-    // If invitedUser is not set, set it now
+    // Set invitedUser to whoever accepts
     if (!invite.invitedUser) {
       invite.invitedUser = userId;
-    } else if (invite.invitedUser.toString() !== userId.toString()) {
-      return res.status(403).json({ error: 'You are not the invited user' });
     }
+    // No check for invitedEmail or invitedUser match
 
     invite.status = 'accepted';
     invite.respondedAt = new Date();

@@ -3,12 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle, AlertCircle, UserPlus, ArrowRight } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../components/DashboardUI/alert-dialog";
 
 export function InviteAccept() {
   const { inviteId } = useParams();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [inviteData, setInviteData] = useState(null);
+  const [showDialog, setShowDialog] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +23,6 @@ export function InviteAccept() {
           setMessage("❌ Invalid or expired invitation link.");
           return;
         }
-
         const invite = await inviteRes.json();
         setInviteData(invite);
 
@@ -31,29 +32,48 @@ export function InviteAccept() {
           setStatus("login");
           return;
         }
-
-        // Accept invite
-        const acceptRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/accept`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        
-        const data = await acceptRes.json();
-        if (acceptRes.ok) {
-          setStatus("accepted");
-          setMessage("✅ You have successfully joined the team!");
-        } else {
-          setStatus("error");
-          setMessage(data.error || "❌ Failed to accept invite.");
-        }
+        // Show accept/decline dialog
+        setShowDialog(true);
+        setStatus("prompt");
       } catch (err) {
         setStatus("error");
         setMessage("❌ Failed to process invitation.");
       }
     };
-
     checkInvite();
   }, [inviteId]);
+
+  const handleAccept = async () => {
+    try {
+      setStatus("loading");
+      const token = localStorage.getItem("token");
+      const acceptRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/accept`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await acceptRes.json();
+      if (acceptRes.ok) {
+        setStatus("accepted");
+        setMessage("✅ You have successfully joined the team!");
+        setShowDialog(false);
+      } else {
+        setStatus("error");
+        setMessage(data.error || "❌ Failed to accept invite.");
+        setShowDialog(false);
+      }
+    } catch (err) {
+      setStatus("error");
+      setMessage("❌ Failed to process invitation.");
+      setShowDialog(false);
+    }
+  };
+
+  const handleDecline = () => {
+    setShowDialog(false);
+    setStatus("declined");
+    setMessage("You have declined the invitation.");
+    setTimeout(() => navigate("/dashboard"), 1500);
+  };
 
   if (status === "loading") {
     return (
@@ -89,24 +109,21 @@ export function InviteAccept() {
                 </p>
               </div>
             )}
-            
             <div className="space-y-4">
               <p className="text-gray-600">
                 To accept this invitation, you need to have an account. Please log in or create a new account.
               </p>
-              
               <div className="space-y-3">
                 <Button 
-                  onClick={() => navigate("/login")}
+                  onClick={() => navigate(`/login?redirectTo=/invite/${inviteId}`)}
                   className="w-full"
                 >
                   <ArrowRight className="w-4 h-4 mr-2" />
                   Login to Existing Account
                 </Button>
-                
                 <Button 
                   variant="outline"
-                  onClick={() => navigate("/register")}
+                  onClick={() => navigate(`/register?redirectTo=/invite/${inviteId}`)}
                   className="w-full"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -114,7 +131,6 @@ export function InviteAccept() {
                 </Button>
               </div>
             </div>
-            
             <div className="text-center">
               <p className="text-sm text-gray-500">
                 After logging in, you'll be automatically redirected back here to accept the invitation.
@@ -126,6 +142,28 @@ export function InviteAccept() {
     );
   }
 
+  // Accept/Decline dialog for logged-in users
+  if (status === "prompt" && inviteData) {
+    return (
+      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Team Invitation</AlertDialogTitle>
+            <AlertDialogDescription>
+              <div>You have been invited to join team <b>{inviteData.team?.name}</b> for hackathon <b>{inviteData.hackathon?.title}</b>.</div>
+              <div>Do you want to accept this invitation?</div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDecline}>Decline</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAccept}>Accept</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }
+
+  // Success or error
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
@@ -145,7 +183,6 @@ export function InviteAccept() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-center text-gray-600">{message}</p>
-          
           {status === "accepted" && (
             <div className="space-y-4">
               <div className="bg-green-50 p-4 rounded-lg">
@@ -156,7 +193,6 @@ export function InviteAccept() {
                   <li>• Start working on your project</li>
                 </ul>
               </div>
-              
               <Button 
                 onClick={() => navigate("/dashboard/my-hackathons")}
                 className="w-full"
@@ -166,7 +202,6 @@ export function InviteAccept() {
               </Button>
             </div>
           )}
-          
           {status === "error" && (
             <Button 
               onClick={() => navigate("/dashboard")}
