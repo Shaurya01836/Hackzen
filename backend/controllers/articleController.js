@@ -39,14 +39,28 @@ exports.createArticle = async (req, res) => {
 // ✅ Get only published articles (for public blog page)
 exports.getPublishedArticles = async (req, res) => {
   try {
+    const userId = req.user?._id;
+
     const articles = await Article.find({ status: "published" }).sort({
       publishedAt: -1,
     });
-    res.status(200).json(articles);
+
+    const articlesWithLikedFlag = articles.map((article) => {
+      const likedByUser = userId
+        ? article.likedBy.includes(userId.toString())
+        : false;
+      return {
+        ...article.toObject(),
+        likedByUser,
+      };
+    });
+
+    res.status(200).json(articlesWithLikedFlag);
   } catch (error) {
     res.status(500).json({ message: "Error fetching articles", error });
   }
 };
+
 
 // ✅ Get all articles (for admin dashboard)
 exports.getAllArticles = async (req, res) => {
