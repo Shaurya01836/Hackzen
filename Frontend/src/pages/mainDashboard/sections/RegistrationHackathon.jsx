@@ -417,86 +417,76 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="teamCode">Team Code (Optional)</Label>
-                  <Input
-                    id="teamCode"
-                    value={formData.teamCode}
-                    readOnly
-                    placeholder="Team code will be generated automatically"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="track" className="flex items-center gap-2">
-                  <Code className="w-4 h-4" />
-                  Track *
-                </Label>
-                <Select
-                  value={formData.track}
-                  onValueChange={value => handleInputChange("track", value)}
-                >
-                  <SelectTrigger
-                    className={errors.track ? "border-red-500" : ""}
+                  <Label htmlFor="track" className="flex items-center gap-2">
+                    <Code className="w-4 h-4" />
+                    Track *
+                  </Label>
+                  <Select
+                    value={formData.track}
+                    onValueChange={value => handleInputChange("track", value)}
                   >
-                    <SelectValue placeholder="Select your preferred track" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tracks.map(track => (
-                      <SelectItem key={track} value={track}>
-                        {track}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.track && (
-                  <p className="text-sm text-red-500">{errors.track}</p>
-                )}
-              </div>
+                    <SelectTrigger
+                      className={errors.track ? "border-red-500" : ""}
+                    >
+                      <SelectValue placeholder="Select your preferred track" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tracks.map(track => (
+                        <SelectItem key={track} value={track}>
+                          {track}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.track && (
+                    <p className="text-sm text-red-500">{errors.track}</p>
+                  )}
+                </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="projectIdea"
-                  className="flex items-center gap-2"
-                >
-                  <Lightbulb className="w-4 h-4" />
-                  Project Idea (Optional)
-                </Label>
-                <Textarea
-                  id="projectIdea"
-                  value={formData.projectIdea}
-                  onChange={e =>
-                    handleInputChange("projectIdea", e.target.value)
-                  }
-                  placeholder="Briefly describe your project idea (max 500 characters)"
-                  maxLength={500}
-                  rows={4}
-                />
-                <p className="text-sm text-gray-500 text-right">
-                  {formData.projectIdea.length}/500 characters
-                </p>
-              </div>
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="projectIdea"
+                    className="flex items-center gap-2"
+                  >
+                    <Lightbulb className="w-4 h-4" />
+                    Project Idea (Optional)
+                  </Label>
+                  <Textarea
+                    id="projectIdea"
+                    value={formData.projectIdea}
+                    onChange={e =>
+                      handleInputChange("projectIdea", e.target.value)
+                    }
+                    placeholder="Briefly describe your project idea (max 500 characters)"
+                    maxLength={500}
+                    rows={4}
+                  />
+                  <p className="text-sm text-gray-500 text-right">
+                    {formData.projectIdea.length}/500 characters
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="heardFrom">
-                  How did you hear about this hackathon?
-                </Label>
-                <Select
-                  value={formData.heardFrom}
-                  onValueChange={value => handleInputChange("heardFrom", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Social Media">Social Media</SelectItem>
-                    <SelectItem value="Friends">Friends</SelectItem>
-                    <SelectItem value="College">College</SelectItem>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="Email">Email</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <Label htmlFor="heardFrom">
+                    How did you hear about this hackathon?
+                  </Label>
+                  <Select
+                    value={formData.heardFrom}
+                    onValueChange={value => handleInputChange("heardFrom", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Social Media">Social Media</SelectItem>
+                      <SelectItem value="Friends">Friends</SelectItem>
+                      <SelectItem value="College">College</SelectItem>
+                      <SelectItem value="Website">Website</SelectItem>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
