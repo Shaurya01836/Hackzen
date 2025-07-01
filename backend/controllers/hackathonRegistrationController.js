@@ -175,8 +175,30 @@ const getHackathonParticipants = async (req, res) => {
   }
 };
 
+// DELETE /api/registration/:hackathonId
+const unregisterFromHackathon = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const userId = req.user._id;
+
+    // Remove registration
+    await Registration.deleteOne({ hackathonId, userId });
+
+    // Remove from hackathon participants
+    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+
+    // Remove from user's registeredHackathonIds
+    await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+
+    res.json({ message: 'You have been unregistered from the hackathon.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to unregister from hackathon', details: err.message });
+  }
+};
+
 module.exports = {
   registerForHackathon,
   getMyRegistrations,
-  getHackathonParticipants
+  getHackathonParticipants,
+  unregisterFromHackathon,
 };

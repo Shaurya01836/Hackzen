@@ -96,6 +96,9 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   // Add state for leave team dialog
   const [leaveDialog, setLeaveDialog] = useState({ open: false, teamId: null });
 
+  // Add state for unregister dialog
+  const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
+
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
@@ -573,6 +576,24 @@ useEffect(() => {
     }
   };
 
+  // Add this handler near other handlers
+  const handleUnregister = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/registration/${hackathon._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Unregistered', description: 'You have been unregistered from the hackathon.' });
+      await refreshRegistrationStatus();
+      await fetchUserTeams();
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to unregister.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (showRegistration) {
     return (
       <HackathonRegistration
@@ -764,7 +785,42 @@ useEffect(() => {
               ) : isRegistrationFull && !isRegistered ? (
                 <Badge className="bg-red-500 text-white">Registration Full</Badge>
               ) : isRegistered ? (
-                <Badge className="bg-green-500 text-white">Registered</Badge>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setShowUnregisterDialog(true)}
+                    className="focus:outline-none"
+                    style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer' }}
+                    title="Click to unregister from hackathon"
+                  >
+                    <Badge variant="success" className="hover:brightness-90 transition">
+                      Registered
+                    </Badge>
+                  </button>
+                  <AlertDialog open={showUnregisterDialog} onOpenChange={setShowUnregisterDialog}>
+                    <AlertDialogTrigger asChild>
+                      {/* Hidden, handled by badge above */}
+                      <span />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Unregister from Hackathon?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to unregister from this hackathon? You will lose your spot and need to register again if you want to participate.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleUnregister}
+                          disabled={loading}
+                        >
+                          Unregister
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </>
               ) : (
                 <Button
                   size="sm"
