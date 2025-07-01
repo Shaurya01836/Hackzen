@@ -690,13 +690,8 @@ export function OrganizationHub() {
                     </Button>
                   </div>
                 </div>
-                <div className="hidden lg:block">
-                  <img
-                    src="https://www.hackquest.io/images/layout/hackathon_cover.png"
-                    alt="Organization Hub Illustration"
-                    className="w-80 h-80 object-contain"
-                  />
-                </div>
+               
+        
               </div>
             </CardContent>
           </Card>
