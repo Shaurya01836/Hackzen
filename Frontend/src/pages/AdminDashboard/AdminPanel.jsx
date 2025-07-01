@@ -27,7 +27,7 @@ export default function AdminPanel() {
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
     // Remove '/admin/' prefix if it exists, or adjust based on your routing structure
-    const section = path.split('/').pop() || 'dashboard';
+    const section = path.split("/").pop() || "dashboard";
     return section;
   };
 
@@ -41,8 +41,8 @@ export default function AdminPanel() {
 
   // Set default route on component mount
   useEffect(() => {
-    if (location.pathname === '/admin' || location.pathname === '/admin/') {
-      navigate('/admin/dashboard', { replace: true });
+    if (location.pathname === "/admin" || location.pathname === "/admin/") {
+      navigate("/admin/dashboard", { replace: true });
     }
   }, [location.pathname, navigate]);
 
@@ -92,7 +92,6 @@ export default function AdminPanel() {
           setActiveSection={setActiveSection}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <TopNavigation />
           <main className="flex-1 overflow-auto p-6">{renderContent()}</main>
         </div>
       </div>
