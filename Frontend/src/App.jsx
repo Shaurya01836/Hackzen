@@ -23,6 +23,7 @@ import { Blogs } from "./pages/mainDashboard/sections/Blogs";
 import InviteAccept from "./pages/InviteAccept";
 // import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
+import JudgePanel from "./pages/JudgePanel/JudgePage"
 
 function App() {
   return (
@@ -81,6 +82,8 @@ function App() {
 
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
+
+      <Route path="/judge" element={<JudgePanel />} />
     </Routes>
     </>
   );
