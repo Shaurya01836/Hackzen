@@ -35,7 +35,10 @@ export function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All");
   const [loadingExport, setLoadingExport] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(10);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(0);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -55,6 +58,10 @@ export function UsersManagement() {
     fetchUsers();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(0); // reset pagination on search/filter change
+  }, [searchTerm, selectedRole]);
+
   const formatRole = (role) => role.charAt(0).toUpperCase() + role.slice(1);
 
   const getStatusColor = (status) => {
@@ -73,15 +80,13 @@ export function UsersManagement() {
   const getRoleVariant = (role) => {
     switch (role?.toLowerCase()) {
       case "organizer":
-        return "secondary";
       case "mentor":
-        return "secondary";
       case "judge":
         return "secondary";
       case "admin":
-        return "destructive"; 
+        return "destructive";
       default:
-        return "outline"; 
+        return "outline";
     }
   };
 
@@ -93,6 +98,12 @@ export function UsersManagement() {
       selectedRole === "All" || user.role === selectedRole.toLowerCase();
     return matchesSearch && matchesRole;
   });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice(
+    currentPage * itemsPerPage,
+    (currentPage + 1) * itemsPerPage
+  );
 
   const handleExport = () => {
     setLoadingExport(true);
@@ -156,22 +167,17 @@ export function UsersManagement() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white/90 text-black shadow-md border border-indigo-200 backdrop-blur-md">
-                {[
-                  "All",
-                  "Participant",
-                  "Organizer",
-                  "Mentor",
-                  "Judge",
-                  "Admin",
-                ].map((role) => (
-                  <DropdownMenuItem
-                    key={role}
-                    onClick={() => setSelectedRole(role)}
-                    className="hover:bg-indigo-100 text-indigo-700"
-                  >
-                    {role}
-                  </DropdownMenuItem>
-                ))}
+                {["All", "Participant", "Organizer", "Mentor", "Judge", "Admin"].map(
+                  (role) => (
+                    <DropdownMenuItem
+                      key={role}
+                      onClick={() => setSelectedRole(role)}
+                      className="hover:bg-indigo-100 text-indigo-700"
+                    >
+                      {role}
+                    </DropdownMenuItem>
+                  )
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -188,7 +194,7 @@ export function UsersManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.slice(0, visibleCount).map((user) => (
+              {paginatedUsers.map((user) => (
                 <TableRow
                   key={user._id}
                   className="border-purple-500/20 hover:bg-white/5"
@@ -254,14 +260,38 @@ export function UsersManagement() {
             </TableBody>
           </Table>
 
-          {visibleCount < filteredUsers.length && (
-            <div className="flex justify-center mt-4">
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6 gap-2 flex-wrap">
               <Button
                 variant="outline"
-                className="text-indigo-600 border-indigo-300 hover:bg-indigo-50"
-                onClick={() => setVisibleCount((prev) => prev + 10)}
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage((prev) => prev - 1)}
               >
-                View More
+                Previous
+              </Button>
+
+              {Array.from({ length: totalPages }).map((_, index) => (
+                <Button
+                  key={index}
+                  variant={index === currentPage ? "default" : "outline"}
+                  onClick={() => setCurrentPage(index)}
+                  className={
+                    index === currentPage
+                      ? "bg-indigo-600 text-white"
+                      : "text-indigo-600 border-indigo-300"
+                  }
+                >
+                  {index * itemsPerPage} - {(index + 1) * itemsPerPage}
+                </Button>
+              ))}
+
+              <Button
+                variant="outline"
+                disabled={currentPage === totalPages - 1}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
+              >
+                Next
               </Button>
             </div>
           )}
