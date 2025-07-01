@@ -1,6 +1,6 @@
 const Article = require("../model/ArticleModel");
 
-// Create a new article with status "pending"
+// ✅ Create a new article (initially pending)
 exports.createArticle = async (req, res) => {
   try {
     const {
@@ -21,10 +21,10 @@ exports.createArticle = async (req, res) => {
       tags,
       image,
       readTime,
-      status: "pending", // important: starts as pending
-      publishedAt: new Date(), // set submission time
+      status: "pending", // Starts as pending
+      publishedAt: new Date(), // Set submission time
       author: {
-        name: req.user?.name || "Current User", // attach from auth
+        name: req.user?.name || "Current User",
         avatar: req.user?.avatar || "/placeholder.svg",
       },
     });
@@ -34,10 +34,9 @@ exports.createArticle = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-//   console.log("Received body:", req.body); (check ke liye lgaya tha)
 };
 
-// Get only published articles for blogs page
+// ✅ Get only published articles (for public blog page)
 exports.getPublishedArticles = async (req, res) => {
   try {
     const articles = await Article.find({ status: "published" }).sort({
@@ -48,7 +47,8 @@ exports.getPublishedArticles = async (req, res) => {
     res.status(500).json({ message: "Error fetching articles", error });
   }
 };
-// Fetch all articles for admin
+
+// ✅ Get all articles (for admin dashboard)
 exports.getAllArticles = async (req, res) => {
   try {
     const articles = await Article.find().sort({ publishedAt: -1 });
@@ -58,6 +58,7 @@ exports.getAllArticles = async (req, res) => {
   }
 };
 
+// ✅ Approve article (admin only)
 exports.approveArticle = async (req, res) => {
   try {
     const { id } = req.params;
@@ -73,7 +74,7 @@ exports.approveArticle = async (req, res) => {
   }
 };
 
-// Update article status (admin only)
+// ✅ Update article status (admin only)
 exports.updateStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -85,12 +86,45 @@ exports.updateStatus = async (req, res) => {
       { new: true }
     );
 
-    if (!updated)
+    if (!updated) {
       return res.status(404).json({ message: "Article not found" });
+    }
 
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: "Error updating status", error });
   }
 };
+
+// ✅ Like article (public)
+exports.likeArticle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const article = await Article.findById(id);
+    if (!article) return res.status(404).json({ message: "Article not found" });
+
+    const hasLiked = article.likedBy.includes(userId);
+
+    if (hasLiked) {
+      // Dislike
+      article.likes--;
+      article.likedBy.pull(userId);
+    } else {
+      // Like
+      article.likes++;
+      article.likedBy.push(userId);
+    }
+
+    await article.save();
+    res.status(200).json({
+      liked: !hasLiked,
+      likes: article.likes,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Error toggling like", error: err.message });
+  }
+};
+
 

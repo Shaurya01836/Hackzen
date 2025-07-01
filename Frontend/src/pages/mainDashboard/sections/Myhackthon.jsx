@@ -199,7 +199,7 @@ export default function MyHackathons() {
         </div>
       </div>
 
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="pt-4 space-y-3">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-1">
             <Clock className="w-4 h-4" />

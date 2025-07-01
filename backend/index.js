@@ -7,84 +7,85 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const http = require("http");
 const { Server } = require("socket.io");
+const MongoStore = require("connect-mongo");
 const socketHandler = require("./config/socket");
-const MongoStore = require('connect-mongo'); // ✅ persist sessions
+
+// Passport strategies
+require("./config/passport");
+
+// Routes
 const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 
-
-require("./config/passport"); // load strategies
-
 const app = express();
 
-// ✅ CORS setup (frontend origin)
+// ✅ CORS setup
 app.use(cors({
-  origin: "http://localhost:5173",
-
+  origin: "http://localhost:5173", // your frontend
   credentials: true,
 }));
 
-// ✅ Middleware
+// ✅ JSON + URL encoded parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Session setup for OAuth persistence
+// ✅ Session middleware (MongoDB session store)
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }), // store in MongoDB
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URL }),
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    sameSite: 'lax', // frontend/backend same origin
+    sameSite: "lax", // secure if same origin
     secure: false,   // set to true in production (with HTTPS)
-  }
+  },
 }));
 
-// ✅ Passport setup
+// ✅ Passport initialization
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ✅ Routes
-// ✅ Routes
-app.use('/api/hackathons', require('./routes/hackathonRoutes'));
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/teams', require('./routes/teamRoutes'));
-app.use('/api/team-invites', require('./routes/teamInviteRoutes'));
-app.use('/api/submissions', require('./routes/submissionHistoryRoutes'));
-app.use('/api/projects', require('./routes/projectRoutes'));
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use('/api/scores', require('./routes/scoreRoutes'));
-app.use('/api/badges', require('./routes/badgeRoutes'));
-app.use('/api/chatrooms', require('./routes/chatRoomRoutes'));     // ✅ ADDED
-app.use('/api/messages', require('./routes/messageRoutes'));       // ✅ ADDED
-app.use('/api/announcements', require('./routes/announcementRoutes'));
-app.use("/api/uploads", require("./routes/cloudinaryUploadRoutes"));
+// ✅ API Routes
+app.use("/api/hackathons", require("./routes/hackathonRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
+app.use("/api/teams", require("./routes/teamRoutes"));
+app.use("/api/team-invites", require("./routes/teamInviteRoutes"));
+app.use("/api/submissions", require("./routes/submissionHistoryRoutes"));
+app.use("/api/projects", require("./routes/projectRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/scores", require("./routes/scoreRoutes"));
+app.use("/api/badges", require("./routes/badgeRoutes"));
+app.use("/api/chatrooms", require("./routes/chatRoomRoutes"));
+app.use("/api/messages", require("./routes/messageRoutes"));
+app.use("/api/announcements", require("./routes/announcementRoutes"));
+app.use("/api/uploads", cloudinaryUploadRoutes);
 app.use("/api/registration", require("./routes/hackathonRegistrationRoutes"));
-app.use('/api/organizations', require('./routes/organizationRoutes'));
-app.use("/api/articles", require('./routes/articleRoutes'));
+app.use("/api/organizations", require("./routes/organizationRoutes"));
+app.use("/api/articles", require("./routes/articleRoutes")); // ✅ includes like route
 app.use("/api/newsletter", newsletterRoutes);
 
-// ✅ HTTP + Socket.IO server
+// ✅ Server + Socket.IO setup
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-   origin: "http://localhost:5173",
+    origin: "http://localhost:5173",
     credentials: true,
-  }
+  },
 });
 
-socketHandler(io);
+socketHandler(io); // WebSocket logic
 
-// MongoDB and Start server
+// ✅ MongoDB + Start server
 const PORT = process.env.PORT || 3000;
+
 mongoose.connect(process.env.MONGO_URL)
   .then(() => {
-    console.log("MongoDB connected");
+    console.log("✅ MongoDB connected");
     server.listen(PORT, () => {
-      console.log(`Server + Socket.IO at http://localhost:${PORT}`);
+      console.log(`🚀 Server + Socket.IO running at http://localhost:${PORT}`);
     });
   })
   .catch((err) => {
-    console.error("DB connection failed:", err.message);
+    console.error("❌ MongoDB connection failed:", err.message);
   });

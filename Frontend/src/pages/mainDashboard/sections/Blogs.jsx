@@ -61,6 +61,9 @@ export function Blogs() {
   const [submittedArticle, setSubmittedArticle] = useState(null);
   const [categories, setCategories] = useState(["all"]);
 
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0); // default 0
+
   const navigate = useNavigate();
   const { id: blogId } = useParams();
   const location = useLocation();
@@ -92,19 +95,11 @@ export function Blogs() {
     setCurrentView("write");
   };
 
-
   const handleArticleSubmit = (article) => {
     setSubmittedArticle(article);
     setCurrentView("list");
     setShowApprovalDialog(true);
   };
-
-  // If we're in write mode, show the write article component
-  if (currentView === "write") {
-    return (
-      <WriteArticle onBack={handleBackToBlogs} onSubmit={handleArticleSubmit} />
-    );
-  }
 
   // Only show published blogs in the main view
   const publishedBlogs = blogs.filter((blog) => blog.status === "published");
@@ -135,6 +130,48 @@ export function Blogs() {
   const handleBackToBlogs = () => {
     navigate("/dashboard/blogs");
   };
+  useEffect(() => {
+    if (selectedPost) {
+      setLikeCount(selectedPost.likes);
+      setIsLiked(selectedPost.likedByUser);
+    }
+  }, [selectedPost]);
+
+ const handleLike = async () => {
+  const token = localStorage.getItem("token"); // or sessionStorage
+
+  if (!token) {
+    console.error("User not logged in");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `http://localhost:3000/api/articles/${selectedPost._id}/like`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ add this line
+        },
+      }
+    );
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error("Like error:", errorData.message);
+      return;
+    }
+
+    const data = await res.json();
+    setIsLiked(data.liked); // true or false
+    setLikeCount(data.likes);
+  } catch (error) {
+    console.error("Like request failed:", error);
+  }
+};
+
+
 
   // If we're in write mode, show the write article component
   if (currentView === "write") {
@@ -271,10 +308,17 @@ export function Blogs() {
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
-                    className="hover:bg-red-100 text-red-600"
+                    onClick={handleLike}
+                    className={`flex gap-1 items-center ${
+                      isLiked ? "bg-red-100 text-red-600" : "text-gray-600"
+                    }`}
                   >
-                    <Heart className="w-4 h-4" /> {selectedPost.likes}
+                    <Heart
+                      className={`w-4 h-4 ${isLiked ? "fill-red-600" : ""}`}
+                    />
+                    {likeCount}
                   </Button>
+
                   <Button
                     variant="outline"
                     className="hover:bg-blue-100 text-blue-600"
@@ -553,7 +597,7 @@ export function Blogs() {
                 {featuredBlogs.map((blog) => (
                   <Card
                     key={blog._id}
-               onClick={() => handleBlogClick(blog)}
+                    onClick={() => handleBlogClick(blog)}
                     className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     {/* Image Section */}
@@ -654,7 +698,7 @@ export function Blogs() {
                 {trendingBlogs.map((blog, index) => (
                   <Card
                     key={blog._id}
-                onClick={() => handleBlogClick(blog)}
+                    onClick={() => handleBlogClick(blog)}
                     className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg z-10">
