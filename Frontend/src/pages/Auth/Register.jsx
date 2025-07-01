@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Github } from "lucide-react";
 import GoogleIcon from "../../components/common/GoogleIcon";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Register() {
   const [form, setForm] = useState({
@@ -12,6 +12,11 @@ function Register() {
   });
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get redirectTo from URL query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTo = searchParams.get('redirectTo');
 
   const handleChange = (e) => {
     setForm((prev) => ({
@@ -35,19 +40,31 @@ function Register() {
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // Navigate to dashboard
-      navigate("/dashboard");
+      // Navigate to redirectTo if specified, otherwise to dashboard
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       setErrorMsg(err.response?.data?.message || "Registration failed. Please try again.");
     }
   };
 
   const handleGoogleSignup = () => {
-    window.location.href = "http://localhost:3000/api/users/google";
+    // Add redirectTo to Google OAuth URL if present
+    const googleUrl = redirectTo 
+      ? `http://localhost:3000/api/users/google?redirectTo=${encodeURIComponent(redirectTo)}`
+      : "http://localhost:3000/api/users/google";
+    window.location.href = googleUrl;
   };
 
   const handleGithubSignup = () => {
-    window.location.href = "http://localhost:3000/api/users/github";
+    // Add redirectTo to GitHub OAuth URL if present
+    const githubUrl = redirectTo 
+      ? `http://localhost:3000/api/users/github?redirectTo=${encodeURIComponent(redirectTo)}`
+      : "http://localhost:3000/api/users/github";
+    window.location.href = githubUrl;
   };
 
   return (
@@ -131,7 +148,7 @@ function Register() {
       <p className="text-sm text-center text-gray-500">
         Already have an account?{" "}
         <a
-          href="/login"
+          href={redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"}
           className="text-[#1b0c3f] font-medium hover:underline"
         >
           Login

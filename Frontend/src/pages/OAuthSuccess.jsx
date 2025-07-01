@@ -13,11 +13,18 @@ function OAuthSuccess() {
     const name = searchParams.get("name");
     const email = searchParams.get("email");
     const _id = searchParams.get("_id");
+    const redirectTo = searchParams.get("redirectTo");
 
     if (token && name && email && _id) {
       // ✅ Save full user with _id to context/localStorage
       login({ _id, name, email }, token);
-      navigate("/dashboard");
+      
+      // Redirect to redirectTo if specified, otherwise to dashboard
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else {
+        navigate("/dashboard");
+      }
     } else {
       // 🔁 fallback if something went wrong
       console.warn("OAuth response missing fields");

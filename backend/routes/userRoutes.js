@@ -8,8 +8,23 @@ const trackStreak = require("../middleware/trackStreak");
 const User = require('../model/UserModel');
 
 // 🔐 OAuth Routes
-router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/github', (req, res, next) => {
+  const redirectTo = req.query.redirectTo;
+  const state = redirectTo ? Buffer.from(JSON.stringify({ redirectTo })).toString('base64') : undefined;
+  passport.authenticate('github', { 
+    scope: ['user:email'],
+    state: state
+  })(req, res, next);
+});
+
+router.get('/google', (req, res, next) => {
+  const redirectTo = req.query.redirectTo;
+  const state = redirectTo ? Buffer.from(JSON.stringify({ redirectTo })).toString('base64') : undefined;
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    state: state
+  })(req, res, next);
+});
 
 router.get('/github/callback', passport.authenticate('github', {
   failureRedirect: '/login',
@@ -17,7 +32,21 @@ router.get('/github/callback', passport.authenticate('github', {
 }), (req, res) => {
   const user = req.user;
   const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  
+  // Get redirectTo from state parameter if present
+  let redirectTo = null;
+  if (req.query.state) {
+    try {
+      const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+      redirectTo = stateData.redirectTo;
+    } catch (err) {
+      console.warn('Failed to parse OAuth state:', err);
+    }
+  }
+  
+  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
+  
   res.redirect(redirectUrl);
 });
 
@@ -27,7 +56,21 @@ router.get('/google/callback', passport.authenticate('google', {
 }), (req, res) => {
   const user = req.user;
   const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  const redirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  
+  // Get redirectTo from state parameter if present
+  let redirectTo = null;
+  if (req.query.state) {
+    try {
+      const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+      redirectTo = stateData.redirectTo;
+    } catch (err) {
+      console.warn('Failed to parse OAuth state:', err);
+    }
+  }
+  
+  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
+  
   res.redirect(redirectUrl);
 });
 

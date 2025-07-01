@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Github } from "lucide-react";
 import GoogleIcon from "../../components/common/GoogleIcon";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext"; // ✅ Make sure this path is correct
 
 function Login({ onClose }) {
@@ -10,7 +10,12 @@ function Login({ onClose }) {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth(); // ✅ From context
+
+  // Get redirectTo from URL query parameters
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTo = searchParams.get('redirectTo');
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,10 +33,14 @@ function Login({ onClose }) {
 login(res.data.user, res.data.token);
 
 
-      // ✅ Redirect by role
+      // ✅ Redirect by role or to redirectTo if specified
       const role = res.data.user.role;
       if (onClose) onClose(); // ✅ close the modal
-      if (role === "admin") {
+      
+      if (redirectTo) {
+        // Redirect to the specified URL (e.g., back to invite)
+        navigate(redirectTo);
+      } else if (role === "admin") {
         navigate("/admin");
       } else {
         navigate("/");
@@ -42,11 +51,19 @@ login(res.data.user, res.data.token);
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:3000/api/users/google";
+    // Add redirectTo to Google OAuth URL if present
+    const googleUrl = redirectTo 
+      ? `http://localhost:3000/api/users/google?redirectTo=${encodeURIComponent(redirectTo)}`
+      : "http://localhost:3000/api/users/google";
+    window.location.href = googleUrl;
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:3000/api/users/github";
+    // Add redirectTo to GitHub OAuth URL if present
+    const githubUrl = redirectTo 
+      ? `http://localhost:3000/api/users/github?redirectTo=${encodeURIComponent(redirectTo)}`
+      : "http://localhost:3000/api/users/github";
+    window.location.href = githubUrl;
   };
 
   return (
@@ -113,7 +130,7 @@ login(res.data.user, res.data.token);
       <p className="text-sm text-center text-gray-500">
         Don't have an account?{" "}
         <a
-          href="/register"
+          href={redirectTo ? `/register?redirectTo=${encodeURIComponent(redirectTo)}` : "/register"}
           className="text-[#1b0c3f] font-medium hover:underline"
         >
           Sign up

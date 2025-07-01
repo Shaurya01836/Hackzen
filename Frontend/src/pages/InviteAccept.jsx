@@ -11,11 +11,17 @@ export function InviteAccept() {
   const [message, setMessage] = useState("");
   const [inviteData, setInviteData] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
+  const [hasProcessedInvite, setHasProcessedInvite] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkInvite = async () => {
       try {
+        // Reset status when inviteId changes
+        setStatus("loading");
+        setShowDialog(false);
+        setHasProcessedInvite(false);
+        
         // First, check if the invite exists and get its details
         const inviteRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}`);
         if (!inviteRes.ok) {
@@ -32,6 +38,15 @@ export function InviteAccept() {
           setStatus("login");
           return;
         }
+
+        // Check if user has already processed this invite
+        const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
+        if (processedInvites.includes(inviteId)) {
+          setStatus("error");
+          setMessage("❌ You have already processed this invitation.");
+          return;
+        }
+
         // Show accept/decline dialog
         setShowDialog(true);
         setStatus("prompt");
@@ -53,9 +68,15 @@ export function InviteAccept() {
       });
       const data = await acceptRes.json();
       if (acceptRes.ok) {
+        // Mark this invite as processed
+        const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
+        processedInvites.push(inviteId);
+        localStorage.setItem("processedInvites", JSON.stringify(processedInvites));
+        
         setStatus("accepted");
         setMessage("✅ You have successfully joined the team!");
         setShowDialog(false);
+        setHasProcessedInvite(true);
       } else {
         setStatus("error");
         setMessage(data.error || "❌ Failed to accept invite.");
@@ -69,10 +90,24 @@ export function InviteAccept() {
   };
 
   const handleDecline = () => {
+    // Mark this invite as processed
+    const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
+    processedInvites.push(inviteId);
+    localStorage.setItem("processedInvites", JSON.stringify(processedInvites));
+    
     setShowDialog(false);
     setStatus("declined");
     setMessage("You have declined the invitation.");
+    setHasProcessedInvite(true);
     setTimeout(() => navigate("/dashboard"), 1500);
+  };
+
+  const clearProcessedInvite = () => {
+    const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
+    const updatedInvites = processedInvites.filter(id => id !== inviteId);
+    localStorage.setItem("processedInvites", JSON.stringify(updatedInvites));
+    // Reload the page to restart the flow
+    window.location.reload();
   };
 
   if (status === "loading") {
@@ -203,12 +238,23 @@ export function InviteAccept() {
             </div>
           )}
           {status === "error" && (
-            <Button 
-              onClick={() => navigate("/dashboard")}
-              className="w-full"
-            >
-              Go to Dashboard
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => navigate("/dashboard")}
+                className="w-full"
+              >
+                Go to Dashboard
+              </Button>
+              {message.includes("already processed") && (
+                <Button 
+                  variant="outline"
+                  onClick={clearProcessedInvite}
+                  className="w-full"
+                >
+                  Try Again
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
