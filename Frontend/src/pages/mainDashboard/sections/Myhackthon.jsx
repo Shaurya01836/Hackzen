@@ -33,6 +33,7 @@ import { Skeleton } from "../../../components/DashboardUI/skeleton";
 
 // Import the ProjectSubmission component
 import ProjectSubmission from "./ProjectSubmission";
+import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 
 export default function MyHackathons() {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ export default function MyHackathons() {
   const [loadingHackathons, setLoadingHackathons] = useState(true);
   const [savedLoading, setSavedLoading] = useState(true);
   const [selectedHackathon, setSelectedHackathon] = useState(null);
+const [selectedProject, setSelectedProject] = useState(null);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
@@ -262,37 +264,49 @@ export default function MyHackathons() {
 
   const renderProjectCard = (project) => (
     <Card
-      key={project._id}
-      className="group w-full max-w-sm rounded-2xl border border-border/50 bg-white/70 backdrop-blur-md shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
-    >
-      {/* Image */}
-      <div className="h-24 w-full overflow-hidden bg-muted">
-        <img
-          src={project.images?.banner?.url || "/placeholder-image.png"}
-          alt={project.title || "Project image"}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
+  key={project._id}
+  className="group w-full max-w-sm rounded-2xl border border-border/50 bg-white/70 backdrop-blur-md shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
+>
+  <div className="h-24 w-full overflow-hidden bg-muted">
+    <img
+      src={project.logo?.url || "/placeholder-image.png"}
+      alt={project.title || "Project image"}
+      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+    />
+  </div>
+
+  <CardHeader className="pb-2">
+    <div className="flex items-start justify-between gap-2">
+      <div className="flex-1 space-y-1">
+        <CardTitle className="text-lg font-semibold leading-tight line-clamp-1 text-foreground transition-colors group-hover:text-primary">
+          {project.title || "Untitled Project"}
+        </CardTitle>
       </div>
+      <Code className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+    </div>
+  </CardHeader>
 
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 space-y-1">
-            <CardTitle className="text-lg font-semibold leading-tight line-clamp-1 text-foreground transition-colors group-hover:text-primary">
-              {project.title || "Untitled Project"}
-            </CardTitle>
-          </div>
-          <Code className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
-        </div>
-      </CardHeader>
+  <CardContent className="pt-1 space-y-3">
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <span>Last updated</span>
+      <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
+    </div>
 
-      <CardContent className="pt-1">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Last updated</span>
-          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={() => setSelectedProject(project)}
+      className="w-full mt-2"
+    >
+      View Project
+    </Button>
+  </CardContent>
+</Card>
+
+);
+if (selectedProject) {
+  return <ProjectDetail project={selectedProject} onBack={() => setSelectedProject(null)} />;
+}
 
   const ProjectsSkeleton = () => (
     <div className="flex gap-4 flex-wrap">
