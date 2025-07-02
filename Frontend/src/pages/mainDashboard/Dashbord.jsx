@@ -127,12 +127,12 @@ export default function HackZenDashboard() {
       key: "my-community",
       onClick: () => changeView("my-community"),
     },
-    {
-      title: "Chat Rooms",
-      icon: MessageSquare,
-      key: "chat-rooms",
-      onClick: () => changeView("chat-rooms"),
-    },
+    // {
+    //   title: "Chat Rooms",
+    //   icon: MessageSquare,
+    //   key: "chat-rooms",
+    //   onClick: () => changeView("chat-rooms"),
+    // },
     {
       title: "Blogs",
       icon: NotebookTabs,
