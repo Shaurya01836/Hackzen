@@ -44,28 +44,29 @@ export default function MyHackathons() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [loadingHackathons, setLoadingHackathons] = useState(true);
   const [savedLoading, setSavedLoading] = useState(true);
+const [selectedHackathon, setSelectedHackathon] = useState(null);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
 
   // Fetch Projects
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/projects/my", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        const data = await res.json();
-        setProjects(data || []);
-      } catch (err) {
-        console.error("Failed to fetch projects", err);
-        setProjects([]);
-      } finally {
-        setLoadingProjects(false);
-      }
-    };
+ const fetchProjects = async () => {
+  try {
+    const res = await fetch("http://localhost:3000/api/projects/mine", {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    const data = await res.json();
+    setProjects(data || []);
+  } catch (err) {
+    console.error("Failed to fetch projects", err);
+    setProjects([]);
+  } finally {
+    setLoadingProjects(false);
+  }
+};
 
     fetchProjects();
   }, []);
@@ -148,13 +149,11 @@ export default function MyHackathons() {
     fetchSavedHackathons();
   }, []);
 
-  const handleHackathonClick = (hackathonId, hackathonTitle) => {
-    navigate(
-      `/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodeURIComponent(
-        hackathonTitle
-      )}`
-    );
-  };
+ const handleHackathonClick = (hackathonId, hackathonTitle) => {
+  const selected = hackathons.find(h => h.id === hackathonId);
+  setSelectedHackathon(selected);
+  setCurrentView("create-project"); // go directly to submission
+};
 
   const handleCreateProject = () => {
     setCurrentView("create-project");
@@ -177,7 +176,7 @@ export default function MyHackathons() {
       status: projectData.status,
     };
 
-    setProjects((prev) => [newProject, ...prev]);
+setProjects((prev) => [newProject, ...(Array.isArray(prev) ? prev : [])]);
 
     // Show success message (you might want to add a toast notification here)
     alert("Project saved successfully!");
@@ -193,12 +192,13 @@ export default function MyHackathons() {
   // If we're in create project view, render the ProjectSubmission component
   if (currentView === "create-project") {
     return (
-      <ProjectSubmission
-        hackathonName="HackZen 2024"
-        teamLeaderName="Nitin Jain" // You might want to get this from user context
-        onBack={handleBackToDashboard}
-        onSave={handleSaveProject}
-      />
+ <ProjectSubmission
+  hackathonName={selectedHackathon?.name || "HackZen 2024"}
+  teamLeaderName="Nitin Jain"
+  hackathonId={selectedHackathon?.id || null}
+  onBack={handleBackToDashboard}
+  onSave={handleSaveProject}
+/>
     );
   }
 

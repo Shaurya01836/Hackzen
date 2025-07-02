@@ -1,84 +1,162 @@
-const Project = require('../model/ProjectModel');
+const Project = require("../model/ProjectModel");
+const Hackathon = require("../model/HackathonModel");
 
+// Create a new project
 exports.createProject = async (req, res) => {
   try {
-    const { title, description, repoLink, videoLink, team, hackathon } = req.body;
-
-    const newProject = await Project.create({
+    const {
       title,
       description,
       repoLink,
+      websiteLink,
       videoLink,
+      socialLinks,
+      logo,
+      category,
+      customCategory,
       team,
       hackathon,
-      submittedBy: req.user._id,
-      status: 'draft',
+    } = req.body;
+
+    if (!title || !description || !category) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // ✅ Pull user from token (middleware adds it)
+    const userId = req.user?._id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const newProject = new Project({
+      title,
+      description,
+      repoLink,
+      websiteLink,
+      videoLink,
+      socialLinks,
+      logo,
+      category,
+      customCategory,
+      team: team || null,
+      hackathon: hackathon || null,
+      submittedBy: userId, // ✅ required field
+      status: "draft",
     });
 
-   res.status(201).json(newProject);
+    await newProject.save();
+    res.status(201).json(newProject);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to create project', error: err.message });
+    console.error("❌ Error creating project:", err);
+    res.status(500).json({ message: "Failed to create project", error: err.message });
   }
 };
 
+
+// Get all projects
 exports.getAllProjects = async (req, res) => {
   try {
-    const filters = {};
-    if (req.query.hackathon) filters.hackathon = req.query.hackathon;
-    if (req.query.team) filters.team = req.query.team;
-
-    const projects = await Project.find(filters)
-      .populate('team submittedBy hackathon scores');
-    
+    const projects = await Project.find().populate("submittedBy hackathon team");
     res.json(projects);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch projects', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching projects", error: error.message });
   }
 };
 
+// Get my projects
+exports.getMyProjects = async (req, res) => {
+  try {
+    const projects = await Project.find({ submittedBy: req.user._id }).populate("hackathon");
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching your projects", error: error.message });
+  }
+};
+
+// Get projects by hackathon
+exports.getProjectsByHackathon = async (req, res) => {
+  try {
+    const projects = await Project.find({ hackathon: req.params.hackathonId }).populate("submittedBy");
+    res.json(projects);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching projects for hackathon", error: error.message });
+  }
+};
+
+// Get project by ID
 exports.getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id)
-      .populate('team submittedBy hackathon scores');
-
-    if (!project) return res.status(404).json({ message: 'Project not found' });
+    const project = await Project.findById(req.params.id).populate("submittedBy hackathon team");
+    if (!project) return res.status(404).json({ message: "Project not found" });
     res.json(project);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching project', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching project", error: error.message });
   }
 };
 
+// Update project
 exports.updateProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
-    if (!project) return res.status(404).json({ message: 'Project not found' });
-
-    if (!project.submittedBy.equals(req.user._id)) {
-      return res.status(403).json({ message: 'Not allowed to update this project' });
-    }
-
-    const updates = req.body;
-    Object.assign(project, updates);
-
-    await project.save();
-    res.json(project);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to update project', error: err.message });
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedProject);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating project", error: error.message });
   }
 };
 
+// Delete project
 exports.deleteProject = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id);
-    if (!project) return res.status(404).json({ message: 'Project not found' });
+    await Project.findByIdAndDelete(req.params.id);
+    res.json({ message: "Project deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting project", error: error.message });
+  }
+};
 
-    if (!project.submittedBy.equals(req.user._id) && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to delete this project' });
+// Submit project
+exports.submitProject = async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+    if (!project.submittedBy.equals(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+    if (!project.hackathon) {
+      return res.status(400).json({ message: "No hackathon linked to this project" });
+    }
+    project.status = "submitted";
+    project.submittedAt = new Date();
+    await project.save();
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({ message: "Error submitting project", error: error.message });
+  }
+};
+
+// Assign hackathon to a project
+exports.assignHackathonToProject = async (req, res) => {
+  try {
+    const { hackathonId } = req.body;
+    const project = await Project.findById(req.params.id);
+
+    if (!project) return res.status(404).json({ message: "Project not found" });
+    if (!project.submittedBy.equals(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized" });
     }
 
-    await project.remove();
-    res.json({ message: 'Project deleted' });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to delete project', error: err.message });
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) return res.status(404).json({ message: "Hackathon not found" });
+
+    if (project.hackathon) {
+      return res.status(400).json({ message: "Project already linked to a hackathon" });
+    }
+
+    project.hackathon = hackathonId;
+    await project.save();
+
+    res.json({ message: "Hackathon assigned to project", project });
+  } catch (error) {
+    res.status(500).json({ message: "Error assigning hackathon", error: error.message });
   }
 };

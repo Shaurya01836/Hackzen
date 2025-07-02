@@ -134,11 +134,86 @@ export default function ProjectSubmission({
     const config = statusConfig[formData.status]
     return <Badge className={config.className}>{config.label}</Badge>
   }
+const handleSave = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("You must be logged in.");
 
-  const handleSave = () => {
-    onSave?.(formData)
+    let logoData = null;
+    let videoLink = "";
+
+    // Upload Logo if it's a File
+    if (formData.logo instanceof File) {
+      const formLogo = new FormData();
+      formLogo.append("file", formData.logo);
+      formLogo.append("upload_preset", "hackzen_uploads");
+      formLogo.append("folder", "project-logos");
+
+      const res = await fetch("https://api.cloudinary.com/v1_1/dg2q2tzbv/image/upload", {
+        method: "POST",
+        body: formLogo,
+      });
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Logo upload failed");
+      logoData = {
+        url: data.secure_url,
+        publicId: data.public_id,
+      };
+    }
+
+    // Upload Demo Video if "upload" mode is selected
+    if (formData.demoVideoType === "upload" && formData.demoVideoFile instanceof File) {
+      const formVideo = new FormData();
+      formVideo.append("file", formData.demoVideoFile);
+      formVideo.append("upload_preset", "hackzen_uploads");
+      formVideo.append("folder", "project-videos");
+      formVideo.append("resource_type", "video");
+
+      const res = await fetch("https://api.cloudinary.com/v1_1/dg2q2tzbv/video/upload", {
+        method: "POST",
+        body: formVideo,
+      });
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Video upload failed");
+      videoLink = data.secure_url;
+    }
+
+    if (formData.demoVideoType === "link") {
+      videoLink = formData.demoVideoLink;
+    }
+
+    // Prepare backend payload
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      repoLink: formData.githubLink,
+      websiteLink: formData.websiteLink,
+      videoLink,
+      socialLinks: formData.socialLinks.filter((s) => s.trim() !== ""),
+      logo: logoData,
+      category: formData.category,
+      customCategory: formData.customCategory,
+      status: "draft",
+    };
+
+    const response = await fetch("http://localhost:3000/api/projects", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const created = await response.json();
+    if (!response.ok) throw new Error(created.message || "Failed to save project");
+
+    alert("✅ Project saved successfully!");
+    onSave?.(created);
+  } catch (error) {
+    alert("❌ Error: " + error.message);
   }
-
+};
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
