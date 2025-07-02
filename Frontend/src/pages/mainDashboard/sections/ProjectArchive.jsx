@@ -192,7 +192,7 @@ export function ProjectArchive() {
   };
 
   const renderLoadingCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-5">
       {[...Array(6)].map((_, i) => (
         <Card key={i} className="animate-pulse border-gray-200">
           <div className="h-48 bg-gray-200 rounded-t-xl"></div>
@@ -210,7 +210,7 @@ export function ProjectArchive() {
   );
 
   const renderProjectGrid = (projectList, variant = "default") => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-5 mt-5">
       {projectList.map((project) => (
         <ProjectCard
           key={project.id}
@@ -229,8 +229,8 @@ export function ProjectArchive() {
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100">
+      <header className=" px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Separator orientation="vertical" className="h-6" />
@@ -247,15 +247,16 @@ export function ProjectArchive() {
       </header>
 
       <main className="p-6 space-y-6 overflow-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="relative w-full md:w-1/2">
-            <Search className="absolute top-2.5 left-3 h-5 w-5 text-gray-400" />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 px-5">
+          <div className="relative w-full ">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
               placeholder="Search by title or tech..."
-              className="pl-10"
+            
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 h-12 text-base border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
             />
           </div>
 
@@ -279,7 +280,7 @@ export function ProjectArchive() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full justify-start  space-x-2 mt-4">
+          <TabsList className="grid w-full grid-cols-3 rounded-lg px-5">
             <TabsTrigger value="all">All Projects</TabsTrigger>
             <TabsTrigger value="featured">Featured</TabsTrigger>
             <TabsTrigger value="awards">Award Winning</TabsTrigger>
