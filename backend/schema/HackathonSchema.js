@@ -24,10 +24,10 @@ const HackathonSchema = new Schema({
   category: {
     type: String,
     enum: [
-    'Artificial Intelligence', 'Blockchain & Web3', 'Cybersecurity',
-    'Fintech', 'Gaming', 'Healthcare', 'Sustainability',
-    'Mobile Development', 'Web Development', 'IoT',
-    'Data Science', 'DevOps', 'EdTech' // <-- added EdTech
+      'Artificial Intelligence', 'Blockchain', 'Cybersecurity',
+      'Fintech', 'Gaming', 'Healthcare', 'Sustainability',
+      'Mobile Development', 'Web Development', 'IoT',
+      'Data Science', 'DevOps', 'EdTech' // <-- added EdTech
   ],
     required: true
   },
@@ -50,6 +50,13 @@ const HackathonSchema = new Schema({
 
   problemStatements: [String],
   problemStatementTypes: [String], // <-- NEW FIELD
+
+    // ✅ New field for teamSize
+  teamSize: {
+    min: { type: Number, default: 1 },
+    max: { type: Number, default: 1 },
+    allowSolo: { type: Boolean, default: true }
+  },
 
   rounds: [{ // <-- NEW FIELD
     name: { type: String },

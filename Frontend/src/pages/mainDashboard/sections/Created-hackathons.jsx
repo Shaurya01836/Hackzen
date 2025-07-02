@@ -336,7 +336,6 @@ const [editHackathon, setEditHackathon] = useState(null);
         onClose={() => setShowModal(false)}
         hackathon={selectedHackathon}
       />
-
       {editHackathon && (
   <HackathonEditModal
     hackathon={editHackathon}
@@ -347,7 +346,6 @@ const [editHackathon, setEditHackathon] = useState(null);
     }}
   />
 )}
-
     </div>
   );
 }

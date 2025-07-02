@@ -1,50 +1,30 @@
-"use client";
-import { useState, useRef } from "react";
-import { useAuth } from "../../../context/AuthContext";
-import {
-  ArrowLeft,
-  Plus,
-  Trash2,
-  Calendar,
-  Users,
-  FileText,
-  Save,
-  X,
-  Upload,
-  Loader2,
-  Check,
-  AlertCircle,
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../../../components/CommonUI/card";
-import { Button } from "../../../components/CommonUI/button";
-import { Input } from "../../../components/CommonUI/input";
-import { Label } from "../../../components/CommonUI/label";
-import { Textarea } from "../../../components/CommonUI/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/CommonUI/select";
-import { Badge } from "../../../components/CommonUI/badge";
-import { Separator } from "../../../components/CommonUI/separator";
-import { Alert, AlertDescription } from "../../../components/DashboardUI/alert";
+"use client"
+import { useState, useRef } from "react"
+import { useAuth } from "../../../context/AuthContext"
+import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { Button } from "../../../components/CommonUI/button"
+import { Input } from "../../../components/CommonUI/input"
+import { Label } from "../../../components/CommonUI/label"
+import { Textarea } from "../../../components/CommonUI/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/CommonUI/select"
+import { Badge } from "../../../components/CommonUI/badge"
+import { Separator } from "../../../components/CommonUI/separator"
+import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
 
 export function CreateHackathon({ onBack }) {
-  const { user, token } = useAuth(); // Using AuthContext instead of localStorage
+  const { user, token } = useAuth() // Using AuthContext instead of localStorage
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     startDate: "",
     endDate: "",
+    teamSize: {
+      min: 1,
+      max: 1,
+      allowSolo: true,
+    }, // Replace the simple teamSize field with this structure
     problemStatements: [{ statement: "", type: "" }], // Combined structure
     status: "upcoming",
     maxParticipants: 100,
@@ -78,18 +58,18 @@ export function CreateHackathon({ onBack }) {
         endDate: "",
       },
     ],
-  });
+  })
 
-  const [currentTag, setCurrentTag] = useState("");
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentTag, setCurrentTag] = useState("")
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadStates, setUploadStates] = useState({
     banner: { uploading: false, error: null },
     logo: { uploading: false, error: null },
     gallery: { uploading: false, error: null },
-  });
+  })
 
-  const formTopRef = useRef(null);
+  const formTopRef = useRef(null)
 
   const categories = [
     "Artificial Intelligence",
@@ -105,9 +85,9 @@ export function CreateHackathon({ onBack }) {
     "Data Science",
     "DevOps",
     "EdTech",
-  ];
+  ]
 
-  const modes = ["online", "offline", "hybrid"];
+  const modes = ["online", "offline", "hybrid"]
 
   const problemStatementTypes = [
     "Sponsored",
@@ -118,27 +98,29 @@ export function CreateHackathon({ onBack }) {
     "Business Case",
     "Research Based",
     "Community Driven",
-  ];
+  ]
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
 
     // Step 0: Basic Info
     if (step === 0) {
-      if (!formData.title.trim()) newErrors.title = "Title is required";
-      if (!formData.category) newErrors.category = "Category is required";
-      // Add more if needed
+      if (!formData.title.trim()) newErrors.title = "Title is required"
+      if (!formData.category) newErrors.category = "Category is required"
+      if (!formData.teamSize.min || !formData.teamSize.max) {
+        newErrors.teamSize = "Team size limits are required"
+      } else if (formData.teamSize.min > formData.teamSize.max) {
+        newErrors.teamSize = "Minimum team size cannot be greater than maximum"
+      } else if (formData.teamSize.min < 1 || formData.teamSize.max > 10) {
+        newErrors.teamSize = "Team size must be between 1 and 10 members"
+      }
     }
 
     // Step 1: Dates & Media
     if (step === 1) {
-      if (!formData.startDate) newErrors.startDate = "Start date is required";
-      if (!formData.endDate) newErrors.endDate = "End date is required";
-      if (!formData.registrationDeadline)
-        newErrors.registrationDeadline = "Registration deadline is required";
-      // You can add image validation if you want, e.g.:
-      // if (!formData.images.banner) newErrors.banner = "Banner image is required";
-      // if (!formData.images.logo) newErrors.logo = "Logo is required";
+      if (!formData.startDate) newErrors.startDate = "Start date is required"
+      if (!formData.endDate) newErrors.endDate = "End date is required"
+      if (!formData.registrationDeadline) newErrors.registrationDeadline = "Registration deadline is required"
     }
 
     // Step 2: Details
@@ -146,59 +128,38 @@ export function CreateHackathon({ onBack }) {
       // At least one problem statement with both fields filled
       if (
         !formData.problemStatements.length ||
-        formData.problemStatements.some(
-          (ps) => !ps.statement.trim() || !ps.type.trim()
-        )
+        formData.problemStatements.some((ps) => !ps.statement.trim() || !ps.type.trim())
       ) {
-        newErrors.problemStatements =
-          "All problem statements and types are required";
-      }
-      // At least one judge and mentor
-      if (!formData.judges.length || formData.judges.some((j) => !j.trim())) {
-        newErrors.judges = "At least one judge email is required";
-      }
-      if (!formData.mentors.length || formData.mentors.some((m) => !m.trim())) {
-        newErrors.mentors = "At least one mentor email is required";
-      }
-      // At least one round with a name
-      if (
-        !formData.rounds.length ||
-        formData.rounds.some((r) => !r.name.trim())
-      ) {
-        newErrors.rounds = "Each round must have a name";
+        newErrors.problemStatements = "All problem statements and types are required"
       }
     }
 
     // Step 3: Requirements & Perks
     if (step === 3) {
       // At least one requirement and one perk
-      if (
-        !formData.requirements.length ||
-        formData.requirements.some((r) => !r.trim())
-      ) {
-        newErrors.requirements = "At least one requirement is required";
+      if (!formData.requirements.length || formData.requirements.some((r) => !r.trim())) {
+        newErrors.requirements = "At least one requirement is required"
       }
       if (!formData.perks.length || formData.perks.some((p) => !p.trim())) {
-        newErrors.perks = "At least one perk is required";
+        newErrors.perks = "At least one perk is required"
       }
-      // You can add more validations as needed
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   // Image upload function from first file
   const handleFileSelect = async (file, type) => {
-    if (!file) return;
+    if (!file) return
 
     setUploadStates((prev) => ({
       ...prev,
       [type]: { uploading: true, error: null },
-    }));
+    }))
 
-    const uploadFormData = new FormData();
-    uploadFormData.append("image", file);
+    const uploadFormData = new FormData()
+    uploadFormData.append("image", file)
 
     try {
       const res = await fetch("http://localhost:3000/api/uploads/image", {
@@ -207,12 +168,12 @@ export function CreateHackathon({ onBack }) {
           Authorization: `Bearer ${token}`,
         },
         body: uploadFormData,
-      });
+      })
 
-      const data = await res.json();
+      const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.message || "Upload failed");
+        throw new Error(data.message || "Upload failed")
       }
 
       // Update formData.images
@@ -222,20 +183,20 @@ export function CreateHackathon({ onBack }) {
           ...prev.images,
           [type]: data, // { url, publicId, width, height }
         },
-      }));
+      }))
 
       setUploadStates((prev) => ({
         ...prev,
         [type]: { uploading: false, error: null },
-      }));
+      }))
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("Upload error:", err)
       setUploadStates((prev) => ({
         ...prev,
         [type]: { uploading: false, error: err.message },
-      }));
+      }))
     }
-  };
+  }
 
   const removeImage = (type, index = null) => {
     if (type === "gallery" && index !== null) {
@@ -245,7 +206,7 @@ export function CreateHackathon({ onBack }) {
           ...prev.images,
           gallery: prev.images.gallery.filter((_, i) => i !== index),
         },
-      }));
+      }))
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -253,44 +214,37 @@ export function CreateHackathon({ onBack }) {
           ...prev.images,
           [type]: null,
         },
-      }));
+      }))
     }
-  };
+  }
 
   // Updated submit function with proper backend integration
   const handleSubmit = async (isDraft = false) => {
-    setIsSubmitting(true);
+    setIsSubmitting(true)
 
     try {
       if (!token) {
-        alert("You must be logged in to create a hackathon.");
-        return;
+        alert("You must be logged in to create a hackathon.")
+        return
       }
 
       // Extract valid problem statements and types
-      const validProblems = formData.problemStatements.filter(
-        (ps) => ps.statement.trim() && ps.type.trim()
-      );
+      const validProblems = formData.problemStatements.filter((ps) => ps.statement.trim() && ps.type.trim())
 
       const submitData = {
         title: formData.title,
         description: formData.description,
         category: formData.category,
         difficultyLevel: formData.difficultyLevel,
+        teamSize: formData.teamSize, // This now includes min, max, and allowSolo
         location: formData.location,
         mode: formData.mode,
-        startDate: formData.startDate
-          ? new Date(formData.startDate).toISOString()
-          : null,
-        endDate: formData.endDate
-          ? new Date(formData.endDate).toISOString()
-          : null,
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
         registrationDeadline: formData.registrationDeadline
           ? new Date(formData.registrationDeadline).toISOString()
           : null,
-        submissionDeadline: formData.submissionDeadline
-          ? new Date(formData.submissionDeadline).toISOString()
-          : null,
+        submissionDeadline: formData.submissionDeadline ? new Date(formData.submissionDeadline).toISOString() : null,
         maxParticipants: Number(formData.maxParticipants) || 100,
         problemStatements: validProblems.map((ps) => ps.statement),
         problemStatementTypes: validProblems.map((ps) => ps.type),
@@ -306,9 +260,7 @@ export function CreateHackathon({ onBack }) {
         perks: formData.perks.filter((p) => p.trim()),
         tags: formData.tags,
         prizePool: {
-          amount: formData.prizePool.amount
-            ? Number(formData.prizePool.amount)
-            : null,
+          amount: formData.prizePool.amount ? Number(formData.prizePool.amount) : null,
           currency: formData.prizePool.currency || "USD",
           breakdown: formData.prizePool.breakdown,
         },
@@ -317,7 +269,7 @@ export function CreateHackathon({ onBack }) {
         judges: formData.judges, // ✅ Include this
         mentors: formData.mentors, // ✅ Include this
         participants: [],
-      };
+      }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
         method: "POST",
@@ -326,135 +278,126 @@ export function CreateHackathon({ onBack }) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(submitData),
-      });
+      })
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to create hackathon");
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to create hackathon")
       }
 
-      const data = await response.json();
-      alert(
-        isDraft
-          ? "✅ Hackathon saved as draft!"
-          : "✅ Hackathon created successfully!"
-      );
-      onBack(); // Redirect to CreatedHackathons
+      const data = await response.json()
+      alert(isDraft ? "✅ Hackathon saved as draft!" : "✅ Hackathon created successfully!")
+      onBack() // Redirect to CreatedHackathons
     } catch (error) {
-      console.error("❌ Submission failed:", error);
-      alert(`Error: ${error.message}`);
+      console.error("❌ Submission failed:", error)
+      alert(`Error: ${error.message}`)
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
+  }
 
   // Combined Problem Statement handlers
   const addProblemStatement = () => {
     setFormData({
       ...formData,
-      problemStatements: [
-        ...formData.problemStatements,
-        { statement: "", type: "" },
-      ],
-    });
-  };
+      problemStatements: [...formData.problemStatements, { statement: "", type: "" }],
+    })
+  }
 
   const removeProblemStatement = (index) => {
     setFormData({
       ...formData,
-      problemStatements: formData.problemStatements.filter(
-        (_, i) => i !== index
-      ),
-    });
-  };
+      problemStatements: formData.problemStatements.filter((_, i) => i !== index),
+    })
+  }
 
   const updateProblemStatement = (index, field, value) => {
-    const updated = [...formData.problemStatements];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, problemStatements: updated });
-  };
+    const updated = [...formData.problemStatements]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, problemStatements: updated })
+  }
 
   const addRequirement = () => {
     setFormData({
       ...formData,
       requirements: [...formData.requirements, ""],
-    });
-  };
+    })
+  }
 
   const removeRequirement = (index) => {
     setFormData({
       ...formData,
       requirements: formData.requirements.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updateRequirement = (index, value) => {
-    const updated = [...formData.requirements];
-    updated[index] = value;
-    setFormData({ ...formData, requirements: updated });
-  };
+    const updated = [...formData.requirements]
+    updated[index] = value
+    setFormData({ ...formData, requirements: updated })
+  }
 
   const addPerk = () => {
     setFormData({
       ...formData,
       perks: [...formData.perks, ""],
-    });
-  };
+    })
+  }
 
   const removePerk = (index) => {
     setFormData({
       ...formData,
       perks: formData.perks.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updatePerk = (index, value) => {
-    const updated = [...formData.perks];
-    updated[index] = value;
-    setFormData({ ...formData, perks: updated });
-  };
+    const updated = [...formData.perks]
+    updated[index] = value
+    setFormData({ ...formData, perks: updated })
+  }
 
   // Judge/Mentor handlers
   const addJudge = () => {
     setFormData({
       ...formData,
       judges: [...formData.judges, ""],
-    });
-  };
+    })
+  }
 
   const removeJudge = (index) => {
     setFormData({
       ...formData,
       judges: formData.judges.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updateJudge = (index, value) => {
-    const updated = [...formData.judges];
-    updated[index] = value;
-    setFormData({ ...formData, judges: updated });
-  };
+    const updated = [...formData.judges]
+    updated[index] = value
+    setFormData({ ...formData, judges: updated })
+  }
 
   // Mentor handlers
   const addMentor = () => {
     setFormData({
       ...formData,
       mentors: [...formData.mentors, ""],
-    });
-  };
+    })
+  }
 
   const removeMentor = (index) => {
     setFormData({
       ...formData,
       mentors: formData.mentors.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updateMentor = (index, value) => {
-    const updated = [...formData.mentors];
-    updated[index] = value;
-    setFormData({ ...formData, mentors: updated });
-  };
+    const updated = [...formData.mentors]
+    updated[index] = value
+    setFormData({ ...formData, mentors: updated })
+  }
 
   // Rounds handlers
   const addRound = () => {
@@ -469,54 +412,48 @@ export function CreateHackathon({ onBack }) {
           endDate: "",
         },
       ],
-    });
-  };
+    })
+  }
 
   const removeRound = (index) => {
     setFormData({
       ...formData,
       rounds: formData.rounds.filter((_, i) => i !== index),
-    });
-  };
+    })
+  }
 
   const updateRound = (index, field, value) => {
-    const updated = [...formData.rounds];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, rounds: updated });
-  };
+    const updated = [...formData.rounds]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, rounds: updated })
+  }
 
   const addTag = () => {
     if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
       setFormData({
         ...formData,
         tags: [...formData.tags, currentTag.trim()],
-      });
-      setCurrentTag("");
+      })
+      setCurrentTag("")
     }
-  };
+  }
 
   const removeTag = (tagToRemove) => {
     setFormData({
       ...formData,
       tags: formData.tags.filter((tag) => tag !== tagToRemove),
-    });
-  };
+    })
+  }
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
-      e.preventDefault();
-      addTag();
+      e.preventDefault()
+      addTag()
     }
-  };
+  }
 
   // Image upload component
-  const ImageUploadCard = ({
-    title,
-    description,
-    type,
-    currentImage,
-    multiple = false,
-  }) => (
+  const ImageUploadCard = ({ title, description, type, currentImage, multiple = false }) => (
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="text-sm">{title}</CardTitle>
@@ -540,8 +477,7 @@ export function CreateHackathon({ onBack }) {
                 <Upload className="w-8 h-8 mb-2 text-gray-400" />
               )}
               <p className="text-sm text-gray-600">
-                <span className="font-semibold">Click to upload</span> or drag
-                and drop
+                <span className="font-semibold">Click to upload</span> or drag and drop
               </p>
               <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
             </div>
@@ -552,8 +488,8 @@ export function CreateHackathon({ onBack }) {
               accept="image/*"
               multiple={multiple}
               onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) handleFileSelect(file, type);
+                const file = e.target.files[0]
+                if (file) handleFileSelect(file, type)
               }}
               disabled={uploadStates[type]?.uploading}
             />
@@ -616,64 +552,60 @@ export function CreateHackathon({ onBack }) {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 
   // Stepper state
-  const [step, setStep] = useState(0);
-  const steps = [
-    "Basic Info",
-    "Dates & Media",
-    "Details",
-    "Requirements & Perks",
-  ];
+  const [step, setStep] = useState(0)
+  const steps = ["Basic Info", "Dates & Media", "Details", "Requirements & Perks"]
 
   // Scroll to top helper
   const scrollToTop = () => {
     if (formTopRef.current) {
-      formTopRef.current.scrollIntoView({ behavior: "smooth" });
+      formTopRef.current.scrollIntoView({ behavior: "smooth" })
     }
-  };
+  }
 
   // Navigation handlers with scroll
   const goToStep = (idx) => {
     if (idx > step) {
-      if (step === 0 && !validateForm()) {
+      // Check if current step is valid before allowing navigation
+      if (!validateForm()) {
         setErrors((prev) => ({
           ...prev,
-          stepError: "Please fill all required fields.",
-        }));
-        return;
+          stepError: "Please fill all required fields before proceeding.",
+        }))
+        return
       }
     }
-    setErrors((prev) => ({ ...prev, stepError: undefined }));
-    setStep(idx);
-    scrollToTop();
-  };
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
+    setStep(idx)
+    scrollToTop()
+  }
 
   const nextStep = () => {
-    if (step === 0 && !validateForm()) {
+    if (!validateForm()) {
       setErrors((prev) => ({
         ...prev,
-        stepError: "Please fill all required fields.",
-      }));
-      return;
+        stepError: "Please fill all required fields before proceeding.",
+      }))
+      return
     }
-    setErrors((prev) => ({ ...prev, stepError: undefined }));
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
     setStep((s) => {
-      const next = Math.min(s + 1, steps.length - 1);
-      setTimeout(scrollToTop, 0);
-      return next;
-    });
-  };
+      const next = Math.min(s + 1, steps.length - 1)
+      setTimeout(scrollToTop, 0)
+      return next
+    })
+  }
 
   const prevStep = () => {
-    setErrors((prev) => ({ ...prev, stepError: undefined }));
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
     setStep((s) => {
-      const prev = Math.max(s - 1, 0);
-      setTimeout(scrollToTop, 0);
-      return prev;
-    });
-  };
+      const prev = Math.max(s - 1, 0)
+      setTimeout(scrollToTop, 0)
+      return prev
+    })
+  }
 
   return (
     <div
@@ -683,12 +615,8 @@ export function CreateHackathon({ onBack }) {
       {/* Stepper Header */}
       <div className="flex items-center gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Create New Hackathon
-          </h1>
-          <p className="text-sm text-gray-500">
-            Set up your hackathon event with all the necessary details
-          </p>
+          <h1 className="text-2xl font-bold text-gray-800">Create New Hackathon</h1>
+          <p className="text-sm text-gray-500">Set up your hackathon event with all the necessary details</p>
         </div>
       </div>
       {/* Stepper Tabs */}
@@ -713,11 +641,7 @@ export function CreateHackathon({ onBack }) {
         ))}
       </div>
       {/* Error message for step navigation */}
-      {errors.stepError && (
-        <div className="mb-2 text-red-600 text-sm font-medium px-2">
-          {errors.stepError}
-        </div>
-      )}
+      {errors.stepError && <div className="mb-2 text-red-600 text-sm font-medium px-2">{errors.stepError}</div>}
       <div className="space-y-6">
         {step === 0 && (
           <>
@@ -728,9 +652,7 @@ export function CreateHackathon({ onBack }) {
                   <FileText className="w-5 h-5 text-purple-600" />
                   Basic Information
                 </CardTitle>
-                <CardDescription>
-                  Essential details about your hackathon
-                </CardDescription>
+                <CardDescription>Essential details about your hackathon</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -738,15 +660,11 @@ export function CreateHackathon({ onBack }) {
                   <Input
                     id="title"
                     value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     placeholder="Enter hackathon title..."
                     className={errors.title ? "border-red-500" : ""}
                   />
-                  {errors.title && (
-                    <p className="text-sm text-red-500 mt-1">{errors.title}</p>
-                  )}
+                  {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
                 </div>
 
                 <div>
@@ -754,9 +672,7 @@ export function CreateHackathon({ onBack }) {
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Describe your hackathon, its goals, and what participants can expect..."
                     rows={4}
                   />
@@ -767,13 +683,9 @@ export function CreateHackathon({ onBack }) {
                     <Label htmlFor="category">Category *</Label>
                     <Select
                       value={formData.category}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, category: value })
-                      }
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
                     >
-                      <SelectTrigger
-                        className={errors.category ? "border-red-500" : ""}
-                      >
+                      <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black shadow-lg rounded-md border">
@@ -784,29 +696,21 @@ export function CreateHackathon({ onBack }) {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.category && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {errors.category}
-                      </p>
-                    )}
+                    {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
                   </div>
 
                   <div>
                     <Label htmlFor="difficultyLevel">Difficulty Level</Label>
                     <Select
                       value={formData.difficultyLevel}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, difficultyLevel: value })
-                      }
+                      onValueChange={(value) => setFormData({ ...formData, difficultyLevel: value })}
                     >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                         <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">
-                          Intermediate
-                        </SelectItem>
+                        <SelectItem value="Intermediate">Intermediate</SelectItem>
                         <SelectItem value="Advanced">Advanced</SelectItem>
                       </SelectContent>
                     </Select>
@@ -816,22 +720,13 @@ export function CreateHackathon({ onBack }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="mode">Mode</Label>
-                    <Select
-                      value={formData.mode}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, mode: value })
-                      }
-                    >
+                    <Select value={formData.mode} onValueChange={(value) => setFormData({ ...formData, mode: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="bg-white text-black shadow-lg rounded-md border">
                         {modes.map((mode) => (
-                          <SelectItem
-                            key={mode}
-                            value={mode}
-                            className="capitalize"
-                          >
+                          <SelectItem key={mode} value={mode} className="capitalize">
                             {mode}
                           </SelectItem>
                         ))}
@@ -844,9 +739,7 @@ export function CreateHackathon({ onBack }) {
                     <Input
                       id="location"
                       value={formData.location}
-                      onChange={(e) =>
-                        setFormData({ ...formData, location: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                       placeholder="Virtual, San Francisco, CA, etc."
                     />
                   </div>
@@ -889,6 +782,77 @@ export function CreateHackathon({ onBack }) {
                     rows={2}
                   />
                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="teamSizeMin">Minimum Team Size *</Label>
+                    <Select
+                      value={formData.teamSize.min.toString()}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          teamSize: {
+                            ...formData.teamSize,
+                            min: Number.parseInt(value),
+                            allowSolo: Number.parseInt(value) === 1,
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className={errors.teamSize ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Min size" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {[1, 2, 3, 4, 5].map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size} {size === 1 ? "member (Solo)" : "members"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="teamSizeMax">Maximum Team Size *</Label>
+                    <Select
+                      value={formData.teamSize.max.toString()}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          teamSize: {
+                            ...formData.teamSize,
+                            max: Number.parseInt(value),
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className={errors.teamSize ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Max size" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size) => (
+                          <SelectItem key={size} value={size.toString()} disabled={size < formData.teamSize.min}>
+                            {size} {size === 1 ? "member" : "members"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <div className="p-3 bg-gray-50 rounded-lg border">
+                      <p className="text-sm font-medium text-gray-700">Team Size Range</p>
+                      <p className="text-lg font-bold text-purple-600">
+                        {formData.teamSize.min === formData.teamSize.max
+                          ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
+                          : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
+                      </p>
+                      {formData.teamSize.allowSolo && (
+                        <p className="text-xs text-green-600 mt-1">✓ Solo participation allowed</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
               </CardContent>
             </Card>
           </>
@@ -902,9 +866,7 @@ export function CreateHackathon({ onBack }) {
                   <Upload className="w-5 h-5 text-purple-600" />
                   Images & Media
                 </CardTitle>
-                <CardDescription>
-                  Upload images to make your hackathon more attractive
-                </CardDescription>
+                <CardDescription>Upload images to make your hackathon more attractive</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -938,9 +900,7 @@ export function CreateHackathon({ onBack }) {
                   <Calendar className="w-5 h-5 text-purple-600" />
                   Dates & Deadlines
                 </CardTitle>
-                <CardDescription>
-                  Set important dates for your hackathon
-                </CardDescription>
+                <CardDescription>Set important dates for your hackathon</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -950,16 +910,10 @@ export function CreateHackathon({ onBack }) {
                       id="startDate"
                       type="datetime-local"
                       value={formData.startDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, startDate: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                       className={errors.startDate ? "border-red-500" : ""}
                     />
-                    {errors.startDate && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {errors.startDate}
-                      </p>
-                    )}
+                    {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
                   </div>
 
                   <div>
@@ -968,24 +922,16 @@ export function CreateHackathon({ onBack }) {
                       id="endDate"
                       type="datetime-local"
                       value={formData.endDate}
-                      onChange={(e) =>
-                        setFormData({ ...formData, endDate: e.target.value })
-                      }
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                       className={errors.endDate ? "border-red-500" : ""}
                     />
-                    {errors.endDate && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {errors.endDate}
-                      </p>
-                    )}
+                    {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="registrationDeadline">
-                      Registration Deadline *
-                    </Label>
+                    <Label htmlFor="registrationDeadline">Registration Deadline *</Label>
                     <Input
                       id="registrationDeadline"
                       type="datetime-local"
@@ -996,21 +942,15 @@ export function CreateHackathon({ onBack }) {
                           registrationDeadline: e.target.value,
                         })
                       }
-                      className={
-                        errors.registrationDeadline ? "border-red-500" : ""
-                      }
+                      className={errors.registrationDeadline ? "border-red-500" : ""}
                     />
                     {errors.registrationDeadline && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {errors.registrationDeadline}
-                      </p>
+                      <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
                     )}
                   </div>
 
                   <div>
-                    <Label htmlFor="submissionDeadline">
-                      Submission Deadline
-                    </Label>
+                    <Label htmlFor="submissionDeadline">Submission Deadline</Label>
                     <Input
                       id="submissionDeadline"
                       type="datetime-local"
@@ -1034,18 +974,13 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Problem Statements</CardTitle>
-                <CardDescription>
-                  Define the challenges participants will work on and their
-                  types
-                </CardDescription>
+                <CardDescription>Define the challenges participants will work on and their types</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.problemStatements.map((ps, index) => (
                   <div key={index} className="p-4 border rounded-lg space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium">
-                        Problem Statement {index + 1}
-                      </h4>
+                      <h4 className="font-medium">Problem Statement {index + 1}</h4>
                       {formData.problemStatements.length > 1 && (
                         <Button
                           type="button"
@@ -1064,13 +999,7 @@ export function CreateHackathon({ onBack }) {
                       <Textarea
                         id={`statement-${index}`}
                         value={ps.statement}
-                        onChange={(e) =>
-                          updateProblemStatement(
-                            index,
-                            "statement",
-                            e.target.value
-                          )
-                        }
+                        onChange={(e) => updateProblemStatement(index, "statement", e.target.value)}
                         placeholder="Describe the problem participants need to solve..."
                         rows={3}
                       />
@@ -1078,12 +1007,7 @@ export function CreateHackathon({ onBack }) {
 
                     <div>
                       <Label htmlFor={`type-${index}`}>Type</Label>
-                      <Select
-                        value={ps.type}
-                        onValueChange={(value) =>
-                          updateProblemStatement(index, "type", value)
-                        }
-                      >
+                      <Select value={ps.type} onValueChange={(value) => updateProblemStatement(index, "type", value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select problem statement type" />
                         </SelectTrigger>
@@ -1098,20 +1022,11 @@ export function CreateHackathon({ onBack }) {
                     </div>
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addProblemStatement}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addProblemStatement} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Problem Statement
                 </Button>
-                {errors.problemStatements && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {errors.problemStatements}
-                  </p>
-                )}
+                {errors.problemStatements && <p className="text-sm text-red-500 mt-1">{errors.problemStatements}</p>}
               </CardContent>
             </Card>
 
@@ -1119,9 +1034,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Judges</CardTitle>
-                <CardDescription>
-                  Add judges by their email addresses
-                </CardDescription>
+                <CardDescription>Add judges by their email addresses</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.judges.map((judge, index) => (
@@ -1146,12 +1059,7 @@ export function CreateHackathon({ onBack }) {
                     )}
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addJudge}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addJudge} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Judge
                 </Button>
@@ -1162,9 +1070,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Mentors</CardTitle>
-                <CardDescription>
-                  Add mentors by their email addresses
-                </CardDescription>
+                <CardDescription>Add mentors by their email addresses</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.mentors.map((mentor, index) => (
@@ -1189,12 +1095,7 @@ export function CreateHackathon({ onBack }) {
                     )}
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addMentor}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addMentor} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Mentor
                 </Button>
@@ -1205,9 +1106,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Hackathon Rounds</CardTitle>
-                <CardDescription>
-                  Define the different rounds of your hackathon
-                </CardDescription>
+                <CardDescription>Define the different rounds of your hackathon</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {formData.rounds.map((round, index) => (
@@ -1229,28 +1128,20 @@ export function CreateHackathon({ onBack }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`round-name-${index}`}>
-                          Round Name
-                        </Label>
+                        <Label htmlFor={`round-name-${index}`}>Round Name</Label>
                         <Input
                           id={`round-name-${index}`}
                           value={round.name}
-                          onChange={(e) =>
-                            updateRound(index, "name", e.target.value)
-                          }
+                          onChange={(e) => updateRound(index, "name", e.target.value)}
                           placeholder="e.g., Ideation Phase, Prototype Development..."
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <Label htmlFor={`round-description-${index}`}>
-                          Description
-                        </Label>
+                        <Label htmlFor={`round-description-${index}`}>Description</Label>
                         <Textarea
                           id={`round-description-${index}`}
                           value={round.description}
-                          onChange={(e) =>
-                            updateRound(index, "description", e.target.value)
-                          }
+                          onChange={(e) => updateRound(index, "description", e.target.value)}
                           placeholder="Describe what happens in this round..."
                           rows={2}
                         />
@@ -1259,40 +1150,27 @@ export function CreateHackathon({ onBack }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor={`round-start-${index}`}>
-                          Start Date (Optional)
-                        </Label>
+                        <Label htmlFor={`round-start-${index}`}>Start Date (Optional)</Label>
                         <Input
                           id={`round-start-${index}`}
                           type="datetime-local"
                           value={round.startDate}
-                          onChange={(e) =>
-                            updateRound(index, "startDate", e.target.value)
-                          }
+                          onChange={(e) => updateRound(index, "startDate", e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`round-end-${index}`}>
-                          End Date (Optional)
-                        </Label>
+                        <Label htmlFor={`round-end-${index}`}>End Date (Optional)</Label>
                         <Input
                           id={`round-end-${index}`}
                           type="datetime-local"
                           value={round.endDate}
-                          onChange={(e) =>
-                            updateRound(index, "endDate", e.target.value)
-                          }
+                          onChange={(e) => updateRound(index, "endDate", e.target.value)}
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addRound}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Round
                 </Button>
@@ -1306,9 +1184,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Requirements</CardTitle>
-                <CardDescription>
-                  What participants need to know or have
-                </CardDescription>
+                <CardDescription>What participants need to know or have</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.requirements.map((requirement, index) => (
@@ -1332,12 +1208,7 @@ export function CreateHackathon({ onBack }) {
                     )}
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addRequirement}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addRequirement} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Requirement
                 </Button>
@@ -1348,9 +1219,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Perks & Benefits</CardTitle>
-                <CardDescription>
-                  What participants will get from joining
-                </CardDescription>
+                <CardDescription>What participants will get from joining</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.perks.map((perk, index) => (
@@ -1374,12 +1243,7 @@ export function CreateHackathon({ onBack }) {
                     )}
                   </div>
                 ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addPerk}
-                  className="w-full"
-                >
+                <Button type="button" variant="outline" onClick={addPerk} className="w-full bg-transparent">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Perk
                 </Button>
@@ -1390,9 +1254,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Tags</CardTitle>
-                <CardDescription>
-                  Add relevant tags to help participants find your hackathon
-                </CardDescription>
+                <CardDescription>Add relevant tags to help participants find your hackathon</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
@@ -1403,28 +1265,16 @@ export function CreateHackathon({ onBack }) {
                     placeholder="Enter a tag and press Enter..."
                     className="flex-1"
                   />
-                  <Button
-                    type="button"
-                    onClick={addTag}
-                    disabled={!currentTag.trim()}
-                  >
+                  <Button type="button" onClick={addTag} disabled={!currentTag.trim()}>
                     Add Tag
                   </Button>
                 </div>
                 {formData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {formData.tags.map((tag) => (
-                      <Badge
-                        key={tag}
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
                         {tag}
-                        <button
-                          type="button"
-                          onClick={() => removeTag(tag)}
-                          className="ml-1 hover:text-red-600"
-                        >
+                        <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-red-600">
                           <X className="w-3 h-3" />
                         </button>
                       </Badge>
@@ -1440,9 +1290,7 @@ export function CreateHackathon({ onBack }) {
           <Button onClick={prevStep} disabled={step === 0} variant="outline">
             Previous
           </Button>
-          {step < steps.length - 1 ? (
-            <Button onClick={nextStep}>Next</Button>
-          ) : null}
+          {step < steps.length - 1 ? <Button onClick={nextStep}>Next</Button> : null}
         </div>
       </div>
       {/* Sidebar */}
@@ -1479,9 +1327,7 @@ export function CreateHackathon({ onBack }) {
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, status: value })
-                    }
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1500,23 +1346,16 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle>Preview</CardTitle>
-                <CardDescription>
-                  How your hackathon will appear to participants
-                </CardDescription>
+                <CardDescription>How your hackathon will appear to participants</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="p-3 border rounded-lg">
-                  <h3 className="font-medium">
-                    {formData.title || "Hackathon Title"}
-                  </h3>
+                  <h3 className="font-medium">{formData.title || "Hackathon Title"}</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {formData.description ||
-                      "Hackathon description will appear here..."}
+                    {formData.description || "Hackathon description will appear here..."}
                   </p>
                   <div className="flex gap-2 mt-2">
-                    {formData.category && (
-                      <Badge variant="outline">{formData.category}</Badge>
-                    )}
+                    {formData.category && <Badge variant="outline">{formData.category}</Badge>}
                     <Badge variant="outline">{formData.difficultyLevel}</Badge>
                   </div>
                 </div>
@@ -1537,17 +1376,12 @@ export function CreateHackathon({ onBack }) {
                   <Save className="w-4 h-4 mr-2" />
                   {isSubmitting ? "Creating..." : "Create Hackathon"}
                 </Button>
-                <Button
-                  onClick={() => handleSubmit(true)}
-                  disabled={isSubmitting}
-                  variant="outline"
-                  className="w-full"
-                >
+                <Button onClick={() => handleSubmit(true)} disabled={isSubmitting} variant="outline" className="w-full">
                   <FileText className="w-4 h-4 mr-2" />
                   Save as Draft
                 </Button>
                 <Separator />
-                <Button onClick={onBack} variant="outline" className="w-full">
+                <Button onClick={onBack} variant="outline" className="w-full bg-transparent">
                   Cancel
                 </Button>
               </CardContent>
@@ -1557,14 +1391,13 @@ export function CreateHackathon({ onBack }) {
             <Alert>
               <FileText className="h-4 w-4" />
               <AlertDescription>
-                <strong>Tip:</strong> You can save your hackathon as a draft and
-                continue editing later. Required fields are marked with an
-                asterisk (*).
+                <strong>Tip:</strong> You can save your hackathon as a draft and continue editing later. Required fields
+                are marked with an asterisk (*).
               </AlertDescription>
             </Alert>
           </>
         )}
       </div>
     </div>
-  );
+  )
 }
