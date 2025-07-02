@@ -1,5 +1,5 @@
-"use client"
-import { useState } from "react"
+"use client";
+import { useState } from "react";
 import {
   ArrowLeft,
   Save,
@@ -11,22 +11,34 @@ import {
   Video,
   LinkIcon,
   Users,
-  Calendar
-} from "lucide-react"
-import { Button } from "../../../components/CommonUI/button"
-import { Input } from "../../../components/CommonUI/input"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+  Calendar,
+  Tag,
+} from "lucide-react";
+import { Button } from "../../../components/CommonUI/button";
+import { Input } from "../../../components/CommonUI/input";
+import { Badge } from "../../../components/CommonUI/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "../../../components/CommonUI/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
-import { Label } from "../../../components/CommonUI/label"
-import { RichTextEditor } from "./RichTextEditor"
+  SelectValue,
+} from "../../../components/CommonUI/select";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/CommonUI/tabs";
+import { Label } from "../../../components/CommonUI/label";
+import { RichTextEditor } from "./RichTextEditor";
+import { Textarea } from "../../../components/CommonUI/textarea";
 
 const categories = [
   "AI/ML",
@@ -38,29 +50,30 @@ const categories = [
   "FinTech",
   "HealthTech",
   "EdTech",
-  "Other"
-]
+  "Other",
+];
 
 const FIELD_LIMITS = {
   title: 100,
+  oneLineIntro: 150,
   description: 5000,
+  teamIntro: 1000,
   githubLink: 200,
   websiteLink: 200,
   socialLink: 200,
   customCategory: 50,
+  skill: 30,
   videoFile: 100 * 1024 * 1024, // 100MB
-  logoFile: 2 * 1024 * 1024 // 2MB
-}
+  logoFile: 2 * 1024 * 1024, // 2MB
+};
 
-export default function ProjectSubmission({
-  hackathonName = "HackZen 2024",
-  teamLeaderName = "Nitin Jain",
-  onBack,
-  onSave
-}) {
+export default function ProjectSubmission({ onBack, onSave }) {
   const [formData, setFormData] = useState({
     title: "",
+    oneLineIntro: "",
     description: "",
+    teamIntro: "",
+    skills: [],
     logo: null,
     githubLink: "",
     websiteLink: "",
@@ -70,150 +83,194 @@ export default function ProjectSubmission({
     socialLinks: [""],
     category: "",
     customCategory: "",
-    status: "draft"
-  })
+    status: "draft",
+  });
 
-  const [logoPreview, setLogoPreview] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [currentSkill, setCurrentSkill] = useState("");
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-  const handleLogoUpload = e => {
-    const file = e.target.files?.[0]
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > FIELD_LIMITS.logoFile) {
-        alert("Logo file size must be less than 2MB")
-        return
+        alert("Logo file size must be less than 2MB");
+        return;
       }
-      setFormData(prev => ({ ...prev, logo: file }))
-      const reader = new FileReader()
-      reader.onload = e => setLogoPreview(e.target?.result)
-      reader.readAsDataURL(file)
+      setFormData((prev) => ({ ...prev, logo: file }));
+      const reader = new FileReader();
+      reader.onload = (e) => setLogoPreview(e.target?.result);
+      reader.readAsDataURL(file);
     }
-  }
+  };
+
+  const addSkill = () => {
+    if (currentSkill.trim() && !formData.skills.includes(currentSkill.trim())) {
+      setFormData((prev) => ({
+        ...prev,
+        skills: [...prev.skills, currentSkill.trim()],
+      }));
+      setCurrentSkill("");
+    }
+  };
+
+  const removeSkill = (skillToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((skill) => skill !== skillToRemove),
+    }));
+  };
+
+  const handleSkillKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSkill();
+    }
+  };
 
   const addSocialLink = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      socialLinks: [...prev.socialLinks, ""]
-    }))
-  }
+      socialLinks: [...prev.socialLinks, ""],
+    }));
+  };
 
-  const removeSocialLink = index => {
-    setFormData(prev => ({
+  const removeSocialLink = (index) => {
+    setFormData((prev) => ({
       ...prev,
-      socialLinks: prev.socialLinks.filter((_, i) => i !== index)
-    }))
-  }
+      socialLinks: prev.socialLinks.filter((_, i) => i !== index),
+    }));
+  };
 
   const updateSocialLink = (index, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       socialLinks: prev.socialLinks.map((link, i) =>
         i === index ? value : link
-      )
-    }))
-  }
+      ),
+    }));
+  };
 
   const isIncomplete =
-    !formData.title || !formData.description || !formData.category
+    !formData.title || 
+    !formData.oneLineIntro || 
+    !formData.description || 
+    !formData.category ||
+    formData.skills.length === 0;
 
   const getStatusBadge = () => {
     const statusConfig = {
       draft: { label: "Draft", className: "bg-gray-100 text-gray-800" },
       submitted: {
         label: "Submitted",
-        className: "bg-yellow-100 text-yellow-800"
+        className: "bg-yellow-100 text-yellow-800",
       },
       reviewed: {
         label: "Reviewed",
-        className: "bg-purple-100 text-purple-800"
-      }
-    }
-    const config = statusConfig[formData.status]
-    return <Badge className={config.className}>{config.label}</Badge>
-  }
-const handleSave = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("You must be logged in.");
-
-    let logoData = null;
-    let videoLink = "";
-
-    // Upload Logo if it's a File
-    if (formData.logo instanceof File) {
-      const formLogo = new FormData();
-      formLogo.append("file", formData.logo);
-      formLogo.append("upload_preset", "hackzen_uploads");
-      formLogo.append("folder", "project-logos");
-
-      const res = await fetch("https://api.cloudinary.com/v1_1/dg2q2tzbv/image/upload", {
-        method: "POST",
-        body: formLogo,
-      });
-      const data = await res.json();
-      if (!data.secure_url) throw new Error("Logo upload failed");
-      logoData = {
-        url: data.secure_url,
-        publicId: data.public_id,
-      };
-    }
-
-    // Upload Demo Video if "upload" mode is selected
-    if (formData.demoVideoType === "upload" && formData.demoVideoFile instanceof File) {
-      const formVideo = new FormData();
-      formVideo.append("file", formData.demoVideoFile);
-      formVideo.append("upload_preset", "hackzen_uploads");
-      formVideo.append("folder", "project-videos");
-      formVideo.append("resource_type", "video");
-
-      const res = await fetch("https://api.cloudinary.com/v1_1/dg2q2tzbv/video/upload", {
-        method: "POST",
-        body: formVideo,
-      });
-      const data = await res.json();
-      if (!data.secure_url) throw new Error("Video upload failed");
-      videoLink = data.secure_url;
-    }
-
-    if (formData.demoVideoType === "link") {
-      videoLink = formData.demoVideoLink;
-    }
-
-    // Prepare backend payload
-    const payload = {
-      title: formData.title,
-      description: formData.description,
-      repoLink: formData.githubLink,
-      websiteLink: formData.websiteLink,
-      videoLink,
-      socialLinks: formData.socialLinks.filter((s) => s.trim() !== ""),
-      logo: logoData,
-      category: formData.category,
-      customCategory: formData.customCategory,
-      status: "draft",
-    };
-
-    const response = await fetch("http://localhost:3000/api/projects", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        className: "bg-purple-100 text-purple-800",
       },
-      body: JSON.stringify(payload),
-    });
+    };
+    const config = statusConfig[formData.status];
+    return <Badge className={config.className}>{config.label}</Badge>;
+  };
 
-    const created = await response.json();
-    if (!response.ok) throw new Error(created.message || "Failed to save project");
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return alert("You must be logged in.");
 
-    alert("✅ Project saved successfully!");
-    onSave?.(created);
-  } catch (error) {
-    alert("❌ Error: " + error.message);
-  }
-};
+      let logoData = null;
+      let videoLink = "";
+
+      // Upload Logo if it's a File
+      if (formData.logo instanceof File) {
+        const formLogo = new FormData();
+        formLogo.append("file", formData.logo);
+        formLogo.append("upload_preset", "hackzen_uploads");
+        formLogo.append("folder", "project-logos");
+
+        const res = await fetch(
+          "https://api.cloudinary.com/v1_1/dg2q2tzbv/image/upload",
+          {
+            method: "POST",
+            body: formLogo,
+          }
+        );
+        const data = await res.json();
+        if (!data.secure_url) throw new Error("Logo upload failed");
+        logoData = {
+          url: data.secure_url,
+          publicId: data.public_id,
+        };
+      }
+
+      // Upload Demo Video if "upload" mode is selected
+      if (
+        formData.demoVideoType === "upload" &&
+        formData.demoVideoFile instanceof File
+      ) {
+        const formVideo = new FormData();
+        formVideo.append("file", formData.demoVideoFile);
+        formVideo.append("upload_preset", "hackzen_uploads");
+        formVideo.append("folder", "project-videos");
+        formVideo.append("resource_type", "video");
+
+        const res = await fetch(
+          "https://api.cloudinary.com/v1_1/dg2q2tzbv/video/upload",
+          {
+            method: "POST",
+            body: formVideo,
+          }
+        );
+        const data = await res.json();
+        if (!data.secure_url) throw new Error("Video upload failed");
+        videoLink = data.secure_url;
+      }
+
+      if (formData.demoVideoType === "link") {
+        videoLink = formData.demoVideoLink;
+      }
+
+      // Prepare backend payload
+      const payload = {
+        title: formData.title,
+        oneLineIntro: formData.oneLineIntro,
+        description: formData.description,
+        teamIntro: formData.teamIntro,
+        skills: formData.skills,
+        repoLink: formData.githubLink,
+        websiteLink: formData.websiteLink,
+        videoLink,
+        socialLinks: formData.socialLinks.filter((s) => s.trim() !== ""),
+        logo: logoData,
+        category: formData.category,
+        customCategory: formData.customCategory,
+        status: "draft",
+      };
+
+      const response = await fetch("http://localhost:3000/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const created = await response.json();
+      if (!response.ok)
+        throw new Error(created.message || "Failed to save project");
+
+      alert("✅ Project saved successfully!");
+      onSave?.(created);
+    } catch (error) {
+      alert("❌ Error: " + error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -244,6 +301,7 @@ const handleSave = async () => {
                 </div>
               </div>
 
+              {/* Project Title and One-Line Intro - Full Width */}
               <div className="space-y-4">
                 <div>
                   <Label
@@ -257,13 +315,34 @@ const handleSave = async () => {
                     id="title"
                     placeholder="Enter your project title"
                     value={formData.title}
-                    onChange={e => {
+                    onChange={(e) => {
                       if (e.target.value.length <= FIELD_LIMITS.title) {
-                        handleInputChange("title", e.target.value)
+                        handleInputChange("title", e.target.value);
                       }
                     }}
                     className="mt-1"
                     maxLength={FIELD_LIMITS.title}
+                  />
+                </div>
+                <div>
+                  <Label
+                    htmlFor="oneLineIntro"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    One-Line Intro * ({formData.oneLineIntro.length}/
+                    {FIELD_LIMITS.oneLineIntro})
+                  </Label>
+                  <Input
+                    id="oneLineIntro"
+                    placeholder="A brief one-line description of your project"
+                    value={formData.oneLineIntro}
+                    onChange={(e) => {
+                      if (e.target.value.length <= FIELD_LIMITS.oneLineIntro) {
+                        handleInputChange("oneLineIntro", e.target.value);
+                      }
+                    }}
+                    className="mt-1"
+                    maxLength={FIELD_LIMITS.oneLineIntro}
                   />
                 </div>
                 <div>
@@ -276,7 +355,7 @@ const handleSave = async () => {
                   <div className="mt-1">
                     <RichTextEditor
                       value={formData.description}
-                      onChange={value =>
+                      onChange={(value) =>
                         handleInputChange("description", value)
                       }
                       placeholder="Describe your project vision and what problem it solves..."
@@ -289,10 +368,97 @@ const handleSave = async () => {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Section - Project Details */}
-          <div className="lg:col-span-2 space-y-6">
+        {/* Main Content - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column */}
+          <div className="space-y-6">
+            {/* Skills */}
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Tag className="w-5 h-5" />
+                  Skills *
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add a skill (e.g., React, Python, AI)"
+                      value={currentSkill}
+                      onChange={(e) => {
+                        if (e.target.value.length <= FIELD_LIMITS.skill) {
+                          setCurrentSkill(e.target.value);
+                        }
+                      }}
+                      onKeyPress={handleSkillKeyPress}
+                      maxLength={FIELD_LIMITS.skill}
+                    />
+                    <Button
+                      onClick={addSkill}
+                      disabled={!currentSkill.trim()}
+                      className="shrink-0"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {formData.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.skills.map((skill, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="flex items-center gap-1 px-3 py-1"
+                        >
+                          {skill}
+                          <X
+                            className="w-3 h-3 cursor-pointer hover:text-red-500"
+                            onClick={() => removeSkill(skill)}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    Press Enter or click + to add skills
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Team Introduction */}
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Team Introduction
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label
+                    htmlFor="teamIntro"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    Tell us about your team ({formData.teamIntro.length}/
+                    {FIELD_LIMITS.teamIntro})
+                  </Label>
+                  <Textarea
+                    id="teamIntro"
+                    placeholder="Introduce your team members, their roles, and what makes your team unique..."
+                    value={formData.teamIntro}
+                    onChange={(e) => {
+                      if (e.target.value.length <= FIELD_LIMITS.teamIntro) {
+                        handleInputChange("teamIntro", e.target.value);
+                      }
+                    }}
+                    className="mt-1 min-h-[120px]"
+                    maxLength={FIELD_LIMITS.teamIntro}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Project Logo */}
             <Card className="border-gray-200 shadow-sm">
               <CardHeader>
@@ -305,7 +471,7 @@ const handleSave = async () => {
                   <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
                     {logoPreview ? (
                       <img
-                        src={logoPreview || "/placeholder.svg"}
+                        src={logoPreview}
                         alt="Logo preview"
                         className="w-full h-full object-cover rounded-xl"
                       />
@@ -332,9 +498,68 @@ const handleSave = async () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Preview */}
+                {logoPreview && (
+                  <div className="mt-4">
+                    <Label className="text-sm text-gray-600 mb-2 block">
+                      Preview:
+                    </Label>
+                    <img
+                      src={logoPreview}
+                      alt="Full Logo Preview"
+                      className="w-full max-w-sm rounded-lg border border-gray-200 shadow-sm"
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
+            {/* Category */}
+            <Card className="border-gray-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">
+                  Category *
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    handleInputChange("category", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formData.category === "Other" && (
+                  <Input
+                    placeholder="Enter custom category"
+                    value={formData.customCategory}
+                    onChange={(e) => {
+                      if (
+                        e.target.value.length <= FIELD_LIMITS.customCategory
+                      ) {
+                        handleInputChange("customCategory", e.target.value);
+                      }
+                    }}
+                    maxLength={FIELD_LIMITS.customCategory}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
             {/* Links */}
             <Card className="border-gray-200 shadow-sm">
               <CardHeader>
@@ -356,9 +581,9 @@ const handleSave = async () => {
                       id="github"
                       placeholder="https://github.com/username/repo"
                       value={formData.githubLink}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (e.target.value.length <= FIELD_LIMITS.githubLink) {
-                          handleInputChange("githubLink", e.target.value)
+                          handleInputChange("githubLink", e.target.value);
                         }
                       }}
                       className="pl-10"
@@ -379,9 +604,9 @@ const handleSave = async () => {
                       id="website"
                       placeholder="https://yourproject.com"
                       value={formData.websiteLink}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (e.target.value.length <= FIELD_LIMITS.websiteLink) {
-                          handleInputChange("websiteLink", e.target.value)
+                          handleInputChange("websiteLink", e.target.value);
                         }
                       }}
                       className="pl-10"
@@ -402,7 +627,7 @@ const handleSave = async () => {
               <CardContent>
                 <Tabs
                   value={formData.demoVideoType}
-                  onValueChange={value =>
+                  onValueChange={(value) =>
                     handleInputChange("demoVideoType", value)
                   }
                 >
@@ -425,16 +650,21 @@ const handleSave = async () => {
                         id="video"
                         type="file"
                         accept="video/*"
-                        onChange={e => {
-                          const file = e.target.files?.[0]
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
                           if (file && file.size > FIELD_LIMITS.videoFile) {
-                            alert("Video file size must be less than 100MB")
-                            return
+                            alert("Video file size must be less than 100MB");
+                            return;
                           }
-                          handleInputChange("demoVideoFile", file)
+                          handleInputChange("demoVideoFile", file);
                         }}
                         className="hidden"
                       />
+                      {formData.demoVideoFile && (
+                        <div className="mt-2 text-sm text-green-600">
+                          ✓ {formData.demoVideoFile.name}
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                   <TabsContent value="link" className="mt-4">
@@ -443,7 +673,7 @@ const handleSave = async () => {
                       <Input
                         placeholder="https://youtube.com/watch?v=..."
                         value={formData.demoVideoLink}
-                        onChange={e =>
+                        onChange={(e) =>
                           handleInputChange("demoVideoLink", e.target.value)
                         }
                         className="pl-10"
@@ -467,9 +697,9 @@ const handleSave = async () => {
                     <Input
                       placeholder="https://twitter.com/username"
                       value={link}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (e.target.value.length <= FIELD_LIMITS.socialLink) {
-                          updateSocialLink(index, e.target.value)
+                          updateSocialLink(index, e.target.value);
                         }
                       }}
                       maxLength={FIELD_LIMITS.socialLink}
@@ -496,115 +726,6 @@ const handleSave = async () => {
                 </Button>
               </CardContent>
             </Card>
-
-            {/* Category */}
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Category *
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select
-                  value={formData.category}
-                  onValueChange={value => handleInputChange("category", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {formData.category === "Other" && (
-                  <Input
-                    placeholder="Enter custom category"
-                    value={formData.customCategory}
-                    onChange={e => {
-                      if (
-                        e.target.value.length <= FIELD_LIMITS.customCategory
-                      ) {
-                        handleInputChange("customCategory", e.target.value)
-                      }
-                    }}
-                    maxLength={FIELD_LIMITS.customCategory}
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Section - Team & Hackathon Info */}
-          <div className="space-y-6">
-            {/* Team Info */}
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Team Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">
-                      Team Leader
-                    </Label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      <div className="font-medium">{teamLeaderName}</div>
-                      <div className="text-sm text-gray-500">Leader</div>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">
-                      Team Members
-                    </Label>
-                    <div className="mt-1 p-3 bg-gray-50 rounded-lg text-sm text-gray-500">
-                      Add team members to collaborate on this project
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Hackathon Info */}
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Calendar className="w-5 h-5" />
-                  Hackathon Info
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="p-3 bg-gradient-to-r from-yellow-50 to-purple-50 rounded-lg border border-yellow-200">
-                  <div className="font-medium text-gray-900">
-                    {hackathonName}
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    Submission deadline: March 15, 2024
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Project Status */}
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold">
-                  Project Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Current Status:</span>
-                  {getStatusBadge()}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
 
@@ -622,10 +743,10 @@ const handleSave = async () => {
             className="flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Save Edit
+            Save Project
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }
