@@ -100,6 +100,9 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   // Add state for unregister dialog
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
   
+  // Add state for revoke invite dialog
+  const [revokeDialog, setRevokeDialog] = useState({ open: false, invite: null });
+  
   // Add state for invalid team code popup
   const [showInvalidCodePopup, setShowInvalidCodePopup] = useState(false);
   const [invalidCodeMessage, setInvalidCodeMessage] = useState('');
@@ -437,8 +440,12 @@ useEffect(() => {
       
       console.log('Invite sent successfully:', response.data);
       
-      // Show success message
-      alert('Invitation sent successfully! The recipient will receive an email with the invitation link.');
+      // Show success toast
+      toast({
+        title: 'Invitation Sent!',
+        description: `You have successfully sent the invite to ${inviteEmail.trim()}.`,
+        duration: 2000
+      });
       
       // Clear form and close modal
       setInviteEmail('');
@@ -633,6 +640,30 @@ useEffect(() => {
       toast({ title: 'Error', description: 'Failed to unregister.' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle revoke invite confirmation
+  const handleRevokeInvite = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/team-invites/${revokeDialog.invite._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({
+        title: 'Invite Revoked',
+        description: `The invite to ${revokeDialog.invite.invitedEmail} has been revoked.`,
+      });
+      await fetchTeamInvites();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.error || 'Failed to revoke invite',
+      });
+    } finally {
+      setLoading(false);
+      setRevokeDialog({ open: false, invite: null });
     }
   };
 
@@ -1484,29 +1515,20 @@ useEffect(() => {
                       <CardTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Users className="w-5 h-5 text-blue-500" />
-                          My Teams
+                          My Team
                         </span>
                         <div className="flex gap-2">
                           {userTeams.length === 0 && (
-                            <Button 
-                              onClick={() => setShowJoinTeam(true)}
-                              variant="outline"
-                              size="sm"
-                            >
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Join Team
-                            </Button>
+                              <Button 
+                                onClick={() => setShowJoinTeam(true)}
+                                variant="outline"
+                                size="sm"
+                              >
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Join Team
+                              </Button>
                           )}
-                          {userTeams.length > 0 && (
-                            <Button 
-                              onClick={() => setShowJoinTeam(true)}
-                              variant="outline"
-                              size="sm"
-                            >
-                              <UserPlus className="w-4 h-4 mr-2" />
-                              Join Another Team
-                            </Button>
-                          )}
+                       
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -1519,11 +1541,6 @@ useEffect(() => {
                             If you registered for this hackathon with a team name, your team should appear here. 
                             You can also join an existing team using a team code.
                           </p>
-                          <div className="flex justify-center">
-                            <Button onClick={() => setShowJoinTeam(true)} variant="outline">
-                              Join Existing Team
-                            </Button>
-                          </div>
                           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                             <p className="text-sm text-blue-800">
                               <strong>Note:</strong> Teams are created automatically when you register with a team name. 
@@ -1546,7 +1563,7 @@ useEffect(() => {
                               </div>
                               <div className="flex items-start justify-between mb-3">
                                 <p className="text-gray-600 flex-1">{team.description}</p>
-                                {team.leader._id === localStorage.getItem('userId') && (
+                                {team.leader._id === user?._id && (
                                   <Button
                                     onClick={() => handleEditDescription(team)}
                                     variant="ghost"
@@ -1700,7 +1717,20 @@ useEffect(() => {
                                   Invited to {invite.team.name} by {invite.invitedBy.name}
                                 </p>
                               </div>
-                              <Badge variant="secondary">Pending</Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">Pending</Badge>
+                                                                 {/* Show Revoke button if user is inviter or team leader */}
+                                 {(user && (invite.invitedBy._id === user._id || (invite.team.leader && invite.team.leader.toString() === user._id))) && (
+                                   <Button
+                                     size="sm"
+                                     variant="destructive"
+                                     onClick={() => setRevokeDialog({ open: true, invite })}
+                                     disabled={loading}
+                                   >
+                                     Revoke
+                                   </Button>
+                                 )}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1955,6 +1985,36 @@ useEffect(() => {
                 </div>
               </div>
             )}
+
+            {/* Revoke Invite Confirmation Dialog */}
+            <AlertDialog open={revokeDialog.open} onOpenChange={(open) => setRevokeDialog({ open, invite: revokeDialog.invite })}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Revoke Invite</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to revoke the invite sent to <strong>{revokeDialog.invite?.invitedEmail}</strong>? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleRevokeInvite}
+                    disabled={loading}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {loading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Revoking...
+                      </>
+                    ) : (
+                      'Revoke Invite'
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             {/* Community Section */}
             <section ref={sectionRefs.community} className="space-y-8">

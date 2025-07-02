@@ -309,11 +309,35 @@ const getInviteById = async (req, res) => {
   }
 };
 
+// DELETE /api/team-invites/:id
+const deleteInvite = async (req, res) => {
+  try {
+    const inviteId = req.params.id;
+    const userId = req.user._id;
+    const invite = await TeamInvite.findById(inviteId).populate('team');
+    if (!invite) {
+      return res.status(404).json({ error: 'Invite not found' });
+    }
+    // Only the inviter or the team leader can revoke
+    if (
+      invite.invitedBy.toString() !== userId.toString() &&
+      invite.team.leader.toString() !== userId.toString()
+    ) {
+      return res.status(403).json({ error: 'Not authorized to revoke this invite' });
+    }
+    await TeamInvite.findByIdAndDelete(inviteId);
+    res.json({ success: true, message: 'Invite revoked successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to revoke invite', details: err.message });
+  }
+};
+
 module.exports = {
   createInvite,
   respondToInvite,
   getMyInvites,
   getHackathonInvites,
+  getInviteById,
   acceptInviteById,
-  getInviteById
+  deleteInvite
 };

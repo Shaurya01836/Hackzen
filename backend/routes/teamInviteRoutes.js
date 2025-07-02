@@ -21,4 +21,7 @@ router.get('/hackathon/:hackathonId', protect, teamInviteController.getHackathon
 // Accept invite by id (for invite link)
 router.post('/:id/accept', protect, teamInviteController.acceptInviteById);
 
+// Revoke (delete) a pending invite
+router.delete('/:id', protect, teamInviteController.deleteInvite);
+
 module.exports = router;
