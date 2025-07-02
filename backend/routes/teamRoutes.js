@@ -18,6 +18,9 @@ router.get('/hackathon/:hackathonId', protect, teamController.getTeamsByHackatho
 // Get one team by ID
 router.get('/:id', teamController.getTeamById);
 
+// Update team description (leader only)
+router.put('/:teamId/description', protect, teamController.updateTeamDescription);
+
 // Delete a team (leader only)
 router.delete('/:id', protect, teamController.deleteTeam);
 

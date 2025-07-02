@@ -352,6 +352,43 @@ const removeMember = async (req, res) => {
   }
 };
 
+// PUT /api/teams/:teamId/description
+const updateTeamDescription = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { description } = req.body;
+    const userId = req.user._id;
+
+    if (!description || !description.trim()) {
+      return res.status(400).json({ error: 'Description is required' });
+    }
+
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+
+    // Only the leader can update team description
+    if (team.leader.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Only the team leader can update team description' });
+    }
+
+    team.description = description.trim();
+    await team.save();
+
+    const populatedTeam = await Team.findById(team._id)
+      .populate('members', 'name email avatar')
+      .populate('leader', 'name email')
+      .populate('hackathon', 'title');
+
+    res.json({ 
+      message: 'Team description updated successfully', 
+      team: populatedTeam 
+    });
+  } catch (err) {
+    console.error('Error updating team description:', err);
+    res.status(500).json({ error: 'Failed to update team description', details: err.message });
+  }
+};
+
 // DELETE /api/teams/:teamId/leave
 const leaveTeam = async (req, res) => {
   try {
@@ -390,4 +427,5 @@ module.exports = {
   deleteTeam,
   removeMember,
   leaveTeam,
+  updateTeamDescription,
 };

@@ -26,6 +26,7 @@ import {
   ChevronRight,
   Copy,
   LogOut,
+  Edit,
 } from "lucide-react";
 import {
   Card,
@@ -76,7 +77,6 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   
   // Team management states
   const [userTeams, setUserTeams] = useState([]);
-  const [showCreateTeam, setShowCreateTeam] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showJoinTeam, setShowJoinTeam] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -103,6 +103,11 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   // Add state for invalid team code popup
   const [showInvalidCodePopup, setShowInvalidCodePopup] = useState(false);
   const [invalidCodeMessage, setInvalidCodeMessage] = useState('');
+
+  // Add state for team description editing
+  const [editingTeamId, setEditingTeamId] = useState(null);
+  const [editingDescription, setEditingDescription] = useState('');
+  const [showEditDescription, setShowEditDescription] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 1024);
@@ -330,6 +335,7 @@ useEffect(() => {
   const handleRegistrationSuccess = async () => {
     setShowRegistration(false);
     await refreshRegistrationStatus();
+    await fetchUserTeams(); // Fetch teams after registration
   };
 
   const handleBackFromRegistration = () => {
@@ -370,9 +376,11 @@ useEffect(() => {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Teams fetched:', response.data);
+      console.log('Number of teams found:', response.data.length);
       setUserTeams(response.data);
     } catch (error) {
       console.error('Error fetching teams:', error);
+      console.error('Error details:', error.response?.data);
       if (error.response?.status === 401) {
         console.log('User not authenticated for team fetch');
       }
@@ -401,42 +409,7 @@ useEffect(() => {
     }
   };
 
-  const handleCreateTeam = async (teamData) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        alert('Please log in to create a team');
-        return;
-      }
-      
-      const response = await axios.post('http://localhost:3000/api/teams', {
-        ...teamData,
-        hackathonId: hackathon._id
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('Team created successfully:', response.data);
-      
-      // Close the modal first
-      setShowCreateTeam(false);
-      
-      // Refresh the teams list
-      await fetchUserTeams();
-      
-      // Show success message with team code
-      const teamCode = response.data.team.teamCode;
-      alert(`Team created successfully!\n\nTeam Code: ${teamCode}\n\nShare this code with your teammates so they can join your team!`);
-    } catch (error) {
-      console.error('Error creating team:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to create team. Please try again.';
-      alert(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !selectedTeam) {
@@ -488,24 +461,24 @@ useEffect(() => {
       toast({ title: 'Error', description: 'Please enter a team code' });
       return;
     }
-    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('You must be logged in to join a team.');
+      return;
+    }
+    console.log('Joining team with token:', token);
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-
       // Join the team (backend will handle registration automatically)
       const response = await axios.get(
         `http://localhost:3000/api/teams/join/${teamCode.trim().toUpperCase()}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
       console.log('Joined team successfully:', response.data);
       console.log('Registration status:', response.data.registrationStatus);
-
       // Always refresh registration status and teams
       await refreshRegistrationStatus();
       await fetchUserTeams();
-
       // Handle registration status from backend
       const { registrationStatus } = response.data;
       if (registrationStatus === 'registered') {
@@ -515,14 +488,12 @@ useEffect(() => {
       } else if (registrationStatus === 'registration_failed') {
         toast({ title: 'Team Joined', description: `Successfully joined team: ${response.data.team.name}. Please register for the hackathon separately.` });
       }
-      
       // Close modal and clear form
       setShowJoinTeam(false);
       setTeamCode('');
     } catch (error) {
       console.error('Error joining team:', error);
       const errorMessage = error.response?.data?.error || 'Failed to join team. Please try again.';
-      
       // Show popup for invalid team code errors
       if (error.response?.status === 404 || errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('invalid')) {
         setInvalidCodeMessage(errorMessage);
@@ -532,6 +503,8 @@ useEffect(() => {
           setShowInvalidCodePopup(false);
           setInvalidCodeMessage('');
         }, 3000);
+      } else if (error.response?.status === 401) {
+        alert('Your session has expired or you are not logged in. Please log in and try again.');
       } else {
         // Show toast for other errors
         toast({ title: 'Error', description: errorMessage });
@@ -605,6 +578,35 @@ useEffect(() => {
       await refreshRegistrationStatus();
     } catch (error) {
       toast({ title: 'Error', description: error.response?.data?.error || 'Failed to leave team.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add handler for updating team description
+  const handleEditDescription = (team) => {
+    setEditingTeamId(team._id);
+    setEditingDescription(team.description);
+    setShowEditDescription(true);
+  };
+
+  const handleUpdateDescription = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.put(
+        `http://localhost:3000/api/teams/${editingTeamId}/description`,
+        { description: editingDescription },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast({ title: 'Success', description: 'Team description updated successfully!' });
+      await fetchUserTeams();
+      setShowEditDescription(false);
+      setEditingTeamId(null);
+      setEditingDescription('');
+    } catch (error) {
+      toast({ title: 'Error', description: error.response?.data?.error || 'Failed to update team description.' });
     } finally {
       setLoading(false);
     }
@@ -1469,6 +1471,13 @@ useEffect(() => {
                 </Card>
               ) : (
                 <div className="space-y-6">
+                  <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800">
+                      <strong>Team Management:</strong> Your team created during registration will appear below. 
+                      You can invite members, share team codes, and manage your team from here. 
+                      Teams are automatically created when you register with a team name.
+                    </p>
+                  </div>
                   {/* User's Teams */}
                   <Card>
                     <CardHeader>
@@ -1479,23 +1488,24 @@ useEffect(() => {
                         </span>
                         <div className="flex gap-2">
                           {userTeams.length === 0 && (
-                            <>
-                              <Button 
-                                onClick={() => setShowJoinTeam(true)}
-                                variant="outline"
-                                size="sm"
-                              >
-                                <UserPlus className="w-4 h-4 mr-2" />
-                                Join Team
-                              </Button>
-                              <Button 
-                                onClick={() => setShowCreateTeam(true)}
-                                size="sm"
-                              >
-                                <UserPlus className="w-4 h-4 mr-2" />
-                                Create Team
-                              </Button>
-                            </>
+                            <Button 
+                              onClick={() => setShowJoinTeam(true)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Join Team
+                            </Button>
+                          )}
+                          {userTeams.length > 0 && (
+                            <Button 
+                              onClick={() => setShowJoinTeam(true)}
+                              variant="outline"
+                              size="sm"
+                            >
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Join Another Team
+                            </Button>
                           )}
                         </div>
                       </CardTitle>
@@ -1506,11 +1516,20 @@ useEffect(() => {
                           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 mb-2">No Teams Yet</h3>
                           <p className="text-gray-500 mb-4">
-                            Create a team or join an existing one to get started.
+                            If you registered for this hackathon with a team name, your team should appear here. 
+                            You can also join an existing team using a team code.
                           </p>
-                          <Button onClick={() => setShowCreateTeam(true)}>
-                            Create Your First Team
-                          </Button>
+                          <div className="flex justify-center">
+                            <Button onClick={() => setShowJoinTeam(true)} variant="outline">
+                              Join Existing Team
+                            </Button>
+                          </div>
+                          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm text-blue-800">
+                              <strong>Note:</strong> Teams are created automatically when you register with a team name. 
+                              If you don't see your team here, please check your registration details.
+                            </p>
+                          </div>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -1525,7 +1544,19 @@ useEffect(() => {
                                   {team.members.length}/{team.maxMembers} members
                                 </Badge>
                               </div>
-                              <p className="text-gray-600 mb-3">{team.description}</p>
+                              <div className="flex items-start justify-between mb-3">
+                                <p className="text-gray-600 flex-1">{team.description}</p>
+                                {team.leader._id === localStorage.getItem('userId') && (
+                                  <Button
+                                    onClick={() => handleEditDescription(team)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
                               {/* Team Members */}
                               <div className="mb-4">
                                 <h5 className="font-medium mb-2">Team Members:</h5>
@@ -1680,26 +1711,7 @@ useEffect(() => {
               )}
             </section>
 
-            {/* Create Team Modal */}
-            {showCreateTeam && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
-                  <button
-                    onClick={() => setShowCreateTeam(false)}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-                    disabled={loading}
-                  >
-                    ✕
-                  </button>
-                  <h3 className="text-xl font-semibold mb-4">Create New Team</h3>
-                  <CreateTeamForm 
-                    onSubmit={handleCreateTeam}
-                    onCancel={() => setShowCreateTeam(false)}
-                    loading={loading}
-                  />
-                </div>
-              </div>
-            )}
+
 
             {/* Invite Modal */}
             {showInviteModal && selectedTeam && (
@@ -1759,6 +1771,72 @@ useEffect(() => {
                           setShowInviteModal(false);
                           setSelectedTeam(null);
                           setInviteEmail('');
+                        }}
+                        className="flex-1"
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Edit Team Description Modal */}
+            {showEditDescription && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
+                  <button
+                    onClick={() => {
+                      setShowEditDescription(false);
+                      setEditingTeamId(null);
+                      setEditingDescription('');
+                    }}
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    disabled={loading}
+                  >
+                    ✕
+                  </button>
+                  <h3 className="text-xl font-semibold mb-4">Edit Team Description</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Team Description</label>
+                      <textarea
+                        value={editingDescription}
+                        onChange={(e) => setEditingDescription(e.target.value)}
+                        placeholder="Describe your team's goals, skills, and what you hope to achieve"
+                        rows={4}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={loading}
+                        maxLength={300}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {editingDescription.length}/300 characters
+                      </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={handleUpdateDescription}
+                        disabled={!editingDescription.trim() || loading}
+                        className="flex-1"
+                      >
+                        {loading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Updating...
+                          </>
+                        ) : (
+                          'Update Description'
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          setShowEditDescription(false);
+                          setEditingTeamId(null);
+                          setEditingDescription('');
                         }}
                         className="flex-1"
                         disabled={loading}
@@ -1944,109 +2022,4 @@ useEffect(() => {
   );
 }
 
-// Create Team Form Component
-function CreateTeamForm({ onSubmit, onCancel, loading }) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    maxMembers: 4
-  });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.description.trim()) {
-      alert('Please fill in all required fields');
-      return;
-    }
-    
-    // Call onSubmit and then reset form
-    onSubmit(formData);
-    
-    // Reset form data after submission
-    setFormData({
-      name: '',
-      description: '',
-      maxMembers: 4
-    });
-  };
-
-  const handleCancel = () => {
-    // Reset form data
-    setFormData({
-      name: '',
-      description: '',
-      maxMembers: 4
-    });
-    onCancel();
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-2">Team Name *</label>
-        <input
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="Enter team name"
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-          disabled={loading}
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-2">Description *</label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="Describe your team's goals and skills"
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          required
-          disabled={loading}
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-2">Maximum Members</label>
-        <select
-          value={formData.maxMembers}
-          onChange={(e) => setFormData({ ...formData, maxMembers: parseInt(e.target.value) })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={loading}
-        >
-          <option value={2}>2 members</option>
-          <option value={3}>3 members</option>
-          <option value={4}>4 members</option>
-        </select>
-      </div>
-      
-      <div className="flex gap-3">
-        <Button 
-          type="submit"
-          disabled={loading || !formData.name.trim() || !formData.description.trim()}
-          className="flex-1"
-        >
-          {loading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Creating...
-            </>
-          ) : (
-            'Create Team'
-          )}
-        </Button>
-        <Button 
-          type="button"
-          variant="outline"
-          onClick={handleCancel}
-          className="flex-1"
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
-  );
-}

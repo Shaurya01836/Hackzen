@@ -9,34 +9,37 @@ const registerForHackathon = async (req, res) => {
     const { hackathonId, formData } = req.body;
     const userId = req.user._id.toString();
 
-    // ✅ Validate ObjectId format
+    // Validate
     if (!mongoose.Types.ObjectId.isValid(hackathonId)) {
       return res.status(400).json({ message: "Invalid hackathon ID." });
     }
-
-    // ✅ Check if already registered
     const existing = await Registration.findOne({ hackathonId, userId });
     if (existing) {
       return res.status(400).json({ message: "Already registered." });
     }
-
-    // ✅ Fetch the hackathon
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
       return res.status(404).json({ message: "Hackathon not found." });
     }
-
-    // ✅ Prevent late registrations
     if (new Date() > new Date(hackathon.registrationDeadline)) {
       return res.status(400).json({ message: "Registration deadline has passed." });
     }
-
-    // ✅ Check if maxParticipants is reached
     if (hackathon.participants.length >= hackathon.maxParticipants) {
       return res.status(400).json({ message: "Registration closed. Max participants reached." });
     }
+    if (!formData.teamName || !formData.teamName.trim()) {
+      return res.status(400).json({ message: "Team name is required for registration." });
+    }
+    const existingTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      name: formData.teamName.trim(),
+      status: 'active'
+    });
+    if (existingTeam) {
+      return res.status(400).json({ message: "Team name already exists for this hackathon." });
+    }
 
-    // ✅ Proceed with registration
+    // Registration
     const registration = await Registration.create({
       hackathonId,
       userId,
@@ -44,16 +47,48 @@ const registerForHackathon = async (req, res) => {
       acceptedTerms: formData.acceptedTerms,
     });
 
-    // ✅ Update Hackathon participants
     hackathon.participants.push(userId);
     await hackathon.save();
 
-    // ✅ Update User's registeredHackathonIds
     await User.findByIdAndUpdate(userId, {
       $addToSet: { registeredHackathonIds: hackathonId },
     });
 
-    res.status(201).json({ success: true, registration });
+    // Team creation
+    let newTeam = null;
+    try {
+      const crypto = require('crypto');
+      const teamCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+      newTeam = await Team.create({
+        name: formData.teamName.trim(),
+        description: formData.teamDescription || "Team description will be added soon.",
+        teamCode,
+        maxMembers: 4,
+        hackathon: hackathonId,
+        members: [userId],
+        leader: userId,
+        status: 'active'
+      });
+      console.log('Team created:', newTeam);
+      hackathon.teams.push(newTeam._id);
+      await hackathon.save();
+    } catch (err) {
+      console.error('Error creating team:', err);
+      return res.status(500).json({ success: false, message: 'Failed to create team: ' + err.message });
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      registration,
+      team: newTeam
+        ? {
+            id: newTeam._id,
+            name: newTeam.name,
+            teamCode: newTeam.teamCode,
+            description: newTeam.description
+          }
+        : null
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

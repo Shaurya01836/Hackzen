@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "../../../context/AuthContext"
 import {
   ArrowLeft,
   Upload,
@@ -33,6 +34,7 @@ import {
 import { Checkbox } from "../../../components/DashboardUI/checkbox"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Progress } from "../../../components/DashboardUI/progress"
+import { useToast } from "../../../hooks/use-toast"
 
 function generateTeamCode(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -44,6 +46,7 @@ function generateTeamCode(length = 8) {
 }
 
 export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
+  const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -56,6 +59,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     degreeOrRole: "",
     yearOfStudyOrExperience: "",
     teamName: "",
+    teamDescription: "",
     teamCode: generateTeamCode(),
     projectIdea: "",
     track: "",
@@ -67,6 +71,24 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   })
 
   const [errors, setErrors] = useState({})
+  const { toast } = useToast()
+
+  // Auto-fill form with user data when component loads
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        collegeOrCompany: user.collegeOrCompany || "",
+        degreeOrRole: user.degreeOrRole || "",
+        yearOfStudyOrExperience: user.yearOfStudyOrExperience || "",
+        github: user.github || "",
+        linkedin: user.linkedin || ""
+      }))
+    }
+  }, [user])
 
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
@@ -129,45 +151,76 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   }
 
   const handleSubmit = async () => {
-  if (!validateStep(currentStep)) return;
+    if (!validateStep(currentStep)) return;
 
-  setIsSubmitting(true);
-  try {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token"); // assuming you store JWT here
+    setIsSubmitting(true);
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = localStorage.getItem("token"); // assuming you store JWT here
 
-    if (!user || !token) {
-  alert("You must be logged in to register.");
-  return;
-}
-
-    const response = await fetch("http://localhost:3000/api/registration", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-       Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        hackathonId: hackathon._id,
-        formData
-      })
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-      if (data.message && data.message.includes("Already registered")) {
-        onSuccess(); // treat as success
+      if (!user || !token) {
+        console.error("You must be logged in to register.");
         return;
       }
-      throw new Error(data.message || "Failed to register");
+
+      console.log("Submitting registration with data:", {
+        hackathonId: hackathon._id,
+        formData: formData
+      });
+
+      const response = await fetch("http://localhost:3000/api/registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hackathonId: hackathon._id,
+          formData
+        })
+      });
+
+      const data = await response.json();
+      console.log("Registration response:", data);
+      
+      if (!response.ok) {
+        if (data.message && data.message.includes("Already registered")) {
+          console.log("Already registered, treating as success");
+          onSuccess(); // treat as success
+          return;
+        }
+        throw new Error(data.message || "Failed to register");
+      }
+      
+      // Show success message with team information
+      if (data.team) {
+        console.log("Team created successfully:", data.team);
+        toast({
+          title: "Registration Successful!",
+          description: `Your team \"${data.team.name}\" has been created. Team code: ${data.team.teamCode}`,
+          duration: 3000
+        });
+      } else {
+        console.log("No team data in response");
+        toast({
+          title: "Registration Successful!",
+          description: "You have successfully registered in the hackathon!",
+          duration: 3000
+        });
+      }
+      
+      onSuccess(); // success handler
+    } catch (error) {
+      console.error("Registration failed:", error);
+      toast({
+        title: "Registration Failed",
+        description: error.message,
+        duration: 3000
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    onSuccess(); // success handler
-  } catch (error) {
-    console.error("Registration failed:", error);
-  } finally {
-    setIsSubmitting(false);
-}
-};
+  };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -179,6 +232,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 Personal Information
               </h2>
               <p className="text-gray-600">Tell us about yourself</p>
+              {user && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    ✅ Your profile information has been auto-filled. You can modify any fields as needed.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -192,7 +252,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.fullName}
                   onChange={e => handleInputChange("fullName", e.target.value)}
                   placeholder="Enter your full name"
-                  className={errors.fullName ? "border-red-500" : ""}
+                  className={`${errors.fullName ? "border-red-500" : ""} ${formData.fullName && user?.name ? "border-green-500 bg-green-50" : ""}`}
                 />
                 {errors.fullName && (
                   <p className="text-sm text-red-500">{errors.fullName}</p>
@@ -210,7 +270,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.email}
                   onChange={e => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email"
-                  className={errors.email ? "border-red-500" : ""}
+                  className={`${errors.email ? "border-red-500" : ""} ${formData.email && user?.email ? "border-green-500 bg-green-50" : ""}`}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email}</p>
@@ -276,7 +336,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     handleInputChange("collegeOrCompany", e.target.value)
                   }
                   placeholder="Enter your college or company"
-                  className={errors.collegeOrCompany ? "border-red-500" : ""}
+                  className={`${errors.collegeOrCompany ? "border-red-500" : ""} ${formData.collegeOrCompany && user?.collegeOrCompany ? "border-green-500 bg-green-50" : ""}`}
                 />
                 {errors.collegeOrCompany && (
                   <p className="text-sm text-red-500">
@@ -411,6 +471,9 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     placeholder="Enter your team name"
                     className={errors.teamName ? "border-red-500" : ""}
                   />
+                  <p className="text-sm text-blue-600">
+                    💡 Enter your team name. A team will be automatically created with you as the leader. You can invite others using the team code or email invites.
+                  </p>
                   {errors.teamName && (
                     <p className="text-sm text-red-500">{errors.teamName}</p>
                   )}
@@ -441,6 +504,26 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   {errors.track && (
                     <p className="text-sm text-red-500">{errors.track}</p>
                   )}
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="teamDescription" className="flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Team Description (Optional)
+                  </Label>
+                  <Textarea
+                    id="teamDescription"
+                    value={formData.teamDescription}
+                    onChange={e =>
+                      handleInputChange("teamDescription", e.target.value)
+                    }
+                    placeholder="Describe your team's goals, skills, and what you hope to achieve (max 300 characters)"
+                    maxLength={300}
+                    rows={3}
+                  />
+                  <p className="text-sm text-gray-500 text-right">
+                    {formData.teamDescription.length}/300 characters
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -523,6 +606,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     <p className="font-medium text-gray-700">Track & Team</p>
                     <p>Track: {formData.track}</p>
                     {formData.teamName && <p>Team: {formData.teamName}</p>}
+                    {formData.teamDescription && <p className="text-sm text-gray-600 mt-1">Description: {formData.teamDescription}</p>}
                   </div>
                 </div>
               </CardContent>
@@ -543,7 +627,8 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                       <li>
                         You will receive a confirmation email after registration
                       </li>
-                      <li>Team formation can be done after registration</li>
+                      <li>Your team will be automatically created with you as the leader and member</li>
+                      <li>You can invite team members via email or team code after registration</li>
                       <li>
                         All communication will be through the provided email
                       </li>

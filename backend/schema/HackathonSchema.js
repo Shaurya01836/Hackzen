@@ -24,11 +24,11 @@ const HackathonSchema = new Schema({
   category: {
     type: String,
     enum: [
-      'Artificial Intelligence', 'Blockchain', 'Cybersecurity',
+      'Artificial Intelligence', 'Blockchain', 'Blockchain & Web3', 'Cybersecurity',
       'Fintech', 'Gaming', 'Healthcare', 'Sustainability',
       'Mobile Development', 'Web Development', 'IoT',
-      'Data Science', 'DevOps', 'EdTech' // <-- added EdTech
-  ],
+      'Data Science', 'DevOps', 'EdTech'
+    ],
     required: true
   },
 
