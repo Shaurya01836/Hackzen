@@ -27,7 +27,9 @@ const ProjectSchema = new Schema({
 
   scores: [{ type: Schema.Types.ObjectId, ref: 'Score' }],
   status: { type: String, enum: ['draft', 'submitted', 'reviewed'], default: 'draft' },
-  submittedAt: Date,
+  submittedAt: Date,oneLineIntro: { type: String, required: true },
+skills: [String],
+teamIntro: String,
   createdAt: { type: Date, default: Date.now }
 });
 

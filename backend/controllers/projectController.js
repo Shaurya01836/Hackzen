@@ -6,6 +6,7 @@ exports.createProject = async (req, res) => {
   try {
     const {
       title,
+      oneLineIntro,
       description,
       repoLink,
       websiteLink,
@@ -16,9 +17,12 @@ exports.createProject = async (req, res) => {
       customCategory,
       team,
       hackathon,
+      skills,
+      teamIntro,
     } = req.body;
 
-    if (!title || !description || !category) {
+    // Validate required fields
+    if (!title || !description || !category || !oneLineIntro) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -30,7 +34,10 @@ exports.createProject = async (req, res) => {
 
     const newProject = new Project({
       title,
+      oneLineIntro,
       description,
+      teamIntro,
+      skills,
       repoLink,
       websiteLink,
       videoLink,
