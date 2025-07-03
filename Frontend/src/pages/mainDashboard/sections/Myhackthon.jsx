@@ -44,10 +44,9 @@ export default function MyHackathons() {
   const [loadingHackathons, setLoadingHackathons] = useState(true);
   const [savedLoading, setSavedLoading] = useState(true);
   const [selectedHackathon, setSelectedHackathon] = useState(null);
-const [selectedProject, setSelectedProject] = useState(null);
-const [editMode, setEditMode] = useState(false);
-const [projectToEdit, setProjectToEdit] = useState(null);
-
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState(null);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
@@ -267,109 +266,121 @@ const [projectToEdit, setProjectToEdit] = useState(null);
 
   const renderProjectCard = (project) => (
     <Card
-  key={project._id}
-  className="group w-full max-w-sm rounded-2xl border border-border/50 bg-white/70 backdrop-blur-md shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
->
-  <div className="h-24 w-full overflow-hidden bg-muted">
-    <img
-      src={project.logo?.url || "/placeholder-image.png"}
-      alt={project.title || "Project image"}
-      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-    />
-  </div>
+      key={project._id}
+      className="group w-full max-w-sm rounded-2xl bg-white/80 shadow-md hover:shadow-xl transition duration-300 border border-border/50 overflow-hidden"
+    >
+      {/* Image */}
+      <div className="relative h-32 w-full bg-muted overflow-hidden">
+        <img
+          src={project.logo?.url || "/placeholder-image.png"}
+          alt={project.title || "Project image"}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        <div className="absolute top-2 right-2">
+          <Badge className="bg-indigo-500 text-white text-xs font-semibold shadow-sm">
+            <Code className="w-3 h-3 mr-1" />
+            Project
+          </Badge>
+        </div>
+      </div>
 
-  <CardHeader className="pb-2">
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1 space-y-1">
-        <CardTitle className="text-lg font-semibold leading-tight line-clamp-1 text-foreground transition-colors group-hover:text-primary">
+      {/* Header */}
+      <CardHeader className="px-4 pt-3 pb-1">
+        <CardTitle className="text-lg font-semibold text-foreground line-clamp-1 transition group-hover:text-indigo-600">
           {project.title || "Untitled Project"}
         </CardTitle>
-      </div>
-      <Code className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
-    </div>
-  </CardHeader>
+      </CardHeader>
 
-  <CardContent className="pt-1 space-y-3">
-    <div className="flex items-center justify-between text-xs text-muted-foreground">
-      <span>Last updated</span>
-      <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
-    </div>
+      {/* Content */}
+      <CardContent className="px-4 pb-4 pt-2 space-y-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Last updated:</span>
+          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
+        </div>
 
-<div className="flex gap-2">
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => setSelectedProject(project)}
-    className="w-full"
-  >
-    View
-  </Button>
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => {
-      setProjectToEdit(project);
-      setEditMode(true);
-      setCurrentView("edit-project");
-    }}
-    className="w-full"
-  >
-    Edit
-  </Button>
-</div>
-
-  </CardContent>
-</Card>
-
-);
-if (selectedProject) {
-  return (
-    <ProjectDetail
-      project={selectedProject}
-      onBack={() => {
-        setSelectedProject(null);
-      }}
-    />
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSelectedProject(project)}
+            className="w-full"
+          >
+            View
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setProjectToEdit(project);
+              setEditMode(true);
+              setCurrentView("edit-project");
+            }}
+            className="w-full"
+          >
+            Edit
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
-}
 
-if (currentView === "edit-project" && projectToEdit) {
-  return (
-    <ProjectSubmission
-      mode="edit"
-      projectId={projectToEdit._id}
-      initialData={projectToEdit}
-      onBack={() => {
-        setEditMode(false);
-        setCurrentView("dashboard");
-      }}
-      onSave={(updated) => {
-        // Replace the updated project in local state
-        setProjects((prev) =>
-          prev.map((p) => (p._id === updated._id ? updated : p))
-        );
-        setSelectedProject(updated);
-        setEditMode(false);
-        setCurrentView("dashboard");
-      }}
-    />
-  );
-}
+  if (selectedProject) {
+    return (
+      <ProjectDetail
+        project={selectedProject}
+        onBack={() => {
+          setSelectedProject(null);
+        }}
+      />
+    );
+  }
+
+  if (currentView === "edit-project" && projectToEdit) {
+    return (
+      <ProjectSubmission
+        mode="edit"
+        projectId={projectToEdit._id}
+        initialData={projectToEdit}
+        onBack={() => {
+          setEditMode(false);
+          setCurrentView("dashboard");
+        }}
+        onSave={(updated) => {
+          // Replace the updated project in local state
+          setProjects((prev) =>
+            prev.map((p) => (p._id === updated._id ? updated : p))
+          );
+          setSelectedProject(updated);
+          setEditMode(false);
+          setCurrentView("dashboard");
+        }}
+      />
+    );
+  }
 
   const ProjectsSkeleton = () => (
-    <div className="flex gap-4 flex-wrap">
-      {[...Array(3)].map((_, i) => (
-        <Card key={i} className="w-full max-w-sm">
-          <CardHeader>
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-4 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <Card className="w-full max-w-sm rounded-2xl bg-white/70 border border-border/30 shadow-sm">
+      <div className="h-32 w-full bg-muted">
+        <Skeleton className="h-full w-full" />
+      </div>
+
+      <CardHeader className="px-4 pt-3 pb-1 space-y-2">
+        <Skeleton className="h-4 w-2/3 rounded-md" />
+        <Skeleton className="h-3 w-5/6 rounded-md" />
+      </CardHeader>
+
+      <CardContent className="px-4 pb-4 pt-2 space-y-3">
+        <div className="flex justify-between items-center text-xs text-muted-foreground">
+          <Skeleton className="h-3 w-1/3" />
+          <Skeleton className="h-3 w-1/4" />
+        </div>
+
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-full rounded-md" />
+          <Skeleton className="h-8 w-full rounded-md" />
+        </div>
+      </CardContent>
+    </Card>
   );
 
   const HackathonsSkeleton = () => (
@@ -416,7 +427,7 @@ if (currentView === "edit-project" && projectToEdit) {
                     className="group border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 cursor-pointer transition-all duration-300 hover:shadow-lg bg-white/50"
                     onClick={handleCreateProject}
                   >
-                    <CardContent className="pt-8 flex flex-col items-center justify-center py-12 text-center">
+                    <CardContent className="h-full flex flex-col items-center justify-center text-center p-6">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                         <Plus className="w-6 h-6 text-primary" />
                       </div>
