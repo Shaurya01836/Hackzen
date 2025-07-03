@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Plus,
@@ -41,7 +42,11 @@ import HackathonDetailModal from "./HackathonDetailModal";
 import HackathonEditModal from "./HackathonEditModal"; // Adjust path
 
 export function CreatedHackathons({ onCreateNew }) {
+  const navigate = useNavigate();
   const [hackathons, setHackathons] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const hackathonToDelete = useRef(null);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -70,8 +75,7 @@ export function CreatedHackathons({ onCreateNew }) {
   const rejectedHackathons = hackathons.filter((h) => h.approvalStatus === "rejected");
   const [selectedHackathon, setSelectedHackathon] = useState(null);
   const [showModal, setShowModal] = useState(false);
-const [editHackathon, setEditHackathon] = useState(null);
-// const [refresh, setRefresh] = useState(false); 
+  const [editHackathon, setEditHackathon] = useState(null);
 
   const handleEdit = (hackathon) => {
     setEditHackathon(hackathon);
@@ -81,6 +85,7 @@ const [editHackathon, setEditHackathon] = useState(null);
     setSelectedHackathon(hackathon);
     setShowModal(true);
   };
+
   const registrationOpenHackathons = hackathons.filter(
     (h) => new Date(h.registrationDeadline) > new Date()
   );
@@ -124,6 +129,37 @@ const [editHackathon, setEditHackathon] = useState(null);
       default:
         return "⏳ Pending - Awaiting admin approval";
     }
+  };
+
+  const handleDelete = (hackathon) => {
+    hackathonToDelete.current = hackathon;
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    const hackathon = hackathonToDelete.current;
+    if (!hackathon) return;
+    setDeletingId(hackathon._id);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to delete hackathon");
+      setHackathons((prev) => prev.filter((h) => h._id !== hackathon._id));
+      setShowDeleteDialog(false);
+      hackathonToDelete.current = null;
+    } catch (err) {
+      alert("Error deleting hackathon");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    hackathonToDelete.current = null;
   };
 
   const renderHackathonCard = (hackathon) => (
@@ -268,16 +304,16 @@ const [editHackathon, setEditHackathon] = useState(null);
             <BarChart3 className="w-3 h-3" />
             Analytics
           </Button>
-          {hackathon.status === "draft" && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-1 text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1 text-red-600 hover:text-red-700"
+            onClick={() => handleDelete(hackathon)}
+            disabled={deletingId === hackathon._id}
+          >
+            <Trash2 className="w-3 h-3" />
+            {deletingId === hackathon._id ? "Deleting..." : "Delete"}
+          </Button>
         </div>
       </CardContent>
     </Card>
@@ -296,9 +332,9 @@ const [editHackathon, setEditHackathon] = useState(null);
             </p>
           </div>
         </div>
-        <Button className="flex items-center gap-2" onClick={onCreateNew}>
+        <Button className="flex items-center gap-2" onClick={() => navigate("/dashboard/explore-hackathons")}>
           <Plus className="w-4 h-4" />
-          Create New Hackathon
+          Explore Hackathons
         </Button>
       </div>
 
@@ -441,15 +477,42 @@ const [editHackathon, setEditHackathon] = useState(null);
         hackathon={selectedHackathon}
       />
       {editHackathon && (
-  <HackathonEditModal
-    hackathon={editHackathon}
-    onClose={() => setEditHackathon(null)}
-    onUpdated={() => {
-      setEditHackathon(null);
-      window.location.reload(); // OR re-fetch if you prefer
-    }}
-  />
-)}
+        <HackathonEditModal
+          hackathon={editHackathon}
+          onClose={() => setEditHackathon(null)}
+          onUpdated={() => {
+            setEditHackathon(null);
+            window.location.reload(); // OR re-fetch if you prefer
+          }}
+        />
+      )}
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+            <h2 className="text-lg font-bold mb-2">Delete Hackathon?</h2>
+            <p className="mb-4 text-gray-700">Are you sure you want to delete this hackathon? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deletingId !== null}
+                className="flex-1"
+              >
+                {deletingId !== null ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={cancelDelete}
+                className="flex-1"
+                disabled={deletingId !== null}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
