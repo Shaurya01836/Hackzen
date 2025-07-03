@@ -71,23 +71,74 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   })
 
   const [errors, setErrors] = useState({})
+  const [hasAutoFilled, setHasAutoFilled] = useState(false)
   const { toast } = useToast()
 
-  // Auto-fill form with user data when component loads
+  // Auto-fill form with user data and previous registration data when component loads
   useEffect(() => {
-    if (user) {
-      setFormData(prev => ({
-        ...prev,
-        fullName: user.name || "",
-        email: user.email || "",
-        phone: user.phone || "",
-        collegeOrCompany: user.collegeOrCompany || "",
-        degreeOrRole: user.degreeOrRole || "",
-        yearOfStudyOrExperience: user.yearOfStudyOrExperience || "",
-        github: user.github || "",
-        linkedin: user.linkedin || ""
-      }))
-    }
+    const fetchAndAutoFill = async () => {
+      if (user) {
+        // First, auto-fill with basic user data
+        let autoFillData = {
+          fullName: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          collegeOrCompany: user.collegeOrCompany || "",
+          degreeOrRole: user.degreeOrRole || "",
+          yearOfStudyOrExperience: user.yearOfStudyOrExperience || "",
+          github: user.github || "",
+          linkedin: user.linkedin || ""
+        };
+
+        // Then, try to fetch previous registration data
+        try {
+          const token = localStorage.getItem("token");
+          const response = await fetch("http://localhost:3000/api/registration/last-registration", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.hasPreviousRegistration && data.formData) {
+              // Merge previous registration data with user data
+              // Prefer user data for basic fields, but use previous registration data for additional fields
+              autoFillData = {
+                ...autoFillData,
+                age: data.formData.age || "",
+                gender: data.formData.gender || "",
+                resumeURL: data.formData.resumeURL || "",
+                heardFrom: data.formData.heardFrom || "",
+                // Keep user's basic info but use previous registration data for other fields
+                fullName: user.name || data.formData.fullName || "",
+                email: user.email || data.formData.email || "",
+                phone: user.phone || data.formData.phone || "",
+                collegeOrCompany: user.collegeOrCompany || data.formData.collegeOrCompany || "",
+                degreeOrRole: user.degreeOrRole || data.formData.degreeOrRole || "",
+                yearOfStudyOrExperience: user.yearOfStudyOrExperience || data.formData.yearOfStudyOrExperience || "",
+                github: user.github || data.formData.github || "",
+                linkedin: user.linkedin || data.formData.linkedin || ""
+              };
+            }
+          }
+        } catch (error) {
+          console.log("Could not fetch previous registration data:", error);
+        }
+
+        setFormData(prev => ({
+          ...prev,
+          ...autoFillData
+        }));
+        
+        // Set flag to show auto-fill message
+        if (data?.hasPreviousRegistration) {
+          setHasAutoFilled(true);
+        }
+      }
+    };
+
+    fetchAndAutoFill();
   }, [user])
 
   const totalSteps = 4
@@ -233,6 +284,15 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
               </h2>
               <p className="text-gray-600">Tell us about yourself</p>
               
+              {hasAutoFilled && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Your details have been auto-filled from your previous registration. 
+                    You can modify any field if needed.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -248,6 +308,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   placeholder="Enter your full name"
                   className={`${errors.fullName ? "border-red-500" : ""} ${formData.fullName && user?.name ? "border-green-500 bg-green-50" : ""}`}
                 />
+               
                 {errors.fullName && (
                   <p className="text-sm text-red-500">{errors.fullName}</p>
                 )}
@@ -465,9 +526,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     placeholder="Enter your team name"
                     className={errors.teamName ? "border-red-500" : ""}
                   />
-                  <p className="text-sm text-blue-600">
-                    💡 Enter your team name. A team will be automatically created with you as the leader. You can invite others using the team code or email invites.
-                  </p>
+                  
                   <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
                     <strong>Team Size:</strong> This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
                     {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.

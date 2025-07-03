@@ -26,7 +26,7 @@ export function InviteAccept() {
         const inviteRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}`);
         if (!inviteRes.ok) {
           setStatus("error");
-          setMessage("❌ Invalid or expired invitation link.");
+          setMessage("Invalid or expired invitation link.");
           return;
         }
         const invite = await inviteRes.json();
@@ -43,7 +43,7 @@ export function InviteAccept() {
         const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
         if (processedInvites.includes(inviteId)) {
           setStatus("error");
-          setMessage("❌ You have already processed this invitation.");
+          setMessage("You have already processed this invitation.");
           return;
         }
 
@@ -52,7 +52,7 @@ export function InviteAccept() {
         setStatus("prompt");
       } catch (err) {
         setStatus("error");
-        setMessage("❌ Failed to process invitation.");
+        setMessage("Failed to process invitation.");
       }
     };
     checkInvite();

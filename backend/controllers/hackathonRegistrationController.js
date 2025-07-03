@@ -110,6 +110,32 @@ const getMyRegistrations = async (req, res) => {
   }
 };
 
+// Get user's last registration data for auto-filling
+const getLastRegistrationData = async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+
+    // Get the most recent registration
+    const lastRegistration = await Registration.findOne({ userId })
+      .sort({ createdAt: -1 })
+      .select('formData');
+
+    if (!lastRegistration) {
+      return res.json({ 
+        hasPreviousRegistration: false, 
+        formData: null 
+      });
+    }
+
+    res.json({ 
+      hasPreviousRegistration: true, 
+      formData: lastRegistration.formData 
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const getHackathonParticipants = async (req, res) => {
   try {
     const { hackathonId } = req.params;
@@ -291,4 +317,5 @@ module.exports = {
   getMyRegistrations,
   getHackathonParticipants,
   unregisterFromHackathon,
+  getLastRegistrationData,
 };
