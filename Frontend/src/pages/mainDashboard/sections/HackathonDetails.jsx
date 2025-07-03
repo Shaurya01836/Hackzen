@@ -1139,7 +1139,10 @@ useEffect(() => {
                           </li>
                           <li className="flex items-start gap-3">
                             <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                            <span>Team of 2-4 members (optional)</span>
+                            <span>
+                              Team of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
+                              {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}
+                            </span>
                           </li>
                           <li className="flex items-start gap-3">
                             <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
@@ -1189,6 +1192,16 @@ useEffect(() => {
                           <p className="text-sm text-gray-500 mt-1">
                             Difficulty Level
                           </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Users className="w-5 h-5 text-gray-500" />
+                        <div>
+                          <p className="font-medium">
+                            {hackathon.teamSize?.min || 1} - {hackathon.teamSize?.max || 4} members
+                            {hackathon.teamSize?.allowSolo ? ' (solo allowed)' : ''}
+                          </p>
+                          <p className="text-sm text-gray-500">Team Size</p>
                         </div>
                       </div>
                     </CardContent>
@@ -1508,6 +1521,12 @@ useEffect(() => {
                       You can invite members, share team codes, and manage your team from here. 
                       Teams are automatically created when you register with a team name.
                     </p>
+                    <div className="mt-2 p-2 bg-white rounded border">
+                      <p className="text-xs text-gray-700">
+                        <strong>Team Size Configuration:</strong> This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
+                        {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
+                      </p>
+                    </div>
                   </div>
                   {/* User's Teams */}
                   <Card>
@@ -1515,7 +1534,7 @@ useEffect(() => {
                       <CardTitle className="flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Users className="w-5 h-5 text-blue-500" />
-                          My Team
+                          My Teams
                         </span>
                         <div className="flex gap-2">
                           {userTeams.length === 0 && (
@@ -1528,7 +1547,7 @@ useEffect(() => {
                                 Join Team
                               </Button>
                           )}
-                       
+                        
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -1762,6 +1781,10 @@ useEffect(() => {
                   <p className="text-gray-600 mb-4">
                     Invite someone to join <strong>{selectedTeam.name}</strong>
                   </p>
+                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                    <strong>Team Size:</strong> {selectedTeam.members.length}/{selectedTeam.maxMembers} members currently. 
+                    This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members.
+                  </div>
                   
                   <div className="space-y-4">
                     <div>
@@ -1902,6 +1925,10 @@ useEffect(() => {
                       </span>
                     )}
                   </p>
+                  <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                    <strong>Team Size:</strong> This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
+                    {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
+                  </div>
                   
                   <div className="space-y-4">
                     <div>

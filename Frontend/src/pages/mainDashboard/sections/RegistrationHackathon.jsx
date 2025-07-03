@@ -232,13 +232,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 Personal Information
               </h2>
               <p className="text-gray-600">Tell us about yourself</p>
-              {user && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800">
-                    ✅ Your profile information has been auto-filled. You can modify any fields as needed.
-                  </p>
-                </div>
-              )}
+              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -474,6 +468,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   <p className="text-sm text-blue-600">
                     💡 Enter your team name. A team will be automatically created with you as the leader. You can invite others using the team code or email invites.
                   </p>
+                  <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                    <strong>Team Size:</strong> This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
+                    {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
+                  </div>
                   {errors.teamName && (
                     <p className="text-sm text-red-500">{errors.teamName}</p>
                   )}
@@ -628,6 +626,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                         You will receive a confirmation email after registration
                       </li>
                       <li>Your team will be automatically created with you as the leader and member</li>
+                      <li>Team size: {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members</li>
                       <li>You can invite team members via email or team code after registration</li>
                       <li>
                         All communication will be through the provided email

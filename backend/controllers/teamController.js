@@ -53,11 +53,17 @@ const createTeam = async (req, res) => {
     // Generate unique team code
     const teamCode = crypto.randomBytes(4).toString('hex').toUpperCase();
 
+    // Get hackathon's team size settings
+    const hackathonMaxMembers = hackathon.teamSize?.max || 4;
+    
+    // Use the provided maxMembers or hackathon's setting, but don't exceed hackathon's limit
+    const finalMaxMembers = Math.min(maxMembers || hackathonMaxMembers, hackathonMaxMembers);
+    
     const newTeam = await Team.create({
       name,
       description,
       teamCode,
-      maxMembers: maxMembers || 4,
+      maxMembers: finalMaxMembers,
       hackathon: hackathonId,
       members: [userId],
       leader: userId,

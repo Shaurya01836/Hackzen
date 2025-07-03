@@ -4,7 +4,7 @@ const TeamSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
   teamCode: { type: String, unique: true, required: true }, // Unique team code for invites
-  maxMembers: { type: Number, default: 4, min: 2, max: 4 },
+  maxMembers: { type: Number, default: 4, min: 1, max: 10 },
   members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   leader: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   hackathon: { type: Schema.Types.ObjectId, ref: 'Hackathon', required: true },
