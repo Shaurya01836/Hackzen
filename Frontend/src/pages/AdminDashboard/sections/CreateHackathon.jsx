@@ -47,8 +47,8 @@ export function CreateHackathon({ onBack }) {
       logo: null,
       gallery: [],
     },
-    judges: [],
-    mentors: [],
+    judges: [""],
+    mentors: [""],
     participants: [],
     rounds: [
       {
@@ -228,23 +228,48 @@ export function CreateHackathon({ onBack }) {
         return
       }
 
-      // Filter out empty judge emails before submit
-      const filteredJudges = formData.judges.filter(j => j && j.trim() !== "");
-      const filteredMentors = formData.mentors.filter(m => m && m.trim() !== "");
-      const updatedData = {
-        ...formData,
-        judges: filteredJudges,
-        mentors: filteredMentors,
+      // Extract valid problem statements and types
+      const validProblems = formData.problemStatements.filter((ps) => ps.statement.trim() && ps.type.trim())
+
+      const submitData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        difficultyLevel: formData.difficultyLevel,
+        teamSize: formData.teamSize, // This now includes min, max, and allowSolo
+        location: formData.location,
+        mode: formData.mode,
+        startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
+        endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
+        registrationDeadline: formData.registrationDeadline
+          ? new Date(formData.registrationDeadline).toISOString()
+          : null,
+        submissionDeadline: formData.submissionDeadline ? new Date(formData.submissionDeadline).toISOString() : null,
+        maxParticipants: Number(formData.maxParticipants) || 100,
+        problemStatements: validProblems.map((ps) => ps.statement),
+        problemStatementTypes: validProblems.map((ps) => ps.type),
+        rounds: formData.rounds
+          .filter((r) => r.name.trim())
+          .map((r) => ({
+            name: r.name,
+            description: r.description,
+            startDate: r.startDate ? new Date(r.startDate).toISOString() : null,
+            endDate: r.endDate ? new Date(r.endDate).toISOString() : null,
+          })),
+        requirements: formData.requirements.filter((r) => r.trim()),
+        perks: formData.perks.filter((p) => p.trim()),
         tags: formData.tags,
-        problemStatements: formData.problemStatements,
-        requirements: formData.requirements,
-        perks: formData.perks,
+        prizePool: {
+          amount: formData.prizePool.amount ? Number(formData.prizePool.amount) : null,
+          currency: formData.prizePool.currency || "USD",
+          breakdown: formData.prizePool.breakdown,
+        },
         images: formData.images,
-        rounds: formData.rounds,
-        participants: formData.participants,
-        prizePool: formData.prizePool,
-        teamSize: formData.teamSize,
-      };
+        status: isDraft ? "upcoming" : formData.status,
+        judges: formData.judges, // ✅ Include this
+        mentors: formData.mentors, // ✅ Include this
+        participants: [],
+      }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
         method: "POST",
@@ -252,7 +277,7 @@ export function CreateHackathon({ onBack }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updatedData),
+        body: JSON.stringify(submitData),
       })
 
       if (!response.ok) {
@@ -1024,9 +1049,6 @@ export function CreateHackathon({ onBack }) {
                 <CardDescription>Add judges by their email addresses</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {formData.judges.length === 0 && (
-                  <div className="text-gray-500 text-sm">No judges added yet.</div>
-                )}
                 {formData.judges.map((judge, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
