@@ -235,6 +235,11 @@ const [editHackathon, setEditHackathon] = useState(null);
               Visible in Explore
             </Badge>
           )}
+          {hackathon.approvalStatus === "pending" && (
+            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+              For admin approval
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">

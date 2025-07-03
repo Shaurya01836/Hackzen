@@ -1039,6 +1039,18 @@ useEffect(() => {
                     </div>
                   </ACardContent>
                 </ACard>
+
+                {/* Submit Your Project Button */}
+                <ACard>
+                  <ACardContent className="pt-6">
+                    <Button 
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3"
+                      size="lg"
+                    >
+                      Submit Your Project
+                    </Button>
+                  </ACardContent>
+                </ACard>
               </div>
             </div>
 

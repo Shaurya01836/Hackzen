@@ -417,16 +417,11 @@ const ImageUploadCard = ({
               🎉 Hackathon Created Successfully!
             </h3>
             <p className="text-gray-600 mb-4">
-              Your hackathon "<strong>{formData.title}</strong>" has been submitted for admin approval.
+              Your hackathon has been successfully created and submitted for admin approval.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <p className="text-sm text-blue-800">
-                <strong>What happens next?</strong><br/>
-                • Admin will review your hackathon<br/>
-                • Once approved, it will be visible to participants<br/>
-                • You'll receive a notification when approved
-              </p>
-            </div>
+            <p className="text-sm text-blue-800">
+              Once admin approves, it will appear in the explore section for participants.
+            </p>
             <p className="text-sm text-gray-500">
               Redirecting back in a few seconds...
             </p>
