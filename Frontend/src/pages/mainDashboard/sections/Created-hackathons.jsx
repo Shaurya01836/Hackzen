@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -48,6 +48,9 @@ export function CreatedHackathons({ onCreateNew }) {
   const [editHackathon, setEditHackathon] = useState(null);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [submissionHackathon, setSubmissionHackathon] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const hackathonToDelete = useRef(null);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -86,6 +89,37 @@ export function CreatedHackathons({ onCreateNew }) {
   const handleViewDetails = (hackathon) => {
     setSelectedHackathon(hackathon);
     setShowModal(true);
+  };
+
+  const handleDelete = (hackathon) => {
+    hackathonToDelete.current = hackathon;
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    const hackathon = hackathonToDelete.current;
+    if (!hackathon) return;
+    setDeletingId(hackathon._id);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon._id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to delete hackathon");
+      setHackathons((prev) => prev.filter((h) => h._id !== hackathon._id));
+      setShowDeleteDialog(false);
+      hackathonToDelete.current = null;
+    } catch (err) {
+      alert("Error deleting hackathon");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    hackathonToDelete.current = null;
   };
 
   const getStatusColor = (status) => {
@@ -228,12 +262,16 @@ export function CreatedHackathons({ onCreateNew }) {
 
         <div className="flex gap-2">
           <Badge variant="outline">{hackathon.category}</Badge>
-          <Badge variant="outline">
-            {hackathon.judges?.length || 0} judges
-          </Badge>
-          <Badge variant="outline">
-            {hackathon.mentors?.length || 0} mentors
-          </Badge>
+          {hackathon.judges && hackathon.judges.filter(j => j && j.trim()).length > 0 && (
+            <Badge variant="outline">
+              {hackathon.judges.filter(j => j && j.trim()).length} judges
+            </Badge>
+          )}
+          {hackathon.mentors && hackathon.mentors.filter(m => m && m.trim()).length > 0 && (
+            <Badge variant="outline">
+              {hackathon.mentors.filter(m => m && m.trim()).length} mentors
+            </Badge>
+          )}
           {hackathon.approvalStatus === "approved" && (
             <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
               <Eye className="w-3 h-3 mr-1" />
@@ -273,16 +311,16 @@ export function CreatedHackathons({ onCreateNew }) {
             <BarChart3 className="w-3 h-3" />
             Analytics
           </Button>
-          {hackathon.status === "draft" && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-1 text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-3 h-3" />
-              Delete
-            </Button>  
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1 text-red-600 hover:text-red-700"
+            onClick={() => handleDelete(hackathon)}
+            disabled={deletingId === hackathon._id}
+          >
+            <Trash2 className="w-3 h-3" />
+            {deletingId === hackathon._id ? "Deleting..." : "Delete"}
+          </Button>
           <Button
             size="sm"
             variant="secondary"
@@ -478,6 +516,34 @@ export function CreatedHackathons({ onCreateNew }) {
                 window.location.reload(); // OR re-fetch if you prefer
               }}
             />
+          )}
+
+          {/* Delete Confirmation Dialog */}
+          {showDeleteDialog && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+                <h2 className="text-lg font-bold mb-2">Delete Hackathon?</h2>
+                <p className="mb-4 text-gray-700">Are you sure you want to delete this hackathon? This action cannot be undone.</p>
+                <div className="flex gap-3">
+                  <Button
+                    variant="destructive"
+                    onClick={confirmDelete}
+                    disabled={deletingId !== null}
+                    className="flex-1"
+                  >
+                    {deletingId !== null ? "Deleting..." : "Delete"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={cancelDelete}
+                    className="flex-1"
+                    disabled={deletingId !== null}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
