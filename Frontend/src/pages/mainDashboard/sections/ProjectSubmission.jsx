@@ -67,26 +67,27 @@ const FIELD_LIMITS = {
   logoFile: 2 * 1024 * 1024, // 2MB
 };
 
-export default function ProjectSubmission({ onBack, onSave }) {
-  const [formData, setFormData] = useState({
-    title: "",
-    oneLineIntro: "",
-    description: "",
-    teamIntro: "",
-    skills: [],
-    logo: null,
-    githubLink: "",
-    websiteLink: "",
-    demoVideoType: "upload",
-    demoVideoFile: null,
-    demoVideoLink: "",
-    socialLinks: [""],
-    category: "",
-    customCategory: "",
-    status: "draft",
-  });
+export default function ProjectSubmission({ onBack, onSave, mode = "create", initialData = {}, projectId }) {
+const [formData, setFormData] = useState({
+  title: initialData.title || "",
+  oneLineIntro: initialData.oneLineIntro || "",
+  description: initialData.description || "",
+  teamIntro: initialData.teamIntro || "",
+  skills: initialData.skills || [],
+  logo: initialData.logo || null,
+  githubLink: initialData.repoLink || "",
+  websiteLink: initialData.websiteLink || "",
+  demoVideoType: initialData.videoLink ? "link" : "upload",
+  demoVideoFile: null,
+  demoVideoLink: initialData.videoLink || "",
+  socialLinks: initialData.socialLinks || [""],
+  category: initialData.category || "",
+  customCategory: initialData.customCategory || "",
+  status: initialData.status || "draft",
+});
 
-  const [logoPreview, setLogoPreview] = useState(null);
+
+const [logoPreview, setLogoPreview] = useState(initialData?.logo?.url || null);
   const [currentSkill, setCurrentSkill] = useState("");
 
   const handleInputChange = (field, value) => {
@@ -182,7 +183,7 @@ export default function ProjectSubmission({ onBack, onSave }) {
       const token = localStorage.getItem("token");
       if (!token) return alert("You must be logged in.");
 
-      let logoData = null;
+let logoData = initialData?.logo || null; // fallback to original if no new upload
       let videoLink = "";
 
       // Upload Logo if it's a File
@@ -250,15 +251,21 @@ export default function ProjectSubmission({ onBack, onSave }) {
         customCategory: formData.customCategory,
         status: "draft",
       };
+const url = mode === "edit"
+  ? `http://localhost:3000/api/projects/${projectId}`
+  : "http://localhost:3000/api/projects";
 
-      const response = await fetch("http://localhost:3000/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+const method = mode === "edit" ? "PUT" : "POST";
+
+    const response = await fetch(url, {
+  method,
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify(payload),
+});
+
 
       const created = await response.json();
       if (!response.ok)
@@ -291,13 +298,7 @@ export default function ProjectSubmission({ onBack, onSave }) {
                   {isIncomplete && (
                     <Badge variant="destructive">Incomplete Project</Badge>
                   )}
-                  <Button
-                    onClick={handleSave}
-                    className="flex items-center gap-2"
-                  >
-                    <Save className="w-4 h-4" />
-                    Save
-                  </Button>
+                 
                 </div>
               </div>
 
@@ -737,14 +738,46 @@ export default function ProjectSubmission({ onBack, onSave }) {
               Last saved: {new Date().toLocaleTimeString()}
             </span>
           </div>
-          <Button
-            onClick={handleSave}
-            size="lg"
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save Project
-          </Button>
+   <div className="flex gap-4">
+  {mode === "edit" && (
+    <Button
+      variant="destructive"
+      onClick={async () => {
+        const confirmed = confirm("Are you sure you want to delete this project?");
+        if (!confirmed) return;
+
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const result = await res.json();
+          if (!res.ok) throw new Error(result.message || "Failed to delete");
+
+          alert("❌ Project deleted successfully");
+          onBack?.(); // Redirect user after deletion
+        } catch (err) {
+          alert("Delete failed: " + err.message);
+        }
+      }}
+    >
+      Delete Project
+    </Button>
+  )}
+  <Button
+    onClick={handleSave}
+    size="lg"
+    className="flex items-center gap-2"
+  >
+    <Save className="w-4 h-4" />
+    Save Project
+  </Button>
+</div>
+
         </div>
       </div>
     </div>

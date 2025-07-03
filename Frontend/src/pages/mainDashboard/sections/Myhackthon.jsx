@@ -45,6 +45,9 @@ export default function MyHackathons() {
   const [savedLoading, setSavedLoading] = useState(true);
   const [selectedHackathon, setSelectedHackathon] = useState(null);
 const [selectedProject, setSelectedProject] = useState(null);
+const [editMode, setEditMode] = useState(false);
+const [projectToEdit, setProjectToEdit] = useState(null);
+
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
@@ -292,20 +295,65 @@ const [selectedProject, setSelectedProject] = useState(null);
       <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
     </div>
 
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={() => setSelectedProject(project)}
-      className="w-full mt-2"
-    >
-      View Project
-    </Button>
+<div className="flex gap-2">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => setSelectedProject(project)}
+    className="w-full"
+  >
+    View
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => {
+      setProjectToEdit(project);
+      setEditMode(true);
+      setCurrentView("edit-project");
+    }}
+    className="w-full"
+  >
+    Edit
+  </Button>
+</div>
+
   </CardContent>
 </Card>
 
 );
 if (selectedProject) {
-  return <ProjectDetail project={selectedProject} onBack={() => setSelectedProject(null)} />;
+  return (
+    <ProjectDetail
+      project={selectedProject}
+      onBack={() => {
+        setSelectedProject(null);
+      }}
+    />
+  );
+}
+
+if (currentView === "edit-project" && projectToEdit) {
+  return (
+    <ProjectSubmission
+      mode="edit"
+      projectId={projectToEdit._id}
+      initialData={projectToEdit}
+      onBack={() => {
+        setEditMode(false);
+        setCurrentView("dashboard");
+      }}
+      onSave={(updated) => {
+        // Replace the updated project in local state
+        setProjects((prev) =>
+          prev.map((p) => (p._id === updated._id ? updated : p))
+        );
+        setSelectedProject(updated);
+        setEditMode(false);
+        setCurrentView("dashboard");
+      }}
+    />
+  );
 }
 
   const ProjectsSkeleton = () => (

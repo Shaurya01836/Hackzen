@@ -104,6 +104,14 @@ exports.getProjectById = async (req, res) => {
 // Update project
 exports.updateProject = async (req, res) => {
   try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    // 🛡️ Only allow the user who created the project
+    if (!project.submittedBy.equals(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized to update this project" });
+    }
+
     const updatedProject = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedProject);
   } catch (error) {
@@ -111,15 +119,24 @@ exports.updateProject = async (req, res) => {
   }
 };
 
-// Delete project
+
 exports.deleteProject = async (req, res) => {
   try {
+    const project = await Project.findById(req.params.id);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+
+    // 🛡️ Only allow deletion by the user who submitted it
+    if (!project.submittedBy.equals(req.user._id)) {
+      return res.status(403).json({ message: "Unauthorized to delete this project" });
+    }
+
     await Project.findByIdAndDelete(req.params.id);
     res.json({ message: "Project deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting project", error: error.message });
   }
 };
+
 
 // Submit project
 exports.submitProject = async (req, res) => {
