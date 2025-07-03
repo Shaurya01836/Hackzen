@@ -59,11 +59,15 @@ const registerForHackathon = async (req, res) => {
     try {
       const crypto = require('crypto');
       const teamCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+      
+      // Use hackathon's team size settings
+      const maxMembers = hackathon.teamSize?.max || 4;
+      
       newTeam = await Team.create({
         name: formData.teamName.trim(),
-        description: formData.teamDescription || "Team description will be added soon.",
+        description: formData.teamDescription || "Write your Team Description here.",
         teamCode,
-        maxMembers: 4,
+        maxMembers: maxMembers,
         hackathon: hackathonId,
         members: [userId],
         leader: userId,

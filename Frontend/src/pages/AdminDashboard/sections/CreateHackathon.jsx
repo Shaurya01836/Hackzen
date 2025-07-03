@@ -28,10 +28,37 @@ const modes = ["online", "offline", "hybrid"]
 
 export function CreateHackathonForm({ onBack }) {
   const { token } = useAuth();
-  const [formData, setFormData] = useState({title: "",description: "",category: "",difficultyLevel: "",location: "",startDate: null,endDate: null,registrationDeadline: null,submissionDeadline: null,maxParticipants: 100,problemStatements: [""],requirements: [""],perks: [""],tags: [],mode: "online",prizePool: {
-amount: "",
-currency: "USD",
-breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    difficultyLevel: "",
+    location: "",
+    startDate: null,
+    endDate: null,
+    registrationDeadline: null,
+    submissionDeadline: null,
+    maxParticipants: 100,
+    teamSize: {
+      min: 1,
+      max: 4,
+      allowSolo: true,
+    },
+    problemStatements: [""],
+    requirements: [""],
+    perks: [""],
+    tags: [],
+    mode: "online",
+    prizePool: {
+      amount: "",
+      currency: "USD",
+      breakdown: ""
+    },
+    images: { 
+      banner: null, 
+      logo: null, 
+      gallery: [] 
+    }
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -57,6 +84,17 @@ breakdown: ""},images: {  banner: null,  logo: null,  gallery: [] }
         [field]: value
       }))
     }
+  }
+
+  const handleTeamSizeChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      teamSize: {
+        ...prev.teamSize,
+        [field]: field === 'min' ? Number(value) : Number(value),
+        allowSolo: field === 'min' ? Number(value) === 1 : prev.teamSize.min === 1
+      }
+    }))
   }
 const removeImage = (type, index = null) => {
   if (type === "gallery" && index !== null) {
@@ -170,6 +208,7 @@ body: JSON.stringify({
     gallery: formData.images.gallery || []
   },
   difficulty: formData.difficultyLevel,
+  teamSize: formData.teamSize,
   problemStatements: formData.problemStatements.filter(ps => ps.trim()),
   requirements: formData.requirements.filter(r => r.trim()),
   perks: formData.perks.filter(p => p.trim()),
@@ -564,6 +603,78 @@ const ImageUploadCard = ({
                   }
                   className="bg-white/5 border-purple-500/20 text-black mt-2"
                 />
+              </div>
+            </div>
+
+            <Separator className="bg-purple-500/20" />
+
+            {/* Team Size Configuration */}
+            <div>
+              <Label className="text-black flex items-center mb-3">
+                <Users className="w-4 h-4 mr-2 text-purple-600" />
+                Team Size Configuration
+              </Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <Label htmlFor="teamSizeMin" className="text-black text-sm">
+                    Minimum Team Size *
+                  </Label>
+                  <Select
+                    value={formData.teamSize.min.toString()}
+                    onValueChange={(value) => handleTeamSizeChange('min', value)}
+                  >
+                    <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
+                      <SelectValue placeholder="Min size" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                      {[1, 2, 3, 4, 5].map((size) => (
+                        <SelectItem key={size} value={size.toString()} className="text-white hover:bg-white/5">
+                          {size} {size === 1 ? "member (Solo)" : "members"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="teamSizeMax" className="text-black text-sm">
+                    Maximum Team Size *
+                  </Label>
+                  <Select
+                    value={formData.teamSize.max.toString()}
+                    onValueChange={(value) => handleTeamSizeChange('max', value)}
+                  >
+                    <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
+                      <SelectValue placeholder="Max size" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size) => (
+                        <SelectItem 
+                          key={size} 
+                          value={size.toString()} 
+                          disabled={size < formData.teamSize.min}
+                          className="text-white hover:bg-white/5"
+                        >
+                          {size} {size === 1 ? "member" : "members"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col justify-end">
+                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <p className="text-sm font-medium text-purple-700">Team Size Range</p>
+                    <p className="text-lg font-bold text-purple-600">
+                      {formData.teamSize.min === formData.teamSize.max
+                        ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
+                        : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
+                    </p>
+                    {formData.teamSize.allowSolo && (
+                      <p className="text-xs text-green-600 mt-1">✓ Solo participation allowed</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

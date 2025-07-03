@@ -1,6 +1,7 @@
 const Hackathon = require('../model/HackathonModel');
 const ChatRoom = require('../model/ChatRoomModel');
 const User = require('../model/UserModel');
+const Notification = require('../model/NotificationModel');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -28,7 +29,8 @@ exports.createHackathon = async (req, res) => {
       rounds,
       judges, 
       mentors, 
-      participants
+      participants,
+      teamSize
     } = req.body;
 
      const newHackathon = await Hackathon.create({
@@ -60,12 +62,23 @@ exports.createHackathon = async (req, res) => {
       judges,
       mentors,
       participants,
-      approvalStatus: req.user.role === 'admin' ? 'approved' : 'pending'
+      teamSize: teamSize || { min: 1, max: 4, allowSolo: true },
+      approvalStatus: 'pending' // Always set to pending for now, admin can approve later
     });
+
+
 
     await ChatRoom.create({
       hackathon: newHackathon._id,
       type: 'general'
+    });
+
+    // Send notification to organizer about pending approval
+    await Notification.create({
+      recipient: req.user.id,
+      message: `📋 Your hackathon "${newHackathon.title}" has been submitted for admin approval. You'll be notified once it's reviewed.`,
+      type: 'info',
+      hackathon: newHackathon._id
     });
 
     res.status(201).json(newHackathon);
@@ -168,7 +181,8 @@ exports.updateHackathon = async (req, res) => {
       rounds,
       judges,
       mentors,
-      participants
+      participants,
+      teamSize
     } = req.body;
 
 
@@ -199,6 +213,7 @@ exports.updateHackathon = async (req, res) => {
       judges,
       mentors,
       participants,
+      teamSize,
       prizePool: {
         amount: prizePool?.amount || 0,
         currency: prizePool?.currency || 'USD',
@@ -259,12 +274,25 @@ exports.updateApprovalStatus = async (req, res) => {
       id,
       { approvalStatus: status },
       { new: true }
-    );
+    ).populate('organizer', 'name email');
 
     if (!updated) return res.status(404).json({ message: 'Hackathon not found' });
 
+    // Send notification to organizer
+    const notificationMessage = status === 'approved' 
+      ? `🎉 Your hackathon "${updated.title}" has been approved! It's now visible in the explore section.`
+      : `❌ Your hackathon "${updated.title}" has been rejected. Please review and resubmit.`;
+
+    await Notification.create({
+      recipient: updated.organizer._id,
+      message: notificationMessage,
+      type: status === 'approved' ? 'success' : 'warning',
+      hackathon: updated._id
+    });
+
     res.json(updated);
   } catch (err) {
+    console.error("Error updating approval status:", err);
     res.status(500).json({ message: 'Error updating approval status' });
   }
 };
