@@ -1,7 +1,7 @@
 const Hackathon = require('../model/HackathonModel');
+const Notification = require('../model/NotificationModel');
 const ChatRoom = require('../model/ChatRoomModel');
 const User = require('../model/UserModel');
-const Notification = require('../model/NotificationModel');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -142,6 +142,16 @@ exports.getHackathonById = async (req, res) => {
       .populate('organizer', 'name');
 
     if (!hackathon) return res.status(404).json({ message: 'Hackathon not found' });
+    
+    // Check if user is admin or the organizer
+    const isAdmin = req.user?.role === 'admin';
+    const isOrganizer = req.user?.id === hackathon.organizer?._id?.toString();
+    
+    // Only allow access if hackathon is approved, or user is admin/organizer
+    if (!isAdmin && !isOrganizer && hackathon.approvalStatus !== 'approved') {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+    
     res.json(hackathon);
   } catch (err) {
     res.status(500).json({ message: 'Error retrieving hackathon' });
@@ -299,7 +309,13 @@ exports.updateApprovalStatus = async (req, res) => {
 
 exports.getAllHackathons = async (req, res) => {
   try {
-    const hackathons = await Hackathon.find().lean();
+    // Only show approved hackathons to participants
+    const hackathons = await Hackathon.find({ 
+      approvalStatus: 'approved' 
+    })
+    .populate('organizer', 'name email')
+    .populate('participants', '_id')
+    .lean();
 
     const enriched = hackathons.map((hackathon) => ({
       ...hackathon,

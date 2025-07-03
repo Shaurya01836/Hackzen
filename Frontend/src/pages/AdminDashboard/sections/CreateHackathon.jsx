@@ -67,6 +67,8 @@ export function CreateHackathonForm({ onBack }) {
     logo: { uploading: false, error: null },
     gallery: { uploading: false, error: null }
   })
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
@@ -192,6 +194,7 @@ const handleFileSelect = async (file, type) => {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
+  setIsSubmitting(true);
 
   try {
     const res = await fetch("http://localhost:3000/api/hackathons", {
@@ -224,14 +227,22 @@ body: JSON.stringify({
     }
 
     await res.json();
-    alert("✅ Hackathon created successfully!");
-    onBack(); // Go back to previous page
+    
+    // Show success message for 3 seconds
+    setShowSuccessMessage(true);
+    setTimeout(() => {
+      setShowSuccessMessage(false);
+      onBack(); // Go back to previous page after 3 seconds
+    }, 3000);
+    
   } catch (error) {
-  const text = await error?.response?.text?.();
-  console.error("❌ Raw error text:", text);
-  console.error("❌ Submission failed:", error);
-  alert(`Error: ${error.message}`);
-}
+    const text = await error?.response?.text?.();
+    console.error("❌ Raw error text:", text);
+    console.error("❌ Submission failed:", error);
+    alert(`Error: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
 };
 
   const DatePicker = ({ date, onDateChange, placeholder }) => (
@@ -394,6 +405,34 @@ const ImageUploadCard = ({
           </div>
         </div>
       </div>
+
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              🎉 Hackathon Created Successfully!
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Your hackathon "<strong>{formData.title}</strong>" has been submitted for admin approval.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p className="text-sm text-blue-800">
+                <strong>What happens next?</strong><br/>
+                • Admin will review your hackathon<br/>
+                • Once approved, it will be visible to participants<br/>
+                • You'll receive a notification when approved
+              </p>
+            </div>
+            <p className="text-sm text-gray-500">
+              Redirecting back in a few seconds...
+            </p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Basic Information */}
@@ -1012,10 +1051,20 @@ const ImageUploadCard = ({
           </Button>
           <Button
             type="submit"
+            disabled={isSubmitting}
             className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8"
           >
-            <Save className="w-4 h-4 mr-2" />
-            Create Hackathon
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Create Hackathon
+              </>
+            )}
           </Button>
         </div>
       </form>

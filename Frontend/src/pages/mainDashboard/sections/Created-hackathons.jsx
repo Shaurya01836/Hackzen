@@ -11,6 +11,8 @@ import {
   Edit,
   Trash2,
   BarChart3,
+  Check,
+  Clock,
 } from "lucide-react";
 import {
   Card,
@@ -63,6 +65,9 @@ export function CreatedHackathons({ onCreateNew }) {
   const liveHackathons = hackathons.filter((h) => h.status === "ongoing");
   const completedHackathons = hackathons.filter((h) => h.status === "ended");
   const draftHackathons = hackathons.filter((h) => h.status === "draft");
+  const pendingHackathons = hackathons.filter((h) => h.approvalStatus === "pending");
+  const approvedHackathons = hackathons.filter((h) => h.approvalStatus === "approved");
+  const rejectedHackathons = hackathons.filter((h) => h.approvalStatus === "rejected");
   const [selectedHackathon, setSelectedHackathon] = useState(null);
   const [showModal, setShowModal] = useState(false);
 const [editHackathon, setEditHackathon] = useState(null);
@@ -95,6 +100,32 @@ const [editHackathon, setEditHackathon] = useState(null);
     }
   };
 
+  const getApprovalStatusColor = (approvalStatus) => {
+    switch (approvalStatus) {
+      case "approved":
+        return "bg-green-500 text-white";
+      case "pending":
+        return "bg-yellow-500 text-white";
+      case "rejected":
+        return "bg-red-500 text-white";
+      default:
+        return "bg-gray-500 text-white";
+    }
+  };
+
+  const getApprovalStatusText = (approvalStatus) => {
+    switch (approvalStatus) {
+      case "approved":
+        return "✅ Approved - Visible to participants";
+      case "pending":
+        return "⏳ Pending - Awaiting admin approval";
+      case "rejected":
+        return "❌ Rejected - Please review and resubmit";
+      default:
+        return "⏳ Pending - Awaiting admin approval";
+    }
+  };
+
   const renderHackathonCard = (hackathon) => (
     <Card key={hackathon._id} className="">
       <CardHeader>
@@ -112,7 +143,29 @@ const [editHackathon, setEditHackathon] = useState(null);
             >
               {hackathon.status}
             </Badge>
+            <Badge
+              variant="outline"
+              className={`${getApprovalStatusColor(hackathon.approvalStatus)}`}
+            >
+              {hackathon.approvalStatus || "pending"}
+            </Badge>
           </div>
+        </div>
+        {/* Approval Status Info */}
+        <div className="mt-2">
+          <p className="text-sm text-gray-600">
+            {getApprovalStatusText(hackathon.approvalStatus)}
+          </p>
+          {hackathon.approvalStatus === "pending" && (
+            <p className="text-xs text-blue-600 mt-1">
+              💡 Once approved by admin, your hackathon will be visible in the explore section for participants to register.
+            </p>
+          )}
+          {hackathon.approvalStatus === "rejected" && (
+            <p className="text-xs text-red-600 mt-1">
+              💡 Please review the feedback and make necessary changes before resubmitting.
+            </p>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-4 space-y-4">
@@ -176,6 +229,12 @@ const [editHackathon, setEditHackathon] = useState(null);
             {hackathon.judges?.length || 0} judges
           </Badge>
           <Badge variant="outline">{hackathon.tags?.join(", ")}</Badge>
+          {hackathon.approvalStatus === "approved" && (
+            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+              <Eye className="w-3 h-3 mr-1" />
+              Visible in Explore
+            </Badge>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -239,7 +298,7 @@ const [editHackathon, setEditHackathon] = useState(null);
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <ACard>
           <ACardContent className="pt-4">
             <div className="flex items-center gap-3">
@@ -294,6 +353,28 @@ const [editHackathon, setEditHackathon] = useState(null);
             </div>
           </ACardContent>
         </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <Clock className="w-8 h-8 text-yellow-500" />
+              <div>
+                <p className="text-2xl font-bold">{pendingHackathons.length}</p>
+                <p className="text-sm text-gray-500">Pending Approval</p>
+              </div>
+            </div>
+          </ACardContent>
+        </ACard>
+        <ACard>
+          <ACardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <Check className="w-8 h-8 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold">{approvedHackathons.length}</p>
+                <p className="text-sm text-gray-500">Approved</p>
+              </div>
+            </div>
+          </ACardContent>
+        </ACard>
       </div>
 
       <Tabs defaultValue="all" className="space-y-6">
@@ -303,6 +384,9 @@ const [editHackathon, setEditHackathon] = useState(null);
           <TabsTrigger value="registration">Registration Open</TabsTrigger>
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="draft">Drafts</TabsTrigger>
+          <TabsTrigger value="pending">Pending Approval</TabsTrigger>
+          <TabsTrigger value="approved">Approved</TabsTrigger>
+          <TabsTrigger value="rejected">Rejected</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
@@ -328,6 +412,21 @@ const [editHackathon, setEditHackathon] = useState(null);
         <TabsContent value="draft" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {draftHackathons.map(renderHackathonCard)}
+          </div>
+        </TabsContent>
+        <TabsContent value="pending" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {pendingHackathons.map(renderHackathonCard)}
+          </div>
+        </TabsContent>
+        <TabsContent value="approved" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {approvedHackathons.map(renderHackathonCard)}
+          </div>
+        </TabsContent>
+        <TabsContent value="rejected" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {rejectedHackathons.map(renderHackathonCard)}
           </div>
         </TabsContent>
       </Tabs>
