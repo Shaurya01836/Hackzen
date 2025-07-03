@@ -26,7 +26,7 @@ import {
   Eye,
   FolderCode,
 } from "lucide-react";
-import { CreateHackathonForm } from "./CreateHackathon";
+import { CreateHackathon } from "./CreateHackathon";
 
 export function HackathonsPage() {
   const [hackathons, setHackathons] = useState([]);
@@ -161,7 +161,7 @@ export function HackathonsPage() {
           </div>
         </>
       ) : (
-        <CreateHackathonForm
+        <CreateHackathon
           onBack={() => setShowCreateForm(false)}
           onSave={handleCreateHackathon}
         />
