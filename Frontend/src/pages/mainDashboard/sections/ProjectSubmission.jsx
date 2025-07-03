@@ -758,7 +758,7 @@ const method = mode === "edit" ? "PUT" : "POST";
           const result = await res.json();
           if (!res.ok) throw new Error(result.message || "Failed to delete");
 
-          alert("❌ Project deleted successfully");
+          alert("Project deleted successfully");
           onBack?.(); // Redirect user after deletion
         } catch (err) {
           alert("Delete failed: " + err.message);

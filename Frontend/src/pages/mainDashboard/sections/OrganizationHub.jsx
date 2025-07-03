@@ -8,6 +8,7 @@ import {
   FileText,
   CheckCircle,
   X,
+  Clock,
 } from "lucide-react"
 import { Button } from "../../../components/CommonUI/button";
 import {
@@ -65,38 +66,6 @@ export function OrganizationHub() {
     "Other",
   ];
 
-  const organizations = [
-    {
-      name: "Cryptify",
-      description: "Making Crypto Disappear",
-      members: "4+",
-      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "BlockChain",
-    },
-    {
-      name: "HackZen",
-      description: "From 0 to Next 🔝",
-      members: "11+",
-      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "Platform",
-    },
-    {
-      name: "AyurHerb",
-      description: "Step into Nature",
-      members: "2+",
-      logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RSHq3lKmTNFYmCWXFV16f36K5mSEGM.png",
-      type: "HealthCare",
-    },
-  ];
-
-  const applicationStatus = {
-    submitted: true,
-    status: "Under Review",
-    submittedDate: "December 20, 2024",
-    reviewDate: "Expected by December 27, 2024",
-    organizationName: "TechCorp Solutions",
-    contactPerson: "John Smith",
-  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -300,7 +269,7 @@ export function OrganizationHub() {
     }
   };
 
-  // Application form layout (like Create Hackathon page)
+  // Application form overlay (unchanged)
   if (showApplicationForm) {
     return (
       <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -638,258 +607,282 @@ export function OrganizationHub() {
     );
   }
 
-  // Main Organization Hub page (unchanged)
   return (
-    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex-1 flex flex-col min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Header */}
-      <div className="px-6 py-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Organization Hub
-            </h1>
-            <p className="text-sm text-gray-600">
-              Connect with leading Web3 ecosystems
-            </p>
-          </div>
+      <header className="w-full  px-8 py-6 mb-0">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Organization Hub</h1>
+          <p className="text-base text-gray-600">
+            Manage your organization, track your application, and connect with the Web3 ecosystem.
+          </p>
         </div>
-      </div>
+      </header>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="max-w-7xl mx-auto p-6">
-          {/*  Hero Section */}
-          <Card className="mb-8">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-3xl font-bold text-gray-900">
-                Organization Hub
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                <div className="flex-1 max-w-2xl">
-                  <p className="text-gray-600 text-lg mb-6">
-                    Discover and connect with leading Web3 ecosystems on
-                    HackZen. From Layer 1 and Layer 2 blockchains to DeFi,
-                    GameFi, and infrastructure protocols, explore a diverse
-                    range of ecosystems shaping the decentralized future.
-                  </p>
-                  <div className="flex gap-4">
-                    <Button
-                      onClick={() => setShowApplicationForm(true)}
-                      className="font-medium px-6"
-                    >
-                      Apply for Organizer
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="px-6"
-                      onClick={fetchMyApplicationStatus}
-                    >
-                      Check My Application
-                    </Button>
-                  </div>
+      <main className="flex-1 flex flex-col items-center justify-start w-full px-2 md:px-8 py-8">
+        <div className="w-full flex flex-col gap-8">
+          {/* Quick Actions & Stats */}
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Quick Actions Card (50%) */}
+            <div className="w-full md:w-1/2 flex">
+              <Card className="flex-1 max-w-full">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-2">
+                  <Button
+                    onClick={() => setShowApplicationForm(true)}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    Apply for Organizer
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={fetchMyApplicationStatus}
+                  >
+                    Check My Application
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+            {/* Stats Cards (50%) */}
+            <div className="w-full md:w-1/2 flex flex-col md:flex-row gap-4">
+              {/* Status Card */}
+              <Card className="flex-1 flex flex-col items-center justify-center py-4 max-w-full">
+                <div className="flex flex-col items-center">
+                  {orgDetails?.approved ? (
+                    <CheckCircle className="w-8 h-8 mb-2 text-green-500" />
+                  ) : (
+                    <Clock className="w-8 h-8 mb-2 text-yellow-500" />
+                  )}
+                  <CardHeader className="p-0 pb-1 text-center">
+                    <CardTitle className="text-base font-semibold">Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 text-center">
+                    <span className={`text-base font-semibold ${orgDetails?.approved ? "text-green-600" : "text-yellow-600"}`}>
+                      {orgDetails
+                        ? orgDetails.approved
+                          ? "Approved"
+                          : "Pending"
+                        : "N/A"}
+                    </span>
+                  </CardContent>
                 </div>
-               
-        
-              </div>
-            </CardContent>
-          </Card>
+              </Card>
+              {/* Type Card */}
+              <Card className="flex-1 flex flex-col items-center justify-center py-4 max-w-full">
+                <div className="flex flex-col items-center">
+                  <Building2 className="w-8 h-8 mb-2 text-indigo-500" />
+                  <CardHeader className="p-0 pb-1 text-center">
+                    <CardTitle className="text-base font-semibold">Type</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 text-center">
+                    <span className="text-base font-semibold">
+                      {orgDetails?.organizationType || "N/A"}
+                    </span>
+                  </CardContent>
+                </div>
+              </Card>
+              {/* Support Needs Card */}
+              <Card className="flex-1 flex flex-col items-center justify-center py-4 max-w-full">
+                <div className="flex flex-col items-center">
+                  <Users className="w-8 h-8 mb-2 text-purple-500" />
+                  <CardHeader className="p-0 pb-1 text-center">
+                    <CardTitle className="text-base font-semibold">Support Needs</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 text-center">
+                    <span className="text-base font-semibold">
+                      {orgDetails?.supportNeeds?.length ?? 0}
+                    </span>
+                  </CardContent>
+                </div>
+              </Card>
+            </div>
+          </div>
 
-          {/* My Organization Section */}
-          <div className="mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              My Organization
-            </h3>
-            {loadingOrg ? (
-              <Card>
-                <CardContent className="flex items-center justify-center py-16 pt-8">
+          {/* My Organization */}
+          <Card className="w-full shadow-lg rounded-xl">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold text-gray-900">My Organization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingOrg ? (
+                <div className="flex items-center justify-center py-16">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
                     <p className="text-gray-500 text-lg">Loading organization details...</p>
                   </div>
-                </CardContent>
-              </Card>
-            ) : editMode ? (
-              <Card>
-                <CardContent className="py-8">
-                  <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div>
-                      <Label>Organization Name</Label>
-                      <Input
-                        value={editFormData?.name || ""}
-                        onChange={e => handleEditChange("name", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Contact Person</Label>
-                      <Input
-                        value={editFormData?.contactPerson || ""}
-                        onChange={e => handleEditChange("contactPerson", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Email</Label>
-                      <Input
-                        value={editFormData?.email || ""}
-                        onChange={e => handleEditChange("email", e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label>Organization Type</Label>
-                      <Select
-                        value={editFormData?.organizationType || ""}
-                        onValueChange={value => handleEditChange("organizationType", value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {organizationTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Support Needs</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {supportOptions.map(option => (
-                          <label key={option} className="flex items-center gap-2">
-                            <Checkbox
-                              checked={editFormData?.supportNeeds?.includes(option)}
-                              onCheckedChange={checked =>
-                                handleEditSupportNeedsChange(option, checked)
-                              }
-                            />
-                            {option}
-                          </label>
+                </div>
+              ) : editMode ? (
+                <form onSubmit={handleEditSubmit} className="space-y-4 max-w-2xl mx-auto">
+                  <div>
+                    <Label>Organization Name</Label>
+                    <Input
+                      value={editFormData?.name || ""}
+                      onChange={e => handleEditChange("name", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Contact Person</Label>
+                    <Input
+                      value={editFormData?.contactPerson || ""}
+                      onChange={e => handleEditChange("contactPerson", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input
+                      value={editFormData?.email || ""}
+                      onChange={e => handleEditChange("email", e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label>Organization Type</Label>
+                    <Select
+                      value={editFormData?.organizationType || ""}
+                      onValueChange={value => handleEditChange("organizationType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizationTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
                         ))}
-                      </div>
-                    </div>
-                    <div>
-                      <Label>Purpose</Label>
-                      <Textarea
-                        value={editFormData?.purpose || ""}
-                        onChange={e => handleEditChange("purpose", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>Website</Label>
-                      <Input
-                        value={editFormData?.website || ""}
-                        onChange={e => handleEditChange("website", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label>GitHub</Label>
-                      <Input
-                        value={editFormData?.github || ""}
-                        onChange={e => handleEditChange("github", e.target.value)}
-                      />
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button type="submit" className="bg-indigo-600 text-white">Save</Button>
-                      <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : orgDetails ? (
-              <Card>
-                <CardContent className="py-8">
-                  <div className="flex items-start gap-6">
-                    <div className="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-xl">
-                        {orgDetails.name ? orgDetails.name.charAt(0).toUpperCase() : "O"}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xl font-bold text-gray-900">{orgDetails.name}</h4>
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                          {orgDetails.approved ? "Approved" : "Pending"}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 mb-4">
-                        {orgDetails.purpose || "No description available"}
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-500">Contact Person:</span>
-                          <p className="font-medium">{orgDetails.contactPerson}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Email:</span>
-                          <p className="font-medium">{orgDetails.email}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Type:</span>
-                          <p className="font-medium">{orgDetails.organizationType}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Status:</span>
-                          <p className="font-medium">{orgDetails.applicationStatus || "Active"}</p>
-                        </div>
-                        {orgDetails.website && (
-                          <div>
-                            <span className="text-gray-500">Website:</span>
-                            <p className="font-medium">
-                              <a 
-                                href={orgDetails.website} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 hover:underline"
-                              >
-                                {orgDetails.website}
-                              </a>
-                            </p>
-                          </div>
-                        )}
-                        {orgDetails.github && (
-                          <div>
-                            <span className="text-gray-500">GitHub:</span>
-                            <p className="font-medium">
-                              <a 
-                                href={orgDetails.github} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-indigo-600 hover:underline"
-                              >
-                                {orgDetails.github}
-                              </a>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                      {orgDetails.supportNeeds && orgDetails.supportNeeds.length > 0 && (
-                        <div className="mt-4">
-                          <span className="text-gray-500 text-sm">Support Needs:</span>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {orgDetails.supportNeeds.map((need, index) => (
-                              <span 
-                                key={index}
-                                className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
-                              >
-                                {need}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      <Button className="mt-4" onClick={startEdit}>Edit</Button>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Support Needs</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {supportOptions.map(option => (
+                        <label key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={editFormData?.supportNeeds?.includes(option)}
+                            onCheckedChange={checked =>
+                              handleEditSupportNeedsChange(option, checked)
+                            }
+                          />
+                          {option}
+                        </label>
+                      ))}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardContent className="flex items-center justify-center py-16 pt-8">
+                  <div>
+                    <Label>Purpose</Label>
+                    <Textarea
+                      value={editFormData?.purpose || ""}
+                      onChange={e => handleEditChange("purpose", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Website</Label>
+                    <Input
+                      value={editFormData?.website || ""}
+                      onChange={e => handleEditChange("website", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label>GitHub</Label>
+                    <Input
+                      value={editFormData?.github || ""}
+                      onChange={e => handleEditChange("github", e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Button type="submit" className="bg-indigo-600 text-white">Save</Button>
+                    <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
+                  </div>
+                </form>
+              ) : orgDetails ? (
+                <div className="flex flex-col md:flex-row items-start gap-8">
+                  <div className="w-20 h-20 bg-indigo-600 rounded-lg flex items-center justify-center mb-4 md:mb-0">
+                    <span className="text-white font-bold text-3xl">
+                      {orgDetails.name ? orgDetails.name.charAt(0).toUpperCase() : "O"}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
+                      <h4 className="text-2xl font-bold text-gray-900">{orgDetails.name}</h4>
+                      <span className={`text-xs px-2 py-1 rounded ${orgDetails.approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                        {orgDetails.approved ? "Approved" : "Pending"}
+                      </span>
+                    </div>
+                    <p className="text-gray-600 mb-4">
+                      {orgDetails.purpose || "No description available"}
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-500">Contact Person:</span>
+                        <p className="font-medium">{orgDetails.contactPerson}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Email:</span>
+                        <p className="font-medium">{orgDetails.email}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Type:</span>
+                        <p className="font-medium">{orgDetails.organizationType}</p>
+                      </div>
+                    
+                      {orgDetails.website && (
+                        <div>
+                          <span className="text-gray-500">Website:</span>
+                          <p className="font-medium">
+                            <a 
+                              href={orgDetails.website} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:underline"
+                            >
+                              {orgDetails.website}
+                            </a>
+                          </p>
+                        </div>
+                      )}
+                      {orgDetails.github && (
+                        <div>
+                          <span className="text-gray-500">GitHub:</span>
+                          <p className="font-medium">
+                            <a 
+                              href={orgDetails.github} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-indigo-600 hover:underline"
+                            >
+                              {orgDetails.github}
+                            </a>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {orgDetails.supportNeeds && orgDetails.supportNeeds.length > 0 && (
+                      <div className="mt-4">
+                        <span className="text-gray-500 text-sm">Support Needs:</span>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {orgDetails.supportNeeds.map((need, index) => (
+                            <span 
+                              key={index}
+                              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
+                            >
+                              {need}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <Button className="mt-6" onClick={startEdit}>Edit</Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center py-16">
                   <div className="text-center">
                     <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500 text-lg">Nothing Here</p>
@@ -897,55 +890,14 @@ export function OrganizationHub() {
                       Apply to become an organizer to see your organization
                     </p>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* All Organizations Section */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              All Organizations
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {organizations.map((org, index) => (
-                <Card key={index} className="hover:shadow-md transition-shadow">
-                  <CardContent className="pt-8">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="w-16 h-16 bg-black rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-xl">
-                          {org.name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        {org.members}
-                      </div>
-                    </div>
-
-                    <h4 className="text-xl font-bold text-gray-900 mb-2">
-                      {org.name}
-                    </h4>
-                    <p className="text-gray-600 text-sm mb-4">
-                      {org.description}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                        {org.type}
-                      </span>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </div>
-      {/* Application Status Modal */}
+      </main>
+
+      {/* Application Status Modal (unchanged) */}
       {showStatusModal && myOrgInfo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -991,7 +943,6 @@ export function OrganizationHub() {
                         {myOrgInfo.organizationName}
                       </span>
                     </div>
-                    {/* Add more org details here if needed */}
                   </div>
                 ) : myOrgInfo.status === "rejected" ? (
                   <div className="bg-gray-50 rounded-lg p-4 text-sm text-red-600">
