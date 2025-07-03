@@ -30,14 +30,7 @@ const registerForHackathon = async (req, res) => {
     if (!formData.teamName || !formData.teamName.trim()) {
       return res.status(400).json({ message: "Team name is required for registration." });
     }
-    const existingTeam = await Team.findOne({ 
-      hackathon: hackathonId, 
-      name: formData.teamName.trim(),
-      status: 'active'
-    });
-    if (existingTeam) {
-      return res.status(400).json({ message: "Team name already exists for this hackathon." });
-    }
+    // Removed team name uniqueness validation to allow multiple teams with same name
 
     // Registration
     const registration = await Registration.create({
@@ -53,6 +46,24 @@ const registerForHackathon = async (req, res) => {
     await User.findByIdAndUpdate(userId, {
       $addToSet: { registeredHackathonIds: hackathonId },
     });
+
+    // Update user profile with registration data for future auto-fill
+    const profileUpdates = {};
+    if (formData.fullName && !user.name) profileUpdates.name = formData.fullName;
+    if (formData.email && !user.email) profileUpdates.email = formData.email;
+    if (formData.phone && !user.phone) profileUpdates.phone = formData.phone;
+    if (formData.collegeOrCompany && !user.collegeOrCompany) profileUpdates.collegeOrCompany = formData.collegeOrCompany;
+    if (formData.degreeOrRole && !user.degreeOrRole) profileUpdates.degreeOrRole = formData.degreeOrRole;
+    if (formData.yearOfStudyOrExperience && !user.yearOfStudyOrExperience) profileUpdates.yearOfStudyOrExperience = formData.yearOfStudyOrExperience;
+    if (formData.github && !user.github) profileUpdates.github = formData.github;
+    if (formData.linkedin && !user.linkedin) profileUpdates.linkedin = formData.linkedin;
+    if (formData.age && !user.age) profileUpdates.age = formData.age;
+    if (formData.gender && !user.gender) profileUpdates.gender = formData.gender;
+
+    // Only update if there are fields to update
+    if (Object.keys(profileUpdates).length > 0) {
+      await User.findByIdAndUpdate(userId, profileUpdates, { new: true });
+    }
 
     // Team creation
     let newTeam = null;

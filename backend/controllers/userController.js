@@ -181,7 +181,8 @@ const updateUser = async (req, res) => {
   try {
     const allowedFields = [
       "name", "phone", "location", "bio", "website", "github",
-      "githubUsername", "linkedin", "profileImage", "bannerImage"
+      "githubUsername", "linkedin", "profileImage", "bannerImage",
+      "collegeOrCompany", "degreeOrRole", "yearOfStudyOrExperience", "age", "gender"
     ];
 
     if (req.user.role === "admin") {
