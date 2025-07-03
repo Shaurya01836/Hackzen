@@ -1,1068 +1,1401 @@
 "use client"
-
-import { useState } from "react"
-import { useAuth } from "../../../context/AuthContext"; // adjust path if needed
-
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
+import { useState, useRef } from "react"
+import { useAuth } from "../../../context/AuthContext"
+import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { Button } from "../../../components/CommonUI/button"
 import { Input } from "../../../components/CommonUI/input"
 import { Label } from "../../../components/CommonUI/label"
 import { Textarea } from "../../../components/CommonUI/textarea"
-import {
-  Select,SelectContent,SelectItem,SelectTrigger,SelectValue
-} from "../../../components/CommonUI/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/CommonUI/select"
 import { Badge } from "../../../components/CommonUI/badge"
 import { Separator } from "../../../components/CommonUI/separator"
-import { Calendar } from "../../../components/AdminUI/calendar"
-import { Popover, PopoverContent,PopoverTrigger
-} from "../../../components/AdminUI/popover"
-import { X, CalendarIcon, Plus, Minus, Trophy,Users,Clock,MapPin,Target,Sparkles,Save,ArrowLeft,FileText,Award,Settings,Upload,ImageIcon,Loader2,Check,AlertCircle,Locate, IndianRupee, AudioWaveform
-} from "lucide-react"
-import { format } from "date-fns"
-import { cn } from "../../../lib/utils"
+import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
 
-const categories = ["Artificial Intelligence","Fintech","Healthcare","Gaming","EdTech","Social Impact","Open Innovation","Other"
-]
-const difficultyLevels = ["Beginner", "Intermediate", "Advanced"]
-const modes = ["online", "offline", "hybrid"]
+export function CreateHackathon({ onBack }) {
+  const { user, token } = useAuth() // Using AuthContext instead of localStorage
 
-export function CreateHackathonForm({ onBack }) {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    category: "",
-    difficultyLevel: "",
-    location: "",
-    startDate: null,
-    endDate: null,
-    registrationDeadline: null,
-    submissionDeadline: null,
-    maxParticipants: 100,
+    startDate: "",
+    endDate: "",
     teamSize: {
       min: 1,
-      max: 4,
+      max: 1,
       allowSolo: true,
-    },
-    problemStatements: [""],
-    requirements: [""],
-    perks: [""],
-    tags: [],
+    }, // Replace the simple teamSize field with this structure
+    problemStatements: [{ statement: "", type: "" }], // Combined structure
+    status: "upcoming",
+    maxParticipants: 100,
+    registrationDeadline: "",
+    submissionDeadline: "",
+    category: "",
+    difficultyLevel: "Beginner", // Match schema field name
+    location: "",
     mode: "online",
     prizePool: {
       amount: "",
       currency: "USD",
-      breakdown: ""
+      breakdown: "",
     },
-    images: { 
-      banner: null, 
-      logo: null, 
-      gallery: [] 
-    }
+    requirements: [""],
+    perks: [""],
+    tags: [],
+    images: {
+      banner: null,
+      logo: null,
+      gallery: [],
+    },
+    judges: [],
+    mentors: [],
+    participants: [],
+    rounds: [
+      {
+        name: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+      },
+    ],
   })
 
   const [currentTag, setCurrentTag] = useState("")
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadStates, setUploadStates] = useState({
     banner: { uploading: false, error: null },
     logo: { uploading: false, error: null },
-    gallery: { uploading: false, error: null }
+    gallery: { uploading: false, error: null },
   })
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleInputChange = (field, value) => {
-    if (field.includes(".")) {
-      const [parent, child] = field.split(".")
-      setFormData(prev => ({
+  const formTopRef = useRef(null)
+
+  const categories = [
+    "Artificial Intelligence",
+    "Blockchain",
+    "Cybersecurity",
+    "Fintech",
+    "Gaming",
+    "Healthcare",
+    "Sustainability",
+    "Mobile Development",
+    "Web Development",
+    "IoT",
+    "Data Science",
+    "DevOps",
+    "EdTech",
+  ]
+
+  const modes = ["online", "offline", "hybrid"]
+
+  const problemStatementTypes = [
+    "Sponsored",
+    "Industrialized",
+    "Open Innovation",
+    "Social Impact",
+    "Technical Challenge",
+    "Business Case",
+    "Research Based",
+    "Community Driven",
+  ]
+
+  const validateForm = () => {
+    const newErrors = {}
+
+    // Step 0: Basic Info
+    if (step === 0) {
+      if (!formData.title.trim()) newErrors.title = "Title is required"
+      if (!formData.category) newErrors.category = "Category is required"
+      if (!formData.teamSize.min || !formData.teamSize.max) {
+        newErrors.teamSize = "Team size limits are required"
+      } else if (formData.teamSize.min > formData.teamSize.max) {
+        newErrors.teamSize = "Minimum team size cannot be greater than maximum"
+      } else if (formData.teamSize.min < 1 || formData.teamSize.max > 10) {
+        newErrors.teamSize = "Team size must be between 1 and 10 members"
+      }
+    }
+
+    // Step 1: Dates & Media
+    if (step === 1) {
+      if (!formData.startDate) newErrors.startDate = "Start date is required"
+      if (!formData.endDate) newErrors.endDate = "End date is required"
+      if (!formData.registrationDeadline) newErrors.registrationDeadline = "Registration deadline is required"
+    }
+
+    // Step 2: Details
+    if (step === 2) {
+      // At least one problem statement with both fields filled
+      if (
+        !formData.problemStatements.length ||
+        formData.problemStatements.some((ps) => !ps.statement.trim() || !ps.type.trim())
+      ) {
+        newErrors.problemStatements = "All problem statements and types are required"
+      }
+    }
+
+    // Step 3: Requirements & Perks
+    if (step === 3) {
+      // At least one requirement and one perk
+      if (!formData.requirements.length || formData.requirements.some((r) => !r.trim())) {
+        newErrors.requirements = "At least one requirement is required"
+      }
+      if (!formData.perks.length || formData.perks.some((p) => !p.trim())) {
+        newErrors.perks = "At least one perk is required"
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // Image upload function from first file
+  const handleFileSelect = async (file, type) => {
+    if (!file) return
+
+    setUploadStates((prev) => ({
+      ...prev,
+      [type]: { uploading: true, error: null },
+    }))
+
+    const uploadFormData = new FormData()
+    uploadFormData.append("image", file)
+
+    try {
+      const res = await fetch("http://localhost:3000/api/uploads/image", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: uploadFormData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || "Upload failed")
+      }
+
+      // Update formData.images
+      setFormData((prev) => ({
         ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
+        images: {
+          ...prev.images,
+          [type]: data, // { url, publicId, width, height }
+        },
       }))
-    } else {
-      setFormData(prev => ({
+
+      setUploadStates((prev) => ({
         ...prev,
-        [field]: value
+        [type]: { uploading: false, error: null },
+      }))
+    } catch (err) {
+      console.error("Upload error:", err)
+      setUploadStates((prev) => ({
+        ...prev,
+        [type]: { uploading: false, error: err.message },
       }))
     }
   }
 
-  const handleTeamSizeChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      teamSize: {
-        ...prev.teamSize,
-        [field]: field === 'min' ? Number(value) : Number(value),
-        allowSolo: field === 'min' ? Number(value) === 1 : prev.teamSize.min === 1
-      }
-    }))
-  }
-const removeImage = (type, index = null) => {
-  if (type === "gallery" && index !== null) {
-    setFormData(prev => ({
-      ...prev,
-      images: {
-        ...prev.images,
-        gallery: prev.images.gallery.filter((_, i) => i !== index)
-      }
-    }));
-  } else {
-    setFormData(prev => ({
-      ...prev,
-      images: {
-        ...prev.images,
-        [type]: null
-      }
-    }));
-  }
-};
-  const handleArrayChange = (field, index, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].map((item, i) => (i === index ? value : item))
-    }))
+  const removeImage = (type, index = null) => {
+    if (type === "gallery" && index !== null) {
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...prev.images,
+          gallery: prev.images.gallery.filter((_, i) => i !== index),
+        },
+      }))
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        images: {
+          ...prev.images,
+          [type]: null,
+        },
+      }))
+    }
   }
 
-  const addArrayItem = field => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: [...prev[field], ""]
-    }))
+  // Updated submit function with proper backend integration
+  const handleSubmit = async (isDraft = false) => {
+    setIsSubmitting(true)
+
+    try {
+      if (!token) {
+        alert("You must be logged in to create a hackathon.")
+        return
+      }
+
+      // Filter out empty judge emails before submit
+      const filteredJudges = formData.judges.filter(j => j && j.trim() !== "");
+      const filteredMentors = formData.mentors.filter(m => m && m.trim() !== "");
+      const updatedData = {
+        ...formData,
+        judges: filteredJudges,
+        mentors: filteredMentors,
+        tags: formData.tags,
+        problemStatements: formData.problemStatements,
+        requirements: formData.requirements,
+        perks: formData.perks,
+        images: formData.images,
+        rounds: formData.rounds,
+        participants: formData.participants,
+        prizePool: formData.prizePool,
+        teamSize: formData.teamSize,
+      };
+
+      const response = await fetch("http://localhost:3000/api/hackathons", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to create hackathon")
+      }
+
+      const data = await response.json()
+      if (isDraft) {
+        alert("✅ Hackathon saved as draft!")
+      } else {
+        alert("✅ Hackathon created successfully! It will be reviewed by admin before appearing in the explore section.")
+      }
+      onBack() // Redirect to CreatedHackathons
+    } catch (error) {
+      console.error("❌ Submission failed:", error)
+      alert(`Error: ${error.message}`)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const removeArrayItem = (field, index) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
-    }))
+  // Combined Problem Statement handlers
+  const addProblemStatement = () => {
+    setFormData({
+      ...formData,
+      problemStatements: [...formData.problemStatements, { statement: "", type: "" }],
+    })
+  }
+
+  const removeProblemStatement = (index) => {
+    setFormData({
+      ...formData,
+      problemStatements: formData.problemStatements.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateProblemStatement = (index, field, value) => {
+    const updated = [...formData.problemStatements]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, problemStatements: updated })
+  }
+
+  const addRequirement = () => {
+    setFormData({
+      ...formData,
+      requirements: [...formData.requirements, ""],
+    })
+  }
+
+  const removeRequirement = (index) => {
+    setFormData({
+      ...formData,
+      requirements: formData.requirements.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateRequirement = (index, value) => {
+    const updated = [...formData.requirements]
+    updated[index] = value
+    setFormData({ ...formData, requirements: updated })
+  }
+
+  const addPerk = () => {
+    setFormData({
+      ...formData,
+      perks: [...formData.perks, ""],
+    })
+  }
+
+  const removePerk = (index) => {
+    setFormData({
+      ...formData,
+      perks: formData.perks.filter((_, i) => i !== index),
+    })
+  }
+
+  const updatePerk = (index, value) => {
+    const updated = [...formData.perks]
+    updated[index] = value
+    setFormData({ ...formData, perks: updated })
+  }
+
+  // Judge/Mentor handlers
+  const addJudge = () => {
+    setFormData({
+      ...formData,
+      judges: [...formData.judges, ""],
+    })
+  }
+
+  const removeJudge = (index) => {
+    setFormData({
+      ...formData,
+      judges: formData.judges.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateJudge = (index, value) => {
+    const updated = [...formData.judges]
+    updated[index] = value
+    setFormData({ ...formData, judges: updated })
+  }
+
+  // Mentor handlers
+  const addMentor = () => {
+    setFormData({
+      ...formData,
+      mentors: [...formData.mentors, ""],
+    })
+  }
+
+  const removeMentor = (index) => {
+    setFormData({
+      ...formData,
+      mentors: formData.mentors.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateMentor = (index, value) => {
+    const updated = [...formData.mentors]
+    updated[index] = value
+    setFormData({ ...formData, mentors: updated })
+  }
+
+  // Rounds handlers
+  const addRound = () => {
+    setFormData({
+      ...formData,
+      rounds: [
+        ...formData.rounds,
+        {
+          name: "",
+          description: "",
+          startDate: "",
+          endDate: "",
+        },
+      ],
+    })
+  }
+
+  const removeRound = (index) => {
+    setFormData({
+      ...formData,
+      rounds: formData.rounds.filter((_, i) => i !== index),
+    })
+  }
+
+  const updateRound = (index, field, value) => {
+    const updated = [...formData.rounds]
+    updated[index] = { ...updated[index], [field]: value }
+    setFormData({ ...formData, rounds: updated })
   }
 
   const addTag = () => {
     if (currentTag.trim() && !formData.tags.includes(currentTag.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, currentTag.trim()]
-      }))
+      setFormData({
+        ...formData,
+        tags: [...formData.tags, currentTag.trim()],
+      })
       setCurrentTag("")
     }
   }
 
-  const removeTag = tagToRemove => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
+  const removeTag = (tagToRemove) => {
+    setFormData({
+      ...formData,
+      tags: formData.tags.filter((tag) => tag !== tagToRemove),
+    })
   }
 
-  // Cloudinary upload function
-
-
-
-const handleFileSelect = async (file, type) => {
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append("image", file);
-
-  try {
-    const res = await fetch("http://localhost:3000/api/uploads/image", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}` // 🛡️ Your login token
-      },
-      body: formData
-    });
-
-    const data = await res.json();
-
-    // Update formData.images
-    setFormData((prev) => ({
-      ...prev,
-      images: {
-        ...prev.images,
-        [type]: data // { url, publicId, width, height }
-      }
-    }));
-  } catch (err) {
-    console.error("Upload error:", err);
-    alert("Image upload failed");
-  }
-};
-
-
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-
-  try {
-    const res = await fetch("http://localhost:3000/api/hackathons", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}` // ✅ Auth token
-      },
-body: JSON.stringify({
-  ...formData,
-  images: {
-    banner: formData.images.banner || { url: "", publicId: "" },
-    logo: formData.images.logo || { url: "", publicId: "" },
-    gallery: formData.images.gallery || []
-  },
-  difficulty: formData.difficultyLevel,
-  teamSize: formData.teamSize,
-  problemStatements: formData.problemStatements.filter(ps => ps.trim()),
-  requirements: formData.requirements.filter(r => r.trim()),
-  perks: formData.perks.filter(p => p.trim()),
-  tags: formData.tags,
-  status: "upcoming"
-})
-
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to create hackathon");
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      addTag()
     }
-
-    await res.json();
-    
-    // Show success message for 3 seconds
-    setShowSuccessMessage(true);
-    setTimeout(() => {
-      setShowSuccessMessage(false);
-      onBack(); // Go back to previous page after 3 seconds
-    }, 3000);
-    
-  } catch (error) {
-    const text = await error?.response?.text?.();
-    console.error("❌ Raw error text:", text);
-    console.error("❌ Submission failed:", error);
-    alert(`Error: ${error.message}`);
-  } finally {
-    setIsSubmitting(false);
   }
-};
 
-  const DatePicker = ({ date, onDateChange, placeholder }) => (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "w-full justify-start text-left font-normal bg-white/5 border-purple-500/20 text-black hover:bg-white/10",
-            !date && "text-gray-600"
+  // Image upload component
+  const ImageUploadCard = ({ title, description, type, currentImage, multiple = false }) => (
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle className="text-sm">{title}</CardTitle>
+        <CardDescription className="text-xs">{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Upload Area */}
+        <div className="space-y-3">
+          <label
+            htmlFor={`upload-${type}`}
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 ${
+              uploadStates[type]?.uploading
+                ? "border-purple-500 bg-purple-50"
+                : "border-gray-300 hover:border-purple-400 hover:bg-gray-50"
+            }`}
+          >
+            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              {uploadStates[type]?.uploading ? (
+                <Loader2 className="w-8 h-8 mb-2 text-purple-400 animate-spin" />
+              ) : (
+                <Upload className="w-8 h-8 mb-2 text-gray-400" />
+              )}
+              <p className="text-sm text-gray-600">
+                <span className="font-semibold">Click to upload</span> or drag and drop
+              </p>
+              <p className="text-xs text-gray-400">PNG, JPG, GIF up to 5MB</p>
+            </div>
+            <input
+              id={`upload-${type}`}
+              type="file"
+              className="hidden"
+              accept="image/*"
+              multiple={multiple}
+              onChange={(e) => {
+                const file = e.target.files[0]
+                if (file) handleFileSelect(file, type)
+              }}
+              disabled={uploadStates[type]?.uploading}
+            />
+          </label>
+
+          {/* Error Display */}
+          {uploadStates[type]?.error && (
+            <div className="flex items-center text-red-500 text-sm">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              {uploadStates[type].error}
+            </div>
           )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? format(date, "PPP") : placeholder}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 bg-black/90 backdrop-blur-xl border-purple-500/20">
-        <Calendar
-          mode="single"
-          selected={date}
-          onSelect={onDateChange}
-          initialFocus
-          className="text-white"
-        />
-      </PopoverContent>
-    </Popover>
+
+          {/* Current Image Display */}
+          {type !== "gallery" && currentImage && (
+            <div className="relative">
+              <img
+                src={currentImage.url || "/placeholder.svg"}
+                alt={title}
+                className="w-full h-32 object-cover rounded-lg border"
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                className="absolute top-2 right-2 h-6 w-6 p-0"
+                onClick={() => removeImage(type)}
+              >
+                <X className="w-3 h-3" />
+              </Button>
+              <div className="absolute bottom-2 left-2 bg-green-500 rounded-full p-1">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            </div>
+          )}
+
+          {/* Gallery Images Display */}
+          {type === "gallery" && formData.images.gallery.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {formData.images.gallery.map((image, index) => (
+                <div key={index} className="relative">
+                  <img
+                    src={image.url || "/placeholder.svg"}
+                    alt={`Gallery ${index + 1}`}
+                    className="w-full h-20 object-cover rounded border"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    className="absolute top-1 right-1 h-5 w-5 p-0"
+                    onClick={() => removeImage("gallery", index)}
+                  >
+                    <X className="w-2 h-2" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 
-const ImageUploadCard = ({
-  title,
-  description,
-  type,
-  currentImage,
-  multiple = false
-}) => (
-  <div className="border border-purple-500/20 rounded-lg p-4 bg-white/5">
-    <div className="flex items-center justify-between mb-3">
-      <div>
-        <h4 className="text-black font-medium">{title}</h4>
-        <p className="text-gray-800 text-sm">{description}</p>
-      </div>
-      {uploadStates[type]?.uploading && (
-        <Loader2 className="w-5 h-5 animate-spin text-purple-700" />
-      )}
-    </div>
+  // Stepper state
+  const [step, setStep] = useState(0)
+  const steps = ["Basic Info", "Dates & Media", "Details", "Requirements & Perks"]
 
-    {/* Upload Area */}
-    <div className="space-y-3">
-      <label
-        htmlFor={`upload-${type}`}
-        className={cn(
-          "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200",
-          uploadStates[type]?.uploading
-            ? "border-purple-500/50 bg-purple-500/10"
-            : "border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/5"
-        )}
-      >
-        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          <Upload className="w-8 h-8 mb-2 text-purple-400" />
-          <p className="text-sm text-black">
-            <span className="font-semibold">Click to upload</span> or drag and
-            drop
-          </p>
-          <p className="text-xs text-black">PNG, JPG, GIF up to 5MB</p>
-        </div>
-        <input
-          id={`upload-${type}`}
-          type="file"
-          className="hidden"
-          accept="image/*"
-          multiple={multiple}
-          onChange={e => {
-            const file = e.target.files[0]
-            if (file) handleFileSelect(file, type) // ✅ Use backend upload function
-          }}
-          disabled={uploadStates[type]?.uploading}
-        />
-      </label>
+  // Scroll to top helper
+  const scrollToTop = () => {
+    if (formTopRef.current) {
+      formTopRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }
 
-      {/* Error Display */}
-      {uploadStates[type]?.error && (
-        <div className="flex items-center text-red-400 text-sm">
-          <AlertCircle className="w-4 h-4 mr-2" />
-          {uploadStates[type].error}
-        </div>
-      )}
+  // Navigation handlers with scroll
+  const goToStep = (idx) => {
+    if (idx > step) {
+      // Check if current step is valid before allowing navigation
+      if (!validateForm()) {
+        setErrors((prev) => ({
+          ...prev,
+          stepError: "Please fill all required fields before proceeding.",
+        }))
+        return
+      }
+    }
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
+    setStep(idx)
+    scrollToTop()
+  }
 
-      {/* Current Image Display */}
-      {type !== "gallery" && currentImage && (
-        <div className="relative">
-          <img
-            src={currentImage.url || "/placeholder.svg"}
-            alt={title}
-            className="w-full h-32 object-cover rounded-lg border border-purple-500/20"
-          />
-          <Button
-            type="button"
-            size="icon"
-            variant="destructive"
-            className="absolute top-2 right-2 h-6 w-6"
-            onClick={() => removeImage(type)}
-          >
-            <X className="w-3 h-3" />
-          </Button>
-          <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm rounded px-2 py-1">
-            <Check className="w-4 h-4 text-green-400" />
-          </div>
-        </div>
-      )}
+  const nextStep = () => {
+    if (!validateForm()) {
+      setErrors((prev) => ({
+        ...prev,
+        stepError: "Please fill all required fields before proceeding.",
+      }))
+      return
+    }
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
+    setStep((s) => {
+      const next = Math.min(s + 1, steps.length - 1)
+      setTimeout(scrollToTop, 0)
+      return next
+    })
+  }
 
-      {/* Gallery Images Display */}
-      {type === "gallery" && formData.images.gallery.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {formData.images.gallery.map((image, index) => (
-            <div key={index} className="relative">
-              <img
-                src={image.url || "/placeholder.svg"}
-                alt={`Gallery ${index + 1}`}
-                className="w-full h-20 object-cover rounded border border-purple-500/20"
-              />
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                className="absolute top-1 right-1 h-5 w-5"
-                onClick={() => removeImage("gallery", index)}
-              >
-                <X className="w-2 h-2" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  </div>
-)
-
+  const prevStep = () => {
+    setErrors((prev) => ({ ...prev, stepError: undefined }))
+    setStep((s) => {
+      const prev = Math.max(s - 1, 0)
+      setTimeout(scrollToTop, 0)
+      return prev
+    })
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="text-gray-400 hover:text-white hover:bg-white/5"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-black flex items-center">
-              <Sparkles className="w-8 h-8 mr-3 text-purple-600" />
-              Create New Hackathon
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Fill out all the details to create an amazing hackathon experience
-            </p>
-          </div>
+    <div
+      ref={formTopRef}
+      className="flex-1 space-y-6 p-6 bg-gradient-to-br from-white via-purple-50 to-purple-100 min-h-screen"
+    >
+      {/* Stepper Header */}
+      <div className="flex items-center gap-4 mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Create New Hackathon</h1>
+          <p className="text-sm text-gray-500">Set up your hackathon event with all the necessary details</p>
         </div>
       </div>
-
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              🎉 Hackathon Created Successfully!
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Your hackathon has been successfully created and submitted for admin approval.
-            </p>
-            <p className="text-sm text-blue-800">
-              Once admin approves, it will appear in the explore section for participants.
-            </p>
-            <p className="text-sm text-gray-500">
-              Redirecting back in a few seconds...
-            </p>
-          </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-black flex items-center">
-              <FileText className="w-5 h-5 mr-2 black" />
-              Basic Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <Label
-                  htmlFor="title"
-                  className="text-black flex items-center"
-                >
-                  <Sparkles className="w-4 h-4 mr-2 text-purple-700" />
-                  Hackathon Title *
-                </Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={e => handleInputChange("title", e.target.value)}
-                  placeholder="Enter an exciting hackathon title..."
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-700 mt-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="category" className="text-black">
-                  Category *
-                </Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={value => handleInputChange("category", value)}
-                >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    {categories.map(category => (
-                      <SelectItem
-                        key={category}
-                        value={category}
-                        className="text-white hover:bg-white/5"
-                      >
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="difficulty" className="text-black">
-                  Difficulty Level *
-                </Label>
-                <Select
-                  value={formData.difficultyLevel}
-                  onValueChange={value =>
-                    handleInputChange("difficultyLevel", value)
-                  }
-                >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                    <SelectValue placeholder="Select difficulty" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    {difficultyLevels.map(level => (
-                      <SelectItem
-                        key={level}
-                        value={level}
-                        className="text-white hover:bg-white/5"
-                      >
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="description" className="text-black">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={e =>
-                    handleInputChange("description", e.target.value)
-                  }
-                  placeholder="Describe your hackathon, its goals, and what participants can expect..."
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-800 resize-none mt-2"
-                  rows={4}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Images & Media */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-black flex items-center">
-              <ImageIcon className="w-5 h-5 mr-2 text-pink-500" />
-              Images & Media
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <ImageUploadCard
-                title="Banner Image"
-                description="Main banner for your hackathon (recommended: 1200x600px)"
-                type="banner"
-                currentImage={formData.images.banner}
-              />
-              <ImageUploadCard
-                title="Logo"
-                description="Hackathon logo (recommended: 400x400px)"
-                type="logo"
-                currentImage={formData.images.logo}
-              />
-            </div>
-            <div>
-              <ImageUploadCard
-                title="Gallery Images"
-                description="Additional images to showcase your hackathon"
-                type="gallery"
-                currentImage={null}
-                multiple={true}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Event Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-black flex items-center">
-              <Settings className="w-5 h-5 mr-2 text-blue-700" />
-              Event Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <Label
-                  htmlFor="mode"
-                  className="text-black flex items-center"
-                >
-                  <MapPin className="w-4 h-4 mr-2 text-blue-700" />
-                  Mode
-                </Label>
-                <Select
-                  value={formData.mode}
-                  onValueChange={value => handleInputChange("mode", value)}
-                >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    {modes.map(mode => (
-                      <SelectItem
-                        key={mode}
-                        value={mode}
-                        className="text-white hover:bg-white/5 capitalize"
-                      >
-                        {mode}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="location" className="text-black flex items-center">
-                  <Locate className="w-4 h-4 mr-2 text-green-600" />
-                  Location
-                </Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={e => handleInputChange("location", e.target.value)}
-                  placeholder="Virtual, New York, etc."
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 mt-2"
-                />
-              </div>
-
-              <div>
-                <Label
-                  htmlFor="maxParticipants"
-                  className="text-black flex items-center"
-                >
-                  <Users className="w-4 h-4 mr-2 text-green-500" />
-                  Max Participants
-                </Label>
-                <Input
-                  id="maxParticipants"
-                  type="number"
-                  value={formData.maxParticipants}
-                  onChange={e =>
-                    handleInputChange(
-                      "maxParticipants",
-                      Number.parseInt(e.target.value)
-                    )
-                  }
-                  className="bg-white/5 border-purple-500/20 text-black mt-2"
-                />
-              </div>
-            </div>
-
-            <Separator className="bg-purple-500/20" />
-
-            {/* Team Size Configuration */}
-            <div>
-              <Label className="text-black flex items-center mb-3">
-                <Users className="w-4 h-4 mr-2 text-purple-600" />
-                Team Size Configuration
-              </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      {/* Admin Approval Notice */}
+      <Alert className="border-yellow-200 bg-yellow-50">
+        <AlertCircle className="h-4 w-4 text-yellow-600" />
+        <AlertDescription className="text-yellow-800">
+          <strong>Admin Review Required:</strong> Your hackathon will be reviewed by admin before appearing in the explore section. You'll receive a notification once it's approved or rejected.
+        </AlertDescription>
+      </Alert>
+      {/* Stepper Tabs */}
+      <div className="flex gap-2 mb-6">
+        {steps.map((label, idx) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => goToStep(idx)}
+            className={`flex-1 text-center py-2 rounded transition-all duration-150 font-medium border
+              ${
+                step === idx
+                  ? "bg-purple-600 text-white border-purple-600 shadow"
+                  : "bg-white text-purple-700 border-purple-200 hover:bg-purple-50"
+              }
+              ${idx > step ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+            `}
+            disabled={idx > step}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {/* Error message for step navigation */}
+      {errors.stepError && <div className="mb-2 text-red-600 text-sm font-medium px-2">{errors.stepError}</div>}
+      <div className="space-y-6">
+        {step === 0 && (
+          <>
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-purple-600" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>Essential details about your hackathon</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="teamSizeMin" className="text-black text-sm">
-                    Minimum Team Size *
-                  </Label>
-                  <Select
-                    value={formData.teamSize.min.toString()}
-                    onValueChange={(value) => handleTeamSizeChange('min', value)}
-                  >
-                    <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                      <SelectValue placeholder="Min size" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                      {[1, 2, 3, 4, 5].map((size) => (
-                        <SelectItem key={size} value={size.toString()} className="text-white hover:bg-white/5">
-                          {size} {size === 1 ? "member (Solo)" : "members"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="title">Hackathon Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter hackathon title..."
+                    className={errors.title ? "border-red-500" : ""}
+                  />
+                  {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
                 </div>
 
                 <div>
-                  <Label htmlFor="teamSizeMax" className="text-black text-sm">
-                    Maximum Team Size *
-                  </Label>
-                  <Select
-                    value={formData.teamSize.max.toString()}
-                    onValueChange={(value) => handleTeamSizeChange('max', value)}
-                  >
-                    <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                      <SelectValue placeholder="Max size" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size) => (
-                        <SelectItem 
-                          key={size} 
-                          value={size.toString()} 
-                          disabled={size < formData.teamSize.min}
-                          className="text-white hover:bg-white/5"
-                        >
-                          {size} {size === 1 ? "member" : "members"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe your hackathon, its goals, and what participants can expect..."
+                    rows={4}
+                  />
                 </div>
 
-                <div className="flex flex-col justify-end">
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm font-medium text-purple-700">Team Size Range</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      {formData.teamSize.min === formData.teamSize.max
-                        ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
-                        : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
-                    </p>
-                    {formData.teamSize.allowSolo && (
-                      <p className="text-xs text-green-600 mt-1">✓ Solo participation allowed</p>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">Category *</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="difficultyLevel">Difficulty Level</Label>
+                    <Select
+                      value={formData.difficultyLevel}
+                      onValueChange={(value) => setFormData({ ...formData, difficultyLevel: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        <SelectItem value="Beginner">Beginner</SelectItem>
+                        <SelectItem value="Intermediate">Intermediate</SelectItem>
+                        <SelectItem value="Advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <Separator className="bg-purple-500/20" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="mode">Mode</Label>
+                    <Select value={formData.mode} onValueChange={(value) => setFormData({ ...formData, mode: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {modes.map((mode) => (
+                          <SelectItem key={mode} value={mode} className="capitalize">
+                            {mode}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            {/* Problem Statements */}
-            <div>
-              <Label className="text-black flex items-center mb-3">
-                <Target className="w-4 h-4 mr-2 text-orange-600" />
-                Problem Statements
-              </Label>
-              {formData.problemStatements.map((statement, index) => (
-                <div key={index} className="flex gap-2 mb-3">
-                  <Input
-                    value={statement}
-                    onChange={e =>
-                      handleArrayChange(
-                        "problemStatements",
-                        index,
-                        e.target.value
-                      )
-                    }
-                    placeholder={`Problem statement ${index + 1}...`}
-                    className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-                  />
-                  {formData.problemStatements.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() =>
-                        removeArrayItem("problemStatements", index)
+                  <div>
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="Virtual, San Francisco, CA, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="prizeAmount">Prize Amount</Label>
+                    <Input
+                      id="prizeAmount"
+                      type="number"
+                      value={formData.prizePool.amount}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          prizePool: {
+                            ...formData.prizePool,
+                            amount: e.target.value,
+                          },
+                        })
                       }
-                      className="border-red-500/20 text-red-400 hover:bg-red-500/10"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                  )}
+                      placeholder="10000"
+                    />
+                  </div>
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => addArrayItem("problemStatements")}
-                className="border-purple-500/20 text-purple-300 hover:bg-purple-500/10"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Problem Statement
-              </Button>
-            </div>
 
-            {/* Requirements */}
-            <div>
-              <Label className="text-black flex items-center mb-3 block">
-              <AudioWaveform className="w-4 h-4 mr-2 text-orange-600" />
-                Requirements</Label>
-              {formData.requirements.map((requirement, index) => (
-                <div key={index} className="flex gap-2 mb-3">
-                  <Input
-                    value={requirement}
-                    onChange={e =>
-                      handleArrayChange("requirements", index, e.target.value)
+                <div>
+                  <Label htmlFor="prizeBreakdown">Prize Breakdown</Label>
+                  <Textarea
+                    id="prizeBreakdown"
+                    value={formData.prizePool.breakdown}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        prizePool: {
+                          ...formData.prizePool,
+                          breakdown: e.target.value,
+                        },
+                      })
                     }
-                    placeholder={`Requirement ${index + 1}...`}
-                    className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                    placeholder="1st Place: $5000, 2nd Place: $3000, 3rd Place: $2000..."
+                    rows={2}
                   />
-                  {formData.requirements.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="border-red-500/20 text-red-400 hover:bg-red-500/10"
-                      size="icon"
-                      onClick={() => removeArrayItem("requirements", index)}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                  )}
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => addArrayItem("requirements")}
-                className="border-purple-500/20 text-purple-300 hover:bg-purple-500/10"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Requirement
-              </Button>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="teamSizeMin">Minimum Team Size *</Label>
+                    <Select
+                      value={formData.teamSize.min.toString()}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          teamSize: {
+                            ...formData.teamSize,
+                            min: Number.parseInt(value),
+                            allowSolo: Number.parseInt(value) === 1,
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className={errors.teamSize ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Min size" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {[1, 2, 3, 4, 5].map((size) => (
+                          <SelectItem key={size} value={size.toString()}>
+                            {size} {size === 1 ? "member (Solo)" : "members"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="teamSizeMax">Maximum Team Size *</Label>
+                    <Select
+                      value={formData.teamSize.max.toString()}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          teamSize: {
+                            ...formData.teamSize,
+                            max: Number.parseInt(value),
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger className={errors.teamSize ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Max size" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((size) => (
+                          <SelectItem key={size} value={size.toString()} disabled={size < formData.teamSize.min}>
+                            {size} {size === 1 ? "member" : "members"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <div className="p-3 bg-gray-50 rounded-lg border">
+                      <p className="text-sm font-medium text-gray-700">Team Size Range</p>
+                      <p className="text-lg font-bold text-purple-600">
+                        {formData.teamSize.min === formData.teamSize.max
+                          ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
+                          : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
+                      </p>
+                      {formData.teamSize.allowSolo && (
+                        <p className="text-xs text-green-600 mt-1">✓ Solo participation allowed</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
+              </CardContent>
+            </Card>
+          </>
+        )}
+        {step === 1 && (
+          <>
+            {/* Images & Media */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-purple-600" />
+                  Images & Media
+                </CardTitle>
+                <CardDescription>Upload images to make your hackathon more attractive</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <ImageUploadCard
+                    title="Banner Image"
+                    description="Main banner (1200x600px recommended)"
+                    type="banner"
+                    currentImage={formData.images.banner}
+                  />
+                  <ImageUploadCard
+                    title="Logo"
+                    description="Hackathon logo (400x400px recommended)"
+                    type="logo"
+                    currentImage={formData.images.logo}
+                  />
+                </div>
+                <ImageUploadCard
+                  title="Gallery Images"
+                  description="Additional showcase images"
+                  type="gallery"
+                  currentImage={null}
+                  multiple={true}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Dates and Deadlines */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-purple-600" />
+                  Dates & Deadlines
+                </CardTitle>
+                <CardDescription>Set important dates for your hackathon</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate">Start Date *</Label>
+                    <Input
+                      id="startDate"
+                      type="datetime-local"
+                      value={formData.startDate}
+                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                      className={errors.startDate ? "border-red-500" : ""}
+                    />
+                    {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="endDate">End Date *</Label>
+                    <Input
+                      id="endDate"
+                      type="datetime-local"
+                      value={formData.endDate}
+                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                      className={errors.endDate ? "border-red-500" : ""}
+                    />
+                    {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="registrationDeadline">Registration Deadline *</Label>
+                    <Input
+                      id="registrationDeadline"
+                      type="datetime-local"
+                      value={formData.registrationDeadline}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          registrationDeadline: e.target.value,
+                        })
+                      }
+                      className={errors.registrationDeadline ? "border-red-500" : ""}
+                    />
+                    {errors.registrationDeadline && (
+                      <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="submissionDeadline">Submission Deadline</Label>
+                    <Input
+                      id="submissionDeadline"
+                      type="datetime-local"
+                      value={formData.submissionDeadline}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          submissionDeadline: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+        {step === 2 && (
+          <>
+            {/* Problem Statements - Combined */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Problem Statements</CardTitle>
+                <CardDescription>Define the challenges participants will work on and their types</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.problemStatements.map((ps, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Problem Statement {index + 1}</h4>
+                      {formData.problemStatements.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeProblemStatement(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`statement-${index}`}>Statement</Label>
+                      <Textarea
+                        id={`statement-${index}`}
+                        value={ps.statement}
+                        onChange={(e) => updateProblemStatement(index, "statement", e.target.value)}
+                        placeholder="Describe the problem participants need to solve..."
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor={`type-${index}`}>Type</Label>
+                      <Select value={ps.type} onValueChange={(value) => updateProblemStatement(index, "type", value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select problem statement type" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                          {problemStatementTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addProblemStatement} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Problem Statement
+                </Button>
+                {errors.problemStatements && <p className="text-sm text-red-500 mt-1">{errors.problemStatements}</p>}
+              </CardContent>
+            </Card>
+
+            {/* Judges */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Judges</CardTitle>
+                <CardDescription>Add judges by their email addresses</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.judges.length === 0 && (
+                  <div className="text-gray-500 text-sm">No judges added yet.</div>
+                )}
+                {formData.judges.map((judge, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={judge}
+                      onChange={(e) => updateJudge(index, e.target.value)}
+                      placeholder={`Judge email ${index + 1}...`}
+                      className="flex-1"
+                    />
+                    {formData.judges.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeJudge(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addJudge} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Judge
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Mentors */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Mentors</CardTitle>
+                <CardDescription>Add mentors by their email addresses</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.mentors.map((mentor, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      type="email"
+                      value={mentor}
+                      onChange={(e) => updateMentor(index, e.target.value)}
+                      placeholder={`Mentor email ${index + 1}...`}
+                      className="flex-1"
+                    />
+                    {formData.mentors.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeMentor(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addMentor} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Mentor
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Hackathon Rounds */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Hackathon Rounds</CardTitle>
+                <CardDescription>Define the different rounds of your hackathon</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {formData.rounds.map((round, index) => (
+                  <div key={index} className="p-4 border rounded-lg space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium">Round {index + 1}</h4>
+                      {formData.rounds.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeRound(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`round-name-${index}`}>Round Name</Label>
+                        <Input
+                          id={`round-name-${index}`}
+                          value={round.name}
+                          onChange={(e) => updateRound(index, "name", e.target.value)}
+                          placeholder="e.g., Ideation Phase, Prototype Development..."
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label htmlFor={`round-description-${index}`}>Description</Label>
+                        <Textarea
+                          id={`round-description-${index}`}
+                          value={round.description}
+                          onChange={(e) => updateRound(index, "description", e.target.value)}
+                          placeholder="Describe what happens in this round..."
+                          rows={2}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`round-start-${index}`}>Start Date (Optional)</Label>
+                        <Input
+                          id={`round-start-${index}`}
+                          type="datetime-local"
+                          value={round.startDate}
+                          onChange={(e) => updateRound(index, "startDate", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`round-end-${index}`}>End Date (Optional)</Label>
+                        <Input
+                          id={`round-end-${index}`}
+                          type="datetime-local"
+                          value={round.endDate}
+                          onChange={(e) => updateRound(index, "endDate", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Round
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            {/* Requirements */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Requirements</CardTitle>
+                <CardDescription>What participants need to know or have</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.requirements.map((requirement, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={requirement}
+                      onChange={(e) => updateRequirement(index, e.target.value)}
+                      placeholder={`Requirement ${index + 1}...`}
+                      className="flex-1"
+                    />
+                    {formData.requirements.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeRequirement(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addRequirement} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Requirement
+                </Button>
+              </CardContent>
+            </Card>
 
             {/* Perks */}
-            <div>
-              <Label className="text-black flex items-center mb-3">
-                <Sparkles className="w-4 h-4 mr-2 text-yellow-600" />
-                Perks & Benefits
-              </Label>
-              {formData.perks.map((perk, index) => (
-                <div key={index} className="flex gap-2 mb-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Perks & Benefits</CardTitle>
+                <CardDescription>What participants will get from joining</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {formData.perks.map((perk, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={perk}
+                      onChange={(e) => updatePerk(index, e.target.value)}
+                      placeholder={`Perk ${index + 1}...`}
+                      className="flex-1"
+                    />
+                    {formData.perks.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removePerk(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addPerk} className="w-full bg-transparent">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Perk
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Tags */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+                <CardDescription>Add relevant tags to help participants find your hackathon</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
                   <Input
-                    value={perk}
-                    onChange={e =>
-                      handleArrayChange("perks", index, e.target.value)
-                    }
-                    placeholder={`Perk ${index + 1}...`}
-                    className="bg-white/5 border-purple-500/20 text-white placeholder-gray-400"
+                    value={currentTag}
+                    onChange={(e) => setCurrentTag(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Enter a tag and press Enter..."
+                    className="flex-1"
                   />
-                  {formData.perks.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeArrayItem("perks", index)}
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                  )}
+                  <Button type="button" onClick={addTag} disabled={!currentTag.trim()}>
+                    Add Tag
+                  </Button>
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => addArrayItem("perks")}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Perk
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Dates & Timeline */}
-        <Card >
-          <CardHeader>
-            <CardTitle className="text-black flex items-center">
-              <Clock className="w-5 h-5 mr-2 text-green-600" />
-              Dates & Timeline
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label className="text-black mb-2 block">Start Date *</Label>
-                <DatePicker
-                  date={formData.startDate}
-                  onDateChange={date => handleInputChange("startDate", date)}
-                  placeholder="Select start date"
-                />
-              </div>
-
-              <div>
-                <Label className="text-black mb-2 block">End Date *</Label>
-                <DatePicker
-                  date={formData.endDate}
-                  onDateChange={date => handleInputChange("endDate", date)}
-                  placeholder="Select end date"
-                />
-              </div>
-
-              <div>
-                <Label className="text-black mb-2 block">
-                  Registration Deadline *
-                </Label>
-                <DatePicker
-                  date={formData.registrationDeadline}
-                  onDateChange={date =>
-                    handleInputChange("registrationDeadline", date)
-                  }
-                  placeholder="Select registration deadline"
-                />
-              </div>
-
-              <div>
-                <Label className="black mb-2 block">
-                  Submission Deadline
-                </Label>
-                <DatePicker
-                  date={formData.submissionDeadline}
-                  onDateChange={date =>
-                    handleInputChange("submissionDeadline", date)
-                  }
-                  placeholder="Select submission deadline"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Tags */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-black ">Tags</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-1 space-y-4">
-            <div className="flex gap-2">
-              <Input
-                value={currentTag}
-                onChange={e => setCurrentTag(e.target.value)}
-                placeholder="Add a tag..."
-                className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-                onKeyPress={e =>
-                  e.key === "Enter" && (e.preventDefault(), addTag())
-                }
-              />
-              <Button
-                type="button"
-                onClick={addTag}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.tags.map((tag, index) => (
-                <Badge
-                  key={index}
-                  className="bg-purple-500/20 text-purple-300 border-purple-500/30 hover:bg-purple-500/30"
-                >
-                  {tag}
-                  <button
-                    type="button"
-                    onClick={() => removeTag(tag)}
-                    className="ml-2 hover:text-red-400"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Prize Pool */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-black flex items-center">
-              <Award className="w-5 h-5 mr-2 text-yellow-500" />
-              Prize Pool
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <Label
-                  htmlFor="prizeAmount"
-                  className="text-black flex items-center"
-                >
-                  <Trophy className="w-4 h-4 mr-2 text-yellow-600" />
-                  Prize Amount
-                </Label>
-                <Input
-                  id="prizeAmount"
-                  type="number"
-                  value={formData.prizePool.amount}
-                  onChange={e =>
-                    handleInputChange("prizePool.amount", e.target.value)
-                  }
-                  placeholder="10000"
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 mt-2"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="currency" className="text-black flex items-center">
-                  <IndianRupee className="w-4 h-4 mr-2 text-yellow-600" />
-                  Currency
-                </Label>
-                <Select
-                  value={formData.prizePool.currency}
-                  onValueChange={value =>
-                    handleInputChange("prizePool.currency", value)
-                  }
-                >
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    <SelectItem
-                      value="USD"
-                      className="text-white hover:bg-white/5"
-                    >
-                      USD
-                    </SelectItem>
-                    <SelectItem
-                      value="EUR"
-                      className="text-white hover:bg-white/5"
-                    >
-                      EUR
-                    </SelectItem>
-                    <SelectItem
-                      value="GBP"
-                      className="text-white hover:bg-white/5"
-                    >
-                      GBP
-                    </SelectItem>
-                    <SelectItem
-                      value="INR"
-                      className="text-white hover:bg-white/5"
-                    >
-                      INR
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="prizeBreakdown" className="text-black">
-                Prize Breakdown
-              </Label>
-              <Textarea
-                id="prizeBreakdown"
-                value={formData.prizePool.breakdown}
-                onChange={e =>
-                  handleInputChange("prizePool.breakdown", e.target.value)
-                }
-                placeholder="1st Place: $5000, 2nd Place: $3000, 3rd Place: $2000..."
-                className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 resize-none mt-2"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onBack}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
-          >
-            Cancel
+                {formData.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="ml-1 hover:text-red-600">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+        {/* Navigation */}
+        <div className="flex justify-between mt-4">
+          <Button onClick={prevStep} disabled={step === 0} variant="outline">
+            Previous
           </Button>
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 px-8"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Create Hackathon
-              </>
-            )}
-          </Button>
+          {step < steps.length - 1 ? <Button onClick={nextStep}>Next</Button> : null}
         </div>
-      </form>
+      </div>
+      {/* Sidebar */}
+      <div className="space-y-6">
+        {/* Only show on last step */}
+        {step === 3 && (
+          <>
+            {/* Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-600" />
+                  Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="maxParticipants">Max Participants</Label>
+                  <Input
+                    id="maxParticipants"
+                    type="number"
+                    value={formData.maxParticipants}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        maxParticipants: Number.parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min="1"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                      <SelectItem value="ongoing">Ongoing</SelectItem>
+                      <SelectItem value="ended">Ended</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Preview */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription>How your hackathon will appear to participants</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="p-3 border rounded-lg">
+                  <h3 className="font-medium">{formData.title || "Hackathon Title"}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {formData.description || "Hackathon description will appear here..."}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    {formData.category && <Badge variant="outline">{formData.category}</Badge>}
+                    <Badge variant="outline">{formData.difficultyLevel}</Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  onClick={() => handleSubmit(false)}
+                  disabled={isSubmitting}
+                  className="w-full bg-purple-500 hover:bg-purple-600"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {isSubmitting ? "Creating..." : "Create Hackathon"}
+                </Button>
+                <Button onClick={() => handleSubmit(true)} disabled={isSubmitting} variant="outline" className="w-full">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Save as Draft
+                </Button>
+                <Separator />
+                <Button onClick={onBack} variant="outline" className="w-full bg-transparent">
+                  Cancel
+                </Button>
+                
+                {/* Admin Approval Notice */}
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 text-sm">
+                    <strong>Note:</strong> Your hackathon will be reviewed by admin before appearing in the explore section.
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
+
+            {/* Help */}
+            <Alert>
+              <FileText className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Tip:</strong> You can save your hackathon as a draft and continue editing later. Required fields
+                are marked with an asterisk (*).
+              </AlertDescription>
+            </Alert>
+          </>
+        )}
+      </div>
     </div>
   )
 }
