@@ -34,6 +34,7 @@ import { Skeleton } from "../../../components/DashboardUI/skeleton";
 // Import the ProjectSubmission component
 import ProjectSubmission from "./ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 
 export default function MyHackathons() {
   const navigate = useNavigate();
@@ -204,65 +205,6 @@ export default function MyHackathons() {
       />
     );
   }
-
-  const renderHackathonCard = (hackathon) => {
-    return (
-      <ACard
-        key={hackathon.id}
-        className="w-full max-w-xs flex flex-col overflow-y-hidden max-h-72 cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
-        onClick={() => handleHackathonClick(hackathon.id, hackathon.name)}
-      >
-        {/* Thumbnail Section */}
-        <div className="relative h-40 w-full">
-          <img
-            src={
-              hackathon.image ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
-            }
-            alt={hackathon.name}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-          {/* Prize Pool Badge */}
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
-              <Trophy className="w-3 h-3 mr-1" />
-              {hackathon.prize || "TBA"}
-            </Badge>
-          </div>
-        </div>
-        {/* Card Content */}
-        <div className="p-4 flex flex-col gap-3">
-          <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-1 ">
-            {hackathon.name}
-          </h3>
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4 text-indigo-500" />
-              {hackathon.deadline}
-            </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4 text-indigo-500" />
-              {hackathon.location || "Online"}
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap mt-1">
-            <Badge
-              variant="outline"
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-            >
-              {hackathon.category}
-            </Badge>
-            <Badge
-              variant="outline"
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-            >
-              {hackathon.difficulty}
-            </Badge>
-          </div>
-        </div>
-      </ACard>
-    );
-  };
 
   const renderProjectCard = (project) => (
     <Card
@@ -506,7 +448,13 @@ export default function MyHackathons() {
                 <HackathonsSkeleton />
               ) : hackathons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {hackathons.map(renderHackathonCard)}
+                  {hackathons.map((hackathon) => (
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      onClick={handleHackathonClick}
+                    />
+                  ))}
                 </div>
               ) : (
                 <Card>
@@ -535,7 +483,13 @@ export default function MyHackathons() {
                 <HackathonsSkeleton />
               ) : savedHackathons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {savedHackathons.map(renderHackathonCard)}
+                  {savedHackathons.map((hackathon) => (
+                    <HackathonCard
+                      key={hackathon.id}
+                      hackathon={hackathon}
+                      onClick={handleHackathonClick}
+                    />
+                  ))}
                 </div>
               ) : (
                 <Card>
