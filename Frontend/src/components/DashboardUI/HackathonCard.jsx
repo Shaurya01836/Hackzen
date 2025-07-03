@@ -3,6 +3,7 @@ import { Button } from "../CommonUI/button";
 import { ACard } from "./AnimatedCard";
 import { Trophy, Clock, MapPin } from "lucide-react";
 
+
 export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
   return (
     <ACard
@@ -62,18 +63,19 @@ export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
           <Button
             size="sm"
             className="w-full"
-            onClick={e => {
-              e.stopPropagation();
-              onSubmitProject && onSubmitProject(hackathon);
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents card click from triggering
+              onSubmitProject && onSubmitProject(hackathon); // 🔥 This line triggers the form to open
             }}
           >
             Submit Project
           </Button>
+
           <Button
             size="sm"
             variant="outline"
             className="w-full"
-            onClick={e => {
+            onClick={(e) => {
               e.stopPropagation();
               onEdit && onEdit(hackathon);
             }}

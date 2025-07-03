@@ -35,6 +35,8 @@ import { Skeleton } from "../../../components/DashboardUI/skeleton";
 import ProjectSubmission from "./ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
+import ParticipantSubmissionForm from "./ParticipantSubmitForm";
+
 
 export default function MyHackathons() {
   const navigate = useNavigate();
@@ -48,6 +50,7 @@ export default function MyHackathons() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
+  const [showSubmissionForm, setShowSubmissionForm] = useState(false);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
@@ -343,6 +346,15 @@ export default function MyHackathons() {
     </div>
   );
 
+  if (showSubmissionForm && selectedHackathon) {
+  return (
+    <ParticipantSubmissionForm
+      hackathon={selectedHackathon}
+      onBack={() => setShowSubmissionForm(false)}
+    />
+  );
+}
+
   // Main dashboard view
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -450,10 +462,14 @@ export default function MyHackathons() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {hackathons.map((hackathon) => (
                     <HackathonCard
-                      key={hackathon.id}
-                      hackathon={hackathon}
-                      onClick={handleHackathonClick}
-                    />
+  key={hackathon.id}
+  hackathon={hackathon}
+  onClick={handleHackathonClick}
+  onSubmitProject={(hackathon) => {
+    setSelectedHackathon(hackathon);
+    setShowSubmissionForm(true);
+  }}
+/>
                   ))}
                 </div>
               ) : (
@@ -488,6 +504,9 @@ export default function MyHackathons() {
                       key={hackathon.id}
                       hackathon={hackathon}
                       onClick={handleHackathonClick}
+                      onSubmitProject={(hackathon) => {
+                        setSelectedHackathon(hackathon);
+                      }}
                     />
                   ))}
                 </div>
