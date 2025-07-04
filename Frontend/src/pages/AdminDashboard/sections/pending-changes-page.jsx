@@ -107,59 +107,83 @@ export function PendingChangesPage() {
             <CardContent className="space-y-4">
               {/* Current vs Proposed Changes */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Current Information */}
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">Current Information</h4>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Name:</strong> {org.name}</p>
-                    <p><strong>Contact Person:</strong> {org.contactPerson}</p>
-                    <p><strong>Email:</strong> {org.email}</p>
-                    <p><strong>Type:</strong> {org.organizationType}</p>
-                    <p><strong>Purpose:</strong> {org.purpose || "N/A"}</p>
-                    <p><strong>Support Needs:</strong> {org.supportNeeds?.join(", ") || "None"}</p>
-                    {org.website && (
-                      <p>
-                        <Globe className="inline-block w-4 h-4 mr-1" />
-                        <a href={org.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {org.website}
-                        </a>
-                      </p>
-                    )}
-                    {org.github && (
-                      <p>
-                        <Github className="inline-block w-4 h-4 mr-1" />
-                        <a href={org.github} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {org.github}
-                        </a>
-                      </p>
-                    )}
+                    {[
+                      "name",
+                      "contactPerson",
+                      "email",
+                      "organizationType",
+                      "purpose",
+                      "supportNeeds",
+                      "website",
+                      "github"
+                    ].map((field) => {
+                      const oldValue = field === "supportNeeds"
+                        ? org[field]?.join(", ") || "None"
+                        : org[field] || (field === "purpose" ? "N/A" : "");
+                      const newValue = field === "supportNeeds"
+                        ? org.pendingChanges[field]?.join(", ") || "None"
+                        : org.pendingChanges[field] || (field === "purpose" ? "N/A" : "");
+                      const changed = oldValue !== newValue;
+                      return (
+                        <p
+                          key={field}
+                          className={
+                            changed
+                              ? "bg-blue-50 border-l-4 border-blue-500 px-2 py-1 rounded"
+                              : "bg-gray-50 px-2 py-1 rounded"
+                          }
+                        >
+                          <strong>{field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}:</strong> {oldValue}
+                          {changed && (
+                            <span className="ml-2 text-blue-500 font-semibold">(changed)</span>
+                          )}
+                        </p>
+                      );
+                    })}
                   </div>
                 </div>
 
+                {/* Proposed Changes */}
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-3">Proposed Changes</h4>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Name:</strong> {org.pendingChanges.name}</p>
-                    <p><strong>Contact Person:</strong> {org.pendingChanges.contactPerson}</p>
-                    <p><strong>Email:</strong> {org.pendingChanges.email}</p>
-                    <p><strong>Type:</strong> {org.pendingChanges.organizationType}</p>
-                    <p><strong>Purpose:</strong> {org.pendingChanges.purpose || "N/A"}</p>
-                    <p><strong>Support Needs:</strong> {org.pendingChanges.supportNeeds?.join(", ") || "None"}</p>
-                    {org.pendingChanges.website && (
-                      <p>
-                        <Globe className="inline-block w-4 h-4 mr-1" />
-                        <a href={org.pendingChanges.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {org.pendingChanges.website}
-                        </a>
-                      </p>
-                    )}
-                    {org.pendingChanges.github && (
-                      <p>
-                        <Github className="inline-block w-4 h-4 mr-1" />
-                        <a href={org.pendingChanges.github} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                          {org.pendingChanges.github}
-                        </a>
-                      </p>
-                    )}
+                    {[
+                      "name",
+                      "contactPerson",
+                      "email",
+                      "organizationType",
+                      "purpose",
+                      "supportNeeds",
+                      "website",
+                      "github"
+                    ].map((field) => {
+                      const oldValue = field === "supportNeeds"
+                        ? org[field]?.join(", ") || "None"
+                        : org[field] || (field === "purpose" ? "N/A" : "");
+                      const newValue = field === "supportNeeds"
+                        ? org.pendingChanges[field]?.join(", ") || "None"
+                        : org.pendingChanges[field] || (field === "purpose" ? "N/A" : "");
+                      const changed = oldValue !== newValue;
+                      return (
+                        <p
+                          key={field}
+                          className={
+                            changed
+                              ? "bg-blue-50 border-l-4 border-blue-500 px-2 py-1 rounded"
+                              : "bg-gray-50 px-2 py-1 rounded"
+                          }
+                        >
+                          <strong>{field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1')}:</strong> {newValue}
+                          {changed && (
+                            <span className="ml-2 text-blue-500 font-semibold">(requested)</span>
+                          )}
+                        </p>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
