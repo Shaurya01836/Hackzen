@@ -64,6 +64,7 @@ app.use("/api/registration", require("./routes/hackathonRegistrationRoutes"));
 app.use("/api/organizations", require("./routes/organizationRoutes"));
 app.use("/api/articles", require("./routes/articleRoutes")); // ✅ includes like route
 app.use("/api/newsletter", newsletterRoutes);
+app.use('/api/submission-form',require("./routes/submissionFormRoutes"));
 
 // ✅ Server + Socket.IO setup
 const server = http.createServer(app);
