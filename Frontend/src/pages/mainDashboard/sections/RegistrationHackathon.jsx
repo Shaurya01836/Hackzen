@@ -214,10 +214,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
     setIsSubmitting(true);
     try {
-      const userData = JSON.parse(localStorage.getItem("user"));
+      const user = JSON.parse(localStorage.getItem("user"));
       const token = localStorage.getItem("token"); // assuming you store JWT here
 
-      if (!userData || !token) {
+      if (!user || !token) {
         console.error("You must be logged in to register.");
         return;
       }

@@ -134,6 +134,9 @@ const createTeam = async (req, res) => {
     }
   } catch (err) {
     console.error('Error creating team:', err);
+    if (err.code === 11000) {
+      return res.status(400).json({ error: 'Team name already exists for this hackathon' });
+    }
     res.status(500).json({ error: 'Failed to create team', details: err.message });
   }
 };

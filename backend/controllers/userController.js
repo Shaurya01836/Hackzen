@@ -181,8 +181,7 @@ const updateUser = async (req, res) => {
   try {
     const allowedFields = [
       "name", "phone", "location", "bio", "website", "github",
-      "githubUsername", "linkedin", "profileImage", "bannerImage",
-      "collegeOrCompany", "degreeOrRole", "yearOfStudyOrExperience", "age", "gender"
+      "githubUsername", "linkedin", "profileImage", "bannerImage"
     ];
 
     if (req.user.role === "admin") {
@@ -330,3 +329,5 @@ module.exports = {
   saveHackathon,
   getMe
 };
+
+
