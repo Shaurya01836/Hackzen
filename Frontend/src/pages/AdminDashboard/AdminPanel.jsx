@@ -18,6 +18,7 @@ import {
   Mail,
   Building,
   Wrench,
+  Clock,
 } from "lucide-react";
 
 import {
@@ -52,6 +53,7 @@ import { FlaggedContentPage } from "./sections/flagged-content-page";
 import { SupportInboxPage } from "./sections/support-inbox-page";
 import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
+import { PendingChangesPage } from "./sections/pending-changes-page";
 import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 
 export default function AdminPanel() {
@@ -144,6 +146,12 @@ export default function AdminPanel() {
       onClick: () => setActiveSection("blogs"),
     },
     {
+      title: "Pending Changes",
+      icon: Clock,
+      key: "pending-changes",
+      onClick: () => setActiveSection("pending-changes"),
+    },
+    {
       title: "Flagged Content",
       icon: Flag,
       key: "flagged",
@@ -208,6 +216,8 @@ export default function AdminPanel() {
         return <OrganizerRequestsPage />;
       case "blogs":
         return <BlogManage />;
+      case "pending-changes":
+        return <PendingChangesPage />;
       case "newsletter":
         return <NewsletterSender />;
       case "analytics":
