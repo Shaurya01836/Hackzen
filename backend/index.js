@@ -65,6 +65,7 @@ app.use("/api/organizations", require("./routes/organizationRoutes"));
 app.use("/api/articles", require("./routes/articleRoutes")); // ✅ includes like route
 app.use("/api/newsletter", newsletterRoutes);
 app.use('/api/submission-form',require("./routes/submissionFormRoutes"));
+app.use('/api/users/2fa', require('./routes/2fa'));
 
 // ✅ Server + Socket.IO setup
 const server = http.createServer(app);

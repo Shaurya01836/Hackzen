@@ -3,6 +3,7 @@ import { Github } from "lucide-react";
 import GoogleIcon from "../../components/common/GoogleIcon";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function Register() {
   const [form, setForm] = useState({
@@ -13,6 +14,7 @@ function Register() {
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
 
   // Get redirectTo from URL query parameters
   const searchParams = new URLSearchParams(location.search);
@@ -36,9 +38,8 @@ function Register() {
         password: form.password
       });
 
-      // Store token and user info
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      // Store token and user info using context
+      login(res.data.user, res.data.token);
 
       // Navigate to redirectTo if specified, otherwise to dashboard
       if (redirectTo) {

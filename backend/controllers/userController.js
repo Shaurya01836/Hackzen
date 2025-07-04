@@ -114,6 +114,11 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // 2FA check
+    if (user.twoFA && user.twoFA.enabled) {
+      return res.json({ require2FA: true, userId: user._id });
+    }
+
     res.json({
       user: {
         _id: user._id,
