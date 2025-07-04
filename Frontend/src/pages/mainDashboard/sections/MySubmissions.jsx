@@ -1,4 +1,5 @@
 "use client";
+
 import {
   ArrowLeft,
   FileText,
@@ -23,136 +24,106 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
-
-const submissions = [
-  {
-    id: 1,
-    name: "Smart City Dashboard",
-    hackathon: "AI Innovation Challenge",
-    github: "github.com/user/smart-city",
-    youtube: "youtube.com/watch?v=abc",
-    demo: "smartcity-demo.vercel.app",
-    status: "Judged",
-    score: 85,
-    rank: 3,
-    submittedDate: "Dec 20, 2024",
-    description:
-      "A comprehensive dashboard for smart city management using AI and IoT data",
-    technologies: ["React", "Node.js", "TensorFlow", "MongoDB"],
-    feedback: "Great implementation of AI algorithms. UI could be improved.",
-  },
-  {
-    id: 2,
-    name: "AI Chatbot Assistant",
-    hackathon: "AI Innovation Challenge",
-    github: "github.com/user/ai-chatbot",
-    youtube: "",
-    demo: "ai-assistant.netlify.app",
-    status: "Submitted",
-    score: null,
-    rank: null,
-    submittedDate: "Dec 21, 2024",
-    description:
-      "An intelligent chatbot that helps users with daily tasks and queries",
-    technologies: ["Python", "OpenAI", "Flask", "React"],
-    feedback: null,
-  },
-  {
-    id: 3,
-    name: "DeFi Trading Platform",
-    hackathon: "Web3 Builder Fest",
-    github: "github.com/user/defi-platform",
-    youtube: "youtube.com/watch?v=xyz",
-    demo: "defi-trader.eth",
-    status: "Judged",
-    score: 92,
-    rank: 1,
-    submittedDate: "Nov 26, 2024",
-    description:
-      "A decentralized trading platform with automated market making",
-    technologies: ["Solidity", "Web3.js", "React", "Hardhat"],
-    feedback: "Excellent smart contract implementation and user experience.",
-  },
-];
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export function MySubmissions() {
- 
-  const judgedSubmissions = submissions.filter((s) => s.status === "Judged");
-  const pendingSubmissions = submissions.filter(
-    (s) => s.status === "Submitted"
-  );
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3000/api/projects/mine", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const submitted = res.data.filter((p) => p.status === "submitted");
+        setProjects(submitted);
+      } catch (err) {
+        console.error("Error fetching submitted projects:", err);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  const judgedSubmissions = projects.filter((p) => p.scores?.length > 0);
+  const pendingSubmissions = projects.filter((p) => p.scores?.length === 0);
 
   const renderSubmissionCard = (submission) => (
-    <ACard key={submission.id} className="hover:ring-2 hover:ring-indigo-300">
+    <ACard key={submission._id} className="hover:ring-2 hover:ring-indigo-300">
       <ACardHeader>
         <div className="flex items-start justify-between">
-          <div>
-            <ACardTitle className="text-lg text-indigo-700">
-              {submission.name}
-            </ACardTitle>
-            <ACardDescription className="mt-1">
-              {submission.hackathon} • Submitted {submission.submittedDate}
-            </ACardDescription>
+          <div className="flex gap-3 items-center">
+            {submission.logo?.url && (
+              <img
+                src={submission.logo.url}
+                alt="logo"
+                className="w-10 h-10 rounded-md object-cover"
+              />
+            )}
+            <div>
+              <ACardTitle className="text-lg text-indigo-700">
+                {submission.title}
+              </ACardTitle>
+              <ACardDescription className="mt-1 text-sm">
+                {submission.oneLineIntro || "No summary available"}
+              </ACardDescription>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge
-              variant={submission.status === "Judged" ? "default" : "secondary"}
+              variant={submission.scores?.length > 0 ? "default" : "secondary"}
             >
-              {submission.status}
+              {submission.scores?.length > 0 ? "Judged" : "Submitted"}
             </Badge>
-            {submission.rank && (
-              <Badge
-                variant="outline"
-                className="bg-yellow-50 text-yellow-700 border-yellow-200"
-              >
-                #{submission.rank}
-              </Badge>
-            )}
           </div>
         </div>
       </ACardHeader>
       <ACardContent className="pt-4 space-y-4">
-        <p className="text-sm text-gray-600">{submission.description}</p>
-
         <div className="flex flex-wrap gap-1">
-          {submission.technologies.map((tech) => (
+          {submission.skills?.map((skill) => (
             <Badge
-              key={tech}
+              key={skill}
               className="bg-indigo-100 text-indigo-700"
               variant="outline"
             >
-              {tech}
+              {skill}
             </Badge>
           ))}
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button
-            size="sm"
-            variant="default"
-            className="flex items-center gap-1"
-          >
-            <Github className="w-3 h-3" />
-            GitHub
-          </Button>
-          {submission.youtube && (
+          {submission.repoLink && (
             <Button
               size="sm"
               variant="default"
               className="flex items-center gap-1"
+              onClick={() => window.open(submission.repoLink, "_blank")}
             >
-              <Youtube className="w-3 h-3" />
-              Demo Video
+              <Github className="w-3 h-3" /> GitHub
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="default"
-            className="flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            Live Demo
-          </Button>
+          {submission.videoLink && (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex items-center gap-1"
+              onClick={() => window.open(submission.videoLink, "_blank")}
+            >
+              <Youtube className="w-3 h-3" /> Video
+            </Button>
+          )}
+          {submission.websiteLink && (
+            <Button
+              size="sm"
+              variant="default"
+              className="flex items-center gap-1"
+              onClick={() => window.open(submission.websiteLink, "_blank")}
+            >
+              <ExternalLink className="w-3 h-3" /> Live
+            </Button>
+          )}
         </div>
       </ACardContent>
     </ACard>
@@ -161,7 +132,6 @@ export function MySubmissions() {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center gap-4">
-      
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Submissions</h1>
           <p className="text-sm text-gray-500">
@@ -176,7 +146,7 @@ export function MySubmissions() {
             <div className="flex items-center gap-3">
               <FileText className="w-8 h-8 text-blue-500" />
               <div>
-                <p className="text-2xl font-bold">{submissions.length}</p>
+                <p className="text-2xl font-bold">{projects.length}</p>
                 <p className="text-sm text-gray-500">Total Submissions</p>
               </div>
             </div>
@@ -198,9 +168,7 @@ export function MySubmissions() {
             <div className="flex items-center gap-3">
               <Upload className="w-8 h-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">
-                  {pendingSubmissions.length}
-                </p>
+                <p className="text-2xl font-bold">{pendingSubmissions.length}</p>
                 <p className="text-sm text-gray-500">Pending Review</p>
               </div>
             </div>
@@ -210,20 +178,14 @@ export function MySubmissions() {
 
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="all">
-            All Submissions ({submissions.length})
-          </TabsTrigger>
-          <TabsTrigger value="judged">
-            Judged ({judgedSubmissions.length})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending ({pendingSubmissions.length})
-          </TabsTrigger>
+          <TabsTrigger value="all">All ({projects.length})</TabsTrigger>
+          <TabsTrigger value="judged">Judged ({judgedSubmissions.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingSubmissions.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {submissions.map(renderSubmissionCard)}
+            {projects.map(renderSubmissionCard)}
           </div>
         </TabsContent>
 
