@@ -40,6 +40,7 @@ import { Progress } from "../../../components/DashboardUI/progress";
 import HackathonDetailModal from "./HackathonDetailModal";
 import HackathonEditModal from "./HackathonEditModal"; // Adjust path
 import CustomSubmissionForm from "./CustomSubmissionForm";
+import InnerCreatedCard from "./InnerCreatedCard"; // Adjust path
 
 export function CreatedHackathons({ onCreateNew }) {
   const [hackathons, setHackathons] = useState([]);
@@ -50,6 +51,8 @@ export function CreatedHackathons({ onCreateNew }) {
   const [submissionHackathon, setSubmissionHackathon] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showInnerCard, setShowInnerCard] = useState(false);
+  const [innerCardHackathon, setInnerCardHackathon] = useState(null);
   const hackathonToDelete = useRef(null);
 
   useEffect(() => {
@@ -163,8 +166,22 @@ export function CreatedHackathons({ onCreateNew }) {
     }
   };
 
+  const handleCardClick = (hackathon) => {
+    setInnerCardHackathon(hackathon);
+    setShowInnerCard(true);
+  };
+
+  // Prevent card click when clicking on action buttons
+  const stopPropagation = (e) => {
+    e.stopPropagation();
+  };
+
   const renderHackathonCard = (hackathon) => (
-    <Card key={hackathon._id} className="">
+    <Card
+      key={hackathon._id}
+      className="cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={() => handleCardClick(hackathon)}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -289,7 +306,7 @@ export function CreatedHackathons({ onCreateNew }) {
           <Button
             size="sm"
             className="flex items-center gap-1"
-            onClick={() => handleViewDetails(hackathon)}
+            onClick={(e) => { stopPropagation(e); handleViewDetails(hackathon); }}
           >
             <Eye className="w-3 h-3" />
             View Details
@@ -298,7 +315,7 @@ export function CreatedHackathons({ onCreateNew }) {
             size="sm"
             variant="outline"
             className="flex items-center gap-1"
-            onClick={() => handleEdit(hackathon)}
+            onClick={(e) => { stopPropagation(e); handleEdit(hackathon); }}
           >
             <Edit className="w-3 h-3" />
             Edit
@@ -307,6 +324,7 @@ export function CreatedHackathons({ onCreateNew }) {
             size="sm"
             variant="outline"
             className="flex items-center gap-1"
+            onClick={stopPropagation}
           >
             <BarChart3 className="w-3 h-3" />
             Analytics
@@ -315,7 +333,7 @@ export function CreatedHackathons({ onCreateNew }) {
             size="sm"
             variant="outline"
             className="flex items-center gap-1 text-red-600 hover:text-red-700"
-            onClick={() => handleDelete(hackathon)}
+            onClick={(e) => { stopPropagation(e); handleDelete(hackathon); }}
             disabled={deletingId === hackathon._id}
           >
             <Trash2 className="w-3 h-3" />
@@ -325,7 +343,8 @@ export function CreatedHackathons({ onCreateNew }) {
             size="sm"
             variant="secondary"
             className="flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700"
-            onClick={() => {
+            onClick={(e) => {
+              stopPropagation(e);
               setSubmissionHackathon(hackathon);
               setShowSubmissionForm(true);
             }}
@@ -337,6 +356,15 @@ export function CreatedHackathons({ onCreateNew }) {
       </CardContent>
     </Card>
   );
+
+  if (showInnerCard && innerCardHackathon) {
+    return (
+      <InnerCreatedCard
+        hackathon={innerCardHackathon}
+        onBack={() => setShowInnerCard(false)}
+      />
+    );
+  }
 
   return (
     <>
