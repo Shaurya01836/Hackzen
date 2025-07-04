@@ -6,13 +6,14 @@ const crypto = require('crypto');
 
 const createTeam = async (req, res) => {
   try {
-    const { name, description, maxMembers, hackathonId } = req.body;
+    const { name, description, maxMembers, hackathonId, projectId } = req.body;
     
     console.log('Creating team:', { 
       name, 
       description, 
       maxMembers, 
       hackathonId, 
+      projectId,
       userId: req.user?._id,
       userExists: !!req.user,
       headers: req.headers.authorization ? 'Bearer token present' : 'No auth header'
@@ -26,64 +27,111 @@ const createTeam = async (req, res) => {
 
     const userId = req.user._id;
 
-    if (!name || !description || !hackathonId) {
-      return res.status(400).json({ error: 'Missing required fields: name, description, hackathonId' });
+    if (!name || !description) {
+      return res.status(400).json({ error: 'Missing required fields: name, description' });
     }
 
-    // Validate hackathon exists
-    const hackathon = await require('../model/HackathonModel').findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ error: 'Hackathon not found' });
-    }
+    // Check if creating for hackathon or project
+    if (hackathonId) {
+      // Validate hackathon exists
+      const hackathon = await require('../model/HackathonModel').findById(hackathonId);
+      if (!hackathon) {
+        return res.status(404).json({ error: 'Hackathon not found' });
+      }
 
-    // Check if user is already a member of any team for this hackathon
-    const existingTeam = await Team.findOne({ 
-      hackathon: hackathonId, 
-      members: userId,
-      status: 'active'
-    });
-
-    if (existingTeam) {
-      return res.status(400).json({ 
-        error: 'You are already a member of a team for this hackathon.',
-        existingTeamId: existingTeam._id
+      // Check if user is already a member of any team for this hackathon
+      const existingTeam = await Team.findOne({ 
+        hackathon: hackathonId, 
+        members: userId,
+        status: 'active'
       });
+
+      if (existingTeam) {
+        return res.status(400).json({ 
+          error: 'You are already a member of a team for this hackathon.',
+          existingTeamId: existingTeam._id
+        });
+      }
+
+      // Get hackathon's team size settings
+      const hackathonMaxMembers = hackathon.teamSize?.max || 4;
+      const finalMaxMembers = Math.min(maxMembers || hackathonMaxMembers, hackathonMaxMembers);
+      
+      const newTeam = await Team.create({
+        name,
+        description,
+        teamCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
+        maxMembers: finalMaxMembers,
+        hackathon: hackathonId,
+        members: [userId],
+        leader: userId,
+      });
+
+      const populatedTeam = await Team.findById(newTeam._id)
+        .populate('members', 'name email avatar')
+        .populate('leader', 'name email')
+        .populate('hackathon', 'title');
+
+      console.log('Hackathon team created successfully:', {
+        teamId: populatedTeam._id,
+        teamCode: populatedTeam.teamCode,
+        name: populatedTeam.name
+      });
+      
+      res.status(201).json({
+        message: 'Team created successfully!',
+        team: populatedTeam
+      });
+    } else if (projectId) {
+      // Validate project exists
+      const Project = require('../model/ProjectModel');
+      const project = await Project.findById(projectId);
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Check if user is already a member of any team for this project
+      const existingTeam = await Team.findOne({ 
+        project: projectId, 
+        members: userId,
+        status: 'active'
+      });
+
+      if (existingTeam) {
+        return res.status(400).json({ 
+          error: 'You are already a member of a team for this project.',
+          existingTeamId: existingTeam._id
+        });
+      }
+
+      const newTeam = await Team.create({
+        name,
+        description,
+        teamCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
+        maxMembers: maxMembers || 4,
+        project: projectId,
+        members: [userId],
+        leader: userId,
+      });
+
+      const populatedTeam = await Team.findById(newTeam._id)
+        .populate('members', 'name email avatar')
+        .populate('leader', 'name email')
+        .populate('project', 'title');
+
+      console.log('Project team created successfully:', {
+        teamId: populatedTeam._id,
+        teamCode: populatedTeam.teamCode,
+        name: populatedTeam.name
+      });
+      
+      res.status(201).json({
+        message: 'Team created successfully!',
+        team: populatedTeam
+      });
+    } else {
+      return res.status(400).json({ error: 'Either hackathonId or projectId is required' });
     }
-
-    // Generate unique team code
-    const teamCode = crypto.randomBytes(4).toString('hex').toUpperCase();
-
-    // Get hackathon's team size settings
-    const hackathonMaxMembers = hackathon.teamSize?.max || 4;
-    
-    // Use the provided maxMembers or hackathon's setting, but don't exceed hackathon's limit
-    const finalMaxMembers = Math.min(maxMembers || hackathonMaxMembers, hackathonMaxMembers);
-    
-    const newTeam = await Team.create({
-      name,
-      description,
-      teamCode,
-      maxMembers: finalMaxMembers,
-      hackathon: hackathonId,
-      members: [userId],
-      leader: userId,
-    });
-
-    const populatedTeam = await Team.findById(newTeam._id)
-      .populate('members', 'name email avatar')
-      .populate('leader', 'name email')
-      .populate('hackathon', 'title');
-
-    console.log('Team created successfully:', {
-      teamId: populatedTeam._id,
-      teamCode: populatedTeam.teamCode,
-      name: populatedTeam.name
-    });
-    
-    res.status(201).json({
-      message: 'Team created successfully!',
-      team: populatedTeam
-    });
   } catch (err) {
     console.error('Error creating team:', err);
     if (err.code === 11000) {
@@ -164,6 +212,49 @@ const getTeamsByHackathon = async (req, res) => {
   } catch (err) {
     console.error('Error fetching teams:', err);
     res.status(500).json({ error: 'Failed to fetch teams', details: err.message });
+  }
+};
+
+// GET /api/teams/project/:projectId
+const getTeamsByProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    
+    console.log('getTeamsByProject called with:', { 
+      projectId, 
+      userId: req.user?._id,
+      userExists: !!req.user
+    });
+
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      console.error('Authentication error: req.user is', req.user);
+      return res.status(401).json({ error: 'User not authenticated. Please log in again.' });
+    }
+
+    const userId = req.user._id;
+
+    if (!projectId) {
+      return res.status(400).json({ error: 'Project ID is required' });
+    }
+
+    // Get teams where the user is a member for this project
+    const userTeams = await Team.find({ 
+      project: projectId,
+      members: userId,
+      status: 'active'
+    })
+    .populate('members', 'name email avatar')
+    .populate('leader', 'name email')
+    .populate('project', 'title')
+    .sort({ createdAt: -1 });
+
+    console.log('Found project teams:', userTeams.length);
+
+    res.json(userTeams);
+  } catch (err) {
+    console.error('Error fetching project teams:', err);
+    res.status(500).json({ error: 'Failed to fetch project teams', details: err.message });
   }
 };
 
@@ -428,6 +519,7 @@ module.exports = {
   createTeam,
   addMember,
   getTeamsByHackathon,
+  getTeamsByProject,
   getTeamById,
   joinTeamByCode,
   deleteTeam,
