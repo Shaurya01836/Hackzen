@@ -73,13 +73,16 @@ export function ExploreHackathons() {
             },
           }
         );
-        
+
         // Safely extract hackathon IDs from registrations, filtering out null values
         const registeredHackathonIds = res.data
-          .filter(registration => registration.hackathonId && registration.hackathonId._id)
-          .map(registration => registration.hackathonId._id);
-        
-        console.log('Registered hackathon IDs:', registeredHackathonIds);
+          .filter(
+            (registration) =>
+              registration.hackathonId && registration.hackathonId._id
+          )
+          .map((registration) => registration.hackathonId._id);
+
+        console.log("Registered hackathon IDs:", registeredHackathonIds);
         setRegisteredHackathonIds(registeredHackathonIds);
       } catch (err) {
         console.error("Error fetching registered hackathons", err);
@@ -96,7 +99,10 @@ export function ExploreHackathons() {
       try {
         const res = await axios.get("http://localhost:3000/api/hackathons");
         console.log("Raw hackathons response:", res.data);
-        setHackathons(res.data);
+        const approvedHackathons = res.data.filter(
+          (h) => h.approvalStatus === "approved"
+        );
+        setHackathons(approvedHackathons);
       } catch (err) {
         console.error("Hackathon fetch error:", err.message);
         setError("Failed to fetch hackathons");
@@ -181,30 +187,18 @@ export function ExploreHackathons() {
 
   // If a hackathon is selected, show the details component
   if (selectedHackathon) {
-    // Check if user came from My Hackathons
-    const urlParams = new URLSearchParams(location.search);
-    const source = urlParams.get("source");
-    
     return (
       <HackathonDetails
         hackathon={selectedHackathon}
-        backButtonLabel={source === "my-hackathons" ? "Back to My Hackathons" : "Back to Explore"}
         onBack={() => {
           setSelectedHackathon(null);
           // Remove hackathon parameter from URL but keep other params like view=explore-hackathons
           const newParams = new URLSearchParams(location.search);
           newParams.delete("hackathon");
           newParams.delete("title");
-          newParams.delete("source");
-          
-          // If user came from My Hackathons, navigate back there
-          if (source === "my-hackathons") {
-            navigate("/dashboard/my-hackathons", { replace: true });
-          } else {
-            navigate(`${location.pathname}?${newParams.toString()}`, {
-              replace: true,
-            });
-          }
+          navigate(`${location.pathname}?${newParams.toString()}`, {
+            replace: true,
+          });
         }}
       />
     );
@@ -408,69 +402,60 @@ export function ExploreHackathons() {
       </div>
 
       {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="pt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search hackathons..."
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select
-              value={selectedCategory}
-              onValueChange={setSelectedCategory}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.slice(1).map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedDifficulty}
-              onValueChange={setSelectedDifficulty}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Difficulty" />
-              </SelectTrigger>
-              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                <SelectItem value="all">All Levels</SelectItem>
-                {difficulties.slice(1).map((difficulty) => (
-                  <SelectItem key={difficulty} value={difficulty}>
-                    {difficulty}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={selectedLocation}
-              onValueChange={setSelectedLocation}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.slice(1).map((location) => (
-                  <SelectItem key={location} value={location.toLowerCase()}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+
+      <div className="pt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search hackathons..."
+            className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.slice(1).map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={selectedDifficulty}
+          onValueChange={setSelectedDifficulty}
+        >
+          <SelectTrigger >
+            <SelectValue placeholder="Difficulty" />
+          </SelectTrigger>
+          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+            <SelectItem value="all">All Levels</SelectItem>
+            {difficulties.slice(1).map((difficulty) => (
+              <SelectItem key={difficulty} value={difficulty}>
+                {difficulty}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          <SelectTrigger>
+            <SelectValue placeholder="Location" />
+          </SelectTrigger>
+          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+            <SelectItem value="all">All Locations</SelectItem>
+            {locations.slice(1).map((location) => (
+              <SelectItem key={location} value={location.toLowerCase()}>
+                {location}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
