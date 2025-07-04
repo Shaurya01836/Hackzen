@@ -28,8 +28,16 @@ export function OrganizerRequestsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch");
-      const pending = data.filter((org) => !org.approved);
-      setRequests(pending);
+      // Show pending applications and recently rejected applications (within last 30 days)
+      const pending = data.filter((org) => !org.approved && !org.rejected);
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentlyRejected = data.filter((org) => 
+        org.rejected && 
+        new Date(org.rejectedAt) > thirtyDaysAgo
+      );
+      setRequests([...pending, ...recentlyRejected]);
     } catch (err) {
       toast.error("❌ Failed to load requests");
     } finally {
@@ -53,7 +61,8 @@ export function OrganizerRequestsPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to update status");
         toast.success(`✅ Application approved`);
-        setRequests((prev) => prev.filter((o) => o._id !== org._id));
+        // Don't remove from list, just refresh to show updated status
+        fetchPendingRequests();
       } catch (err) {
         toast.error(`❌ Failed to approve`);
       } finally {
@@ -74,7 +83,8 @@ export function OrganizerRequestsPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Failed to update status");
         toast.success(`✅ Application rejected`);
-        setRequests((prev) => prev.filter((o) => o._id !== org._id));
+        // Don't remove from list, just refresh to show updated status
+        fetchPendingRequests();
       } catch (err) {
         toast.error(`❌ Failed to reject`);
       } finally {
@@ -95,19 +105,33 @@ export function OrganizerRequestsPage() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">
-        Pending Organization Applications
+        Organization Applications
       </h2>
 
       {requests.length === 0 ? (
-        <p className="text-gray-600">No pending applications right now.</p>
+        <p className="text-gray-600">No applications right now.</p>
       ) : (
         requests.map((org) => (
-          <Card key={org._id}>
+          <Card key={org._id} className={org.rejected ? "border-red-200 bg-red-50" : ""}>
             <CardHeader>
-              <CardTitle className="text-xl font-semibold">{org.name}</CardTitle>
-              <p className="text-sm text-gray-500">
-                Submitted by <span className="font-medium">{org.contactPerson}</span>
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl font-semibold">{org.name}</CardTitle>
+                  <p className="text-sm text-gray-500">
+                    Submitted by <span className="font-medium">{org.contactPerson}</span>
+                  </p>
+                </div>
+                {org.rejected && (
+                  <span className="text-xs px-2 py-1 rounded bg-red-100 text-red-700">
+                    Rejected
+                  </span>
+                )}
+                {org.rejectedAt && !org.rejected && !org.approved && (
+                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                    Resubmitted
+                  </span>
+                )}
+              </div>
             </CardHeader>
 
             <CardContent className="space-y-3 text-sm text-gray-700">
@@ -148,24 +172,35 @@ export function OrganizerRequestsPage() {
                 <CalendarDays className="inline-block w-4 h-4 mr-1" />
                 <strong>Created At:</strong>{" "}
                 {new Date(org.createdAt).toLocaleString()}
+                {org.rejectedAt && (
+                  <span className="ml-2 text-red-600">
+                    (Rejected: {new Date(org.rejectedAt).toLocaleDateString()})
+                  </span>
+                )}
               </p>
 
-              <div className="flex gap-4 mt-4">
-                <Button
-                  onClick={() => handleDecision(org, "approve")}
-                  disabled={updatingId === org._id}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  {updatingId === org._id ? "Approving..." : "Approve"}
-                </Button>
-                <Button
-                  onClick={() => handleDecision(org, "reject")}
-                  disabled={updatingId === org._id}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  {updatingId === org._id ? "Rejecting..." : "Reject"}
-                </Button>
-              </div>
+              {!org.rejected ? (
+                <div className="flex gap-4 mt-4">
+                  <Button
+                    onClick={() => handleDecision(org, "approve")}
+                    disabled={updatingId === org._id}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {updatingId === org._id ? "Approving..." : "Approve"}
+                  </Button>
+                  <Button
+                    onClick={() => handleDecision(org, "reject")}
+                    disabled={updatingId === org._id}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    {updatingId === org._id ? "Rejecting..." : "Reject"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-4 text-sm text-red-600">
+                  Rejected on {new Date(org.rejectedAt).toLocaleDateString()}
+                </div>
+              )}
             </CardContent>
           </Card>
         ))

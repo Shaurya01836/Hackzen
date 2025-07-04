@@ -25,9 +25,36 @@ console.log("👉 User from token:", req.user);
     const email = req.body.email?.toLowerCase();
 
     const existing = await Organization.findOne({ email });
-if (existing) {
-  return res.status(409).json({ message: "You've already submitted an organization application." });
-}
+    if (existing) {
+      // If there's an existing application, check if it was rejected
+      if (existing.rejected) {
+        // Allow reapplication by updating the existing record
+        existing.name = name;
+        existing.contactPerson = contactPerson;
+        existing.whatsapp = whatsapp;
+        existing.telegram = telegram;
+        existing.organizationType = organizationType;
+        existing.supportNeeds = supportNeeds;
+        existing.purpose = purpose;
+        existing.website = website;
+        existing.github = github;
+        existing.approved = false;
+        existing.rejected = false;
+        existing.rejectedAt = null;
+        existing.createdAt = new Date(); // Reset creation date
+        await existing.save();
+
+        // Update user applicationStatus to "submitted"
+        const user = await User.findById(req.user._id);
+        user.applicationStatus = "submitted";
+        await user.save();
+
+        res.status(200).json({ message: "Application resubmitted successfully", organization: existing });
+        return;
+      } else {
+        return res.status(409).json({ message: "You've already submitted an organization application." });
+      }
+    }
 
     if (!name || !contactPerson || !organizationType || !supportNeeds?.length || !email) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -204,6 +231,8 @@ const approveOrganization = async (req, res) => {
     }
 
     org.approved = true;
+    org.rejected = false; // Reset rejected flag for resubmissions
+    org.rejectedAt = null; // Clear rejection date
     await org.save();
 
     // Link the applicant user to this organization
@@ -223,13 +252,27 @@ const approveOrganization = async (req, res) => {
   }
 };
 
-// ✅ Reject and delete an organization
+// ✅ Reject an organization (mark as rejected instead of deleting)
 const rejectOrganization = async (req, res) => {
   try {
     const org = await Organization.findById(req.params.id);
     if (!org) return res.status(404).json({ message: "Not found" });
 
-    await org.deleteOne();
+    // Mark as rejected instead of deleting
+    org.approved = false;
+    org.rejected = true;
+    org.rejectedAt = new Date();
+    await org.save();
+
+    // Update the user's application status
+    if (org.createdBy) {
+      const user = await User.findById(org.createdBy);
+      if (user) {
+        user.applicationStatus = "rejected";
+        await user.save();
+      }
+    }
+
     res.json({ message: "Rejected" });
   } catch (err) {
     res.status(500).json({ message: "Failed to reject organization.", error: err.message });
@@ -263,10 +306,30 @@ const getMyApplicationStatus = async (req, res) => {
     if (!org) {
       return res.status(404).json({ message: "No application found" });
     }
+    
+    let status = "pending";
+    if (org.approved) {
+      status = "approved";
+    } else if (org.rejected) {
+      status = "rejected";
+    }
+    
+    // For debugging (uncomment if needed)
+    // console.log("Application status check:", {
+    //   orgId: org._id,
+    //   approved: org.approved,
+    //   rejected: org.rejected,
+    //   finalStatus: status,
+    //   createdAt: org.createdAt,
+    //   rejectedAt: org.rejectedAt
+    // });
+    
     res.json({
-      status: org.approved ? "approved" : "pending",
+      status: status,
       organizationName: org.name,
       contactPerson: org.contactPerson,
+      rejectedAt: org.rejectedAt,
+      createdAt: org.createdAt,
       // add more org fields if needed
     });
   } catch (err) {

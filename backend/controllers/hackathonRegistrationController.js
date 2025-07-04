@@ -30,14 +30,6 @@ const registerForHackathon = async (req, res) => {
     if (!formData.teamName || !formData.teamName.trim()) {
       return res.status(400).json({ message: "Team name is required for registration." });
     }
-    const existingTeam = await Team.findOne({ 
-      hackathon: hackathonId, 
-      name: formData.teamName.trim(),
-      status: 'active'
-    });
-    if (existingTeam) {
-      return res.status(400).json({ message: "Team name already exists for this hackathon." });
-    }
 
     // Registration
     const registration = await Registration.create({

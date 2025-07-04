@@ -61,6 +61,13 @@ const OrganizationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    rejected: {
+      type: Boolean,
+      default: false,
+    },
+    rejectedAt: {
+      type: Date,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

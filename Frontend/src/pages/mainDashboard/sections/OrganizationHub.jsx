@@ -138,7 +138,9 @@ export function OrganizationHub() {
   }
       if (!response.ok) throw new Error(data.message || "Something went wrong. Please try again.");
   
-      alert("✅ Application submitted successfully!");
+      // Check if it's a resubmission or new application
+      const isResubmission = response.status === 200 && data.message?.includes("resubmitted");
+      alert(isResubmission ? "✅ Application resubmitted successfully!" : "✅ Application submitted successfully!");
   
       setShowApplicationForm(false);
       setFormData({
@@ -156,14 +158,22 @@ export function OrganizationHub() {
       // Refresh user info and organization details after submission
       await refreshUser();
       setLoadingOrg(true);
+      
+      // Try to fetch organization details
       const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (refreshResponse.ok) {
         const refreshData = await refreshResponse.json();
         setOrgDetails(refreshData);
+      } else {
+        // If no organization found, clear the details to show the application form again
+        setOrgDetails(null);
       }
       setLoadingOrg(false);
+      
+      // Refresh application status to get the latest status
+      await refreshApplicationStatus();
     } catch (error) {
       alert("❌ Submission failed: " + error.message);
     } finally {
@@ -194,6 +204,17 @@ export function OrganizationHub() {
       }
     };
     fetchOrg();
+    
+    // Also fetch application status on mount
+    refreshApplicationStatus();
+    
+    // Set up periodic refresh every 30 seconds
+    const interval = setInterval(() => {
+      refreshApplicationStatus();
+    }, 30000);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
   const fetchMyApplicationStatus = async () => {
@@ -209,6 +230,8 @@ export function OrganizationHub() {
         status: data.status,
         contactPerson: data.contactPerson,
         organizationName: data.organizationName,
+        rejectedAt: data.rejectedAt,
+        createdAt: data.createdAt,
         // ...other fields
       });
       setShowStatusModal(true);
@@ -216,6 +239,28 @@ export function OrganizationHub() {
       alert("❌ Failed to fetch status: " + error.message);
     } finally {
       setLoadingStatus(false);
+    }
+  };
+
+  // Function to refresh application status without showing modal
+  const refreshApplicationStatus = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("http://localhost:3000/api/organizations/my-application", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMyOrgInfo({
+          status: data.status,
+          contactPerson: data.contactPerson,
+          organizationName: data.organizationName,
+          rejectedAt: data.rejectedAt,
+          createdAt: data.createdAt,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to refresh application status:", error);
     }
   };
 
@@ -811,8 +856,14 @@ export function OrganizationHub() {
                   <div className="flex-1">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
                       <h4 className="text-2xl font-bold text-gray-900">{orgDetails.name}</h4>
-                      <span className={`text-xs px-2 py-1 rounded ${orgDetails.approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                        {orgDetails.approved ? "Approved" : "Pending"}
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        orgDetails.approved ? "bg-green-100 text-green-700" : 
+                        orgDetails.rejected ? "bg-red-100 text-red-700" : 
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {orgDetails.approved ? "Approved" : 
+                         orgDetails.rejected ? "Rejected" : 
+                         "Pending"}
                       </span>
                     </div>
                     <p className="text-gray-600 mb-4">
@@ -946,11 +997,21 @@ export function OrganizationHub() {
                   </div>
                 ) : myOrgInfo.status === "rejected" ? (
                   <div className="bg-gray-50 rounded-lg p-4 text-sm text-red-600">
-                    Your application was rejected.
+                    <p>Your application was rejected.</p>
+                    {myOrgInfo.rejectedAt && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Rejected on {new Date(myOrgInfo.rejectedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-4 text-sm text-yellow-600">
-                    Your application is under review.
+                    <p>Your application is under review.</p>
+                    {myOrgInfo.createdAt && (
+                      <p className="mt-1 text-xs text-gray-500">
+                        Submitted on {new Date(myOrgInfo.createdAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 )}
 

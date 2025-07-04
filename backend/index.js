@@ -81,8 +81,26 @@ socketHandler(io); // WebSocket logic
 const PORT = process.env.PORT || 3000;
 
 mongoose.connect(process.env.MONGO_URL)
-  .then(() => {
+  .then(async () => {
     console.log("✅ MongoDB connected");
+    
+    // Remove unique index on {name, hackathon} in teams collection if it exists
+    try {
+      const indexes = await mongoose.connection.db.collection('teams').indexes();
+      const hasUniqueTeamNameIndex = indexes.some(
+        idx => idx.name === 'name_1_hackathon_1' && idx.unique
+      );
+      if (hasUniqueTeamNameIndex) {
+        console.log('🔄 Dropping unique index on {name, hackathon} in teams collection...');
+        await mongoose.connection.db.collection('teams').dropIndex('name_1_hackathon_1');
+        console.log('✅ Unique index dropped successfully.');
+      } else {
+        console.log('ℹ️  No unique index on {name, hackathon} found in teams collection.');
+      }
+    } catch (err) {
+      console.error('⚠️  Error checking/dropping index:', err.message);
+    }
+    
     server.listen(PORT, () => {
       console.log(`🚀 Server + Socket.IO running at http://localhost:${PORT}`);
     });

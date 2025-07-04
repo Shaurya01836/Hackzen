@@ -187,18 +187,29 @@ export function ExploreHackathons() {
 
   // If a hackathon is selected, show the details component
   if (selectedHackathon) {
+    const urlParams = new URLSearchParams(location.search);
+    const source = urlParams.get("source");
+    
     return (
       <HackathonDetails
         hackathon={selectedHackathon}
+        backButtonLabel={source === "my-hackathons" ? "Back to My Hackathons" : "Back to Explore"}
         onBack={() => {
           setSelectedHackathon(null);
           // Remove hackathon parameter from URL but keep other params like view=explore-hackathons
           const newParams = new URLSearchParams(location.search);
           newParams.delete("hackathon");
           newParams.delete("title");
-          navigate(`${location.pathname}?${newParams.toString()}`, {
-            replace: true,
-          });
+          newParams.delete("source");
+          
+          // If source was my-hackathons, navigate back to my-hackathons page
+          if (source === "my-hackathons") {
+            navigate("/dashboard/my-hackathons", { replace: true });
+          } else {
+            navigate(`${location.pathname}?${newParams.toString()}`, {
+              replace: true,
+            });
+          }
         }}
       />
     );
