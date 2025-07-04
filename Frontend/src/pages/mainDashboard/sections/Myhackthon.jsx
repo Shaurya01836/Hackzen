@@ -351,9 +351,11 @@ export default function MyHackathons() {
     <ParticipantSubmissionForm
       hackathon={selectedHackathon}
       onBack={() => setShowSubmissionForm(false)}
+      userProjects={projects} // ✅ This is what the form needs
     />
   );
 }
+
 
   // Main dashboard view
   return (
