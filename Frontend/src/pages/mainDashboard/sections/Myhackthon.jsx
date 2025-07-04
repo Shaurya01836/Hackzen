@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
   Plus,
   Trophy,
@@ -11,6 +11,7 @@ import {
   MapPin,
   Code,
   Star,
+  Edit,
 } from "lucide-react";
 
 import { Button } from "../../../components/CommonUI/button";
@@ -39,6 +40,7 @@ import ParticipantSubmissionForm from "./ParticipantSubmitForm";
 
 export default function MyHackathons() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [projects, setProjects] = useState([]);
   const [hackathons, setHackathons] = useState([]);
   const [savedHackathons, setSavedHackathons] = useState([]);
@@ -54,6 +56,9 @@ export default function MyHackathons() {
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
 
+  // Get projectId from URL if present
+  const urlProjectId = location.pathname.match(/my-hackathons\/(\w+)/)?.[1] || null;
+
   // Fetch Projects
   useEffect(() => {
     const fetchProjects = async () => {
@@ -65,6 +70,11 @@ export default function MyHackathons() {
         });
         const data = await res.json();
         setProjects(data || []);
+        // If URL has a projectId, select that project
+        if (urlProjectId && Array.isArray(data)) {
+          const found = data.find((p) => p._id === urlProjectId);
+          if (found) setSelectedProject(found);
+        }
       } catch (err) {
         console.error("Failed to fetch projects", err);
         setProjects([]);
@@ -74,7 +84,7 @@ export default function MyHackathons() {
     };
 
     fetchProjects();
-  }, []);
+  }, [urlProjectId]);
 
   // Fetch Hackathons
   useEffect(() => {
@@ -211,7 +221,11 @@ export default function MyHackathons() {
   const renderProjectCard = (project) => (
     <Card
       key={project._id}
-      className="group w-full max-w-sm rounded-2xl bg-white/80 shadow-md hover:shadow-xl transition duration-300 border border-border/50 overflow-hidden"
+      className="group w-full max-w-sm rounded-2xl bg-white/80 shadow-md hover:shadow-xl transition duration-300 border border-border/50 overflow-hidden cursor-pointer"
+      onClick={() => {
+        setSelectedProject(project);
+        navigate(`/dashboard/my-hackathons/${project._id}`);
+      }}
     >
       {/* Image */}
       <div className="relative h-32 w-full bg-muted overflow-hidden">
@@ -241,41 +255,36 @@ export default function MyHackathons() {
           <span>Last updated:</span>
           <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
         </div>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedProject(project)}
-            className="w-full"
-          >
-            View
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setProjectToEdit(project);
-              setEditMode(true);
-              setCurrentView("edit-project");
-            }}
-            className="w-full"
-          >
-            Edit
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
 
   if (selectedProject) {
     return (
-      <ProjectDetail
-        project={selectedProject}
-        onBack={() => {
-          setSelectedProject(null);
-        }}
-      />
+      <div>
+        <ProjectDetail
+          project={selectedProject}
+          onBack={() => {
+            setSelectedProject(null);
+            navigate("/dashboard/my-hackathons");
+          }}
+        />
+        <div className="fixed bottom-8 right-8">
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedProject(null);
+              setProjectToEdit(selectedProject);
+              setEditMode(true);
+              setCurrentView("edit-project");
+            }}
+            variant="outline"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Edit Project
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -357,7 +366,7 @@ export default function MyHackathons() {
 
   // Main dashboard view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
       <div className="container mx-auto px-6 py-8 space-y-12">
         <section className="space-y-6">
           <div className="flex items-center justify-between">
@@ -516,7 +525,7 @@ export default function MyHackathons() {
                                 setShowSubmissionForm(true);
                               }}
                             >
-                              Register
+                            Submit
                             </Button>
                           )}
                           <Button
