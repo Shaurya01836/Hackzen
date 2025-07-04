@@ -143,7 +143,7 @@ export function CreatedHackathons({ onCreateNew }) {
   const getApprovalStatusColor = (approvalStatus) => {
     switch (approvalStatus) {
       case "approved":
-        return "bg-green-700 text-white";
+        return "bg-green-900 text-white";
       case "pending":
         return "bg-yellow-500 text-white";
       case "rejected":
@@ -301,58 +301,6 @@ export function CreatedHackathons({ onCreateNew }) {
             </Badge>
           )}
         </div>
-
-        <div className="flex gap-2 pt-2">
-          <Button
-            size="sm"
-            className="flex items-center gap-1"
-            onClick={(e) => { stopPropagation(e); handleViewDetails(hackathon); }}
-          >
-            <Eye className="w-3 h-3" />
-            View Details
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1"
-            onClick={(e) => { stopPropagation(e); handleEdit(hackathon); }}
-          >
-            <Edit className="w-3 h-3" />
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1"
-            onClick={stopPropagation}
-          >
-            <BarChart3 className="w-3 h-3" />
-            Analytics
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-1 text-red-600 hover:text-red-700"
-            onClick={(e) => { stopPropagation(e); handleDelete(hackathon); }}
-            disabled={deletingId === hackathon._id}
-          >
-            <Trash2 className="w-3 h-3" />
-            {deletingId === hackathon._id ? "Deleting..." : "Delete"}
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            className="flex items-center gap-1 bg-indigo-600 text-white hover:bg-indigo-700"
-            onClick={(e) => {
-              stopPropagation(e);
-              setSubmissionHackathon(hackathon);
-              setShowSubmissionForm(true);
-            }}
-          >
-            <Plus className="w-3 h-3" />
-            Submission Form
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
@@ -396,79 +344,47 @@ export function CreatedHackathons({ onCreateNew }) {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-10 w-full">
             <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Trophy className="w-8 h-8 text-purple-500" />
+              <ACardContent className="pt-8 pb-8">
+                <div className="flex items-center gap-6">
+                  <Trophy className="w-12 h-12 text-purple-500" />
                   <div>
-                    <p className="text-2xl font-bold">{hackathons.length}</p>
-                    <p className="text-sm text-gray-500">Total Events</p>
+                    <p className="text-3xl font-extrabold">{hackathons.length}</p>
+                    <p className="text-base text-gray-500">Total Events</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Users className="w-8 h-8 text-blue-500" />
+              <ACardContent className="pt-8 pb-8">
+                <div className="flex items-center gap-6">
+                  <Settings className="w-12 h-12 text-orange-500" />
                   <div>
-                    <p className="text-2xl font-bold">
-                      {hackathons.reduce(
-                        (sum, h) => sum + (h.participantCount || 0),
-                        0
-                      )}
-                    </p>
-                    <p className="text-sm text-gray-500">Total Participants</p>
+                    <p className="text-3xl font-extrabold">{liveHackathons.length}</p>
+                    <p className="text-base text-gray-500">Active Now</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <BarChart3 className="w-8 h-8 text-green-500" />
+              <ACardContent className="pt-8 pb-8">
+                <div className="flex items-center gap-6">
+                  <Clock className="w-12 h-12 text-yellow-500" />
                   <div>
-                    <p className="text-2xl font-bold">
-                      {hackathons.reduce(
-                        (sum, h) => sum + (h.submissions?.length || 0),
-                        0
-                      )}
-                    </p>
-                    <p className="text-sm text-gray-500">Total Submissions</p>
+                    <p className="text-3xl font-extrabold">{pendingHackathons.length}</p>
+                    <p className="text-base text-gray-500">Pending Approval</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Settings className="w-8 h-8 text-orange-500" />
+              <ACardContent className="pt-8 pb-8">
+                <div className="flex items-center gap-6">
+                  <Check className="w-12 h-12 text-green-500" />
                   <div>
-                    <p className="text-2xl font-bold">{liveHackathons.length}</p>
-                    <p className="text-sm text-gray-500">Active Now</p>
-                  </div>
-                </div>
-              </ACardContent>
-            </ACard>
-            <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="w-8 h-8 text-yellow-500" />
-                  <div>
-                    <p className="text-2xl font-bold">{pendingHackathons.length}</p>
-                    <p className="text-sm text-gray-500">Pending Approval</p>
-                  </div>
-                </div>
-              </ACardContent>
-            </ACard>
-            <ACard>
-              <ACardContent className="pt-4">
-                <div className="flex items-center gap-3">
-                  <Check className="w-8 h-8 text-green-500" />
-                  <div>
-                    <p className="text-2xl font-bold">{approvedHackathons.length}</p>
-                    <p className="text-sm text-gray-500">Approved</p>
+                    <p className="text-3xl font-extrabold">{approvedHackathons.length}</p>
+                    <p className="text-base text-gray-500">Approved</p>
                   </div>
                 </div>
               </ACardContent>

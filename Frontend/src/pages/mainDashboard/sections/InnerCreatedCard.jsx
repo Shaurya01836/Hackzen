@@ -13,6 +13,10 @@ import {
 } from "../../../components/CommonUI/select"
 import { Separator } from "../../../components/CommonUI/separator"
 import {
+  ACard,
+  ACardContent,
+} from "../../../components/DashboardUI/AnimatedCard";
+import {
   ArrowLeft,
   CalendarDays,
   Clock,
@@ -226,116 +230,49 @@ export default function HackathonDetailsPage({
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
             Hackathon Overview
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6">
-            {/* 6 stats cards */}
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col items-center justify-between gap-2">
-                    <div className="p-3 bg-indigo-100 rounded-xl">
-                    <Users className="h-6 w-6 text-indigo-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Participants
-                    </p>
-                    <p className="pl-2 text-3xl font-bold text-gray-900">
-                      {hackathonStats.totalParticipants.toLocaleString()}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col gap-2 items-center justify-between">
-                    <div className="p-3 bg-blue-100 rounded-xl">
-                    <Users2 className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Teams
-                    </p>
-                    <p className="pl-2 text-3xl font-bold text-gray-900">
-                      {hackathonStats.totalTeams}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col gap-2 items-center justify-between">
-                    <div className="p-3 bg-green-100 rounded-xl">
-                    <Upload className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Submissions
-                    </p>
-                    <p className="pl-2 text-3xl font-bold text-gray-900">
-                      {hackathonStats.totalSubmissions}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col gap-2 items-center justify-between">
-                    <div className="p-3 bg-purple-100 rounded-xl">
-                    <Clock className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Duration
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900">
-                      {hackathonStats.duration}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col gap-2 items-center justify-between">
-                    <div className="p-3 bg-orange-100 rounded-xl">
-                    <PieChart className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Average Age
-                    </p>
-                    <p className="pl-2 text-3xl font-bold text-gray-900">
-                      {hackathonStats.averageAge}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-gray-200 shadow-sm col-span-1">
-              <CardContent className="pt-12">
-                <div className="flex flex-col gap-2 items-center justify-between">
-                    <div className="p-3 bg-red-100 rounded-xl">
-                    <CalendarDays className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">
-                      Last Submission
-                    </p>
-                    <p className="pl-2 text-3xl font-bold text-gray-900">
-                      {hackathonStats.lastSubmission}
-                    </p>
-                  </div>
-                  
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full mb-10">
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <Users className="w-12 h-12 text-indigo-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalParticipants.toLocaleString()}</p>
+                <p className="text-lg text-gray-500 font-medium">Total Participants</p>
+              </ACardContent>
+            </ACard>
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <Users2 className="w-12 h-12 text-blue-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalTeams}</p>
+                <p className="text-lg text-gray-500 font-medium">Total Teams</p>
+              </ACardContent>
+            </ACard>
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <Upload className="w-12 h-12 text-green-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalSubmissions}</p>
+                <p className="text-lg text-gray-500 font-medium">Total Submissions</p>
+              </ACardContent>
+            </ACard>
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <Clock className="w-12 h-12 text-purple-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.duration}</p>
+                <p className="text-lg text-gray-500 font-medium">Duration</p>
+              </ACardContent>
+            </ACard>
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <PieChart className="w-12 h-12 text-orange-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.averageAge}</p>
+                <p className="text-lg text-gray-500 font-medium">Average Age</p>
+              </ACardContent>
+            </ACard>
+            <ACard>
+              <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
+                <CalendarDays className="w-12 h-12 text-red-500 mb-2" />
+                <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.lastSubmission}</p>
+                <p className="text-lg text-gray-500 font-medium">Last Submission</p>
+              </ACardContent>
+            </ACard>
           </div>
 
           {/* Top Tracks and Locations */}
@@ -344,7 +281,7 @@ export default function HackathonDetailsPage({
               <CardHeader>
                 <CardTitle className="text-lg">Top Tracks</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="space-y-3">
                   {hackathonStats.topTracks.map((track, index) => (
                     <div key={track} className="flex items-center justify-between">
@@ -359,7 +296,7 @@ export default function HackathonDetailsPage({
               <CardHeader>
                 <CardTitle className="text-lg">Top Locations</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4">
                 <div className="space-y-3">
                   {hackathonStats.topLocations.map((location, index) => (
                     <div key={location} className="flex items-center justify-between">
