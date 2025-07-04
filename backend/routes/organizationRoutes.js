@@ -13,6 +13,11 @@ const {
   updateMyOrganization,
   getMyOrganization,
   getMyApplicationStatus,
+  setPrimaryOrganization,
+  submitOrganizationChanges,
+  getPendingChanges,
+  approveOrganizationChanges,
+  rejectOrganizationChanges,
 } = require("../controllers/organizationController");
 
 const upload = require("../middleware/cloudinaryUpload");
@@ -50,5 +55,20 @@ router.patch("/:id/approve", protect, isAdmin, approveOrganization);
 router.patch("/:id/reject", protect, isAdmin, rejectOrganization);
 
 router.get("/my-application", protect, getMyApplicationStatus);
+
+// ✅ Set primary organization
+router.post("/set-primary", protect, setPrimaryOrganization);
+
+// ✅ Submit organization changes for review
+router.post("/:organizationId/submit-changes", protect, submitOrganizationChanges);
+
+// ✅ Admin: Get pending changes for review
+router.get("/pending-changes", protect, isAdmin, getPendingChanges);
+
+// ✅ Admin: Approve organization changes
+router.patch("/:organizationId/approve-changes", protect, isAdmin, approveOrganizationChanges);
+
+// ✅ Admin: Reject organization changes
+router.patch("/:organizationId/reject-changes", protect, isAdmin, rejectOrganizationChanges);
 
 module.exports = router;

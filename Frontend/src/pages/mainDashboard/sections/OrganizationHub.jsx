@@ -34,8 +34,15 @@ export function OrganizationHub() {
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [myOrgInfo, setMyOrgInfo] = useState(null);
+  const [applicationHistory, setApplicationHistory] = useState([]);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [orgDetails, setOrgDetails] = useState(null);
+  const [approvedOrganizations, setApprovedOrganizations] = useState([]);
+  const [hasMultipleOrgs, setHasMultipleOrgs] = useState(false);
+  const [showPrimaryModal, setShowPrimaryModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingOrg, setEditingOrg] = useState(null);
+  const [orgEditFormData, setOrgEditFormData] = useState({});
   const [loadingOrg, setLoadingOrg] = useState(true);
   const { token, refreshUser } = useAuth();
   const [editMode, setEditMode] = useState(false);
@@ -165,10 +172,23 @@ export function OrganizationHub() {
       });
       if (refreshResponse.ok) {
         const refreshData = await refreshResponse.json();
-        setOrgDetails(refreshData);
+        
+        // Handle multiple organizations
+        if (refreshData.hasMultipleOrgs && refreshData.organizations) {
+          setApprovedOrganizations(refreshData.organizations);
+          setOrgDetails(refreshData.primaryOrganization);
+          setHasMultipleOrgs(true);
+        } else {
+          // Single organization (backward compatibility)
+          setOrgDetails(refreshData);
+          setApprovedOrganizations([refreshData]);
+          setHasMultipleOrgs(false);
+        }
       } else {
         // If no organization found, clear the details to show the application form again
         setOrgDetails(null);
+        setApprovedOrganizations([]);
+        setHasMultipleOrgs(false);
       }
       setLoadingOrg(false);
       
@@ -195,7 +215,18 @@ export function OrganizationHub() {
         });
         if (response.ok) {
           const data = await response.json();
-          setOrgDetails(data);
+          
+          // Handle multiple organizations
+          if (data.hasMultipleOrgs && data.organizations) {
+            setApprovedOrganizations(data.organizations);
+            setOrgDetails(data.primaryOrganization);
+            setHasMultipleOrgs(true);
+          } else {
+            // Single organization (backward compatibility)
+            setOrgDetails(data);
+            setApprovedOrganizations([data]);
+            setHasMultipleOrgs(false);
+          }
         }
       } catch (err) {
         console.error("Error fetching organization:", err);
@@ -224,16 +255,25 @@ export function OrganizationHub() {
       const response = await fetch("http://localhost:3000/api/organizations/my-application", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error("No application found");
+      if (!response.ok) throw new Error("No applications found");
       const data = await response.json();
-      setMyOrgInfo({
-        status: data.status,
-        contactPerson: data.contactPerson,
-        organizationName: data.organizationName,
-        rejectedAt: data.rejectedAt,
-        createdAt: data.createdAt,
-        // ...other fields
-      });
+      
+      // Set application history
+      setApplicationHistory(data.applications || []);
+      
+      // For backward compatibility, set the first application as myOrgInfo
+      if (data.applications && data.applications.length > 0) {
+        const firstApp = data.applications[0];
+        setMyOrgInfo({
+          status: firstApp.status,
+          contactPerson: firstApp.contactPerson,
+          organizationName: firstApp.organizationName,
+          rejectedAt: firstApp.rejectedAt,
+          createdAt: firstApp.createdAt,
+          approvedAt: firstApp.approvedAt,
+        });
+      }
+      
       setShowStatusModal(true);
     } catch (error) {
       alert("❌ Failed to fetch status: " + error.message);
@@ -251,13 +291,20 @@ export function OrganizationHub() {
       });
       if (response.ok) {
         const data = await response.json();
-        setMyOrgInfo({
-          status: data.status,
-          contactPerson: data.contactPerson,
-          organizationName: data.organizationName,
-          rejectedAt: data.rejectedAt,
-          createdAt: data.createdAt,
-        });
+        setApplicationHistory(data.applications || []);
+        
+        // Update myOrgInfo with the first application
+        if (data.applications && data.applications.length > 0) {
+          const firstApp = data.applications[0];
+          setMyOrgInfo({
+            status: firstApp.status,
+            contactPerson: firstApp.contactPerson,
+            organizationName: firstApp.organizationName,
+            rejectedAt: firstApp.rejectedAt,
+            createdAt: firstApp.createdAt,
+            approvedAt: firstApp.approvedAt,
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to refresh application status:", error);
@@ -266,8 +313,131 @@ export function OrganizationHub() {
 
   // Start editing
   const startEdit = () => {
-    setEditFormData(orgDetails);
+    // Use the primary organization (first approved org) for editing
+    const primaryOrg = approvedOrganizations[0] || orgDetails;
+    setEditFormData(primaryOrg);
     setEditMode(true);
+  };
+
+  // Set primary organization
+  const setPrimaryOrg = async (organizationId) => {
+    try {
+      const response = await fetch("http://localhost:3000/api/organizations/set-primary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ organizationId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to set primary organization");
+      }
+
+      // Refresh organization data
+      await refreshUser();
+      setLoadingOrg(true);
+      const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        if (refreshData.hasMultipleOrgs && refreshData.organizations) {
+          setApprovedOrganizations(refreshData.organizations);
+          setOrgDetails(refreshData.primaryOrganization);
+          setHasMultipleOrgs(true);
+        } else {
+          setOrgDetails(refreshData);
+          setApprovedOrganizations([refreshData]);
+          setHasMultipleOrgs(false);
+        }
+      }
+      setLoadingOrg(false);
+      setShowPrimaryModal(false);
+      alert("✅ Primary organization updated successfully!");
+    } catch (error) {
+      alert("❌ Failed to set primary organization: " + error.message);
+    }
+  };
+
+  // Open edit modal for specific organization
+  const openEditModal = (org) => {
+    setEditingOrg(org);
+    setOrgEditFormData({
+      name: org.name || "",
+      contactPerson: org.contactPerson || "",
+      email: org.email || "",
+      organizationType: org.organizationType || "",
+      supportNeeds: org.supportNeeds || [],
+      purpose: org.purpose || "",
+      website: org.website || "",
+      github: org.github || "",
+    });
+    setShowEditModal(true);
+  };
+
+  // Submit organization changes for review
+  const submitChanges = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const response = await fetch(`http://localhost:3000/api/organizations/${editingOrg._id}/submit-changes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orgEditFormData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to submit changes");
+      }
+
+      setShowEditModal(false);
+      setEditingOrg(null);
+      setOrgEditFormData({});
+      
+      // Refresh organization data to show pending changes
+      await refreshUser();
+      setLoadingOrg(true);
+      const refreshResponse = await fetch("http://localhost:3000/api/organizations/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        if (refreshData.hasMultipleOrgs && refreshData.organizations) {
+          setApprovedOrganizations(refreshData.organizations);
+          setOrgDetails(refreshData.primaryOrganization);
+          setHasMultipleOrgs(true);
+        } else {
+          setOrgDetails(refreshData);
+          setApprovedOrganizations([refreshData]);
+          setHasMultipleOrgs(false);
+        }
+      }
+      setLoadingOrg(false);
+      
+      alert("✅ Changes submitted for admin review!");
+    } catch (error) {
+      alert("❌ Failed to submit changes: " + error.message);
+    }
+  };
+
+  const handleOrgEditChange = (field, value) => {
+    setOrgEditFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleOrgSupportNeedsChange = (option, checked) => {
+    setOrgEditFormData(prev => ({
+      ...prev,
+      supportNeeds: checked
+        ? [...prev.supportNeeds, option]
+        : prev.supportNeeds.filter((item) => item !== option),
+    }));
   };
 
   // Handle edit input changes
@@ -687,7 +857,7 @@ export function OrganizationHub() {
                     className="w-full"
                     onClick={fetchMyApplicationStatus}
                   >
-                    Check My Application
+                    View Application History
                   </Button>
                 </CardContent>
               </Card>
@@ -697,7 +867,7 @@ export function OrganizationHub() {
               {/* Status Card */}
               <Card className="flex-1 flex flex-col items-center justify-center py-4 max-w-full">
                 <div className="flex flex-col items-center">
-                  {orgDetails?.approved ? (
+                  {approvedOrganizations.length > 0 ? (
                     <CheckCircle className="w-8 h-8 mb-2 text-green-500" />
                   ) : (
                     <Clock className="w-8 h-8 mb-2 text-yellow-500" />
@@ -706,12 +876,12 @@ export function OrganizationHub() {
                     <CardTitle className="text-base font-semibold">Status</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0 text-center">
-                    <span className={`text-base font-semibold ${orgDetails?.approved ? "text-green-600" : "text-yellow-600"}`}>
-                      {orgDetails
-                        ? orgDetails.approved
-                          ? "Approved"
-                          : "Pending"
-                        : "N/A"}
+                    <span className={`text-base font-semibold ${approvedOrganizations.length > 0 ? "text-green-600" : "text-yellow-600"}`}>
+                      {approvedOrganizations.length > 0
+                        ? hasMultipleOrgs 
+                          ? `${approvedOrganizations.length} Approved`
+                          : "Approved"
+                        : "Pending"}
                     </span>
                   </CardContent>
                 </div>
@@ -725,7 +895,9 @@ export function OrganizationHub() {
                   </CardHeader>
                   <CardContent className="p-0 text-center">
                     <span className="text-base font-semibold">
-                      {orgDetails?.organizationType || "N/A"}
+                      {hasMultipleOrgs 
+                        ? `${approvedOrganizations.length} Organizations`
+                        : orgDetails?.organizationType || "N/A"}
                     </span>
                   </CardContent>
                 </div>
@@ -739,7 +911,9 @@ export function OrganizationHub() {
                   </CardHeader>
                   <CardContent className="p-0 text-center">
                     <span className="text-base font-semibold">
-                      {orgDetails?.supportNeeds?.length ?? 0}
+                      {hasMultipleOrgs 
+                        ? approvedOrganizations.reduce((total, org) => total + (org.supportNeeds?.length || 0), 0)
+                        : orgDetails?.supportNeeds?.length ?? 0}
                     </span>
                   </CardContent>
                 </div>
@@ -747,10 +921,12 @@ export function OrganizationHub() {
             </div>
           </div>
 
-          {/* My Organization */}
+          {/* My Organizations */}
           <Card className="w-full shadow-lg rounded-xl">
             <CardHeader>
-              <CardTitle className="text-xl font-semibold text-gray-900">My Organization</CardTitle>
+              <CardTitle className="text-xl font-semibold text-gray-900">
+                {hasMultipleOrgs ? `My Organizations (${approvedOrganizations.length})` : "My Organization"}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {loadingOrg ? (
@@ -846,91 +1022,106 @@ export function OrganizationHub() {
                     <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
                   </div>
                 </form>
-              ) : orgDetails ? (
-                <div className="flex flex-col md:flex-row items-start gap-8">
-                  <div className="w-20 h-20 bg-indigo-600 rounded-lg flex items-center justify-center mb-4 md:mb-0">
-                    <span className="text-white font-bold text-3xl">
-                      {orgDetails.name ? orgDetails.name.charAt(0).toUpperCase() : "O"}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-2 gap-2">
-                      <h4 className="text-2xl font-bold text-gray-900">{orgDetails.name}</h4>
-                      <span className={`text-xs px-2 py-1 rounded ${
-                        orgDetails.approved ? "bg-green-100 text-green-700" : 
-                        orgDetails.rejected ? "bg-red-100 text-red-700" : 
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {orgDetails.approved ? "Approved" : 
-                         orgDetails.rejected ? "Rejected" : 
-                         "Pending"}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-4">
-                      {orgDetails.purpose || "No description available"}
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Contact Person:</span>
-                        <p className="font-medium">{orgDetails.contactPerson}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Email:</span>
-                        <p className="font-medium">{orgDetails.email}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Type:</span>
-                        <p className="font-medium">{orgDetails.organizationType}</p>
-                      </div>
-                    
-                      {orgDetails.website && (
-                        <div>
-                          <span className="text-gray-500">Website:</span>
-                          <p className="font-medium">
-                            <a 
-                              href={orgDetails.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 hover:underline"
-                            >
-                              {orgDetails.website}
-                            </a>
-                          </p>
+              ) : approvedOrganizations.length > 0 ? (
+                <div className="space-y-6">
+                  {approvedOrganizations.map((org, index) => (
+                    <div key={org._id} className="border border-gray-200 rounded-lg p-6">
+                      <div className="flex flex-col md:flex-row items-start gap-6">
+                        <div className="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center mb-4 md:mb-0">
+                          <span className="text-white font-bold text-2xl">
+                            {org.name ? org.name.charAt(0).toUpperCase() : "O"}
+                          </span>
                         </div>
-                      )}
-                      {orgDetails.github && (
-                        <div>
-                          <span className="text-gray-500">GitHub:</span>
-                          <p className="font-medium">
-                            <a 
-                              href={orgDetails.github} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-indigo-600 hover:underline"
-                            >
-                              {orgDetails.github}
-                            </a>
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    {orgDetails.supportNeeds && orgDetails.supportNeeds.length > 0 && (
-                      <div className="mt-4">
-                        <span className="text-gray-500 text-sm">Support Needs:</span>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {orgDetails.supportNeeds.map((need, index) => (
-                            <span 
-                              key={index}
-                              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
-                            >
-                              {need}
+                        <div className="flex-1">
+                          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3 gap-2">
+                            <div>
+                              <h4 className="text-xl font-bold text-gray-900">{org.name}</h4>
+                              <div className="flex gap-2 mt-1">
+                                {org.isPrimary && (
+                                  <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">
+                                    Primary Organization
+                                  </span>
+                                )}
+                                {org.pendingChanges?.submittedAt && (
+                                  <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700">
+                                    Pending Changes
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700">
+                              Approved
                             </span>
-                          ))}
+                          </div>
+                          <p className="text-gray-600 mb-4">
+                            {org.purpose || "No description available"}
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Contact Person:</span>
+                              <p className="font-medium">{org.contactPerson}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Email:</span>
+                              <p className="font-medium">{org.email}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Type:</span>
+                              <p className="font-medium">{org.organizationType || "N/A"}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Support Needs:</span>
+                              <p className="font-medium">{org.supportNeeds?.join(", ") || "None"}</p>
+                            </div>
+                          </div>
+                          {(org.website || org.github) && (
+                            <div className="flex gap-4 mt-4">
+                              {org.website && (
+                                <a
+                                  href={org.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                                >
+                                  <Globe className="w-4 h-4" />
+                                  Website
+                                </a>
+                              )}
+                              {org.github && (
+                                <a
+                                  href={org.github}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                                >
+                                  <Github className="w-4 h-4" />
+                                  GitHub
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          <div className="flex gap-2 mt-6">
+                            {!org.isPrimary && hasMultipleOrgs && (
+                              <Button 
+                                onClick={() => setPrimaryOrg(org._id)}
+                                variant="outline"
+                                className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                              >
+                                Set as Primary
+                              </Button>
+                            )}
+                            <Button 
+                              onClick={() => openEditModal(org)}
+                              className="bg-indigo-600 text-white"
+                              disabled={org.pendingChanges?.submittedAt}
+                            >
+                              {org.pendingChanges?.submittedAt ? "Changes Pending" : "Edit Organization"}
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    )}
-                    <Button className="mt-6" onClick={startEdit}>Edit</Button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="flex items-center justify-center py-16">
@@ -948,14 +1139,14 @@ export function OrganizationHub() {
         </div>
       </main>
 
-      {/* Application Status Modal (unchanged) */}
-      {showStatusModal && myOrgInfo && (
+      {/* Application History Modal */}
+      {showStatusModal && applicationHistory.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Application Status
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Application History
                 </h3>
                 <Button
                   variant="ghost"
@@ -967,59 +1158,112 @@ export function OrganizationHub() {
                 </Button>
               </div>
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    myOrgInfo.status === "approved"
-                      ? "bg-green-500"
-                      : myOrgInfo.status === "rejected"
-                      ? "bg-red-500"
-                      : "bg-yellow-400"
-                  }`}></div>
-                  <div>
-                    <p className="font-medium text-gray-900 capitalize">
-                      {myOrgInfo.status}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Submitted by {myOrgInfo.contactPerson}
-                    </p>
+              {/* Summary Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Approved</span>
                   </div>
-                </div>
-
-                {myOrgInfo.status === "approved" ? (
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Organization:</span>
-                      <span className="font-medium">
-                        {myOrgInfo.organizationName}
-                      </span>
-                    </div>
-                  </div>
-                ) : myOrgInfo.status === "rejected" ? (
-                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-red-600">
-                    <p>Your application was rejected.</p>
-                    {myOrgInfo.rejectedAt && (
-                      <p className="mt-1 text-xs text-gray-500">
-                        Rejected on {new Date(myOrgInfo.rejectedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-4 text-sm text-yellow-600">
-                    <p>Your application is under review.</p>
-                    {myOrgInfo.createdAt && (
-                      <p className="mt-1 text-xs text-gray-500">
-                        Submitted on {new Date(myOrgInfo.createdAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    We'll notify you via email once your application is reviewed.
+                  <p className="text-2xl font-bold text-green-600 mt-1">
+                    {applicationHistory.filter(app => app.status === "approved").length}
                   </p>
                 </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-yellow-600" />
+                    <span className="text-sm font-medium text-yellow-800">Pending</span>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-600 mt-1">
+                    {applicationHistory.filter(app => app.status === "pending").length}
+                  </p>
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <X className="w-5 h-5 text-red-600" />
+                    <span className="text-sm font-medium text-red-800">Rejected</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600 mt-1">
+                    {applicationHistory.filter(app => app.status === "rejected").length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Applications List */}
+              <div className="space-y-4">
+                {applicationHistory.map((app, index) => (
+                  <div key={app.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${
+                          app.status === "approved"
+                            ? "bg-green-500"
+                            : app.status === "rejected"
+                            ? "bg-red-500"
+                            : "bg-yellow-400"
+                        }`}></div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">
+                            {app.organizationName}
+                          </h4>
+                          <p className="text-sm text-gray-600">
+                            {app.organizationType} • {app.email}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded font-medium ${
+                        app.status === "approved"
+                          ? "bg-green-100 text-green-700"
+                          : app.status === "rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      </span>
+                    </div>
+
+                    {app.purpose && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {app.purpose}
+                      </p>
+                    )}
+
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                      <span>Submitted: {new Date(app.createdAt).toLocaleDateString()}</span>
+                      {app.status === "approved" && app.approvedAt && (
+                        <span>Approved: {new Date(app.approvedAt).toLocaleDateString()}</span>
+                      )}
+                      {app.status === "rejected" && app.rejectedAt && (
+                        <span>Rejected: {new Date(app.rejectedAt).toLocaleDateString()}</span>
+                      )}
+                    </div>
+
+                    {(app.website || app.github) && (
+                      <div className="flex gap-2 mt-3">
+                        {app.website && (
+                          <a
+                            href={app.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Website
+                          </a>
+                        )}
+                        {app.github && (
+                          <a
+                            href={app.github}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            GitHub
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
 
               <div className="mt-6 flex justify-end">
@@ -1030,6 +1274,131 @@ export function OrganizationHub() {
                   Close
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Organization Modal */}
+      {showEditModal && editingOrg && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Edit Organization: {editingOrg.name}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingOrg(null);
+                    setOrgEditFormData({});
+                  }}
+                  className="p-1"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              <form onSubmit={submitChanges} className="space-y-4">
+                <div>
+                  <Label>Organization Name</Label>
+                  <Input
+                    value={orgEditFormData.name || ""}
+                    onChange={e => handleOrgEditChange("name", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Contact Person</Label>
+                  <Input
+                    value={orgEditFormData.contactPerson || ""}
+                    onChange={e => handleOrgEditChange("contactPerson", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    value={orgEditFormData.email || ""}
+                    onChange={e => handleOrgEditChange("email", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label>Organization Type</Label>
+                  <Select
+                    value={orgEditFormData.organizationType || ""}
+                    onValueChange={value => handleOrgEditChange("organizationType", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {organizationTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Support Needs</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {supportOptions.map(option => (
+                      <label key={option} className="flex items-center gap-2">
+                        <Checkbox
+                          checked={orgEditFormData.supportNeeds?.includes(option)}
+                          onCheckedChange={checked =>
+                            handleOrgSupportNeedsChange(option, checked)
+                          }
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <Label>Purpose</Label>
+                  <Textarea
+                    value={orgEditFormData.purpose || ""}
+                    onChange={e => handleOrgEditChange("purpose", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Website</Label>
+                  <Input
+                    value={orgEditFormData.website || ""}
+                    onChange={e => handleOrgEditChange("website", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>GitHub</Label>
+                  <Input
+                    value={orgEditFormData.github || ""}
+                    onChange={e => handleOrgEditChange("github", e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2 mt-6">
+                  <Button type="submit" className="bg-indigo-600 text-white">
+                    Submit Changes for Review
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingOrg(null);
+                      setOrgEditFormData({});
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

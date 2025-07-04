@@ -24,35 +24,37 @@ console.log("👉 User from token:", req.user);
 
     const email = req.body.email?.toLowerCase();
 
-    const existing = await Organization.findOne({ email });
-    if (existing) {
-      // If there's an existing application, check if it was rejected
-      if (existing.rejected) {
+    // Check if user already has a pending or approved application for this specific organization
+    const existingForThisOrg = await Organization.findOne({ 
+      email: email,
+      createdBy: req.user._id 
+    });
+    
+    if (existingForThisOrg) {
+      // If there's an existing application for this org, check if it was rejected
+      if (existingForThisOrg.rejected) {
         // Allow reapplication by updating the existing record
-        existing.name = name;
-        existing.contactPerson = contactPerson;
-        existing.whatsapp = whatsapp;
-        existing.telegram = telegram;
-        existing.organizationType = organizationType;
-        existing.supportNeeds = supportNeeds;
-        existing.purpose = purpose;
-        existing.website = website;
-        existing.github = github;
-        existing.approved = false;
-        existing.rejected = false;
-        existing.rejectedAt = null;
-        existing.createdAt = new Date(); // Reset creation date
-        await existing.save();
+        existingForThisOrg.name = name;
+        existingForThisOrg.contactPerson = contactPerson;
+        existingForThisOrg.whatsapp = whatsapp;
+        existingForThisOrg.telegram = telegram;
+        existingForThisOrg.organizationType = organizationType;
+        existingForThisOrg.supportNeeds = supportNeeds;
+        existingForThisOrg.purpose = purpose;
+        existingForThisOrg.website = website;
+        existingForThisOrg.github = github;
+        existingForThisOrg.approved = false;
+        existingForThisOrg.rejected = false;
+        existingForThisOrg.rejectedAt = null;
+        existingForThisOrg.createdAt = new Date(); // Reset creation date
+        await existingForThisOrg.save();
 
-        // Update user applicationStatus to "submitted"
-        const user = await User.findById(req.user._id);
-        user.applicationStatus = "submitted";
-        await user.save();
-
-        res.status(200).json({ message: "Application resubmitted successfully", organization: existing });
+        res.status(200).json({ message: "Application resubmitted successfully", organization: existingForThisOrg });
         return;
+      } else if (existingForThisOrg.approved) {
+        return res.status(409).json({ message: "You're already an approved organizer for this organization." });
       } else {
-        return res.status(409).json({ message: "You've already submitted an organization application." });
+        return res.status(409).json({ message: "You already have a pending application for this organization." });
       }
     }
 
@@ -130,24 +132,48 @@ const getUsersInOrganization = async (req, res) => {
   }
 };
 
-// ✅ Get current user's organization
+// ✅ Get current user's organizations
 const getMyOrganization = async (req, res) => {
   try {
     const user = req.user;
 
-    if (!user.organization) {
-      return res.status(404).json({ message: "You are not part of any organization" });
+    // Get all approved organizations created by this user
+    const approvedOrgs = await Organization.find({ 
+      createdBy: user._id, 
+      approved: true 
+    }).sort({ createdAt: -1 });
+
+    if (approvedOrgs.length === 0) {
+      return res.status(404).json({ message: "You are not part of any approved organization" });
     }
 
-    const org = await Organization.findById(user.organization);
-    if (!org) {
-      return res.status(404).json({ message: "Organization not found" });
-    }
+    // Get all organizations created by this user for context
+    const allUserOrgs = await Organization.find({ createdBy: user._id }).sort({ createdAt: -1 });
 
-    res.status(200).json({
-      ...org.toObject(),
-      applicationStatus: user.applicationStatus,
-    });
+    // If user has only one approved organization, return it as before for backward compatibility
+    if (approvedOrgs.length === 1) {
+      const org = approvedOrgs[0];
+      res.status(200).json({
+        ...org.toObject(),
+        applicationStatus: user.applicationStatus,
+        totalApplications: allUserOrgs.length,
+        approvedApplications: allUserOrgs.filter(o => o.approved).length,
+        rejectedApplications: allUserOrgs.filter(o => o.rejected).length,
+        pendingApplications: allUserOrgs.filter(o => !o.approved && !o.rejected).length,
+      });
+    } else {
+      // Return all approved organizations
+      res.status(200).json({
+        organizations: approvedOrgs,
+        primaryOrganization: approvedOrgs[0], // First approved org as primary
+        applicationStatus: user.applicationStatus,
+        totalApplications: allUserOrgs.length,
+        approvedApplications: allUserOrgs.filter(o => o.approved).length,
+        rejectedApplications: allUserOrgs.filter(o => o.rejected).length,
+        pendingApplications: allUserOrgs.filter(o => !o.approved && !o.rejected).length,
+        hasMultipleOrgs: true,
+      });
+    }
   } catch (err) {
     console.error("Error in getMyOrganization:", err.message);
     res.status(500).json({ message: "Server error retrieving organization" });
@@ -243,6 +269,18 @@ const approveOrganization = async (req, res) => {
         user.role = "organizer";
         user.applicationStatus = "approved";
         await user.save();
+        
+        // Check if this is the user's first approved organization
+        const approvedOrgs = await Organization.find({ 
+          createdBy: org.createdBy, 
+          approved: true 
+        });
+        
+        if (approvedOrgs.length === 1) {
+          // This is the first approved organization, set it as primary
+          org.isPrimary = true;
+          await org.save();
+        }
       }
     }
 
@@ -302,38 +340,227 @@ const removeUserFromOrganization = async (req, res) => {
 
 const getMyApplicationStatus = async (req, res) => {
   try {
-    const org = await Organization.findOne({ createdBy: req.user._id });
-    if (!org) {
-      return res.status(404).json({ message: "No application found" });
+    const orgs = await Organization.find({ createdBy: req.user._id }).sort({ createdAt: -1 });
+    if (!orgs || orgs.length === 0) {
+      return res.status(404).json({ message: "No applications found" });
     }
     
-    let status = "pending";
-    if (org.approved) {
-      status = "approved";
-    } else if (org.rejected) {
-      status = "rejected";
-    }
-    
-    // For debugging (uncomment if needed)
-    // console.log("Application status check:", {
-    //   orgId: org._id,
-    //   approved: org.approved,
-    //   rejected: org.rejected,
-    //   finalStatus: status,
-    //   createdAt: org.createdAt,
-    //   rejectedAt: org.rejectedAt
-    // });
+    const applications = orgs.map(org => {
+      let status = "pending";
+      if (org.approved) {
+        status = "approved";
+      } else if (org.rejected) {
+        status = "rejected";
+      }
+      
+      return {
+        id: org._id,
+        status: status,
+        organizationName: org.name,
+        contactPerson: org.contactPerson,
+        email: org.email,
+        organizationType: org.organizationType,
+        purpose: org.purpose,
+        website: org.website,
+        github: org.github,
+        rejectedAt: org.rejectedAt,
+        createdAt: org.createdAt,
+        approvedAt: org.approved ? org.updatedAt : null,
+        isPrimary: org.isPrimary,
+        hasPendingChanges: !!org.pendingChanges.submittedAt,
+      };
+    });
     
     res.json({
-      status: status,
-      organizationName: org.name,
-      contactPerson: org.contactPerson,
-      rejectedAt: org.rejectedAt,
-      createdAt: org.createdAt,
-      // add more org fields if needed
+      applications: applications,
+      totalApplications: applications.length,
+      approvedCount: applications.filter(app => app.status === "approved").length,
+      rejectedCount: applications.filter(app => app.status === "rejected").length,
+      pendingCount: applications.filter(app => app.status === "pending").length,
     });
   } catch (err) {
     res.status(500).json({ message: "Failed to fetch application status" });
+  }
+};
+
+// ✅ Set primary organization
+const setPrimaryOrganization = async (req, res) => {
+  try {
+    const { organizationId } = req.body;
+    
+    // Verify the organization belongs to the user
+    const org = await Organization.findOne({ 
+      _id: organizationId, 
+      createdBy: req.user._id,
+      approved: true 
+    });
+    
+    if (!org) {
+      return res.status(404).json({ message: "Organization not found or not approved" });
+    }
+    
+    // Remove primary flag from all user's organizations
+    await Organization.updateMany(
+      { createdBy: req.user._id },
+      { isPrimary: false }
+    );
+    
+    // Set the selected organization as primary
+    org.isPrimary = true;
+    await org.save();
+    
+    res.json({ message: "Primary organization updated successfully", organization: org });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to update primary organization" });
+  }
+};
+
+// ✅ Submit organization changes for review
+const submitOrganizationChanges = async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    const changes = req.body;
+    
+    // Verify the organization belongs to the user
+    const org = await Organization.findOne({ 
+      _id: organizationId, 
+      createdBy: req.user._id,
+      approved: true 
+    });
+    
+    if (!org) {
+      return res.status(404).json({ message: "Organization not found or not approved" });
+    }
+    
+    // Check if there are already pending changes
+    if (org.pendingChanges.submittedAt) {
+      return res.status(400).json({ message: "You already have pending changes for this organization" });
+    }
+    
+    // Store the current values and new values for change tracking
+    const changeHistory = [];
+    const allowedFields = ['name', 'contactPerson', 'email', 'organizationType', 'supportNeeds', 'purpose', 'website', 'github'];
+    
+    allowedFields.forEach(field => {
+      if (changes[field] !== undefined && changes[field] !== org[field]) {
+        changeHistory.push({
+          field: field,
+          oldValue: org[field],
+          newValue: changes[field],
+          submittedAt: new Date(),
+          status: 'pending',
+        });
+      }
+    });
+    
+    // Store pending changes
+    org.pendingChanges = {
+      ...changes,
+      submittedAt: new Date(),
+      submittedBy: req.user._id,
+    };
+    
+    // Add to change history
+    org.changeHistory.push(...changeHistory);
+    
+    await org.save();
+    
+    res.json({ 
+      message: "Changes submitted for review", 
+      organization: org,
+      pendingChanges: org.pendingChanges 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to submit changes" });
+  }
+};
+
+// ✅ Get pending changes for admin review
+const getPendingChanges = async (req, res) => {
+  try {
+    const orgsWithPendingChanges = await Organization.find({
+      'pendingChanges.submittedAt': { $exists: true, $ne: null }
+    }).populate('createdBy', 'name email');
+    
+    res.json(orgsWithPendingChanges);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch pending changes" });
+  }
+};
+
+// ✅ Approve organization changes (admin only)
+const approveOrganizationChanges = async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    
+    const org = await Organization.findById(organizationId);
+    if (!org) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+    
+    if (!org.pendingChanges.submittedAt) {
+      return res.status(400).json({ message: "No pending changes found" });
+    }
+    
+    // Apply the pending changes
+    const pendingChanges = org.pendingChanges;
+    Object.keys(pendingChanges).forEach(key => {
+      if (key !== 'submittedAt' && key !== 'submittedBy') {
+        org[key] = pendingChanges[key];
+      }
+    });
+    
+    // Update change history status
+    org.changeHistory.forEach(change => {
+      if (change.status === 'pending') {
+        change.status = 'approved';
+        change.approvedAt = new Date();
+        change.reviewedBy = req.user._id;
+      }
+    });
+    
+    // Clear pending changes
+    org.pendingChanges = {};
+    
+    await org.save();
+    
+    res.json({ message: "Changes approved successfully", organization: org });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to approve changes" });
+  }
+};
+
+// ✅ Reject organization changes (admin only)
+const rejectOrganizationChanges = async (req, res) => {
+  try {
+    const { organizationId } = req.params;
+    
+    const org = await Organization.findById(organizationId);
+    if (!org) {
+      return res.status(404).json({ message: "Organization not found" });
+    }
+    
+    if (!org.pendingChanges.submittedAt) {
+      return res.status(400).json({ message: "No pending changes found" });
+    }
+    
+    // Update change history status to rejected
+    org.changeHistory.forEach(change => {
+      if (change.status === 'pending') {
+        change.status = 'rejected';
+        change.rejectedAt = new Date();
+        change.reviewedBy = req.user._id;
+      }
+    });
+    
+    // Clear pending changes (revert to original data)
+    org.pendingChanges = {};
+    
+    await org.save();
+    
+    res.json({ message: "Changes rejected successfully", organization: org });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to reject changes" });
   }
 };
 
@@ -349,4 +576,9 @@ module.exports = {
   updateMyOrganization,
   getMyOrganization,
   getMyApplicationStatus,
+  setPrimaryOrganization,
+  submitOrganizationChanges,
+  getPendingChanges,
+  approveOrganizationChanges,
+  rejectOrganizationChanges,
 };

@@ -73,6 +73,47 @@ const OrganizationSchema = new mongoose.Schema(
       ref: "User",
       required: true
     },
+    // New fields for pending changes and primary organization
+    isPrimary: {
+      type: Boolean,
+      default: false,
+    },
+    pendingChanges: {
+      name: String,
+      contactPerson: String,
+      email: String,
+      organizationType: String,
+      supportNeeds: [String],
+      purpose: String,
+      website: String,
+      github: String,
+      contactMethods: {
+        whatsapp: String,
+        telegram: String,
+      },
+      submittedAt: Date,
+      submittedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    },
+    changeHistory: [{
+      field: String,
+      oldValue: mongoose.Schema.Types.Mixed,
+      newValue: mongoose.Schema.Types.Mixed,
+      submittedAt: Date,
+      approvedAt: Date,
+      rejectedAt: Date,
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending",
+      },
+    }],
   },
   { timestamps: true }
 );

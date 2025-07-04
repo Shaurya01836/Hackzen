@@ -50,87 +50,50 @@ export function MySubmissions() {
   const judgedSubmissions = projects.filter((p) => p.scores?.length > 0);
   const pendingSubmissions = projects.filter((p) => p.scores?.length === 0);
 
-  const renderSubmissionCard = (submission) => (
-    <ACard key={submission._id} className="hover:ring-2 hover:ring-indigo-300">
-      <ACardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex gap-3 items-center">
-            {submission.logo?.url && (
-              <img
-                src={submission.logo.url}
-                alt="logo"
-                className="w-10 h-10 rounded-md object-cover"
-              />
-            )}
-            <div>
-              <ACardTitle className="text-lg text-indigo-700">
-                {submission.title}
-              </ACardTitle>
-              <ACardDescription className="mt-1 text-sm">
-                {submission.oneLineIntro || "No summary available"}
-              </ACardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+  const renderSubmissionCard = (submission) => {
+    return (
+      <ACard
+        key={submission._id}
+        className="w-full max-w-xs flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100"
+      >
+        {/* Banner / Logo */}
+        <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
+          <img
+            src={
+              submission.logo?.url ||
+              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+            }
+            alt={submission.title}
+            className="w-full h-full object-cover"
+          />
+          {/* Status Badge */}
+          <div className="absolute top-2 right-2">
             <Badge
-              variant={submission.scores?.length > 0 ? "default" : "secondary"}
+              variant={submission.scores?.length > 0 ? "deafault" : "outline"}
+              className="font-semibold shadow"
             >
               {submission.scores?.length > 0 ? "Judged" : "Submitted"}
             </Badge>
           </div>
         </div>
-      </ACardHeader>
-      <ACardContent className="pt-4 space-y-4">
-        <div className="flex flex-wrap gap-1">
-          {submission.skills?.map((skill) => (
-            <Badge
-              key={skill}
-              className="bg-indigo-100 text-indigo-700"
-              variant="outline"
-            >
-              {skill}
-            </Badge>
-          ))}
-        </div>
 
-        <div className="flex gap-2 pt-2">
-          {submission.repoLink && (
-            <Button
-              size="sm"
-              variant="default"
-              className="flex items-center gap-1"
-              onClick={() => window.open(submission.repoLink, "_blank")}
-            >
-              <Github className="w-3 h-3" /> GitHub
-            </Button>
-          )}
-          {submission.videoLink && (
-            <Button
-              size="sm"
-              variant="default"
-              className="flex items-center gap-1"
-              onClick={() => window.open(submission.videoLink, "_blank")}
-            >
-              <Youtube className="w-3 h-3" /> Video
-            </Button>
-          )}
-          {submission.websiteLink && (
-            <Button
-              size="sm"
-              variant="default"
-              className="flex items-center gap-1"
-              onClick={() => window.open(submission.websiteLink, "_blank")}
-            >
-              <ExternalLink className="w-3 h-3" /> Live
-            </Button>
-          )}
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-2 flex-1">
+          {/* Title */}
+          <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2">
+            {submission.title}
+          </h3>
+          {/* One-line intro */}
+          <p className="text-sm text-gray-600 mb-1 line-clamp-2">
+            {submission.oneLineIntro || "No summary available"}
+          </p>
         </div>
-      </ACardContent>
-    </ACard>
-  );
+      </ACard>
+    );
+  };
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">
       <div className="flex items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">My Submissions</h1>
@@ -168,7 +131,9 @@ export function MySubmissions() {
             <div className="flex items-center gap-3">
               <Upload className="w-8 h-8 text-yellow-500" />
               <div>
-                <p className="text-2xl font-bold">{pendingSubmissions.length}</p>
+                <p className="text-2xl font-bold">
+                  {pendingSubmissions.length}
+                </p>
                 <p className="text-sm text-gray-500">Pending Review</p>
               </div>
             </div>
@@ -179,8 +144,12 @@ export function MySubmissions() {
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
           <TabsTrigger value="all">All ({projects.length})</TabsTrigger>
-          <TabsTrigger value="judged">Judged ({judgedSubmissions.length})</TabsTrigger>
-          <TabsTrigger value="pending">Pending ({pendingSubmissions.length})</TabsTrigger>
+          <TabsTrigger value="judged">
+            Judged ({judgedSubmissions.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            Pending ({pendingSubmissions.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
