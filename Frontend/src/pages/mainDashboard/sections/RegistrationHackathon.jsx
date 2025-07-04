@@ -90,6 +90,8 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
           linkedin: user.linkedin || ""
         };
 
+        let hasPreviousData = false;
+
         // Then, try to fetch previous registration data
         try {
           const token = localStorage.getItem("token");
@@ -102,6 +104,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
           if (response.ok) {
             const data = await response.json();
             if (data.hasPreviousRegistration && data.formData) {
+              hasPreviousData = true;
               // Merge previous registration data with user data
               // Prefer user data for basic fields, but use previous registration data for additional fields
               autoFillData = {
@@ -132,8 +135,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
         }));
         
         // Set flag to show auto-fill message
-        if (data?.hasPreviousRegistration) {
+        if (hasPreviousData) {
           setHasAutoFilled(true);
+          toast({
+            title: "Auto-fill Applied",
+            description: "Your previous registration details have been auto-filled. You can modify any field if needed.",
+            duration: 3000
+          });
         }
       }
     };
@@ -206,10 +214,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
     setIsSubmitting(true);
     try {
-      const userData = JSON.parse(localStorage.getItem("user"));
+      const user = JSON.parse(localStorage.getItem("user"));
       const token = localStorage.getItem("token"); // assuming you store JWT here
 
-      if (!userData || !token) {
+      if (!user || !token) {
         console.error("You must be logged in to register.");
         return;
       }
@@ -285,12 +293,46 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
               <p className="text-gray-600">Tell us about yourself</p>
               
               {hasAutoFilled && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    Your details have been auto-filled from your previous registration. 
-                    You can modify any field if needed.
-                  </p>
+                
+                  <div className="flex items-center justify-between">
+                   
+                    <div className="flex gap-2">
+                
+                      
+                     
+                  
+                        {async () => {
+                          try {
+                            const token = localStorage.getItem("token");
+                            const response = await fetch("http://localhost:3000/api/registration/last-registration", {
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                              },
+                            });
+
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.hasPreviousRegistration && data.formData) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  ...data.formData
+                                }));
+                                toast({
+                                  title: "Auto-fill Refreshed",
+                                  description: "Your latest registration details have been loaded.",
+                                  duration: 2000
+                                });
+                              }
+                            }
+                          } catch (error) {
+                            console.log("Could not refresh auto-fill data:", error);
+                          }
+                        }}
+                      
+                       
+                   
+                    </div>
+                 
                 </div>
               )}
             </div>
@@ -300,13 +342,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <Label htmlFor="fullName" className="flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Full Name *
+                  
                 </Label>
                 <Input
                   id="fullName"
                   value={formData.fullName}
                   onChange={e => handleInputChange("fullName", e.target.value)}
                   placeholder="Enter your full name"
-                  className={`${errors.fullName ? "border-red-500" : ""} ${formData.fullName && user?.name ? "border-green-500 bg-green-50" : ""}`}
+                  className={`${errors.fullName ? "border-red-500" : ""} ${hasAutoFilled && formData.fullName ? "border-blue-300 bg-blue-50" : ""}`}
                 />
                
                 {errors.fullName && (
@@ -325,7 +368,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.email}
                   onChange={e => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email"
-                  className={`${errors.email ? "border-red-500" : ""} ${formData.email && user?.email ? "border-green-500 bg-green-50" : ""}`}
+                  className={`${errors.email ? "border-red-500" : ""} ${hasAutoFilled && formData.email ? "border-blue-300 bg-blue-50" : ""}`}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500">{errors.email}</p>
@@ -336,12 +379,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <Label htmlFor="phone" className="flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Phone Number
+                
                 </Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={e => handleInputChange("phone", e.target.value)}
                   placeholder="Enter your phone number"
+                  className={`${hasAutoFilled && formData.phone ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
@@ -349,6 +394,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <Label htmlFor="age" className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   Age
+                 
                 </Label>
                 <Input
                   id="age"
@@ -356,16 +402,20 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.age}
                   onChange={e => handleInputChange("age", e.target.value)}
                   placeholder="Enter your age"
+                  className={`${hasAutoFilled && formData.age ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="gender">Gender</Label>
+                <Label htmlFor="gender" className="flex items-center gap-2">
+                  Gender
+                 
+                </Label>
                 <Select
                   value={formData.gender}
                   onValueChange={value => handleInputChange("gender", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={`${hasAutoFilled && formData.gender ? "border-blue-300 bg-blue-50" : ""}`}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -383,6 +433,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 >
                   <Building className="w-4 h-4" />
                   College/Company *
+                 
                 </Label>
                 <Input
                   id="collegeOrCompany"
@@ -391,7 +442,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     handleInputChange("collegeOrCompany", e.target.value)
                   }
                   placeholder="Enter your college or company"
-                  className={`${errors.collegeOrCompany ? "border-red-500" : ""} ${formData.collegeOrCompany && user?.collegeOrCompany ? "border-green-500 bg-green-50" : ""}`}
+                  className={`${errors.collegeOrCompany ? "border-red-500" : ""} ${hasAutoFilled && formData.collegeOrCompany ? "border-blue-300 bg-blue-50" : ""}`}
                 />
                 {errors.collegeOrCompany && (
                   <p className="text-sm text-red-500">
@@ -423,6 +474,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 >
                   <GraduationCap className="w-4 h-4" />
                   Degree/Role
+                 
                 </Label>
                 <Input
                   id="degreeOrRole"
@@ -431,12 +483,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     handleInputChange("degreeOrRole", e.target.value)
                   }
                   placeholder="e.g., Computer Science, Software Engineer"
+                  className={`${hasAutoFilled && formData.degreeOrRole ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="yearOfStudyOrExperience">
+                <Label htmlFor="yearOfStudyOrExperience" className="flex items-center gap-2">
                   Year of Study/Experience
+                  
                 </Label>
                 <Input
                   id="yearOfStudyOrExperience"
@@ -446,6 +500,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     handleInputChange("yearOfStudyOrExperience", e.target.value)
                   }
                   placeholder="e.g., 2 (years)"
+                  className={`${hasAutoFilled && formData.yearOfStudyOrExperience ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
@@ -453,12 +508,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <Label htmlFor="github" className="flex items-center gap-2">
                   <Github className="w-4 h-4" />
                   GitHub Profile
+                 
                 </Label>
                 <Input
                   id="github"
                   value={formData.github}
                   onChange={e => handleInputChange("github", e.target.value)}
                   placeholder="https://github.com/username"
+                  className={`${hasAutoFilled && formData.github ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
@@ -466,34 +523,18 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 <Label htmlFor="linkedin" className="flex items-center gap-2">
                   <Linkedin className="w-4 h-4" />
                   LinkedIn Profile
+                
                 </Label>
                 <Input
                   id="linkedin"
                   value={formData.linkedin}
                   onChange={e => handleInputChange("linkedin", e.target.value)}
                   placeholder="https://linkedin.com/in/username"
+                  className={`${hasAutoFilled && formData.linkedin ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="resumeURL" className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Resume URL
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="resumeURL"
-                    value={formData.resumeURL}
-                    onChange={e =>
-                      handleInputChange("resumeURL", e.target.value)
-                    }
-                    placeholder="Link to your resume (Google Drive, Dropbox, etc.)"
-                  />
-                  <Button variant="outline" size="sm">
-                    <Upload className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+              
             </div>
           </div>
         )

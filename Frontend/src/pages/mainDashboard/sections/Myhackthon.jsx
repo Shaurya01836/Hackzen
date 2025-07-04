@@ -159,7 +159,7 @@ export default function MyHackathons() {
     navigate(
       `/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodeURIComponent(
         hackathonTitle
-      )}&source=my-hackathons`
+      )}`
     );
   };
 

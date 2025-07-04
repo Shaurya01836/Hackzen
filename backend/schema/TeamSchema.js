@@ -7,7 +7,7 @@ const TeamSchema = new Schema({
   maxMembers: { type: Number, default: 4, min: 1, max: 10 },
   members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   leader: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  hackathon: { type: Schema.Types.ObjectId, ref: 'Hackathon', required: true },
+  hackathon: { type: Schema.Types.ObjectId, ref: 'Hackathon' }, // Optional - can be for projects
   mentor: { type: Schema.Types.ObjectId, ref: 'User' }, // Optional
   project: { type: Schema.Types.ObjectId, ref: 'Project' },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
