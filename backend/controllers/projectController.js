@@ -93,13 +93,21 @@ exports.getProjectsByHackathon = async (req, res) => {
 // Get project by ID
 exports.getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id).populate("submittedBy hackathon team");
-    if (!project) return res.status(404).json({ message: "Project not found" });
+    const project = await Project.findById(req.params.id)
+      .populate('hackathon', 'title status prizeTrack')
+      .populate('submittedBy', 'name profileImage')
+      .populate('team');
+
+    console.log("🔍 Populated project:", project); // 👈 ADD THIS
+
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+
     res.json(project);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching project", error: error.message });
+  } catch (err) {
+    res.status(500).json({ message: 'Error retrieving project' });
   }
 };
+
 
 // Update project
 exports.updateProject = async (req, res) => {

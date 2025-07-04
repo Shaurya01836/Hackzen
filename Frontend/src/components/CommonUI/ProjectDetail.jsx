@@ -38,6 +38,7 @@ import {
   AlertDialogTrigger,
 } from "../DashboardUI/alert-dialog"
 import { useToast } from "../../hooks/use-toast"
+import axios from "axios";
 
 export function ProjectDetail({ project, onBack }) {
   const { user } = useAuth()
@@ -59,6 +60,7 @@ export function ProjectDetail({ project, onBack }) {
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false)
   const [newTeamName, setNewTeamName] = useState('')
   const [newTeamDescription, setNewTeamDescription] = useState('')
+  const [submittedUser, setSubmittedUser] = useState(null);
 
   // Fetch user teams for this project's hackathon
   useEffect(() => {
@@ -215,7 +217,23 @@ export function ProjectDetail({ project, onBack }) {
     setEditingDescription(team.description)
     setShowEditDescription(true)
   }
+useEffect(() => {
+    const fetchUser = async () => {
+      if (typeof project.submittedBy === 'string') {
+        try {
+          const res = await axios.get(`http://localhost:3000/api/users/${project.submittedBy}`);
+          setSubmittedUser(res.data);
+        } catch (err) {
+          console.error("Error fetching submittedBy user:", err);
+        }
+      } else {
+        // If already populated
+        setSubmittedUser(project.submittedBy);
+      }
+    };
 
+    fetchUser();
+  }, [project]);
   const handleUpdateDescription = async () => {
     if (!editingDescription.trim() || !editingTeamId) return
 
@@ -439,27 +457,55 @@ export function ProjectDetail({ project, onBack }) {
 
               <TabsContent value="hackathon" className="space-y-8">
                 {project.hackathon ? (
-                  <Card>
-                    <CardHeader><CardTitle>Submitted Hackathon</CardTitle></CardHeader>
-                    <CardContent>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{project.hackathon.name}</h3>
-                      <p className="text-gray-600 mb-4">{project.hackathon.prizeTrack || "Prize track info"}</p>
-                      <p className="text-sm text-gray-500">Status: {project.hackathon.status || "Unknown"}</p>
-                    </CardContent>
-                  </Card>
-                ) : <p>No hackathon linked.</p>}
+  <Card>
+    <CardHeader><CardTitle>Submitted Hackathon</CardTitle></CardHeader>
+    <CardContent>
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+        {project.hackathon.title}
+      </h3>
+      <p className="text-gray-600 mb-4">
+        {project.hackathon.prizeTrack || "Prize track info"}
+      </p>
+      <p className="text-sm text-gray-500">
+        Status: {project.hackathon.status || "Unknown"}
+      </p>
+    </CardContent>
+  </Card>
+) : (
+  <p>No hackathon linked.</p>
+)}
+
               </TabsContent>
 
               <TabsContent value="team" className="space-y-8">
                 {/* Team Intro */}
-                {project.teamIntro && (
-                  <Card>
-                    <CardHeader><CardTitle>Team Intro</CardTitle></CardHeader>
-                    <CardContent>
-                      <p className="text-gray-700 leading-relaxed">{project.teamIntro}</p>
-                    </CardContent>
-                  </Card>
-                )}
+               {project?.submittedBy && (
+  <>
+    <CardHeader>
+      <CardTitle className="text-sm text-gray-500">Team Leader</CardTitle>
+    </CardHeader>
+
+    <CardContent>
+      <div className="flex items-center gap-3">
+        <Avatar className="w-10 h-10">
+          <AvatarImage
+            src={project.submittedBy.profileImage || "/placeholder.svg"}
+            alt={project.submittedBy.name || "Team Leader"}
+          />
+          <AvatarFallback>
+            {project.submittedBy.name?.[0]?.toUpperCase() || "?"}
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="font-semibold text-gray-900">
+            {project.submittedBy.name || "Unknown"}
+          </p>
+        </div>
+      </div>
+    </CardContent>
+  </>
+)}
+
 
                 {/* Project Team Management Section */}
                 <Card>
@@ -624,7 +670,7 @@ export function ProjectDetail({ project, onBack }) {
                       )}
                     </CardContent>
                   </Card>
-                )}
+                
 
                 {/* Original Team Members Display */}
                 {(project.team || []).length > 0 && (
@@ -656,18 +702,28 @@ export function ProjectDetail({ project, onBack }) {
           <div className="lg:col-span-1 space-y-6">
             {project.submittedBy && (
               <Card>
-                <CardHeader><CardTitle className="text-sm text-gray-500">Team Leader</CardTitle></CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={project.submittedBy.profileImage || "/placeholder.svg"} />
-                      <AvatarFallback>{project.submittedBy.name?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-gray-900">{project.submittedBy.name || "Unknown"}</p>
-                    </div>
-                  </div>
-                </CardContent>
+           <CardHeader>
+        <CardTitle className="text-sm text-gray-500">Team Leader</CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <div className="flex items-center gap-3">
+          <Avatar className="w-10 h-10">
+            <AvatarImage
+              src={submittedUser?.profileImage || "/placeholder.svg"}
+              alt={submittedUser?.name || "Team Leader"}
+            />
+            <AvatarFallback>
+              {submittedUser?.name?.[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-semibold text-gray-900">
+              {submittedUser?.name || "Unknown"}
+            </p>
+          </div>
+        </div>
+      </CardContent>
               </Card>
             )}
 
