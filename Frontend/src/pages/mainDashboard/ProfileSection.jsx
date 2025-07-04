@@ -45,6 +45,17 @@ import { Textarea } from "../../components/CommonUI/textarea";
 import { useAuth } from "../../context/AuthContext";
 import { Progress } from "../../components/DashboardUI/progress";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "../../components/DashboardUI/alert-dialog";
 
 export function ProfileSection() {
   const navigate = useNavigate();
@@ -298,6 +309,15 @@ export function ProfileSection() {
   const renderOverview = () => (
     <div className="flex flex-col gap-6 w-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <Card className="w-full overflow-hidden relative rounded-2xl">
+        {/* Loader Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70">
+            <svg className="animate-spin h-12 w-12 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+          </div>
+        )}
         {/* Banner */}
         <div className="relative h-48 w-full rounded-t-2xl overflow-hidden">
           <img
@@ -539,6 +559,15 @@ export function ProfileSection() {
     <div className="w-full flex flex-col gap-6">
       {/* Card with Banner and Avatar */}
       <Card className="w-full overflow-hidden relative">
+        {/* Loader Overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70">
+            <svg className="animate-spin h-12 w-12 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            </svg>
+          </div>
+        )}
         {/* Banner with Hover Edit */}
         <div className="relative h-48 w-full rounded-t-2xl overflow-hidden group">
           <img
@@ -752,13 +781,31 @@ export function ProfileSection() {
 
       {/* Save + Cancel Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-start">
-        <Button
-          onClick={handleSaveChanges}
-          className="flex items-center gap-2 w-full sm:w-auto"
-        >
-          <Save className="w-4 h-4" />
-          Save Changes
-        </Button>
+        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <AlertDialogTrigger asChild>
+            <Button
+              onClick={handleSaveClick}
+              className="flex items-center gap-2 w-full sm:w-auto"
+            >
+              <Save className="w-4 h-4" />
+              Save Changes
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to save changes?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will update your profile information. You can't undo this action.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={pendingSave}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSave} disabled={pendingSave}>
+                {pendingSave ? "Saving..." : "Yes, Save"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <Button
           variant="outline"
           className="w-full sm:w-auto"
@@ -1126,7 +1173,6 @@ export function ProfileSection() {
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       setCurrentView("overview");
-      alert("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
       alert("Failed to update profile");
@@ -1335,6 +1381,21 @@ export function ProfileSection() {
       console.error("Error removing profile image:", error);
       alert("Failed to remove profile image");
     }
+  };
+
+  // Add state for dialog
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
+
+  const handleSaveClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSave = async () => {
+    setPendingSave(true);
+    await handleSaveChanges();
+    setPendingSave(false);
+    setShowConfirmDialog(false);
   };
 
  return (

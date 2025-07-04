@@ -52,7 +52,12 @@ savedHackathons: [{ type: Schema.Types.ObjectId, ref: "Hackathon"}],
     type: String,
     enum: ["pending", "submitted", "approved", "rejected"],
     default: "pending"
-  }
+  },
+  twoFA: {
+  enabled: { type: Boolean, default: false },
+  secret: { type: String },
+},
+
 });
 
 module.exports = { UserSchema };
