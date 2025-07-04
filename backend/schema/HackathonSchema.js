@@ -1,5 +1,5 @@
-const { Schema } = require('mongoose');
-
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 const HackathonSchema = new Schema({
   title: { type: String, required: true },
   description: String,
@@ -95,6 +95,23 @@ const HackathonSchema = new Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending',
   },
+  customForm: {
+  questions: [
+    {
+      id: { type: String },
+      text: { type: String },
+      required: { type: Boolean, default: true },
+    },
+  ],
+  terms: [
+    {
+      id: { type: String },
+      text: { type: String },
+    },
+  ],
+},
+submittedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+
 
   status: {
     type: String,

@@ -29,7 +29,13 @@ const ProjectSchema = new Schema({
   status: { type: String, enum: ['draft', 'submitted', 'reviewed'], default: 'draft' },
   submittedAt: Date,oneLineIntro: { type: String, required: true },
 skills: [String],
-teamIntro: String,
+teamIntro: String,customAnswers: [
+  {
+    questionId: { type: String },
+    answer: { type: String },
+  },
+],
+
   createdAt: { type: Date, default: Date.now }
 });
 
