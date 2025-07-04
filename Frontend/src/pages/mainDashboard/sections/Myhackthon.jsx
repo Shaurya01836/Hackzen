@@ -37,7 +37,6 @@ import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 import ParticipantSubmissionForm from "./ParticipantSubmitForm";
 
-
 export default function MyHackathons() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
@@ -347,15 +346,14 @@ export default function MyHackathons() {
   );
 
   if (showSubmissionForm && selectedHackathon) {
-  return (
-    <ParticipantSubmissionForm
-      hackathon={selectedHackathon}
-      onBack={() => setShowSubmissionForm(false)}
-      userProjects={projects} // ✅ This is what the form needs
-    />
-  );
-}
-
+    return (
+      <ParticipantSubmissionForm
+        hackathon={selectedHackathon}
+        onBack={() => setShowSubmissionForm(false)}
+        userProjects={projects} // ✅ This is what the form needs
+      />
+    );
+  }
 
   // Main dashboard view
   return (
@@ -463,15 +461,78 @@ export default function MyHackathons() {
               ) : hackathons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {hackathons.map((hackathon) => (
-                    <HackathonCard
-  key={hackathon.id}
-  hackathon={hackathon}
-  onClick={handleHackathonClick}
-  onSubmitProject={(hackathon) => {
-    setSelectedHackathon(hackathon);
-    setShowSubmissionForm(true);
-  }}
-/>
+                    <Card
+                      key={hackathon.id}
+                      className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+                    >
+                      {/* Banner */}
+                      <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={
+                            hackathon.image ||
+                            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+                          }
+                          alt={hackathon.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <CardHeader className="px-4 pt-3 pb-1">
+                        <CardTitle className="text-lg font-semibold text-indigo-700 line-clamp-1 group-hover:text-indigo-900 transition">
+                          {hackathon.name}
+                        </CardTitle>
+                        <CardDescription className="text-xs text-gray-500">
+                          {hackathon.category} • {hackathon.difficulty}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4 pt-2 space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            <Clock className="inline w-4 h-4 mr-1" />
+                            {hackathon.deadline}
+                          </span>
+                          <span>
+                            <Trophy className="inline w-4 h-4 mr-1" />
+                            {hackathon.prize}
+                          </span>
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                            onClick={() =>
+                              handleHackathonClick(hackathon.id, hackathon.name)
+                            }
+                          >
+                            View
+                          </Button>
+                          {!hackathon.submitted && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                              onClick={() => {
+                                setSelectedHackathon(hackathon);
+                                setShowSubmissionForm(true);
+                              }}
+                            >
+                              Register
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                            onClick={() => {
+                              setSelectedHackathon(hackathon);
+                              setCurrentView("edit-project");
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
@@ -502,14 +563,46 @@ export default function MyHackathons() {
               ) : savedHackathons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {savedHackathons.map((hackathon) => (
-                    <HackathonCard
+                    <Card
                       key={hackathon.id}
-                      hackathon={hackathon}
-                      onClick={handleHackathonClick}
-                      onSubmitProject={(hackathon) => {
-                        setSelectedHackathon(hackathon);
-                      }}
-                    />
+                      className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+                      onClick={() =>
+                        handleHackathonClick(hackathon.id, hackathon.name)
+                      }
+                    >
+                      {/* Banner */}
+                      <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={
+                            hackathon.image ||
+                            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+                          }
+                          alt={hackathon.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <CardHeader className="px-4 pt-3 pb-1">
+                        <CardTitle className="text-lg font-semibold text-indigo-700 line-clamp-1 group-hover:text-indigo-900 transition">
+                          {hackathon.name}
+                        </CardTitle>
+                        <CardDescription className="text-xs text-gray-500">
+                          {hackathon.category} • {hackathon.difficulty}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="px-4 pb-4 pt-2 space-y-2">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            <Clock className="inline w-4 h-4 mr-1" />
+                            {hackathon.deadline}
+                          </span>
+                          <span>
+                            <Trophy className="inline w-4 h-4 mr-1" />
+                            {hackathon.prize}
+                          </span>
+                        </div>
+                        {/* No action buttons for saved hackathons */}
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
