@@ -7,7 +7,7 @@ export default function HorizontalTabNav({
   onSectionClick = () => {},
 }) {
   return (
-    <div className="w-full bg-white sticky top-[110px] z-30 shadow-sm border-b">
+    <div className="w-full sticky top-[110px] z-30 border-b">
       <div className="max-w-6xl mx-auto px-4">
         <nav className="flex gap-4 overflow-x-auto no-scrollbar py-3 text-sm sm:text-base font-medium">
           {sections.map((section) => (

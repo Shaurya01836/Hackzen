@@ -315,55 +315,53 @@ export function CreatedHackathons({ onCreateNew }) {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-10 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 w-full">
             <ACard>
-              <ACardContent className="pt-8 pb-8">
-                <div className="flex items-center gap-6">
-                  <Trophy className="w-12 h-12 text-purple-500" />
+              <ACardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <Trophy className="w-8 h-8 text-purple-500" />
                   <div>
-                    <p className="text-3xl font-extrabold">
-                      {hackathons.length}
-                    </p>
-                    <p className="text-base text-gray-500">Total Events</p>
+                    <p className="text-2xl font-bold">{hackathons.length}</p>
+                    <p className="text-sm text-gray-500">Total Events</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-8 pb-8">
-                <div className="flex items-center gap-6">
-                  <Settings className="w-12 h-12 text-orange-500" />
+              <ACardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-8 h-8 text-orange-500" />
                   <div>
-                    <p className="text-3xl font-extrabold">
+                    <p className="text-2xl font-bold">
                       {liveHackathons.length}
                     </p>
-                    <p className="text-base text-gray-500">Active Now</p>
+                    <p className="text-sm text-gray-500">Active Now</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-8 pb-8">
-                <div className="flex items-center gap-6">
-                  <Clock className="w-12 h-12 text-yellow-500" />
+              <ACardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <Clock className="w-8 h-8 text-yellow-500" />
                   <div>
-                    <p className="text-3xl font-extrabold">
+                    <p className="text-2xl font-bold">
                       {pendingHackathons.length}
                     </p>
-                    <p className="text-base text-gray-500">Pending Approval</p>
+                    <p className="text-sm text-gray-500">Pending Approval</p>
                   </div>
                 </div>
               </ACardContent>
             </ACard>
             <ACard>
-              <ACardContent className="pt-8 pb-8">
-                <div className="flex items-center gap-6">
-                  <Check className="w-12 h-12 text-green-500" />
+              <ACardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <Check className="w-8 h-8 text-green-500" />
                   <div>
-                    <p className="text-3xl font-extrabold">
+                    <p className="text-2xl font-bold">
                       {approvedHackathons.length}
                     </p>
-                    <p className="text-base text-gray-500">Approved</p>
+                    <p className="text-sm text-gray-500">Approved</p>
                   </div>
                 </div>
               </ACardContent>

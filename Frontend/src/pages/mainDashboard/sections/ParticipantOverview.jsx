@@ -13,7 +13,8 @@ import {
   ExternalLink,
   Clock,
   Trophy,
-  Building
+  Building,
+  BarChart3
 } from "lucide-react"
 import {
   Card,
@@ -221,62 +222,91 @@ const createHackathonPage = () => {
     </Card>
   )
 
-  const renderHackathonCard = hackathon => (
-    <Card 
-      key={hackathon._id} 
-      className="cursor-pointer hover:shadow-lg transition-shadow"
-      onClick={() => handleHackathonClick(hackathon)}
-    >
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <h3 className="text-xl font-semibold mb-2">{hackathon.title}</h3>
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-              {hackathon.description}
-            </p>
+  const renderHackathonCard = hackathon => {
+    const registrationDeadline = new Date(hackathon.registrationDeadline);
+    const today = new Date();
+    const daysLeft = Math.ceil(
+      (registrationDeadline - today) / (1000 * 60 * 60 * 24)
+    );
+
+    const deadlineLabel = isNaN(daysLeft)
+      ? "TBA"
+      : daysLeft > 0
+      ? `${daysLeft} day${daysLeft > 1 ? "s" : ""} left`
+      : "Closed";
+
+    return (
+      <Card
+        key={hackathon._id}
+        className="w-full max-w-xs flex flex-col overflow-hidden cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
+        onClick={() => handleHackathonClick(hackathon)}
+      >
+        {/* Thumbnail with prize badge */}
+        <div className="relative h-40 w-full">
+          <img
+            src={
+              hackathon.imageUrl ||
+              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+            }
+            alt={hackathon.title}
+            className="w-full h-full object-cover transition-transform duration-300"
+          />
+
+          {/* Prize Pool Badge */}
+          <div className="absolute top-2 right-2">
+            <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
+              <Trophy className="w-3 h-3 mr-1" />
+              {hackathon.prizePool?.amount
+                ? `$${hackathon.prizePool.amount.toLocaleString()}`
+                : "TBA"}
+            </Badge>
           </div>
-          <Badge 
-            variant={hackathon.status === 'ongoing' ? 'default' : 
-                   hackathon.status === 'upcoming' ? 'secondary' : 'outline'}
-            className={hackathon.status === 'ongoing' ? 'bg-green-500' : ''}
-          >
-            {hackathon.status}
-          </Badge>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <span>{new Date(hackathon.startDate).toLocaleDateString()}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-gray-400" />
-            <span>{hackathon.location || 'Online'}</span>
-          </div>
-        </div>
+        {/* Content */}
+        <div className="p-4 flex flex-col gap-2">
+          {/* Title */}
+          <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-2 h-10">
+            {hackathon.title}
+          </h3>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          {/* Date and Participants */}
+          <div className="text-xs text-gray-500 space-y-1">
             <div className="flex items-center gap-1">
-              <Users className="w-4 h-4 text-blue-500" />
-              <span className="text-sm font-medium">
-                {hackathon.participants?.length || 0} / {hackathon.maxParticipants}
+              <Calendar className="w-3 h-3" />
+              <span>
+                {new Date(hackathon.startDate).toLocaleDateString("en-GB")} -{" "}
+                {new Date(hackathon.endDate).toLocaleDateString("en-GB")}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Trophy className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-medium">
-                ${hackathon.prizePool?.amount || 0}
+              <Users className="w-3 h-3" />
+              <span>
+                {hackathon.participantCount || 0}/{hackathon.maxParticipants}{" "}
+                participants
               </span>
             </div>
+            <div className="flex items-center gap-1">
+              <BarChart3 className="w-3 h-3" />
+              <span>{hackathon.submissions?.length || 0} submissions</span>
+            </div>
           </div>
-          <Button size="sm" variant="outline">
-            View Participants
-          </Button>
+
+          {/* Location + Registration Deadline */}
+          <div className="text-xs text-gray-500 flex justify-between items-center pt-1">
+            <span className="flex items-center gap-1">
+              <MapPin className="w-3 h-3" />
+              {hackathon.location || "TBA"}
+            </span>
+            <span className="flex items-center gap-1 text-red-600 font-medium">
+              <Clock className="w-3 h-3" />
+              {deadlineLabel}
+            </span>
+          </div>
         </div>
-      </CardContent>
-    </Card>
-  )
+      </Card>
+    );
+  }
 
   if (loading) {
   return (

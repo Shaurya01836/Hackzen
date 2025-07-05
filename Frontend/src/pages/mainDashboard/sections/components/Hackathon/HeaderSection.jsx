@@ -68,7 +68,7 @@ export default function HeaderSection({
   };
 
   return (
-    <header className="bg-white border-b sticky top-0 z-40">
+    <header className="sticky top-0 z-40">
       {/* Top Bar */}
       <div className="max-w-6xl mx-auto px-4 py-6 flex items-center justify-between">
         {/* Left: Back Button */}
@@ -138,23 +138,11 @@ export default function HeaderSection({
         </div>
       </div>
 
-      {/* Title, Description, Status */}
-      <div className="text-center space-y-1 pb-4">
+      {/* Title */}
+      <div className="pb-4 md:ml-20 ml-10">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
           {hackathon.name || "Hackathon Title"}
         </h1>
-
-        {hackathon.description && (
-          <p className="text-gray-600 text-sm">{hackathon.description}</p>
-        )}
-
-        {hackathon.status && (
-          <div className="mt-3 flex justify-center">
-            <span className="bg-gray-200 text-gray-700 text-sm px-4 py-2 rounded-full font-medium capitalize">
-              {hackathon.status}
-            </span>
-          </div>
-        )}
       </div>
     </header>
   );

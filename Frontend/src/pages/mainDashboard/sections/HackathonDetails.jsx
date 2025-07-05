@@ -39,14 +39,18 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          "http://localhost:3000/api/users/me/saved-hackathons",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
 
         const savedHackathons = await res.json();
         setIsSaved(
           savedHackathons.some(
-            (h) => h._id === hackathon._id || h._id === hackathon._id?.toString()
+            (h) =>
+              h._id === hackathon._id || h._id === hackathon._id?.toString()
           )
         );
       } catch (err) {
@@ -71,7 +75,9 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
         headers: { Authorization: `Bearer ${token}` },
       });
       const registered = res.data.some(
-        (r) => r.hackathonId === hackathon._id || r.hackathonId?._id === hackathon._id
+        (r) =>
+          r.hackathonId === hackathon._id ||
+          r.hackathonId?._id === hackathon._id
       );
       setIsRegistered(registered);
     } catch (err) {
@@ -82,6 +88,11 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   useEffect(() => {
     refreshRegistrationStatus();
   }, [hackathon._id]);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (showRegistration) {
     return (
@@ -120,12 +131,20 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
         <div className="p-6 md:p-10 w-full mx-auto max-w-6xl">
           {activeTab === "overview" && (
             <>
-              <HackathonHero hackathon={hackathon} isRegistered={isRegistered} isSaved={isSaved} />
+              <HackathonHero
+                hackathon={hackathon}
+                isRegistered={isRegistered}
+                isSaved={isSaved}
+              />
               <HackathonOverview hackathon={hackathon} user={user} />
             </>
           )}
-          {activeTab === "problems" && <HackathonProblems hackathon={hackathon} />}
-          {activeTab === "timeline" && <HackathonTimeline hackathon={hackathon} />}
+          {activeTab === "problems" && (
+            <HackathonProblems hackathon={hackathon} />
+          )}
+          {activeTab === "timeline" && (
+            <HackathonTimeline hackathon={hackathon} />
+          )}
           {activeTab === "team" && (
             <TeamManagementSection
               hackathon={hackathon}

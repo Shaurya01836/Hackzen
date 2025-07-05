@@ -3,10 +3,19 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "../../../../../components/CommonUI/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/CommonUI/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../../components/CommonUI/card";
 import { AlertCircle, Users, UserPlus, Copy, Edit, LogOut } from "lucide-react";
 import { Badge } from "../../../../../components/CommonUI/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../../components/DashboardUI/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "../../../../../components/DashboardUI/avatar";
 
 import InviteModal from "./TeamModals/InviteModal";
 import JoinTeamModal from "./TeamModals/JoinTeamModal";
@@ -41,12 +50,18 @@ export default function TeamManagementSection({
         { code: teamCode, hackathonId: hackathon._id },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast({ title: "Joined!", description: `You joined team: ${res.data.name}` });
+      toast({
+        title: "Joined!",
+        description: `You joined team: ${res.data.name}`,
+      });
       setShowJoinTeam(false);
       fetchUserTeams();
       refreshRegistrationStatus();
     } catch (err) {
-      toast({ title: "Error", description: err?.response?.data?.message || "Failed to join team" });
+      toast({
+        title: "Error",
+        description: err?.response?.data?.message || "Failed to join team",
+      });
     }
   };
 
@@ -62,7 +77,10 @@ export default function TeamManagementSection({
       setEditingTeam(null);
       fetchUserTeams();
     } catch (err) {
-      toast({ title: "Error", description: "Failed to update team description" });
+      toast({
+        title: "Error",
+        description: "Failed to update team description",
+      });
     }
   };
 
@@ -76,7 +94,10 @@ export default function TeamManagementSection({
       fetchUserTeams();
       refreshRegistrationStatus();
     } catch (err) {
-      toast({ title: "Error", description: err?.response?.data?.message || "Could not delete team" });
+      toast({
+        title: "Error",
+        description: err?.response?.data?.message || "Could not delete team",
+      });
     }
   };
 
@@ -129,20 +150,33 @@ export default function TeamManagementSection({
 
   return (
     <section ref={sectionRef} className="space-y-8">
-      <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">Team Management</h2>
+      <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
+        Team Management
+      </h2>
 
       {!isRegistered ? (
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="pt-4 flex flex-col items-center text-center ">
             <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Get Started with Team Management</h3>
-            <p className="text-gray-600 mb-4">Choose how you'd like to participate in this hackathon.</p>
+            <h3 className="text-xl font-semibold mb-2">
+              Get Started with Team Management
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Choose how you'd like to participate in this hackathon.
+            </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button onClick={() => setShowUnregisterDialog(true)} className="flex-1 sm:flex-none">
+              <Button
+                onClick={() => setShowUnregisterDialog(true)}
+                className="flex-1 sm:flex-none"
+              >
                 <UserPlus className="w-4 h-4 mr-2" />
                 Register for Hackathon
               </Button>
-              <Button onClick={() => setShowJoinTeam(true)} variant="outline" className="flex-1 sm:flex-none">
+              <Button
+                onClick={() => setShowJoinTeam(true)}
+                variant="outline"
+                className="flex-1 sm:flex-none"
+              >
                 <Users className="w-4 h-4 mr-2" />
                 Join Team
               </Button>
@@ -159,7 +193,11 @@ export default function TeamManagementSection({
                   My Teams
                 </span>
                 {userTeams.length === 0 && (
-                  <Button onClick={() => setShowJoinTeam(true)} variant="outline" size="sm">
+                  <Button
+                    onClick={() => setShowJoinTeam(true)}
+                    variant="outline"
+                    size="sm"
+                  >
                     <UserPlus className="w-4 h-4 mr-2" />
                     Join Team
                   </Button>
@@ -168,36 +206,54 @@ export default function TeamManagementSection({
             </CardHeader>
             <CardContent>
               {userTeams.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">You are not part of any team yet.</div>
+                <div className="text-center py-8 text-gray-500">
+                  You are not part of any team yet.
+                </div>
               ) : (
                 userTeams.map((team) => (
-                  <div key={team._id} className="mb-4 p-4 border rounded-lg bg-gray-50">
+                  <div
+                    key={team._id}
+                    className="mb-4 p-4 border rounded-lg bg-gray-50"
+                  >
                     <div className="flex justify-between items-center mb-2">
                       <div>
                         <h4 className="font-semibold text-lg">{team.name}</h4>
                         <p className="text-sm text-gray-500">
-                          Code: <span className="font-mono bg-gray-100 px-2 py-1 rounded">{team.teamCode}</span>
+                          Code:{" "}
+                          <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                            {team.teamCode}
+                          </span>
                         </p>
                       </div>
-                      <Badge variant="default">{team.members.length}/{team.maxMembers}</Badge>
+                      <Badge variant="default">
+                        {team.members.length}/{team.maxMembers}
+                      </Badge>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
                       {team.members.map((member) => (
-                        <div key={member._id} className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border">
+                        <div
+                          key={member._id}
+                          className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border"
+                        >
                           <Avatar className="w-6 h-6">
                             <AvatarImage src={member.avatar} />
                             <AvatarFallback>{member.name?.[0]}</AvatarFallback>
                           </Avatar>
                           <span className="text-sm">{member.name}</span>
-                          {member._id === team.leader._id && <Badge variant="secondary">Leader</Badge>}
+                          {member._id === team.leader._id && (
+                            <Badge variant="secondary">Leader</Badge>
+                          )}
                         </div>
                       ))}
                     </div>
 
                     {team.description && (
                       <p className="text-sm text-gray-700 mt-2">
-                        <span className="font-medium text-gray-600">Description:</span> {team.description}
+                        <span className="font-medium text-gray-600">
+                          Description:
+                        </span>{" "}
+                        {team.description}
                       </p>
                     )}
 
@@ -221,7 +277,10 @@ export default function TeamManagementSection({
                         onClick={() => {
                           navigator.clipboard.writeText(team.teamCode);
                           setCopiedTeamId(team._id);
-                          toast({ title: "Copied", description: "Team code copied" });
+                          toast({
+                            title: "Copied",
+                            description: "Team code copied",
+                          });
                           setTimeout(() => setCopiedTeamId(null), 1500);
                         }}
                       >
@@ -231,11 +290,19 @@ export default function TeamManagementSection({
 
                       {team.leader._id === user?._id ? (
                         <>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingTeam(team)}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingTeam(team)}
+                          >
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDeleteTeam(team._id)}>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteTeam(team._id)}
+                          >
                             Delete
                           </Button>
                         </>
@@ -265,7 +332,10 @@ export default function TeamManagementSection({
               </CardHeader>
               <CardContent>
                 {teamInvites.map((invite) => (
-                  <div key={invite._id} className="flex justify-between items-center border p-3 rounded-lg mb-2">
+                  <div
+                    key={invite._id}
+                    className="flex justify-between items-center border p-3 rounded-lg mb-2"
+                  >
                     <div>
                       <p className="font-medium">{invite.invitedEmail}</p>
                       <p className="text-sm text-gray-500">

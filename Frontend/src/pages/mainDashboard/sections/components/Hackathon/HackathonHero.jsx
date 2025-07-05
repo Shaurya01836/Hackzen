@@ -1,6 +1,11 @@
 "use client";
 import { Badge } from "../../../../../components/CommonUI/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/CommonUI/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../../components/CommonUI/card";
 import { Progress } from "../../../../../components/DashboardUI/progress";
 import { Calendar, Star, Trophy, Users } from "lucide-react";
 import { Button } from "../../../../../components/CommonUI/button";
@@ -26,7 +31,8 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
     const now = new Date();
     const deadline = new Date(registrationDeadline);
     if (now > deadline) return "Registration Closed";
-    if (participants >= maxParticipants && !isRegistered) return "Registration Full";
+    if (participants >= maxParticipants && !isRegistered)
+      return "Registration Full";
     if (isRegistered) return "Registered";
     return "Registration Open";
   };
@@ -40,7 +46,9 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
       case "Registered":
         return <Badge className="bg-green-500 text-white">Registered</Badge>;
       default:
-        return <Badge className="bg-green-500 text-white">Registration Open</Badge>;
+        return (
+          <Badge className="bg-green-500 text-white">Registration Open</Badge>
+        );
     }
   };
 
@@ -48,7 +56,7 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
       {/* Hero Banner */}
       <div className="lg:col-span-2">
-        <div className="relative w-full max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-lg mb-8">
+        <div className="relative w-full max-w-3xl mx-auto rounded-2xl overflow-hidden border mb-8">
           <img
             src={images?.banner?.url || "/placeholder.svg?height=400&width=800"}
             alt={hackathon.name}
@@ -65,9 +73,7 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
               </Badge>
             )}
           </div>
-          <div className="absolute bottom-4 right-4">
-            {registrationBadge()}
-          </div>
+          <div className="absolute bottom-4 right-4">{registrationBadge()}</div>
         </div>
       </div>
 
@@ -140,7 +146,7 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
         {/* CTA for submission */}
         <Card>
           <CardContent className="pt-6">
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3"
               size="lg"
             >
