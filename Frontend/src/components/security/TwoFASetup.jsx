@@ -172,13 +172,23 @@ export default function TwoFASetup({ token, onSuccess, onCancel }) {
               />
             </div>
             
-            <button
-              onClick={verify2FA}
-              disabled={loading || code.length !== 6}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {loading ? 'Verifying...' : 'Verify & Enable'}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={verify2FA}
+                disabled={loading || code.length !== 6}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {loading ? 'Verifying...' : 'Verify & Enable'}
+              </button>
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

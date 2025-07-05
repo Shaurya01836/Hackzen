@@ -47,6 +47,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Progress } from "../../components/DashboardUI/progress";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 import TwoFASetup from "../../components/security/TwoFASetup";
+import PasswordModal from "../../components/security/PasswordModal";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -132,6 +133,7 @@ export function ProfileSection() {
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [twoFAError, setTwoFAError] = useState("");
   const [twoFALoading, setTwoFALoading] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const { user, token, login } = useAuth();
 
@@ -217,34 +219,54 @@ export function ProfileSection() {
     if (enabled) {
       setShow2FASetup(true);
     } else {
-      await handleDisable2FA();
+      // Check if user is OAuth (no password required) or email (password required)
+      const isOAuthUser = user?.authProvider && user.authProvider !== 'email';
+      
+      if (isOAuthUser) {
+        // For OAuth users, disable directly without password
+        await handleDisable2FA(null);
+      } else {
+        // For email users, show password modal
+        setShowPasswordModal(true);
+      }
     }
   };
 
   // Handle 2FA disable
-  const handleDisable2FA = async () => {
-    const currentPassword = prompt("Please enter your current password to disable 2FA:");
-    if (!currentPassword) return;
-
+  const handleDisable2FA = async (currentPassword) => {
     setTwoFALoading(true);
     setTwoFAError("");
     
     try {
-      console.log('Disabling 2FA...');
-      await axios.post("http://localhost:3000/api/users/2fa/disable", 
+      console.log('Disabling 2FA...', { hasPassword: !!currentPassword });
+      const response = await axios.post("http://localhost:3000/api/users/2fa/disable", 
         { currentPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      console.log('2FA disabled successfully');
+      console.log('2FA disabled successfully:', response.data);
       await fetch2FAStatus(); // Refresh 2FA status
       setShow2FASetup(false);
+      setShowPasswordModal(false);
     } catch (err) {
       console.error("2FA disable error:", err);
-      setTwoFAError(err.response?.data?.message || "Failed to disable 2FA");
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          "Failed to disable 2FA";
+      setTwoFAError(errorMessage);
     } finally {
       setTwoFALoading(false);
     }
+  };
+
+  // Handle password modal confirm
+  const handlePasswordConfirm = async (password) => {
+    await handleDisable2FA(password);
+  };
+
+  // Handle password modal close
+  const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
   };
 
   // Handle 2FA setup success
@@ -1109,6 +1131,15 @@ export function ProfileSection() {
               />
             </div>
           )}
+
+          {/* Password Modal for 2FA Disable */}
+          <PasswordModal
+            isOpen={showPasswordModal}
+            onClose={handlePasswordModalClose}
+            onConfirm={handlePasswordConfirm}
+            loading={twoFALoading}
+            error={twoFAError}
+          />
         </CardContent>
       </Card>
 

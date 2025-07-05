@@ -171,25 +171,76 @@ exports.disable2FA = async (req, res) => {
   console.log('2FA disable endpoint called:', {
     userId: req.user?._id,
     email: req.user?.email,
-    hasUser: !!req.user
+    hasUser: !!req.user,
+    authProvider: req.user?.authProvider,
+    body: req.body
   });
 
   try {
     const { currentPassword } = req.body;
     
-    // Verify current password before disabling 2FA
+    // Verify current password before disabling 2FA (only for email users)
     if (req.user.authProvider === 'email') {
       const bcrypt = require('bcryptjs');
-      if (!currentPassword || !(await bcrypt.compare(currentPassword, req.user.passwordHash))) {
-        return res.status(401).json({ 
+      
+      console.log('Fetching full user object for password verification...');
+      // Fetch the full user object to get passwordHash (since middleware excludes it)
+      const fullUser = await User.findById(req.user._id);
+      if (!fullUser) {
+        console.log('User not found in database');
+        return res.status(404).json({ 
           success: false, 
-          message: 'Current password is required and must be correct' 
+          message: 'User not found' 
         });
       }
+      
+      console.log('User found, checking password...');
+      if (!currentPassword) {
+        console.log('No password provided');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Current password is required' 
+        });
+      }
+      
+      if (!fullUser.passwordHash) {
+        console.log('User has no password hash (OAuth user)');
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Password verification not available for OAuth users' 
+        });
+      }
+      
+      const isPasswordValid = await bcrypt.compare(currentPassword, fullUser.passwordHash);
+      if (!isPasswordValid) {
+        console.log('Password verification failed');
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Current password is incorrect' 
+        });
+      }
+      console.log('Password verification successful');
+    } else {
+      console.log('User is OAuth provider, skipping password check');
+      // For OAuth users, we can disable 2FA without password verification
+      // since they don't have a password
     }
 
-    req.user.twoFA = { enabled: false, secret: null };
-    await req.user.save();
+    console.log('Updating user 2FA status...');
+    // Update the user's 2FA status
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { twoFA: { enabled: false, secret: null } },
+      { new: true }
+    );
+    
+    if (!updatedUser) {
+      console.log('Failed to update user');
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Failed to update user' 
+      });
+    }
     
     console.log('2FA disabled for user:', req.user.email);
     res.json({ 
