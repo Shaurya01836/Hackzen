@@ -1,66 +1,101 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { CheckCircle, AlertCircle, UserPlus, ArrowRight } from "lucide-react";
+import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "../components/DashboardUI/alert-dialog";
+
+function getUserFromStorage() {
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function InviteAccept() {
   const { inviteId } = useParams();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [inviteData, setInviteData] = useState(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [hasProcessedInvite, setHasProcessedInvite] = useState(false);
+  const [user, setUser] = useState(getUserFromStorage());
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
+  // Helper to refresh user from storage
+  const refreshUser = useCallback(() => {
+    setUser(getUserFromStorage());
+  }, []);
+
+  // On mount, check for stored invite redirect after login
   useEffect(() => {
-    const checkInvite = async () => {
-      try {
-        // Reset status when inviteId changes
-        setStatus("loading");
-        setShowDialog(false);
-        setHasProcessedInvite(false);
-        
-        // First, check if the invite exists and get its details
-        const inviteRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}`);
-        if (!inviteRes.ok) {
-          setStatus("error");
-          setMessage("Invalid or expired invitation link.");
-          return;
-        }
-        const invite = await inviteRes.json();
-        setInviteData(invite);
-
-        // Check if user is logged in
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setStatus("login");
-          return;
-        }
-
-        // Check if user has already processed this invite
-        const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
-        if (processedInvites.includes(inviteId)) {
-          setStatus("error");
-          setMessage("You have already processed this invitation.");
-          return;
-        }
-
-        // Show accept/decline dialog
-        setShowDialog(true);
-        setStatus("prompt");
-      } catch (err) {
-        setStatus("error");
-        setMessage("Failed to process invitation.");
+    const storedInvite = localStorage.getItem("pendingInviteRedirect");
+    if (storedInvite) {
+      localStorage.removeItem("pendingInviteRedirect");
+      if (window.location.pathname !== storedInvite) {
+        navigate(storedInvite, { replace: true });
+        return;
       }
-    };
-    checkInvite();
+    }
+    refreshUser();
+  }, [navigate, refreshUser]);
+
+  // Main invite logic
+  const checkInvite = useCallback(async () => {
+    setStatus("loading");
+    try {
+      const inviteRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}`);
+      if (!inviteRes.ok) {
+        setStatus("error");
+        setMessage("❌ Invalid or expired invitation link.");
+        return;
+      }
+      const invite = await inviteRes.json();
+      setInviteData(invite);
+      const token = localStorage.getItem("token");
+      const userObj = getUserFromStorage();
+      setUser(userObj);
+      if (!token || !userObj) {
+        setShowLoginModal(true);
+        setShowAcceptModal(false);
+        setStatus("login");
+        return;
+      }
+      if (userObj.email !== invite.invitedEmail) {
+        setShowLoginModal(false);
+        setShowAcceptModal(false);
+        setStatus("wronguser");
+        setMessage(`You are logged in as ${userObj.email}. Please log out and log in as ${invite.invitedEmail} to accept this invite.`);
+        return;
+      }
+      // Already accepted or already a member
+      if (invite.status === 'accepted' || (invite.team && invite.team.members && invite.team.members.some(m => m.email === userObj.email))) {
+        setShowLoginModal(false);
+        setShowAcceptModal(false);
+        setStatus("accepted");
+        setMessage("✅ You are already a member of this team!");
+        return;
+      }
+      // Show accept/reject modal
+      setShowLoginModal(false);
+      setShowAcceptModal(true);
+      setStatus("pending");
+    } catch (err) {
+      setStatus("error");
+      setMessage("❌ Failed to process invitation.");
+    }
   }, [inviteId]);
 
+  useEffect(() => {
+    checkInvite();
+  }, [checkInvite]);
+
+  // Accept invite handler
   const handleAccept = async () => {
+    setShowAcceptModal(false);
+    setStatus("loading");
     try {
-      setStatus("loading");
       const token = localStorage.getItem("token");
       const acceptRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/accept`, {
         method: "POST",
@@ -68,46 +103,51 @@ export function InviteAccept() {
       });
       const data = await acceptRes.json();
       if (acceptRes.ok) {
-        // Mark this invite as processed
-        const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
-        processedInvites.push(inviteId);
-        localStorage.setItem("processedInvites", JSON.stringify(processedInvites));
-        
         setStatus("accepted");
-        setMessage("✅ You have successfully joined the team!");
-        setShowDialog(false);
-        setHasProcessedInvite(true);
+        setMessage("✅ You have successfully joined the team and registered for the hackathon!");
+        // Refresh invite data and user state
+        await checkInvite();
+        setTimeout(() => {
+          if (inviteData && inviteData.hackathon && inviteData.hackathon._id) {
+            navigate(`/dashboard/hackathons/${inviteData.hackathon._id}`);
+          } else {
+            navigate("/dashboard/my-hackathons");
+          }
+        }, 2000);
       } else {
         setStatus("error");
         setMessage(data.error || "❌ Failed to accept invite.");
-        setShowDialog(false);
       }
     } catch (err) {
       setStatus("error");
-      setMessage("❌ Failed to process invitation.");
-      setShowDialog(false);
+      setMessage("❌ Failed to accept invite.");
     }
   };
 
-  const handleDecline = () => {
-    // Mark this invite as processed
-    const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
-    processedInvites.push(inviteId);
-    localStorage.setItem("processedInvites", JSON.stringify(processedInvites));
-    
-    setShowDialog(false);
-    setStatus("declined");
-    setMessage("You have declined the invitation.");
-    setHasProcessedInvite(true);
-    setTimeout(() => navigate("/dashboard"), 1500);
-  };
-
-  const clearProcessedInvite = () => {
-    const processedInvites = JSON.parse(localStorage.getItem("processedInvites") || "[]");
-    const updatedInvites = processedInvites.filter(id => id !== inviteId);
-    localStorage.setItem("processedInvites", JSON.stringify(updatedInvites));
-    // Reload the page to restart the flow
-    window.location.reload();
+  // Reject invite handler
+  const handleReject = async () => {
+    setShowAcceptModal(false);
+    setStatus("loading");
+    try {
+      const token = localStorage.getItem("token");
+      const rejectRes = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/respond`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "declined" })
+      });
+      const data = await rejectRes.json();
+      if (rejectRes.ok) {
+        setStatus("declined");
+        setMessage("You have declined the invitation.");
+        await checkInvite();
+      } else {
+        setStatus("error");
+        setMessage(data.error || "❌ Failed to decline invite.");
+      }
+    } catch (err) {
+      setStatus("error");
+      setMessage("❌ Failed to decline invite.");
+    }
   };
 
   if (status === "loading") {
@@ -150,7 +190,10 @@ export function InviteAccept() {
               </p>
               <div className="space-y-3">
                 <Button 
-                  onClick={() => navigate(`/login?redirectTo=/invite/${inviteId}`)}
+                  onClick={() => {
+                    localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                    navigate("/login");
+                  }}
                   className="w-full"
                 >
                   <ArrowRight className="w-4 h-4 mr-2" />
@@ -158,7 +201,10 @@ export function InviteAccept() {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => navigate(`/register?redirectTo=/invite/${inviteId}`)}
+                  onClick={() => {
+                    localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                    navigate("/register");
+                  }}
                   className="w-full"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -177,28 +223,113 @@ export function InviteAccept() {
     );
   }
 
-  // Accept/Decline dialog for logged-in users
-  if (status === "prompt" && inviteData) {
+  if (status === "wronguser") {
     return (
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Team Invitation</AlertDialogTitle>
-            <AlertDialogDescription>
-              <div>You have been invited to join team <b>{inviteData.team?.name}</b> for hackathon <b>{inviteData.hackathon?.title}</b>.</div>
-              <div>Do you want to accept this invitation?</div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleDecline}>Decline</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAccept}>Accept</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Invitation Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-center text-gray-600">{message}</p>
+            <Button 
+              onClick={() => {
+                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                localStorage.removeItem("user");
+                localStorage.removeItem("token");
+                navigate("/login");
+              }}
+              className="w-full"
+              variant="destructive"
+            >
+              Switch Account
+            </Button>
+            <Button onClick={() => navigate("/dashboard")} className="w-full" variant="outline">
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
-  // Success or error
+  // Show login/register modal
+  if (showLoginModal) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <UserPlus className="w-8 h-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Register or Log In</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <p className="text-gray-600 text-center">
+              Please register or log in to accept this invitation and join the hackathon.
+            </p>
+            <Button 
+              onClick={() => {
+                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                navigate("/login");
+              }}
+              className="w-full"
+            >
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Login to Existing Account
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                navigate("/register");
+              }}
+              className="w-full"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Create New Account
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show accept/reject modal
+  if (showAcceptModal && inviteData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <UserPlus className="w-8 h-8 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Team Invitation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-green-900 mb-2">You've been invited!</h3>
+              <p className="text-green-800 text-sm">
+                Join <strong>{inviteData.team?.name}</strong> for <strong>{inviteData.hackathon?.title}</strong>?
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={handleAccept} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                <CheckCircle className="w-4 h-4 mr-2" /> Accept
+              </Button>
+              <Button onClick={handleReject} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                <XCircle className="w-4 h-4 mr-2" /> Reject
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md">
@@ -218,6 +349,7 @@ export function InviteAccept() {
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-center text-gray-600">{message}</p>
+          
           {status === "accepted" && (
             <div className="space-y-4">
               <div className="bg-green-50 p-4 rounded-lg">
@@ -228,6 +360,7 @@ export function InviteAccept() {
                   <li>• Start working on your project</li>
                 </ul>
               </div>
+              
               <Button 
                 onClick={() => navigate("/dashboard/my-hackathons")}
                 className="w-full"
@@ -237,24 +370,14 @@ export function InviteAccept() {
               </Button>
             </div>
           )}
+          
           {status === "error" && (
-            <div className="space-y-3">
-              <Button 
-                onClick={() => navigate("/dashboard")}
-                className="w-full"
-              >
-                Go to Dashboard
-              </Button>
-              {message.includes("already processed") && (
-                <Button 
-                  variant="outline"
-                  onClick={clearProcessedInvite}
-                  className="w-full"
-                >
-                  Try Again
-                </Button>
-              )}
-            </div>
+            <Button 
+              onClick={() => navigate("/dashboard")}
+              className="w-full"
+            >
+              Go to Dashboard
+            </Button>
           )}
         </CardContent>
       </Card>

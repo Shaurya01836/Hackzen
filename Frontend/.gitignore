@@ -18,7 +18,7 @@ dist-ssr
 .idea
 .DS_Store
 *.suo
-*.ntvs*
+.ntvs
 *.njsproj
 *.sln
 *.sw?
@@ -26,4 +26,4 @@ backend/.env
 .vite
 685a5c2d3c3558a262d8792d user 
 
-685a5c763c3558a262d8792f org 
+685a5c763c3558a262d8792f org
