@@ -9,6 +9,8 @@ import {
   CheckCircle,
   X,
   Clock,
+  Globe,
+  Github,
 } from "lucide-react"
 import { Button } from "../../../components/CommonUI/button";
 import {
