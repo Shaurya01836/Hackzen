@@ -1,0 +1,70 @@
+"use client";
+
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../../../../components/DashboardUI/alert-dialog";
+
+export default function RevokeInviteDialog({
+  invite,
+  onClose,
+  onRevoked,
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleRevoke = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/team-invites/${invite._id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        onRevoked?.();
+        onClose();
+      } else {
+        const data = await res.json();
+        console.error("Failed to revoke invite:", data.message);
+      }
+    } catch (err) {
+      console.error("Error revoking invite:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AlertDialog open={!!invite} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Revoke Invite</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to revoke the invite sent to{" "}
+            <strong>{invite?.invitedEmail}</strong>? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleRevoke}
+            disabled={loading}
+            className="bg-red-600 hover:bg-red-700"
+          >
+            {loading ? "Revoking..." : "Revoke Invite"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
