@@ -48,7 +48,6 @@ app.use(passport.session());
 
 // ✅ API Routes
 app.use("/api/hackathons", require("./routes/hackathonRoutes"));
-app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/teams", require("./routes/teamRoutes"));
 app.use("/api/team-invites", require("./routes/teamInviteRoutes"));
 app.use("/api/submissions", require("./routes/submissionHistoryRoutes"));
@@ -65,7 +64,10 @@ app.use("/api/organizations", require("./routes/organizationRoutes"));
 app.use("/api/articles", require("./routes/articleRoutes")); // ✅ includes like route
 app.use("/api/newsletter", newsletterRoutes);
 app.use('/api/submission-form',require("./routes/submissionFormRoutes"));
+
+// ✅ User routes (including 2FA) - mount 2FA first to avoid conflicts
 app.use('/api/users/2fa', require('./routes/2fa'));
+app.use("/api/users", require("./routes/userRoutes"));
 
 // ✅ Server + Socket.IO setup
 const server = http.createServer(app);

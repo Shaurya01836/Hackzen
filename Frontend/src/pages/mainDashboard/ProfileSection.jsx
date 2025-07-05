@@ -23,6 +23,7 @@ import {
   Linkedin,
   UserCircle2,
   Info,
+  Shield,
 } from "lucide-react";
 import {
   Card,
@@ -45,6 +46,7 @@ import { Textarea } from "../../components/CommonUI/textarea";
 import { useAuth } from "../../context/AuthContext";
 import { Progress } from "../../components/DashboardUI/progress";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
+import TwoFASetup from "../../components/security/TwoFASetup";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -127,6 +129,9 @@ export function ProfileSection() {
   const [emailUpdates, setEmailUpdates] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
+  const [twoFAError, setTwoFAError] = useState("");
+  const [twoFALoading, setTwoFALoading] = useState(false);
 
   const { user, token, login } = useAuth();
 
@@ -191,6 +196,70 @@ export function ProfileSection() {
     { name: "DevOps", level: 60 },
   ];
 
+  // Fetch 2FA status from backend
+  const fetch2FAStatus = async () => {
+    try {
+      console.log('Fetching 2FA status...');
+      const response = await axios.get("http://localhost:3000/api/users/2fa/status", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('2FA status response:', response.data);
+      setTwoFactorEnabled(response.data.enabled);
+    } catch (err) {
+      console.error("Error fetching 2FA status:", err);
+      setTwoFAError("Failed to load 2FA status");
+    }
+  };
+
+  // Handle 2FA toggle
+  const handle2FAToggle = async (enabled) => {
+    console.log('2FA toggle clicked:', enabled);
+    if (enabled) {
+      setShow2FASetup(true);
+    } else {
+      await handleDisable2FA();
+    }
+  };
+
+  // Handle 2FA disable
+  const handleDisable2FA = async () => {
+    const currentPassword = prompt("Please enter your current password to disable 2FA:");
+    if (!currentPassword) return;
+
+    setTwoFALoading(true);
+    setTwoFAError("");
+    
+    try {
+      console.log('Disabling 2FA...');
+      await axios.post("http://localhost:3000/api/users/2fa/disable", 
+        { currentPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      console.log('2FA disabled successfully');
+      await fetch2FAStatus(); // Refresh 2FA status
+      setShow2FASetup(false);
+    } catch (err) {
+      console.error("2FA disable error:", err);
+      setTwoFAError(err.response?.data?.message || "Failed to disable 2FA");
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  // Handle 2FA setup success
+  const handle2FASuccess = async () => {
+    console.log('2FA setup successful, refreshing status...');
+    await fetch2FAStatus(); // Refresh 2FA status
+    setShow2FASetup(false);
+  };
+
+  // Handle 2FA setup cancel
+  const handle2FACancel = () => {
+    console.log('2FA setup cancelled');
+    setShow2FASetup(false);
+  };
+
  useEffect(() => {
     const pingAndFetchStreak = async () => {
       try {
@@ -207,8 +276,17 @@ export function ProfileSection() {
       }
     };
 
-    fetchUserProfile();
-    pingAndFetchStreak();
+    const fetchUserData = async () => {
+      try {
+        await fetchUserProfile();
+        await pingAndFetchStreak();
+        await fetch2FAStatus(); // Fetch 2FA status
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   const fetchStreakData = async () => {
@@ -969,12 +1047,21 @@ export function ProfileSection() {
       {/* 2FA Section */}
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Two-Factor Authentication</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Two-Factor Authentication
+          </CardTitle>
           <CardDescription>
             Add an extra layer of security to your account
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {twoFAError && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{twoFAError}</p>
+            </div>
+          )}
+          
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm font-medium">Enable 2FA</span>
@@ -984,12 +1071,42 @@ export function ProfileSection() {
             </div>
             <Switch
               checked={twoFactorEnabled}
-              onCheckedChange={setTwoFactorEnabled}
+              onCheckedChange={handle2FAToggle}
+              disabled={twoFALoading}
             />
           </div>
+          
           {twoFactorEnabled && (
-            <div className="p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
-              2FA is enabled. Use your authenticator app to sign in.
+            <div className="p-4 bg-green-50 rounded-lg">
+              <div className="flex items-center gap-2 text-green-800">
+                <Shield className="w-4 h-4" />
+                <span className="text-sm font-medium">2FA is enabled</span>
+              </div>
+              <p className="text-xs text-green-600 mt-1">
+                Use your authenticator app to sign in securely
+              </p>
+            </div>
+          )}
+          
+          {!twoFactorEnabled && !show2FASetup && (
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 text-gray-600">
+                <Shield className="w-4 h-4" />
+                <span className="text-sm font-medium">2FA is disabled</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enable 2FA for enhanced account security
+              </p>
+            </div>
+          )}
+
+          {show2FASetup && (
+            <div className="border-t pt-4">
+              <TwoFASetup 
+                token={token} 
+                onSuccess={handle2FASuccess}
+                onCancel={handle2FACancel}
+              />
             </div>
           )}
         </CardContent>
