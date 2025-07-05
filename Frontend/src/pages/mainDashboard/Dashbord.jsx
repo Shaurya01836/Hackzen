@@ -21,6 +21,7 @@ import {
   Wrench,
   PencilRulerIcon,
   Fuel,
+  CalendarX,
 } from "lucide-react";
 
 import {
@@ -161,8 +162,8 @@ export default function HackZenDashboard() {
     onClick: () => changeView("organizer-tools"),
   },
   {
-    title: "Created Hackathons",
-    icon: Plus,
+    title: "Hackathons",
+    icon: CalendarX,
     key: "created-hackathons", // ✅ keep this
     onClick: () => changeView("created-hackathons"),
   },

@@ -1,18 +1,23 @@
-"use client"
-import * as React from "react"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Button } from "../../../components/CommonUI/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
-import { Input } from "../../../components/CommonUI/input"
-import { useState, useRef } from "react"
+"use client";
+import * as React from "react";
+import { Badge } from "../../../components/CommonUI/badge";
+import { Button } from "../../../components/CommonUI/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Input } from "../../../components/CommonUI/input";
+import { useState, useRef } from "react";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
-} from "../../../components/CommonUI/select"
-import { Separator } from "../../../components/CommonUI/separator"
+  SelectValue,
+} from "../../../components/CommonUI/select";
+import { Separator } from "../../../components/CommonUI/separator";
 import {
   ACard,
   ACardContent,
@@ -41,8 +46,8 @@ import {
   Upload,
   Users,
   Users2,
-  Zap
-} from "lucide-react"
+  Zap,
+} from "lucide-react";
 
 // Mock data
 const hackathonStats = {
@@ -56,8 +61,8 @@ const hackathonStats = {
   activeParticipants: 1180,
   inactiveParticipants: 67,
   duration: "48 hours",
-  lastSubmission: "2 hours ago"
-}
+  lastSubmission: "2 hours ago",
+};
 
 const projectSubmissions = [
   {
@@ -71,13 +76,13 @@ const projectSubmissions = [
     links: {
       github: "https://github.com/team/project",
       website: "https://smarthealth.demo.com",
-      figma: "https://figma.com/design"
+      figma: "https://figma.com/design",
     },
     attachments: ["presentation.pdf", "demo-video.mp4"],
     submittedOn: "2024-01-15T14:30:00Z",
     status: "Winner",
     score: 95,
-    rank: 1
+    rank: 1,
   },
   {
     id: "2",
@@ -89,13 +94,13 @@ const projectSubmissions = [
       "A comprehensive dashboard for tracking DeFi investments across multiple blockchains with real-time analytics.",
     links: {
       github: "https://github.com/team/defi-tracker",
-      website: "https://defi-tracker.demo.com"
+      website: "https://defi-tracker.demo.com",
     },
     attachments: ["pitch-deck.pdf"],
     submittedOn: "2024-01-15T16:45:00Z",
     status: "Finalist",
     score: 88,
-    rank: 3
+    rank: 3,
   },
   {
     id: "3",
@@ -104,7 +109,7 @@ const projectSubmissions = [
       "eco@example.com",
       "green@example.com",
       "sustain@example.com",
-      "earth@example.com"
+      "earth@example.com",
     ],
     track: "Climate Tech",
     title: "Carbon Footprint Calculator",
@@ -112,12 +117,12 @@ const projectSubmissions = [
       "An interactive tool that helps individuals and businesses calculate and reduce their carbon footprint through actionable insights.",
     links: {
       github: "https://github.com/team/carbon-calc",
-      figma: "https://figma.com/carbon-design"
+      figma: "https://figma.com/carbon-design",
     },
     attachments: ["research-paper.pdf", "user-study.pdf"],
     submittedOn: "2024-01-15T18:20:00Z",
     status: "Reviewed",
-    score: 82
+    score: 82,
   },
   {
     id: "4",
@@ -128,55 +133,55 @@ const projectSubmissions = [
     description:
       "A mobile app that enables users to invest spare change from daily transactions into diversified portfolios.",
     links: {
-      github: "https://github.com/team/micro-invest"
+      github: "https://github.com/team/micro-invest",
     },
     attachments: ["business-plan.pdf"],
     submittedOn: "2024-01-15T12:15:00Z",
-    status: "Pending"
-  }
-]
+    status: "Pending",
+  },
+];
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
-  onBack
+  onBack,
 }) {
   // If hackathon data is passed as prop, use it instead of mock data
   const hackathonData = hackathonProp || {
     title: "AI Innovation Hackathon 2024",
     description: "January 13-15, 2024 • San Francisco, CA",
-    status: "Completed"
-  }
-  const [searchTerm, setSearchTerm] = React.useState("")
-  const [filterTrack, setFilterTrack] = React.useState("all")
-  const [filterStatus, setFilterStatus] = React.useState("all")
+    status: "Completed",
+  };
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [filterTrack, setFilterTrack] = React.useState("all");
+  const [filterStatus, setFilterStatus] = React.useState("all");
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [submissionHackathon, setSubmissionHackathon] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const hackathonToDelete = useRef(null);
 
-  const filteredProjects = projectSubmissions.filter(project => {
+  const filteredProjects = projectSubmissions.filter((project) => {
     const matchesSearch =
       project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.members.some(member =>
+      project.members.some((member) =>
         member.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    const matchesTrack = filterTrack === "all" || project.track === filterTrack
+      );
+    const matchesTrack = filterTrack === "all" || project.track === filterTrack;
     const matchesStatus =
-      filterStatus === "all" || project.status === filterStatus
+      filterStatus === "all" || project.status === filterStatus;
 
-    return matchesSearch && matchesTrack && matchesStatus
-  })
+    return matchesSearch && matchesTrack && matchesStatus;
+  });
 
-  const formatDate = dateString => {
+  const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
-      minute: "2-digit"
-    })
-  }
+      minute: "2-digit",
+    });
+  };
 
   const handleDelete = () => {
     hackathonToDelete.current = hackathonData;
@@ -189,10 +194,13 @@ export default function HackathonDetailsPage({
     setDeletingId(hackathon._id);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon._id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `http://localhost:3000/api/hackathons/${hackathon._id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (!res.ok) throw new Error("Failed to delete hackathon");
       setShowDeleteDialog(false);
       hackathonToDelete.current = null;
@@ -210,20 +218,20 @@ export default function HackathonDetailsPage({
     hackathonToDelete.current = null;
   };
 
-  const getStatusColor = status => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "Winner":
-        return "bg-green-100 text-green-800 border-green-200"
+        return "bg-green-100 text-green-800 border-green-200";
       case "Finalist":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "Reviewed":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "Pending":
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  }
+  };
 
   // Add back button if onBack function is provided
   return (
@@ -239,8 +247,8 @@ export default function HackathonDetailsPage({
       ) : (
         <div className="min-h-screen bg-[#f9f9fb]">
           {/* Header */}
-          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-b border-gray-200">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   {onBack && (
@@ -248,24 +256,21 @@ export default function HackathonDetailsPage({
                       variant="ghost"
                       size="sm"
                       onClick={onBack}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 hover:bg-white/50 transition-colors"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       Back
                     </Button>
                   )}
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                  <div className="flex-1">
+                    <h1 className="text-xl font-bold text-gray-900 truncate">
                       {hackathonData.title}
                     </h1>
-                    <p className="text-gray-600 mt-1">
-                      {hackathonData.description}
-                    </p>
                   </div>
                 </div>
                 <Badge
                   variant="outline"
-                  className="bg-green-50 text-green-700 border-green-200"
+                  className="bg-green-50 text-green-700 border-green-200 text-xs"
                 >
                   {hackathonData.status || "Completed"}
                 </Badge>
@@ -274,87 +279,123 @@ export default function HackathonDetailsPage({
           </div>
 
           {/* Stats and Top Tracks/Locations - Full Width */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
             {/* Stats Overview */}
             <section>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Hackathon Overview
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full mb-10">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mb-8">
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <Users className="w-12 h-12 text-indigo-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalParticipants.toLocaleString()}</p>
-                    <p className="text-lg text-gray-500 font-medium">Total Participants</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <Users className="w-8 h-8 text-indigo-500 mb-2" />
+                    <p className="text-2xl font-bold text-gray-900 mb-1">
+                      {hackathonStats.totalParticipants.toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Participants
+                    </p>
                   </ACardContent>
                 </ACard>
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <Users2 className="w-12 h-12 text-blue-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalTeams}</p>
-                    <p className="text-lg text-gray-500 font-medium">Total Teams</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <Users2 className="w-8 h-8 text-blue-500 mb-2" />
+                    <p className="text-2xl font-bold text-gray-900 mb-1">
+                      {hackathonStats.totalTeams}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Teams
+                    </p>
                   </ACardContent>
                 </ACard>
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <Upload className="w-12 h-12 text-green-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.totalSubmissions}</p>
-                    <p className="text-lg text-gray-500 font-medium">Total Submissions</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <Upload className="w-8 h-8 text-green-500 mb-2" />
+                    <p className="text-2xl font-bold text-gray-900 mb-1">
+                      {hackathonStats.totalSubmissions}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Submissions
+                    </p>
                   </ACardContent>
                 </ACard>
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <Clock className="w-12 h-12 text-purple-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.duration}</p>
-                    <p className="text-lg text-gray-500 font-medium">Duration</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <Clock className="w-8 h-8 text-purple-500 mb-2" />
+                    <p className="text-lg font-bold text-gray-900 mb-1">
+                      {hackathonStats.duration}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Duration
+                    </p>
                   </ACardContent>
                 </ACard>
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <PieChart className="w-12 h-12 text-orange-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.averageAge}</p>
-                    <p className="text-lg text-gray-500 font-medium">Average Age</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <PieChart className="w-8 h-8 text-orange-500 mb-2" />
+                    <p className="text-2xl font-bold text-gray-900 mb-1">
+                      {hackathonStats.averageAge}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Avg Age
+                    </p>
                   </ACardContent>
                 </ACard>
                 <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-8">
-                    <CalendarDays className="w-12 h-12 text-red-500 mb-2" />
-                    <p className="text-4xl font-extrabold text-gray-900 mb-1">{hackathonStats.lastSubmission}</p>
-                    <p className="text-lg text-gray-500 font-medium">Last Submission</p>
+                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                    <CalendarDays className="w-8 h-8 text-red-500 mb-2" />
+                    <p className="text-lg font-bold text-gray-900 mb-1">
+                      {hackathonStats.lastSubmission}
+                    </p>
+                    <p className="text-sm text-gray-500 font-medium text-center">
+                      Last Submit
+                    </p>
                   </ACardContent>
                 </ACard>
               </div>
 
               {/* Top Tracks and Locations */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <Card className="bg-white border-gray-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Top Tracks</CardTitle>
+                <Card className=" border-gray-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Top Tracks</CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-0">
                     <div className="space-y-3">
                       {hackathonStats.topTracks.map((track, index) => (
-                        <div key={track} className="flex items-center justify-between">
+                        <div
+                          key={track}
+                          className="flex items-center justify-between"
+                        >
                           <span className="text-sm text-gray-700">{track}</span>
-                          <Badge variant="secondary" className="text-xs">#{index + 1}</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            #{index + 1}
+                          </Badge>
                         </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white border-gray-200 shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Top Locations</CardTitle>
+                <Card className=" border-gray-200 ">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Top Locations</CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-0">
                     <div className="space-y-3">
                       {hackathonStats.topLocations.map((location, index) => (
-                        <div key={location} className="flex items-center justify-between">
+                        <div
+                          key={location}
+                          className="flex items-center justify-between"
+                        >
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-700">{location}</span>
+                            <span className="text-sm text-gray-700">
+                              {location}
+                            </span>
                           </div>
-                          <Badge variant="secondary" className="text-xs">#{index + 1}</Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            #{index + 1}
+                          </Badge>
                         </div>
                       ))}
                     </div>
@@ -365,17 +406,18 @@ export default function HackathonDetailsPage({
           </div>
 
           {/* Submitted Projects + Quick Actions Side by Side, Projects Scrollable */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Submitted Projects - Only Cards Scrollable, Hide Scrollbar */}
               <div className="flex-1">
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900">
+                    <h2 className="text-lg font-semibold text-gray-900">
                       Submitted Projects
                     </h2>
                     <div className="text-sm text-gray-600">
-                      {filteredProjects.length} of {projectSubmissions.length} projects
+                      {filteredProjects.length} of {projectSubmissions.length}{" "}
+                      projects
                     </div>
                   </div>
 
@@ -386,7 +428,7 @@ export default function HackathonDetailsPage({
                       <Input
                         placeholder="Search projects, teams, or members..."
                         value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 bg-white border-gray-200"
                       />
                     </div>
@@ -399,10 +441,15 @@ export default function HackathonDetailsPage({
                         <SelectItem value="AI/ML">AI/ML</SelectItem>
                         <SelectItem value="Web3">Web3</SelectItem>
                         <SelectItem value="FinTech">FinTech</SelectItem>
-                        <SelectItem value="Climate Tech">Climate Tech</SelectItem>
+                        <SelectItem value="Climate Tech">
+                          Climate Tech
+                        </SelectItem>
                       </SelectContent>
                     </Select>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <Select
+                      value={filterStatus}
+                      onValueChange={setFilterStatus}
+                    >
                       <SelectTrigger className="w-full sm:w-48 bg-white border-gray-200">
                         <SelectValue placeholder="Filter by status" />
                       </SelectTrigger>
@@ -417,143 +464,92 @@ export default function HackathonDetailsPage({
                   </div>
 
                   {/* Projects Grid - Scrollable, Hide Scrollbar */}
-                  <div className="space-y-6 max-h-[60vh] overflow-y-auto scrollbar-hide p-3">
-                    {filteredProjects.map(project => (
-                      <Card
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[74vh] overflow-y-auto scrollbar-hide p-3">
+                    {filteredProjects.map((project, index) => (
+                      <ACard
                         key={project.id}
-                        className="bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow"
+                        className="w-full flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100"
                       >
-                        <CardContent className="pt-6">
-                          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                            <div className="flex-1 space-y-4">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="text-lg font-semibold text-gray-900">
-                                      {project.title}
-                                    </h3>
-                                    {project.rank && (
-                                      <div className="flex items-center gap-1">
-                                        <Trophy className="h-4 w-4 text-yellow-500" />
-                                        <span className="text-sm font-medium text-yellow-600">
-                                          #{project.rank}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <p className="text-sm text-gray-600 mb-1">
-                                    by {project.teamName}
-                                  </p>
-                                  <Badge variant="outline" className="text-xs">
-                                    {project.track}
-                                  </Badge>
-                                </div>
-                                <Badge
-                                  className={`${getStatusColor(
-                                    project.status
-                                  )} text-xs`}
-                                >
-                                  {project.status}
-                                </Badge>
-                              </div>
-
-                              <p className="text-gray-700 text-sm leading-relaxed">
-                                {project.description}
-                              </p>
-
-                              <div className="space-y-3">
-                                <div>
-                                  <p className="text-xs font-medium text-gray-500 mb-2">
-                                    Team Members
-                                  </p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {project.members.map(member => (
-                                      <div
-                                        key={member}
-                                        className="flex items-center gap-1 text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md"
-                                      >
-                                        <Mail className="h-3 w-3" />
-                                        {member}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-4 text-sm">
-                                  {project.links.github && (
-                                    <a
-                                      href={project.links.github}
-                                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900"
-                                    >
-                                      <Github className="h-4 w-4" />
-                                      GitHub
-                                      <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                  )}
-                                  {project.links.website && (
-                                    <a
-                                      href={project.links.website}
-                                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900"
-                                    >
-                                      <Globe className="h-4 w-4" />
-                                      Website
-                                      <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                  )}
-                                  {project.links.figma && (
-                                    <a
-                                      href={project.links.figma}
-                                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900"
-                                    >
-                                      <Settings className="h-4 w-4" />
-                                      Figma
-                                      <ExternalLink className="h-3 w-3" />
-                                    </a>
-                                  )}
-                                </div>
-
-                                {project.attachments.length > 0 && (
-                                  <div>
-                                    <p className="text-xs font-medium text-gray-500 mb-2">
-                                      Attachments
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {project.attachments.map(attachment => (
-                                        <div
-                                          key={attachment}
-                                          className="flex items-center gap-1 text-xs text-gray-600 bg-blue-50 px-2 py-1 rounded-md"
-                                        >
-                                          <FileText className="h-3 w-3" />
-                                          {attachment}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
+                        {/* Banner / Logo */}
+                        <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
+                          <img
+                            src="https://www.hackquest.io/images/layout/hackathon_cover.png"
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Status Badge */}
+                          <div className="absolute top-2 right-2">
+                            <Badge
+                              variant={project.score ? "default" : "outline"}
+                              className="font-semibold shadow"
+                            >
+                              {project.score ? "Judged" : "Submitted"}
+                            </Badge>
+                          </div>
+                          {/* Index Number */}
+                          <div className="absolute top-2 left-2">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center ">
+                              <span className="text-sm font-semibold text-indigo-700">
+                                #{index + 1}
+                              </span>
                             </div>
+                          </div>
+                        </div>
 
-                            <div className="flex flex-col items-end gap-2 text-sm text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {formatDate(project.submittedOn)}
-                              </div>
-                              {project.score && (
-                                <div className="flex items-center gap-1 text-indigo-600 font-medium">
-                                  <Medal className="h-4 w-4" />
-                                  {project.score}/100
+                        {/* Content */}
+                        <div className="p-4 flex flex-col gap-3 flex-1">
+                          {/* Title and Track */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2 mb-2">
+                              {project.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {project.track}
+                              </Badge>
+                              {project.rank && (
+                                <div className="flex items-center gap-1">
+                                  <Trophy className="h-3 w-3 text-yellow-500" />
+                                  <span className="text-xs font-medium text-yellow-600">
+                                    #{project.rank}
+                                  </span>
                                 </div>
                               )}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
+
+                          {/* Team Name Badge */}
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              <Users className="h-3 w-3 mr-1" />
+                              {project.teamName}
+                            </Badge>
+                          </div>
+
+                          {/* Score and Submission Time */}
+                          <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Clock className="h-4 w-4" />
+                              {formatDate(project.submittedOn)}
+                            </div>
+                            {project.score && (
+                              <div className="flex items-center gap-1 text-indigo-600 font-semibold">
+                                <Medal className="h-4 w-4" />
+                                {project.score}/100
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </ACard>
                     ))}
                   </div>
                 </section>
               </div>
               {/* Quick Actions Panel */}
-              <div className="w-full lg:w-80 flex-shrink-0 pt-28">
+              <div className="w-full lg:w-80 flex-shrink-0 pt-20">
                 <div className="sticky top-8">
                   <Card className="bg-white border-gray-200 shadow-sm">
                     <CardHeader>
@@ -624,7 +620,9 @@ export default function HackathonDetailsPage({
                         disabled={deletingId === hackathonData._id}
                       >
                         <Trash2 className="h-4 w-4" />
-                        {deletingId === hackathonData._id ? "Deleting..." : "Delete Hackathon"}
+                        {deletingId === hackathonData._id
+                          ? "Deleting..."
+                          : "Delete Hackathon"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -673,38 +671,34 @@ export default function HackathonDetailsPage({
         </div>
       )}
       {showDeleteDialog && (
-            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
-                <h2 className="text-lg font-bold mb-2">Delete Hackathon?</h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete this hackathon? This action cannot be undone.</p>
-                <div className="flex gap-3">
-                  <Button
-                    variant="destructive"
-                    onClick={confirmDelete}
-                    disabled={deletingId !== null}
-                    className="flex-1"
-                  >
-                    {deletingId !== null ? "Deleting..." : "Delete"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={cancelDelete}
-                    className="flex-1"
-                    disabled={deletingId !== null}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+            <h2 className="text-lg font-bold mb-2">Delete Hackathon?</h2>
+            <p className="mb-4 text-gray-700">
+              Are you sure you want to delete this hackathon? This action cannot
+              be undone.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={deletingId !== null}
+                className="flex-1"
+              >
+                {deletingId !== null ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={cancelDelete}
+                className="flex-1"
+                disabled={deletingId !== null}
+              >
+                Cancel
+              </Button>
             </div>
-          )}
+          </div>
+        </div>
+      )}
     </>
-  )
-
+  );
 }
-
-/* Add this to your global CSS if not already present: */
-/*
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-*/
