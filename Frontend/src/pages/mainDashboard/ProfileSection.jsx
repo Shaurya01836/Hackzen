@@ -22,9 +22,9 @@ import {
   Globe,
   Linkedin,
   UserCircle2,
-      Info,
-    Shield,
-  } from "lucide-react";
+  Info,
+  Shield,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -69,8 +69,10 @@ export function ProfileSection() {
   const getCurrentViewFromPath = () => {
     const path = location.pathname;
     if (path.includes("/dashboard/profile/edit")) return "edit-profile";
-    if (path.includes("/dashboard/profile/account-settings")) return "account-settings";
-    if (path.includes("/dashboard/profile/privacy-security")) return "privacy-security";
+    if (path.includes("/dashboard/profile/account-settings"))
+      return "account-settings";
+    if (path.includes("/dashboard/profile/privacy-security"))
+      return "privacy-security";
     if (path.includes("/dashboard/profile/help-support")) return "help-support";
     return "overview";
   };
@@ -93,23 +95,23 @@ export function ProfileSection() {
 
     // Navigate to appropriate URL
     switch (view) {
-      case 'overview':
-        navigate('/dashboard/profile');
+      case "overview":
+        navigate("/dashboard/profile");
         break;
-      case 'edit-profile':
-        navigate('/dashboard/profile/edit');
+      case "edit-profile":
+        navigate("/dashboard/profile/edit");
         break;
-      case 'account-settings':
-        navigate('/dashboard/profile/account-settings');
+      case "account-settings":
+        navigate("/dashboard/profile/account-settings");
         break;
-      case 'privacy-security':
-        navigate('/dashboard/profile/privacy-security');
+      case "privacy-security":
+        navigate("/dashboard/profile/privacy-security");
         break;
-      case 'help-support':
-        navigate('/dashboard/profile/help-support');
+      case "help-support":
+        navigate("/dashboard/profile/help-support");
         break;
       default:
-        navigate('/dashboard/profile');
+        navigate("/dashboard/profile");
     }
   };
 
@@ -118,8 +120,6 @@ export function ProfileSection() {
     const newView = getCurrentViewFromPath();
     setCurrentViewState(newView);
   }, [location.pathname]);
-
-
 
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
@@ -155,58 +155,17 @@ export function ProfileSection() {
   const totalBadges = 8;
   const currentRank = 95;
 
-  const featuredProjects = [
-    {
-      id: 1,
-      name: "Smart City Dashboard",
-      description: "AI-powered dashboard for urban management",
-      technologies: ["React", "TensorFlow", "Node.js"],
-      github: "github.com/user/smart-city",
-      demo: "smartcity-demo.vercel.app",
-      hackathon: "AI Innovation Challenge",
-      rank: 3,
-    },
-    {
-      id: 2,
-      name: "DeFi Trading Platform",
-      description: "Decentralized trading with automated market making",
-      technologies: ["Solidity", "Web3.js", "React"],
-      github: "github.com/user/defi-platform",
-      demo: "defi-trader.eth",
-      hackathon: "Web3 Builder Fest",
-      rank: 1,
-    },
-    {
-      id: 3,
-      name: "AI Chatbot Assistant",
-      description: "Intelligent assistant for daily task management",
-      technologies: ["Python", "OpenAI", "Flask"],
-      github: "github.com/user/ai-chatbot",
-      demo: "ai-assistant.netlify.app",
-      hackathon: "AI Innovation Challenge",
-      rank: null,
-    },
-  ];
-
-  const skills = [
-    { name: "React", level: 90 },
-    { name: "Node.js", level: 85 },
-    { name: "Python", level: 80 },
-    { name: "TypeScript", level: 88 },
-    { name: "Machine Learning", level: 75 },
-    { name: "Blockchain", level: 70 },
-    { name: "UI/UX Design", level: 65 },
-    { name: "DevOps", level: 60 },
-  ];
-
   // Fetch 2FA status from backend
   const fetch2FAStatus = async () => {
     try {
-      console.log('Fetching 2FA status...');
-      const response = await axios.get("http://localhost:3000/api/users/2fa/status", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      console.log('2FA status response:', response.data);
+      console.log("Fetching 2FA status...");
+      const response = await axios.get(
+        "http://localhost:3000/api/users/2fa/status",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      console.log("2FA status response:", response.data);
       setTwoFactorEnabled(response.data.enabled);
     } catch (err) {
       console.error("Error fetching 2FA status:", err);
@@ -216,12 +175,12 @@ export function ProfileSection() {
 
   // Handle 2FA toggle
   const handle2FAToggle = async (enabled) => {
-    console.log('2FA toggle clicked:', enabled);
+    console.log("2FA toggle clicked:", enabled);
     if (enabled) {
       setShow2FASetup(true);
     } else {
       // Check if user is OAuth (no password required) or email (password required)
-      const isOAuthUser = user?.authProvider && user.authProvider !== 'email';
+      const isOAuthUser = user?.authProvider && user.authProvider !== "email";
 
       if (isOAuthUser) {
         // For OAuth users, disable directly without password
@@ -239,19 +198,21 @@ export function ProfileSection() {
     setTwoFAError("");
 
     try {
-      console.log('Disabling 2FA...', { hasPassword: !!currentPassword });
-      const response = await axios.post("http://localhost:3000/api/users/2fa/disable",
+      console.log("Disabling 2FA...", { hasPassword: !!currentPassword });
+      const response = await axios.post(
+        "http://localhost:3000/api/users/2fa/disable",
         { currentPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log('2FA disabled successfully:', response.data);
+      console.log("2FA disabled successfully:", response.data);
       await fetch2FAStatus(); // Refresh 2FA status
       setShow2FASetup(false);
       setShowPasswordModal(false);
     } catch (err) {
       console.error("2FA disable error:", err);
-      const errorMessage = err.response?.data?.message ||
+      const errorMessage =
+        err.response?.data?.message ||
         err.response?.data?.error ||
         "Failed to disable 2FA";
       setTwoFAError(errorMessage);
@@ -272,14 +233,14 @@ export function ProfileSection() {
 
   // Handle 2FA setup success
   const handle2FASuccess = async () => {
-    console.log('2FA setup successful, refreshing status...');
+    console.log("2FA setup successful, refreshing status...");
     await fetch2FAStatus(); // Refresh 2FA status
     setShow2FASetup(false);
   };
 
   // Handle 2FA setup cancel
   const handle2FACancel = () => {
-    console.log('2FA setup cancelled');
+    console.log("2FA setup cancelled");
     setShow2FASetup(false);
   };
 
@@ -334,7 +295,6 @@ export function ProfileSection() {
       console.error("Failed to fetch streaks:", err.message);
     }
   };
-
 
   const fetchUserProfile = async () => {
     try {
@@ -413,9 +373,25 @@ export function ProfileSection() {
         {/* Loader Overlay */}
         {isUploading && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70">
-            <svg className="animate-spin h-12 w-12 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            <svg
+              className="animate-spin h-12 w-12 text-purple-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              ></path>
             </svg>
           </div>
         )}
@@ -573,56 +549,16 @@ export function ProfileSection() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Featured Projects</CardTitle>
-          <CardDescription>Your best hackathon submissions</CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4 space-y-4">
-          {featuredProjects.map((project) => (
-            <div key={project.id} className="border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-medium">{project.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {project.description}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    from {project.hackathon}
-                  </p>
-                </div>
-                {project.rank && (
-                  <Badge
-                    variant="outline"
-                    className="bg-yellow-100 text-yellow-700 border-yellow-200"
-                  >
-                    #{project.rank}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-1 mb-3">
-                {project.technologies.map((tech) => (
-                  <Badge
-                    key={tech}
-                    variant="outline"
-                    className="text-xs bg-indigo-100 text-indigo-700"
-                  >
-                    {tech}
-                  </Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="default">
-                  <Github className="w-3 h-3 mr-1" /> Code
-                </Button>
-                <Button size="sm" variant="default">
-                  <ExternalLink className="w-3 h-3 mr-1" /> Demo
-                </Button>
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/* Achievements Section */}
+      <div className="space-y-4">
+        <AchievementsSection
+          user={user}
+          onBadgeUnlocked={(badge) => {
+            console.log("Badge unlocked:", badge);
+            // You can add notification logic here
+          }}
+        />
+      </div>
 
       <section className="py-10">
         <StreakGraphic
@@ -631,39 +567,6 @@ export function ProfileSection() {
           max={streakData.maxStreak}
         />
       </section>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Skills & Technologies</CardTitle>
-          <CardDescription>
-            Your technical expertise across domains
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {skills.map((skill) => (
-              <div key={skill.name} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{skill.name}</span>
-                  <span className="text-sm text-gray-500">{skill.level}%</span>
-                </div>
-                <Progress value={skill.level} className="h-2" />
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-            {/* Achievements Section */}
-      <div className="space-y-4">
-        <AchievementsSection 
-          user={user} 
-          onBadgeUnlocked={(badge) => {
-            console.log('Badge unlocked:', badge);
-            // You can add notification logic here
-          }}
-        />
-      </div>
     </div>
   );
 
@@ -674,9 +577,25 @@ export function ProfileSection() {
         {/* Loader Overlay */}
         {isUploading && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70">
-            <svg className="animate-spin h-12 w-12 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+            <svg
+              className="animate-spin h-12 w-12 text-purple-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v8z"
+              ></path>
             </svg>
           </div>
         )}
@@ -700,17 +619,28 @@ export function ProfileSection() {
           </button>
 
           {/* Remove Banner Icon */}
-          {editForm.bannerImage && editForm.bannerImage !== "/assets/default-banner.png" && (
-            <button
-              onClick={handleRemoveBanner}
-              className="absolute top-2 right-10 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
-              title="Remove Banner"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+          {editForm.bannerImage &&
+            editForm.bannerImage !== "/assets/default-banner.png" && (
+              <button
+                onClick={handleRemoveBanner}
+                className="absolute top-2 right-10 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition"
+                title="Remove Banner"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            )}
 
           <input
             type="file"
@@ -738,8 +668,18 @@ export function ProfileSection() {
                 className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white p-2 rounded-full shadow-md hover:bg-red-600 opacity-0 group-hover:opacity-100 transition z-20"
                 title="Remove Profile Picture"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
               <button
@@ -893,7 +833,10 @@ export function ProfileSection() {
 
       {/* Save + Cancel Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-start">
-        <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+        >
           <AlertDialogTrigger asChild>
             <Button
               onClick={handleSaveClick}
@@ -905,14 +848,22 @@ export function ProfileSection() {
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to save changes?</AlertDialogTitle>
+              <AlertDialogTitle>
+                Are you sure you want to save changes?
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will update your profile information. You can't undo this action.
+                This will update your profile information. You can't undo this
+                action.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={pendingSave}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmSave} disabled={pendingSave}>
+              <AlertDialogCancel disabled={pendingSave}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmSave}
+                disabled={pendingSave}
+              >
                 {pendingSave ? "Saving..." : "Yes, Save"}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -954,7 +905,7 @@ export function ProfileSection() {
               label: "SMS Notifications",
               desc: "Receive important updates via SMS",
               value: false,
-              setter: () => { },
+              setter: () => {},
             },
           ].map(({ label, desc, value, setter }) => (
             <div className="flex items-center justify-between" key={label}>
@@ -1493,11 +1444,17 @@ export function ProfileSection() {
       );
 
       setSelectedBanner(null);
-      setEditForm((prev) => ({ ...prev, bannerImage: "/assets/default-banner.png" }));
+      setEditForm((prev) => ({
+        ...prev,
+        bannerImage: "/assets/default-banner.png",
+      }));
 
       // Update user context
       const userData = JSON.parse(localStorage.getItem("user"));
-      const updatedUser = { ...userData, bannerImage: "/assets/default-banner.png" };
+      const updatedUser = {
+        ...userData,
+        bannerImage: "/assets/default-banner.png",
+      };
       localStorage.setItem("user", JSON.stringify(updatedUser));
       login(updatedUser, token);
 
