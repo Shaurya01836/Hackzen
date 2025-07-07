@@ -122,24 +122,74 @@ export function Announcements() {
       
       </div>
 
-      {/* Stats Card */}
-      <div className="w-full max-w-md">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <RCard>
           <RCardHeader>
             <RCardTitle className="text-lg text-black flex items-center">
               <MessageSquare className="w-5 h-5 mr-2 text-green-600" />
-              Announcement Stats
+              Total Announcements
             </RCardTitle>
           </RCardHeader>
           <RCardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">Total Announcements</span>
-              <span className="font-medium text-black">{sent.length}</span>
+              <span className="text-gray-700">All Time</span>
+              <span className="font-medium text-black text-2xl">{sent.length}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">Last Sent</span>
+              <span className="text-gray-700">This Month</span>
               <span className="font-medium text-black">
-                {sent[0] ? new Date(sent[0].createdAt).toLocaleString() : "—"}
+                {sent.filter(a => {
+                  const monthAgo = new Date();
+                  monthAgo.setMonth(monthAgo.getMonth() - 1);
+                  return new Date(a.createdAt) > monthAgo;
+                }).length}
+              </span>
+            </div>
+          </RCardContent>
+        </RCard>
+
+        <RCard>
+          <RCardHeader>
+            <RCardTitle className="text-lg text-black flex items-center">
+              <Clock className="w-5 h-5 mr-2 text-blue-600" />
+              Activity Overview
+            </RCardTitle>
+          </RCardHeader>
+          <RCardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Last Sent</span>
+              <span className="font-medium text-black text-sm">
+                {sent[0] ? new Date(sent[0].createdAt).toLocaleDateString() : "—"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Avg. per Week</span>
+              <span className="font-medium text-black">
+                {sent.length > 0 ? Math.round(sent.length / Math.max(1, Math.ceil((Date.now() - new Date(sent[sent.length - 1]?.createdAt || Date.now())) / (1000 * 60 * 60 * 24 * 7)))) : 0}
+              </span>
+            </div>
+          </RCardContent>
+        </RCard>
+
+        <RCard>
+          <RCardHeader>
+            <RCardTitle className="text-lg text-black flex items-center">
+              <Send className="w-5 h-5 mr-2 text-purple-600" />
+              Audience Reach
+            </RCardTitle>
+          </RCardHeader>
+          <RCardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">All Users</span>
+              <span className="font-medium text-black">
+                {sent.filter(a => a.audience === 'all').length}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-700">Targeted</span>
+              <span className="font-medium text-black">
+                {sent.filter(a => a.audience !== 'all').length}
               </span>
             </div>
           </RCardContent>
