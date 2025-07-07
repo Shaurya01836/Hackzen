@@ -19,6 +19,7 @@ import {
   Building,
   Wrench,
   Clock,
+  LayoutTemplateIcon,
 } from "lucide-react";
 
 import {
@@ -54,6 +55,7 @@ import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
 import { PendingChangesPage } from "./sections/pending-changes-page";
 import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
+import AddCertificateForm from "./sections/AddCertificateForm";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -150,6 +152,12 @@ export default function AdminPanel() {
       key: "flagged",
       onClick: () => setActiveSection("flagged"),
     },
+      {
+      title: "Certifiacte Templates",
+      icon: LayoutTemplateIcon,
+      key: "certificateTemplate",
+      onClick: () => setActiveSection("certificateTemplate"),
+    },
   ];
 
   const analyticsMenuItems = [
@@ -158,12 +166,6 @@ export default function AdminPanel() {
       icon: BarChart3,
       key: "analytics",
       onClick: () => setActiveSection("analytics"),
-    },
-    {
-      title: "Revenue",
-      icon: DollarSign,
-      key: "revenue",
-      onClick: () => setActiveSection("revenue"),
     },
   ];
 
@@ -223,6 +225,8 @@ export default function AdminPanel() {
         return <FlaggedContentPage />;
       case "support":
         return <SupportInboxPage />;
+      case "certificateTemplate":
+        return <AddCertificateForm />;
       default:
         return <Dashboard />;
     }

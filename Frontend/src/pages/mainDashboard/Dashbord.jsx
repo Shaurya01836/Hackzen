@@ -23,6 +23,7 @@ import {
   Fuel,
   CalendarX,
   Gavel,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -59,6 +60,7 @@ import { ProjectArchive } from "./sections/ProjectArchive";
 import MyHackathon from "./sections/Myhackthon";
 import JudgePanel from "../JudgePanel/JudgePage";
 import DashboardJudgePanel from "./sections/JudgePanel";
+import CertificatesPage from "./sections/CertificatePage";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -198,6 +200,12 @@ export default function HackZenDashboard() {
     key: "announcements",
     onClick: () => changeView("announcements"),
   },
+  {
+    title: "Certificate Page",
+    icon: ShieldCheck,
+    key: "certificate-page",
+    onClick: () => changeView("certificate-page"),
+  },
 ];
 
   const judgeMenuItems = [
@@ -267,6 +275,9 @@ export default function HackZenDashboard() {
         return <DashboardJudgePanel onBack={() => changeView("profile")} />;
       case "my-judgments":
         return <div className="p-6">My Judgments Section - Coming Soon</div>;
+      
+      case "certificate-page":
+        return <CertificatesPage onBack={() => changeView("profile")} />;
       default:
         return (
           <ProfileSection

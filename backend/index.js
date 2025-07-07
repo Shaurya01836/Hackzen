@@ -70,6 +70,9 @@ app.use('/api/submission-form',require("./routes/submissionFormRoutes"));
 app.use('/api/users/2fa', require('./routes/2fa'));
 app.use("/api/users", require("./routes/userRoutes"));
 
+//certificatePage
+app.use("/api/certificate-pages", require("./routes/certificatePageRoutes"));
+
 // ✅ Server + Socket.IO setup
 const server = http.createServer(app);
 const io = new Server(server, {
