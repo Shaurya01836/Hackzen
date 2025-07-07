@@ -426,11 +426,11 @@ export function ProjectDetail({ project, onBack }) {
       <div className=" px-6 py-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-start gap-6">
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+            <div className="w-24 h-24 flex items-center justify-center">
               <img
                 src={project.logo?.url || "/placeholder.svg"}
                 alt="Project Logo"
-                className="w-20 h-20 object-cover"
+                className="rounded-2xl object-cover"
               />
             </div>
             <div className="flex-1">
