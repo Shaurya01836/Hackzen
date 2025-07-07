@@ -17,7 +17,7 @@ export default function CertificatesPage() {
   }, [])
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
+    <div className="md:min-h-screen flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Page Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage Certificates</h1>
