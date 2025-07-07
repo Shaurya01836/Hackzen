@@ -79,6 +79,10 @@ function App() {
         path="/dashboard/profile/help-support"
         element={<DashboardPage />}
       />
+      <Route
+        path="/dashboard/profile/achievements"
+        element={<DashboardPage />}
+      />
       <Route path="/invite/:inviteId" element={<InviteAccept />} />
 
       {/* Catch-all route */}

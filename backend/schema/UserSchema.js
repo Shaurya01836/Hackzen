@@ -30,7 +30,10 @@ savedHackathons: [{ type: Schema.Types.ObjectId, ref: "Hackathon"}],
   linkedin: String,
 
   skills: [String],
-  badges: [{ type: Schema.Types.ObjectId, ref: 'Badge' }],
+  badges: [{ 
+    badge: { type: Schema.Types.ObjectId, ref: 'Badge' },
+    unlockedAt: { type: Date, default: Date.now }
+  }],
   hackathonsJoined: [{ type: Schema.Types.ObjectId, ref: 'Hackathon' }],
   registeredHackathonIds: [{ type: Schema.Types.ObjectId, ref: 'Hackathon' }],
   projects: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
@@ -38,6 +41,11 @@ savedHackathons: [{ type: Schema.Types.ObjectId, ref: "Hackathon"}],
   createdAt: { type: Date, default: Date.now },
   lastVisit: { type: Date },
   activityLog: [{ type: Date }],
+  
+  // Streak tracking
+  currentStreak: { type: Number, default: 0 },
+  maxStreak: { type: Number, default: 0 },
+  lastActivityDate: { type: Date },
 
   githubUsername: String,
   githubProfile: String,

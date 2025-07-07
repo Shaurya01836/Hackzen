@@ -22,9 +22,9 @@ import {
   Globe,
   Linkedin,
   UserCircle2,
-  Info,
-  Shield,
-} from "lucide-react";
+      Info,
+    Shield,
+  } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -48,6 +48,7 @@ import { Progress } from "../../components/DashboardUI/progress";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 import TwoFASetup from "../../components/security/TwoFASetup";
 import PasswordModal from "../../components/security/PasswordModal";
+import AchievementsSection from "../../components/DashboardUI/AchievementsSection";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -86,12 +87,12 @@ export function ProfileSection() {
 
   const [currentView, setCurrentViewState] = useState(getCurrentViewFromPath());
 
-   // Updated setCurrentView function to handle URL navigation
+  // Updated setCurrentView function to handle URL navigation
   const setCurrentView = (view) => {
     setCurrentViewState(view);
-    
+
     // Navigate to appropriate URL
-    switch(view) {
+    switch (view) {
       case 'overview':
         navigate('/dashboard/profile');
         break;
@@ -112,7 +113,7 @@ export function ProfileSection() {
     }
   };
 
-    // Listen to URL changes and update current view
+  // Listen to URL changes and update current view
   useEffect(() => {
     const newView = getCurrentViewFromPath();
     setCurrentViewState(newView);
@@ -221,7 +222,7 @@ export function ProfileSection() {
     } else {
       // Check if user is OAuth (no password required) or email (password required)
       const isOAuthUser = user?.authProvider && user.authProvider !== 'email';
-      
+
       if (isOAuthUser) {
         // For OAuth users, disable directly without password
         await handleDisable2FA(null);
@@ -236,23 +237,23 @@ export function ProfileSection() {
   const handleDisable2FA = async (currentPassword) => {
     setTwoFALoading(true);
     setTwoFAError("");
-    
+
     try {
       console.log('Disabling 2FA...', { hasPassword: !!currentPassword });
-      const response = await axios.post("http://localhost:3000/api/users/2fa/disable", 
+      const response = await axios.post("http://localhost:3000/api/users/2fa/disable",
         { currentPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       console.log('2FA disabled successfully:', response.data);
       await fetch2FAStatus(); // Refresh 2FA status
       setShow2FASetup(false);
       setShowPasswordModal(false);
     } catch (err) {
       console.error("2FA disable error:", err);
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          "Failed to disable 2FA";
+      const errorMessage = err.response?.data?.message ||
+        err.response?.data?.error ||
+        "Failed to disable 2FA";
       setTwoFAError(errorMessage);
     } finally {
       setTwoFALoading(false);
@@ -282,7 +283,7 @@ export function ProfileSection() {
     setShow2FASetup(false);
   };
 
- useEffect(() => {
+  useEffect(() => {
     const pingAndFetchStreak = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -652,6 +653,17 @@ export function ProfileSection() {
           </div>
         </CardContent>
       </Card>
+
+            {/* Achievements Section */}
+      <div className="space-y-4">
+        <AchievementsSection 
+          user={user} 
+          onBadgeUnlocked={(badge) => {
+            console.log('Badge unlocked:', badge);
+            // You can add notification logic here
+          }}
+        />
+      </div>
     </div>
   );
 
@@ -686,7 +698,7 @@ export function ProfileSection() {
           >
             <SquarePen className="w-4 h-4" />
           </button>
-          
+
           {/* Remove Banner Icon */}
           {editForm.bannerImage && editForm.bannerImage !== "/assets/default-banner.png" && (
             <button
@@ -699,7 +711,7 @@ export function ProfileSection() {
               </svg>
             </button>
           )}
-          
+
           <input
             type="file"
             id="upload-banner-edit"
@@ -750,7 +762,7 @@ export function ProfileSection() {
               <SquarePen className="w-5 h-5" />
             </button>
           )}
-          
+
           <input
             type="file"
             id="upload-avatar"
@@ -942,7 +954,7 @@ export function ProfileSection() {
               label: "SMS Notifications",
               desc: "Receive important updates via SMS",
               value: false,
-              setter: () => {},
+              setter: () => { },
             },
           ].map(({ label, desc, value, setter }) => (
             <div className="flex items-center justify-between" key={label}>
@@ -1083,7 +1095,7 @@ export function ProfileSection() {
               <p className="text-red-600 text-sm">{twoFAError}</p>
             </div>
           )}
-          
+
           <div className="flex items-center justify-between">
             <div>
               <span className="text-sm font-medium">Enable 2FA</span>
@@ -1097,7 +1109,7 @@ export function ProfileSection() {
               disabled={twoFALoading}
             />
           </div>
-          
+
           {twoFactorEnabled && (
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="flex items-center gap-2 text-green-800">
@@ -1109,7 +1121,7 @@ export function ProfileSection() {
               </p>
             </div>
           )}
-          
+
           {!twoFactorEnabled && !show2FASetup && (
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 text-gray-600">
@@ -1124,8 +1136,8 @@ export function ProfileSection() {
 
           {show2FASetup && (
             <div className="border-t pt-4">
-              <TwoFASetup 
-                token={token} 
+              <TwoFASetup
+                token={token}
                 onSuccess={handle2FASuccess}
                 onCancel={handle2FACancel}
               />
@@ -1482,7 +1494,7 @@ export function ProfileSection() {
 
       setSelectedBanner(null);
       setEditForm((prev) => ({ ...prev, bannerImage: "/assets/default-banner.png" }));
-      
+
       // Update user context
       const userData = JSON.parse(localStorage.getItem("user"));
       const updatedUser = { ...userData, bannerImage: "/assets/default-banner.png" };
@@ -1516,7 +1528,7 @@ export function ProfileSection() {
 
       setSelectedImage(null);
       setEditForm((prev) => ({ ...prev, profileImage: "" }));
-      
+
       // Update user context
       const userData = JSON.parse(localStorage.getItem("user"));
       const updatedUser = { ...userData, profileImage: "" };
@@ -1546,7 +1558,7 @@ export function ProfileSection() {
     setShowConfirmDialog(false);
   };
 
- return (
+  return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-10">
         {renderHeader()}

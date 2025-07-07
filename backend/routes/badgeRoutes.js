@@ -19,4 +19,13 @@ router.delete('/:id', protect, isAdmin, controller.deleteBadge);
 // 🎖️ Admin: Assign badge to user
 router.post('/assign', protect, isAdmin, controller.assignBadgeToUser);
 
+// 👤 Get user's badges with unlock status
+router.get('/user/:userId', controller.getUserBadges);
+
+// ✅ Check and unlock badges for current user
+router.post('/check', protect, controller.checkUserBadges);
+
+// 📊 Get user's achievement progress
+router.get('/progress/:userId', controller.getUserProgress);
+
 module.exports = router;
