@@ -79,8 +79,9 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
         <div className="relative w-64 h-52 flex-shrink-0 rounded-l-xl overflow-hidden">
           <img
             src={
+              hackathon.images?.logo?.url ||
               hackathon.images?.banner?.url ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+              "/assets/default-banner.png"
             }
             alt={hackathon.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

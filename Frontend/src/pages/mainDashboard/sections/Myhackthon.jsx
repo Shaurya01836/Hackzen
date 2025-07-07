@@ -478,8 +478,9 @@ export default function MyHackathons() {
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
                         <img
                           src={
-                            hackathon.image ||
-                            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+                            hackathon.images?.logo?.url ||
+                            hackathon.images?.banner?.url ||
+                            "/assets/default-banner.png"
                           }
                           alt={hackathon.name}
                           className="w-full h-full object-cover"
@@ -583,8 +584,9 @@ export default function MyHackathons() {
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
                         <img
                           src={
-                            hackathon.image ||
-                            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+                            hackathon.images?.logo?.url ||
+                            hackathon.images?.banner?.url ||
+                            "/assets/default-banner.png"
                           }
                           alt={hackathon.name}
                           className="w-full h-full object-cover"

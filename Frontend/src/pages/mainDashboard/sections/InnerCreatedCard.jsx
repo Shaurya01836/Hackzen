@@ -474,7 +474,11 @@ export default function HackathonDetailsPage({
                         {/* Banner / Logo */}
                         <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
                           <img
-                            src="https://www.hackquest.io/images/layout/hackathon_cover.png"
+                            src={
+                              hackathonData.images?.logo?.url ||
+                              hackathonData.images?.banner?.url ||
+                              "/assets/default-banner.png"
+                            }
                             alt={project.title}
                             className="w-full h-full object-cover"
                           />

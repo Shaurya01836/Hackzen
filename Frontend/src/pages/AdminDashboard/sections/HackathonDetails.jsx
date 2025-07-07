@@ -131,8 +131,10 @@ export function HackathonDetails({ hackathon, onClose }) {
               <div className="relative">
                 <img
                   src={
+                    hackathon.images?.banner?.url ||
+                    hackathon.images?.logo?.url ||
                     hackathon.image ||
-                    "https://www.hackquest.io/images/layout/hackathon_cover.png"
+                    "/assets/default-banner.png"
                   }
                   alt={hackathon.title}
                   className="w-full rounded-md object-cover h-52 md:h-64"

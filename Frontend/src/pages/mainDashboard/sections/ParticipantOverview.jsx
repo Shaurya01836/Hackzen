@@ -245,8 +245,9 @@ const createHackathonPage = () => {
         <div className="relative h-40 w-full">
           <img
             src={
-              hackathon.imageUrl ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+              hackathon.images?.logo?.url ||
+              hackathon.images?.banner?.url ||
+              "/assets/default-banner.png"
             }
             alt={hackathon.title}
             className="w-full h-full object-cover transition-transform duration-300"

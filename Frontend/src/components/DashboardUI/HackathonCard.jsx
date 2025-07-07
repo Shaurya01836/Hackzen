@@ -15,8 +15,10 @@ export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
       <div className="relative h-40 w-full">
         <img
           src={
+            hackathon.images?.banner?.url ||
+            hackathon.images?.logo?.url ||
             hackathon.image ||
-            "https://www.hackquest.io/images/layout/hackathon_cover.png"
+            "/assets/default-banner.png"
           }
           alt={hackathon.name}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"

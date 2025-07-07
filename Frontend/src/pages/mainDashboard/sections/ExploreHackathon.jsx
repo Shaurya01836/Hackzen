@@ -328,8 +328,9 @@ export function ExploreHackathons() {
         <div className="relative h-40 w-full">
           <img
             src={
+              hackathon.images?.logo?.url ||
               hackathon.images?.banner?.url ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
+              "/assets/default-banner.png"
             }
             alt={hackathon.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
