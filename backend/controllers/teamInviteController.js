@@ -337,7 +337,7 @@ const deleteInvite = async (req, res) => {
 const getRoleInviteByToken = async (req, res) => {
   try {
     const { token } = req.params;
-    const invite = await RoleInvite.findOne({ token });
+    const invite = await RoleInvite.findOne({ token }).populate('hackathon', 'title description');
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     res.json({
       email: invite.email,

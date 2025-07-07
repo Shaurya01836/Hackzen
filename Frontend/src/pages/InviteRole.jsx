@@ -111,7 +111,7 @@ export default function InviteRole() {
   return (
     <div style={{ maxWidth: 500, margin: '40px auto', padding: 24, border: '1px solid #eee', borderRadius: 8 }}>
       <h2>Invitation to become a {invite.role}</h2>
-      <p><b>Hackathon:</b> {invite.hackathon}</p>
+      <p><b>Hackathon:</b> {invite.hackathon?.title || 'Loading...'}</p>
       <p><b>Your Email:</b> {invite.email}</p>
       <p><b>Status:</b> {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}</p>
       {actionMsg && <div style={{ margin: '16px 0', color: '#6366f1' }}>{actionMsg}</div>}

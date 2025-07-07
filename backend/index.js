@@ -50,6 +50,7 @@ app.use(passport.session());
 app.use("/api/hackathons", require("./routes/hackathonRoutes"));
 app.use("/api/teams", require("./routes/teamRoutes"));
 app.use("/api/team-invites", require("./routes/teamInviteRoutes"));
+app.use("/api/role-invites", require("./routes/roleInviteRoutes"));
 app.use("/api/submissions", require("./routes/submissionHistoryRoutes"));
 app.use("/api/projects", require("./routes/projectRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));

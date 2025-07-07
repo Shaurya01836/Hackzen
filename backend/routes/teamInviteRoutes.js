@@ -24,9 +24,6 @@ router.post('/:id/accept', protect, teamInviteController.acceptInviteById);
 // Revoke (delete) a pending invite
 router.delete('/:id', protect, teamInviteController.deleteInvite);
 
-// Role Invite routes for judge/mentor
-router.get('/role-invites/:token', teamInviteController.getRoleInviteByToken);
-router.post('/role-invites/:token/accept', protect, teamInviteController.acceptRoleInvite);
-router.post('/role-invites/:token/decline', protect, teamInviteController.declineRoleInvite);
+// Role invite routes have been moved to roleInviteRoutes.js
 
 module.exports = router;

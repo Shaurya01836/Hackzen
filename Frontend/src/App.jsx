@@ -21,6 +21,7 @@ import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
 import { Blogs } from "./pages/mainDashboard/sections/Blogs";
 import InviteAccept from "./pages/InviteAccept";
+import InviteRole from "./pages/InviteRole";
 // import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
 import JudgePanel from "./pages/JudgePanel/JudgePage"
@@ -79,11 +80,8 @@ function App() {
         path="/dashboard/profile/help-support"
         element={<DashboardPage />}
       />
-      <Route
-        path="/dashboard/profile/achievements"
-        element={<DashboardPage />}
-      />
       <Route path="/invite/:inviteId" element={<InviteAccept />} />
+      <Route path="/invite/role" element={<InviteRole />} />
 
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />

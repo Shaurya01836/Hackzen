@@ -333,6 +333,7 @@ exports.updateApprovalStatus = async (req, res) => {
               role: 'judge',
               token
             });
+            console.log(`[RoleInvite] Created judge invite:`, { email, role: 'judge', token });
             await sendInviteEmail(email, 'judge', token);
           }
         }
@@ -350,6 +351,7 @@ exports.updateApprovalStatus = async (req, res) => {
               role: 'mentor',
               token
             });
+            console.log(`[RoleInvite] Created mentor invite:`, { email, role: 'mentor', token });
             await sendInviteEmail(email, 'mentor', token);
           }
         }
