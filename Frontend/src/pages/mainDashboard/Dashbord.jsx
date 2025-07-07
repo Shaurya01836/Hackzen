@@ -22,6 +22,7 @@ import {
   PencilRulerIcon,
   Fuel,
   CalendarX,
+  Gavel,
 } from "lucide-react";
 
 import {
@@ -55,7 +56,9 @@ import { CreateHackathon } from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
-import MyHackathon from "./sections/Myhackthon"
+import MyHackathon from "./sections/Myhackthon";
+import JudgePanel from "../JudgePanel/JudgePage";
+import DashboardJudgePanel from "./sections/JudgePanel";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -193,6 +196,21 @@ export default function HackZenDashboard() {
   },
 ];
 
+  const judgeMenuItems = [
+    {
+      title: "Judge Panel",
+      icon: Gavel,
+      key: "judge-panel",
+      onClick: () => changeView("judge-panel"),
+    },
+    {
+      title: "My Judgments",
+      icon: FileText,
+      key: "my-judgments",
+      onClick: () => changeView("my-judgments"),
+    },
+  ];
+
 
   // Function to render content based on current view
   const renderContent = () => {
@@ -241,6 +259,10 @@ export default function HackZenDashboard() {
         return <ProjectArchive onBack={() => changeView("profile")} />;
       case "my-community":
         return <div className="p-6">My Community Section - Coming Soon</div>;
+      case "judge-panel":
+        return <DashboardJudgePanel onBack={() => changeView("profile")} />;
+      case "my-judgments":
+        return <div className="p-6">My Judgments Section - Coming Soon</div>;
       default:
         return (
           <ProfileSection
@@ -351,6 +373,44 @@ export default function HackZenDashboard() {
                               "w-4 h-4",
                               currentView === item.key
                                 ? "text-indigo-700"
+                                : "text-gray-500"
+                            )}
+                          />
+                          <span>{item.title}</span>
+                        </button>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+
+          {user?.role === "judge" && (
+            <SidebarGroup>
+              <SidebarGroupLabel className="flex items-center gap-2 text-orange-600">
+                <Gavel className="w-4 h-4" />
+                Judge Menu
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {judgeMenuItems.map((item) => (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton asChild>
+                        <button
+                          onClick={item.onClick}
+                          className={cn(
+                            "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
+                            currentView === item.key
+                              ? "bg-orange-100 text-orange-700"
+                              : "text-gray-700 hover:bg-orange-50 hover:text-orange-700"
+                          )}
+                        >
+                          <item.icon
+                            className={cn(
+                              "w-4 h-4",
+                              currentView === item.key
+                                ? "text-orange-700"
                                 : "text-gray-500"
                             )}
                           />

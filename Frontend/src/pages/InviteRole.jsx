@@ -1,14 +1,11 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-// If you have AuthContext, import it:
-// import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function InviteRole() {
   const navigate = useNavigate();
   const location = useLocation();
-  // const { user, token } = useContext(AuthContext); // Uncomment if you have AuthContext
-  const [user, setUser] = useState(null); // Remove if using AuthContext
-  const [token, setToken] = useState(localStorage.getItem('token'));
+  const { user, token } = useAuth();
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,26 +15,9 @@ export default function InviteRole() {
   const urlParams = new URLSearchParams(location.search);
   const inviteToken = urlParams.get('token');
 
-  // Fetch user info (if not using AuthContext)
-  useEffect(() => {
-    async function fetchUser() {
-      if (!token) return;
-      try {
-        const res = await fetch('/api/users/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      }
-    }
-    fetchUser();
-  }, [token]);
+  // User info is now handled by AuthContext
+  console.log('AuthContext user:', user);
+  console.log('AuthContext token:', !!token);
 
   // Fetch invite details
   useEffect(() => {
@@ -49,14 +29,20 @@ export default function InviteRole() {
     async function fetchInvite() {
       setLoading(true);
       try {
+        console.log('Fetching invite with token:', inviteToken);
         const res = await fetch(`/api/role-invites/${inviteToken}`);
+        console.log('Invite fetch response:', res.status);
         if (res.ok) {
           const data = await res.json();
+          console.log('Invite data:', data);
           setInvite(data);
         } else {
+          const errorData = await res.json();
+          console.log('Invite fetch failed:', errorData);
           setError('Invalid or expired invite.');
         }
-      } catch {
+      } catch (error) {
+        console.error('Invite fetch error:', error);
         setError('Failed to fetch invite.');
       }
       setLoading(false);
@@ -74,7 +60,7 @@ export default function InviteRole() {
           onClick={() => {
             // Save current location for redirect after login
             localStorage.setItem('invite_redirect', location.pathname + location.search);
-            navigate('/login');
+            navigate(`/login?redirectTo=${encodeURIComponent(location.pathname + location.search)}`);
           }}
           style={{ padding: '10px 24px', background: '#6366f1', color: 'white', border: 'none', borderRadius: 6 }}
         >
@@ -91,19 +77,35 @@ export default function InviteRole() {
   const handleAction = async (action) => {
     setActionMsg('Processing...');
     try {
+      console.log('Making action request:', action);
+      console.log('Using token:', !!token);
+      
       const res = await fetch(`/api/role-invites/${inviteToken}/${action}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+      
+      console.log('Action response status:', res.status);
       const data = await res.json();
+      console.log('Action response data:', data);
+      
       if (res.ok) {
         setActionMsg(data.message);
-        // Optionally, refresh invite status
+        // Update invite status
         setInvite((prev) => ({ ...prev, status: action === 'accept' ? 'accepted' : 'declined' }));
+        
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          navigate('/dashboard/profile');
+        }, 2000);
       } else {
         setActionMsg(data.error || 'Action failed.');
       }
-    } catch {
+    } catch (error) {
+      console.error('Action error:', error);
       setActionMsg('Action failed.');
     }
   };

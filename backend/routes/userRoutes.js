@@ -99,6 +99,8 @@ router.put('/:id/password', protect, userController.changePassword);
 // ✅ Get current user info (for session refresh)
 router.get('/me', protect, userController.getMe);
 
+// Test route removed for now to fix the server startup
+
 // 🏢 Organization
 router.post('/invite', protect, isOrganizerOrAdmin, userController.inviteToOrganization);
 router.get('/me/organization', protect, userController.getMyOrganizationStatus);
@@ -136,5 +138,8 @@ router.get('/me/saved-hackathons', protect, async (req, res) => {
 router.get('/admin/stats', protect, isAdmin, userController.getDashboardStats);
 router.get('/admin/monthly-stats', protect, isAdmin, userController.getMonthlyUserStats);
 router.get('/admin/role-breakdown', protect, isAdmin, userController.getUserRoleBreakdown);
+
+// ✅ Judge Dashboard Routes
+router.get('/judge-stats', protect, userController.getJudgeStats);
 
 module.exports = router;

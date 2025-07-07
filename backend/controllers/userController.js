@@ -311,13 +311,26 @@ const getUserStreakData = async (req, res) => {
 // ✅ Get current user info (for session refresh)
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .populate('badges hackathonsJoined projects organization')
-      .select('-passwordHash');
+    console.log('=== getMe function called ===');
+    console.log('req.user:', req.user);
+    console.log('req.user._id:', req.user._id);
+    console.log('req.user._id type:', typeof req.user._id);
+    console.log('req.user._id toString:', req.user._id.toString());
     
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    // First try without populate to see if the basic query works
+    const user = await User.findById(req.user._id).select('-passwordHash');
+    
+    console.log('Database query result:', user);
+    if (!user) {
+      console.log('User not found in database');
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    console.log('Sending user response:', { _id: user._id, email: user.email, role: user.role });
     res.json(user);
   } catch (err) {
+    console.error('getMe error:', err);
+    console.error('Error stack:', err.stack);
     res.status(500).json({ error: err.message });
   }
 };
@@ -456,6 +469,60 @@ const getUserRoleBreakdown = async (req, res) => {
   }
 };
 
+// ✅ Get judge stats for judge dashboard
+const getJudgeStats = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get hackathons where user is a judge
+    const RoleInvite = require('../model/RoleInviteModel');
+    const judgeInvites = await RoleInvite.find({ 
+      invitedUser: userId, 
+      role: 'judge', 
+      status: 'accepted' 
+    }).populate('hackathon');
+    
+    const totalHackathons = judgeInvites.length;
+    
+    // For now, return mock data since we don't have submission/judgment models yet
+    res.json({
+      totalHackathons,
+      totalSubmissions: 12, // Mock data
+      averageRating: 4.2, // Mock data
+      completedJudgments: 8 // Mock data
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Test endpoint to check database connection
+const testDatabase = async (req, res) => {
+  try {
+    console.log('=== Testing database connection ===');
+    
+    // Test basic user count
+    const userCount = await User.countDocuments();
+    console.log('Total users in database:', userCount);
+    
+    // Test finding a specific user by ID
+    const testUserId = req.params.id || '686b6744dce4d0b41b175a04';
+    console.log('Testing user lookup for ID:', testUserId);
+    
+    const testUser = await User.findById(testUserId);
+    console.log('Test user found:', testUser ? { _id: testUser._id, email: testUser.email } : 'null');
+    
+    res.json({
+      success: true,
+      userCount,
+      testUser: testUser ? { _id: testUser._id, email: testUser.email, role: testUser.role } : null
+    });
+  } catch (err) {
+    console.error('Database test error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
@@ -473,6 +540,7 @@ module.exports = {
   getDashboardStats,
   getMonthlyUserStats,
   getUserRoleBreakdown,
+  getJudgeStats,
 };
 
 

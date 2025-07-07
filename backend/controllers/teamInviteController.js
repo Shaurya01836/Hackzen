@@ -337,7 +337,9 @@ const deleteInvite = async (req, res) => {
 const getRoleInviteByToken = async (req, res) => {
   try {
     const { token } = req.params;
+    console.log('Looking for invite with token:', token);
     const invite = await RoleInvite.findOne({ token }).populate('hackathon', 'title description');
+    console.log('Found invite:', invite);
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     res.json({
       email: invite.email,
@@ -348,6 +350,7 @@ const getRoleInviteByToken = async (req, res) => {
       respondedAt: invite.respondedAt
     });
   } catch (err) {
+    console.error('Error fetching invite:', err);
     res.status(500).json({ error: 'Failed to fetch invite', details: err.message });
   }
 };
