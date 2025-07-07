@@ -325,7 +325,7 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
 
       {/* Filters and Controls */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-8">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-2 flex-1">
               <div className="relative">
@@ -407,11 +407,10 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
               </Button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+       
 
       {/* Badges Display */}
-      <Tabs defaultValue="all" className="w-full">
+      <Tabs defaultValue="all" className="w-full pt-8">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all">All Badges ({filteredBadges.length})</TabsTrigger>
           <TabsTrigger value="unlocked">Unlocked ({unlockedCount})</TabsTrigger>
@@ -468,6 +467,8 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
           </div>
         </TabsContent>
       </Tabs>
+       </CardContent>
+      </Card>
 
       {/* Empty State */}
       {filteredBadges.length === 0 && (
