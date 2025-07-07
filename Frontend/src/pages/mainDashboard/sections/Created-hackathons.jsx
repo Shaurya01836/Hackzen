@@ -9,6 +9,7 @@ import {
   Settings,
   Eye,
   Edit,
+  Edit3,
   Trash2,
   BarChart3,
   Check,
@@ -271,6 +272,34 @@ export function CreatedHackathons({ onCreateNew }) {
               {deadlineLabel}
             </span>
           </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100">
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit(hackathon);
+              }}
+            >
+              <Edit3 className="w-3 h-3 mr-1" />
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="flex-1 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleViewDetails(hackathon);
+              }}
+            >
+              <Settings className="w-3 h-3 mr-1" />
+              Manage
+            </Button>
+          </div>
         </div>
       </Card>
     );
@@ -281,6 +310,10 @@ export function CreatedHackathons({ onCreateNew }) {
       <InnerCreatedCard
         hackathon={innerCardHackathon}
         onBack={() => setShowInnerCard(false)}
+        onEdit={(hackathon) => {
+          setEditHackathon(hackathon);
+          setShowInnerCard(false);
+        }}
       />
     );
   }

@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 export default function InviteRole() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, token } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,6 +96,11 @@ export default function InviteRole() {
         setActionMsg(data.message);
         // Update invite status
         setInvite((prev) => ({ ...prev, status: action === 'accept' ? 'accepted' : 'declined' }));
+        
+        // If accepted, refresh user info to get updated role
+        if (action === 'accept') {
+          await refreshUser();
+        }
         
         // Redirect to dashboard after a short delay
         setTimeout(() => {

@@ -144,6 +144,7 @@ const projectSubmissions = [
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
   onBack,
+  onEdit, // Add onEdit prop
 }) {
   // If hackathon data is passed as prop, use it instead of mock data
   const hackathonData = hackathonProp || {
@@ -562,6 +563,7 @@ export default function HackathonDetailsPage({
                       <Button
                         variant="outline"
                         className="w-full justify-start gap-2 text-left bg-transparent"
+                        onClick={() => onEdit && onEdit(hackathonData)}
                       >
                         <Edit3 className="h-4 w-4" />
                         Edit Hackathon
@@ -638,6 +640,7 @@ export default function HackathonDetailsPage({
                 size="sm"
                 variant="outline"
                 className="flex-shrink-0 bg-transparent"
+                onClick={() => onEdit && onEdit(hackathonData)}
               >
                 <Edit3 className="h-4 w-4 mr-1" />
                 Edit

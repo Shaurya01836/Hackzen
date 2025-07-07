@@ -30,6 +30,7 @@ export default function HackathonEditModal({ hackathon, onClose, onUpdated }) {
 
   const [newJudge, setNewJudge] = useState("");
   const [newMentor, setNewMentor] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -91,33 +92,62 @@ const handleRemoveMentor = (email) => {
 
 
   const handleSubmit = async () => {
-    const updatedData = {
-      title: form.title,
-      description: form.description,
-      category: form.category,
-      difficultyLevel: form.difficultyLevel,
-      location: form.location,
-      mode: form.mode,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      registrationDeadline: form.registrationDeadline,
-      submissionDeadline: form.submissionDeadline,
-      maxParticipants: parseInt(form.maxParticipants),
-      prizePool: {
-        amount: parseInt(form.prizeAmount),
-        breakdown: form.prizeBreakdown,
-        currency: "USD",
-      },
-      tags: form.tags.split(",").map((tag) => tag.trim()),
-      problemStatements: form.problemStatements.split("\n").filter(Boolean),
-      requirements: form.requirements.split("\n").filter(Boolean),
-      perks: form.perks.split("\n").filter(Boolean),
-      judges: form.judges,
-      mentors: form.mentors,
-    };
-
+    if (isSubmitting) {
+      console.log("Already submitting, ignoring duplicate request");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
+      // Validate required fields
+      if (!form.title || !form.description) {
+        alert("Title and description are required!");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Safely parse numeric values
+      const maxParticipants = parseInt(form.maxParticipants) || 0;
+      const prizeAmount = parseInt(form.prizeAmount) || 0;
+
+      // Safely process arrays
+      const tags = form.tags ? form.tags.split(",").map((tag) => tag.trim()).filter(Boolean) : [];
+      const problemStatements = form.problemStatements ? form.problemStatements.split("\n").filter(Boolean) : [];
+      const requirements = form.requirements ? form.requirements.split("\n").filter(Boolean) : [];
+      const perks = form.perks ? form.perks.split("\n").filter(Boolean) : [];
+
+      const updatedData = {
+        title: form.title,
+        description: form.description,
+        category: form.category || "",
+        difficultyLevel: form.difficultyLevel || "",
+        location: form.location || "",
+        mode: form.mode || "online",
+        startDate: form.startDate,
+        endDate: form.endDate,
+        registrationDeadline: form.registrationDeadline,
+        submissionDeadline: form.submissionDeadline,
+        maxParticipants: maxParticipants,
+        prizePool: {
+          amount: prizeAmount,
+          breakdown: form.prizeBreakdown || "",
+          currency: "USD",
+        },
+        tags: tags,
+        problemStatements: problemStatements,
+        requirements: requirements,
+        perks: perks,
+        judges: form.judges || [],
+        mentors: form.mentors || [],
+      };
+
+      console.log("Sending updated data:", updatedData);
+
       const token = localStorage.getItem("token");
+      console.log("Token available:", !!token);
+      console.log("Hackathon ID:", hackathon._id);
+      
       const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon._id}`, {
         method: "PUT",
         headers: {
@@ -127,15 +157,66 @@ const handleRemoveMentor = (email) => {
         body: JSON.stringify(updatedData),
       });
 
+      console.log("Response status:", res.status);
+      console.log("Response ok:", res.ok);
+
       if (res.ok) {
-        alert("Hackathon updated successfully!");
-        onUpdated();
+        // Clone the response so we can read it multiple times if needed
+        const responseClone = res.clone();
+        
+        try {
+          const responseData = await res.json();
+          console.log("Response data:", responseData);
+          
+          // Handle both old format (direct hackathon object) and new format (with success/message)
+          const updatedHackathon = responseData.hackathon || responseData;
+          
+          // Check if new judges or mentors were added
+          const originalJudges = hackathon.judges || [];
+          const originalMentors = hackathon.mentors || [];
+          const newJudges = form.judges.filter(j => !originalJudges.includes(j));
+          const newMentors = form.mentors.filter(m => !originalMentors.includes(m));
+          
+          let message = responseData.message || "Hackathon updated successfully!";
+          
+          if (newJudges.length > 0 || newMentors.length > 0) {
+            message += "\n\n📧 Email invitations have been sent to:";
+            if (newJudges.length > 0) {
+              message += `\n• ${newJudges.length} new judge(s): ${newJudges.join(', ')}`;
+            }
+            if (newMentors.length > 0) {
+              message += `\n• ${newMentors.length} new mentor(s): ${newMentors.join(', ')}`;
+            }
+          }
+          
+          alert(message);
+          onUpdated();
+        } catch (parseError) {
+          console.error("Error parsing response:", parseError);
+          try {
+            const rawText = await responseClone.text();
+            console.error("Raw response text:", rawText);
+          } catch (textError) {
+            console.error("Could not read response text:", textError);
+          }
+          alert("Hackathon updated successfully, but there was an issue processing the response.");
+          onUpdated();
+        }
       } else {
-        alert("Failed to update");
+        try {
+          const errorData = await res.json();
+          console.error("Server error:", errorData);
+          alert(`Failed to update: ${errorData.message || errorData.details || 'Unknown error'}`);
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+          alert(`Failed to update: HTTP ${res.status}`);
+        }
       }
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong");
+      console.error("Error in handleSubmit:", err);
+      alert("Something went wrong while updating the hackathon");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -181,12 +262,18 @@ const handleRemoveMentor = (email) => {
               <Button type="button" onClick={handleAddJudge}><Plus className="w-4 h-4" /></Button>
             </div>
             <ul className="space-y-1 text-sm">
-              {form.judges.map((j, i) => (
-                <li key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                  {j}
-                  <button onClick={() => handleRemoveJudge(j)}><Trash2 className="w-4 h-4 text-red-500" /></button>
-                </li>
-              ))}
+              {form.judges.map((j, i) => {
+                const isNew = !(hackathon.judges || []).includes(j);
+                return (
+                  <li key={i} className={`flex items-center justify-between p-2 rounded ${isNew ? 'bg-green-50 border border-green-200' : 'bg-gray-100'}`}>
+                    <div className="flex items-center gap-2">
+                      {j}
+                      {isNew && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">New</span>}
+                    </div>
+                    <button onClick={() => handleRemoveJudge(j)}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -198,17 +285,27 @@ const handleRemoveMentor = (email) => {
               <Button type="button" onClick={handleAddMentor}><Plus className="w-4 h-4" /></Button>
             </div>
             <ul className="space-y-1 text-sm">
-              {form.mentors.map((m, i) => (
-                <li key={i} className="flex items-center justify-between bg-gray-100 p-2 rounded">
-                  {m}
-                  <button onClick={() => handleRemoveMentor(m)}><Trash2 className="w-4 h-4 text-red-500" /></button>
-                </li>
-              ))}
+              {form.mentors.map((m, i) => {
+                const isNew = !(hackathon.mentors || []).includes(m);
+                return (
+                  <li key={i} className={`flex items-center justify-between p-2 rounded ${isNew ? 'bg-green-50 border border-green-200' : 'bg-gray-100'}`}>
+                    <div className="flex items-center gap-2">
+                      {m}
+                      {isNew && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">New</span>}
+                    </div>
+                    <button onClick={() => handleRemoveMentor(m)}><Trash2 className="w-4 h-4 text-red-500" /></button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
-          <Button onClick={handleSubmit} className="w-full mt-4">
-            Save Changes
+          <Button 
+            onClick={handleSubmit} 
+            className="w-full mt-4"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </Button>
         </div>
       </div>

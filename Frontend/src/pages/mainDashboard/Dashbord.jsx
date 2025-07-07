@@ -75,7 +75,11 @@ export default function HackZenDashboard() {
 
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
 
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
+  
+  // Debug: Log user role for troubleshooting
+  console.log("Dashboard - Current user:", user);
+  console.log("Dashboard - User role:", user?.role);
 
   // Function to handle section changes with nested URLs
   const changeView = (viewKey) => {
@@ -295,7 +299,10 @@ export default function HackZenDashboard() {
     };
 
     pingStreak();
-  }, []);
+    
+    // Refresh user info to ensure we have the latest role
+    refreshUser();
+  }, [refreshUser]);
 
   return (
     <SidebarProvider>
@@ -348,7 +355,8 @@ export default function HackZenDashboard() {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {user?.role !== "participant" && (
+          {/* Organizer Menu - Only show to organizers, NOT to judges */}
+          {user?.role === "organizer" && user?.role !== "judge" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
                 <Wrench className="w-4 h-4" />
@@ -386,6 +394,7 @@ export default function HackZenDashboard() {
             </SidebarGroup>
           )}
 
+          {/* Judge Menu - Show to judges */}
           {user?.role === "judge" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-orange-600">
