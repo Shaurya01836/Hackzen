@@ -1024,7 +1024,7 @@ export function OrganizationHub() {
                     <Button type="button" variant="outline" onClick={() => setEditMode(false)}>Cancel</Button>
                   </div>
                 </form>
-              ) : approvedOrganizations.length > 0 ? (
+              ) : approvedOrganizations.length > 0 ? (        
                 <div className="space-y-6">
                   {approvedOrganizations.map((org, index) => (
                     <div key={org._id} className="border border-gray-200 rounded-lg p-6">
