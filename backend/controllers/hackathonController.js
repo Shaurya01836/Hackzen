@@ -2,6 +2,9 @@ const Hackathon = require('../model/HackathonModel');
 const Notification = require('../model/NotificationModel');
 const ChatRoom = require('../model/ChatRoomModel');
 const User = require('../model/UserModel');
+const RoleInvite = require('../model/RoleInviteModel');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -287,6 +290,71 @@ exports.updateApprovalStatus = async (req, res) => {
     ).populate('organizer', 'name email');
 
     if (!updated) return res.status(404).json({ message: 'Hackathon not found' });
+
+    // On approval, send judge/mentor invites
+    if (status === 'approved') {
+      // Helper to send invite email
+      const sendInviteEmail = async (email, role, token) => {
+        if (!process.env.MAIL_USER || !process.env.MAIL_PASS) return;
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS
+          }
+        });
+        const inviteLink = `http://localhost:5173/invite/role?token=${token}`;
+        const subject = `Invitation to become a ${role.charAt(0).toUpperCase() + role.slice(1)} for ${updated.title}`;
+        const html = `<div style='font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>
+          <h2>You've been invited to be a ${role} for the hackathon: <b>${updated.title}</b></h2>
+          <p>Click the link below to accept or decline the invitation:</p>
+          <a href='${inviteLink}' style='background:#6366f1;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;'>Respond to Invitation</a>
+          <p>If you don't have an account, you'll be prompted to register first.</p>
+          <p>This invitation will expire in 7 days.</p>
+        </div>`;
+        await transporter.sendMail({
+          from: `HackZen <${process.env.MAIL_USER}>`,
+          to: email,
+          subject,
+          html
+        });
+      };
+      // Judges
+      if (Array.isArray(updated.judges)) {
+        for (const email of updated.judges) {
+          if (!email) continue;
+          // Check if invite already exists
+          let invite = await RoleInvite.findOne({ email, hackathon: updated._id, role: 'judge' });
+          if (!invite) {
+            const token = crypto.randomBytes(32).toString('hex');
+            invite = await RoleInvite.create({
+              email,
+              hackathon: updated._id,
+              role: 'judge',
+              token
+            });
+            await sendInviteEmail(email, 'judge', token);
+          }
+        }
+      }
+      // Mentors
+      if (Array.isArray(updated.mentors)) {
+        for (const email of updated.mentors) {
+          if (!email) continue;
+          let invite = await RoleInvite.findOne({ email, hackathon: updated._id, role: 'mentor' });
+          if (!invite) {
+            const token = crypto.randomBytes(32).toString('hex');
+            invite = await RoleInvite.create({
+              email,
+              hackathon: updated._id,
+              role: 'mentor',
+              token
+            });
+            await sendInviteEmail(email, 'mentor', token);
+          }
+        }
+      }
+    }
 
     // Send notification to organizer
     const notificationMessage = status === 'approved' 

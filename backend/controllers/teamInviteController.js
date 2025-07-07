@@ -4,6 +4,7 @@ const User = require('../model/UserModel');
 const Hackathon = require('../model/HackathonModel');
 const HackathonRegistration = require('../model/HackathonRegistrationModel');
 const nodemailer = require('nodemailer');
+const RoleInvite = require('../model/RoleInviteModel');
 
 // POST /api/team-invites
 const createInvite = async (req, res) => {
@@ -332,6 +333,68 @@ const deleteInvite = async (req, res) => {
   }
 };
 
+// GET /api/role-invites/:token
+const getRoleInviteByToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const invite = await RoleInvite.findOne({ token });
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    res.json({
+      email: invite.email,
+      hackathon: invite.hackathon,
+      role: invite.role,
+      status: invite.status,
+      sentAt: invite.sentAt,
+      respondedAt: invite.respondedAt
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch invite', details: err.message });
+  }
+};
+
+// POST /api/role-invites/:token/accept
+const acceptRoleInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = req.user;
+    const invite = await RoleInvite.findOne({ token });
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    if (invite.status !== 'pending') return res.status(400).json({ error: 'Invite already responded' });
+    if (user.email !== invite.email) return res.status(403).json({ error: 'This invite is not for your email' });
+    invite.status = 'accepted';
+    invite.respondedAt = new Date();
+    invite.invitedUser = user._id;
+    await invite.save();
+    // Set user role if not already
+    if (user.role !== invite.role) {
+      user.role = invite.role;
+      await user.save();
+    }
+    res.json({ message: `You are now a ${invite.role} for this hackathon.` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to accept invite', details: err.message });
+  }
+};
+
+// POST /api/role-invites/:token/decline
+const declineRoleInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = req.user;
+    const invite = await RoleInvite.findOne({ token });
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    if (invite.status !== 'pending') return res.status(400).json({ error: 'Invite already responded' });
+    if (user.email !== invite.email) return res.status(403).json({ error: 'This invite is not for your email' });
+    invite.status = 'declined';
+    invite.respondedAt = new Date();
+    invite.invitedUser = user._id;
+    await invite.save();
+    res.json({ message: 'You have declined the invitation.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to decline invite', details: err.message });
+  }
+};
+
 module.exports = {
   createInvite,
   respondToInvite,
@@ -339,5 +402,8 @@ module.exports = {
   getHackathonInvites,
   getInviteById,
   acceptInviteById,
-  deleteInvite
+  deleteInvite,
+  getRoleInviteByToken,
+  acceptRoleInvite,
+  declineRoleInvite
 };
