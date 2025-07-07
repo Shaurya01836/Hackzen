@@ -99,10 +99,13 @@ export function ExploreHackathons() {
       try {
         const res = await axios.get("http://localhost:3000/api/hackathons");
         console.log("Raw hackathons response:", res.data);
-        const approvedHackathons = res.data.filter(
-          (h) => h.approvalStatus === "approved"
+        const now = new Date();
+        const approvedAndRegistrationOpen = res.data.filter(
+          (h) =>
+            h.approvalStatus === "approved" &&
+            new Date(h.registrationDeadline) >= now
         );
-        setHackathons(approvedHackathons);
+        setHackathons(approvedAndRegistrationOpen);
       } catch (err) {
         console.error("Hackathon fetch error:", err.message);
         setError("Failed to fetch hackathons");

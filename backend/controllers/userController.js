@@ -311,11 +311,148 @@ const getUserStreakData = async (req, res) => {
 // ✅ Get current user info (for session refresh)
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('organization');
+    const user = await User.findById(req.user.id)
+      .populate('badges hackathonsJoined projects organization')
+      .select('-passwordHash');
+    
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch user info' });
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Admin Dashboard Statistics
+const getDashboardStats = async (req, res) => {
+  try {
+    // Get total users count
+    const totalUsers = await User.countDocuments();
+    
+    // Get users by role
+    const usersByRole = await User.aggregate([
+      {
+        $group: {
+          _id: '$role',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get active users (users who logged in within last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const activeUsers = await User.countDocuments({
+      lastLoginAt: { $gte: thirtyDaysAgo }
+    });
+
+    // Get new users this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const newUsersThisMonth = await User.countDocuments({
+      createdAt: { $gte: startOfMonth }
+    });
+
+    // Calculate percentage change from last month
+    const startOfLastMonth = new Date();
+    startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
+    startOfLastMonth.setDate(1);
+    startOfLastMonth.setHours(0, 0, 0, 0);
+    const endOfLastMonth = new Date();
+    endOfLastMonth.setDate(1);
+    endOfLastMonth.setHours(0, 0, 0, 0);
+    const newUsersLastMonth = await User.countDocuments({
+      createdAt: { $gte: startOfLastMonth, $lt: endOfLastMonth }
+    });
+
+    const userGrowthPercentage = newUsersLastMonth > 0 
+      ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth * 100).toFixed(1)
+      : newUsersThisMonth > 0 ? 100 : 0;
+
+    res.json({
+      totalUsers,
+      activeUsers,
+      newUsersThisMonth,
+      userGrowthPercentage: userGrowthPercentage > 0 ? `+${userGrowthPercentage}%` : `${userGrowthPercentage}%`,
+      usersByRole: usersByRole.reduce((acc, item) => {
+        acc[item._id || 'user'] = item.count;
+        return acc;
+      }, {})
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Get monthly user registration data for charts
+const getMonthlyUserStats = async (req, res) => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const monthlyStats = await User.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      }
+    ]);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const chartData = monthlyStats.map(stat => ({
+      month: monthNames[stat._id.month - 1],
+      users: stat.count
+    }));
+
+    res.json(chartData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ User Role Breakdown for Pie Chart
+const getUserRoleBreakdown = async (req, res) => {
+  try {
+    const roleBreakdown = await User.aggregate([
+      {
+        $group: {
+          _id: '$role',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const roleColors = {
+      participant: '#8B5CF6',
+      organizer: '#3B82F6',
+      mentor: '#10B981',
+      judge: '#F59E0B',
+    };
+
+    const pieData = ["participant", "organizer", "mentor", "judge"].map(role => {
+      const found = roleBreakdown.find(r => r._id === role);
+      return {
+        name: role.charAt(0).toUpperCase() + role.slice(1) + 's',
+        value: found ? found.count : 0,
+        color: roleColors[role]
+      };
+    });
+
+    res.json(pieData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -332,7 +469,10 @@ module.exports = {
   getMyOrganizationStatus,
   getUserStreakData,
   saveHackathon,
-  getMe
+  getMe,
+  getDashboardStats,
+  getMonthlyUserStats,
+  getUserRoleBreakdown,
 };
 
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
 import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard";
 import { Badge } from "../../../components/CommonUI/badge";
@@ -27,74 +28,154 @@ import {
   Cell,
 } from "recharts";
 
-const dashboardStats = [
+const initialDashboardStats = [
   {
     title: "Total Users",
-    value: "12,847",
-    change: "+12%",
+    value: "Loading...",
+    change: "+0%",
     icon: Users,
     color: "from-purple-500 to-purple-600",
     badge: "Live",
   },
   {
     title: "Active Hackathons",
-    value: "23",
-    change: "+3",
+    value: "Loading...",
+    change: "+0",
     icon: Target,
     color: "from-blue-500 to-blue-600",
     badge: "Running",
   },
   {
     title: "Total Submissions",
-    value: "1,456",
-    change: "+89",
+    value: "Loading...",
+    change: "+0",
     icon: FileText,
     color: "from-green-500 to-green-600",
     badge: "Today",
   },
   {
     title: "Mentors Online",
-    value: "127",
-    change: "+5",
+    value: "Loading...",
+    change: "+0",
     icon: UserCheck,
     color: "from-yellow-500 to-yellow-600",
     badge: "Live",
   },
   {
     title: "Revenue This Month",
-    value: "$24,890",
-    change: "+18%",
+    value: "Loading...",
+    change: "+0%",
     icon: DollarSign,
     color: "from-emerald-500 to-emerald-600",
     badge: "USD",
   },
   {
     title: "Support Tickets",
-    value: "8",
-    change: "-2",
+    value: "Loading...",
+    change: "+0",
     icon: Headphones,
     color: "from-red-500 to-red-600",
     badge: "Pending",
   },
 ];
 
-const chartData = [
-  { month: "Jan", hackathons: 12 },
-  { month: "Feb", hackathons: 19 },
-  { month: "Mar", hackathons: 15 },
-  { month: "Apr", hackathons: 25 },
-  { month: "May", hackathons: 22 },
-  { month: "Jun", hackathons: 30 },
-];
-
-const pieData = [
-  { name: "Participants", value: 8500, color: "#8B5CF6" },
-  { name: "Organizers", value: 2800, color: "#3B82F6" },
-  { name: "Mentors", value: 1200, color: "#10B981" },
-  { name: "Judges", value: 347, color: "#F59E0B" },
-];
-
 export function Dashboard() {
+  const [dashboardStats, setDashboardStats] = useState(initialDashboardStats);
+  const [chartData, setChartData] = useState([
+    { month: "Jan", hackathons: 0 },
+    { month: "Feb", hackathons: 0 },
+    { month: "Mar", hackathons: 0 },
+    { month: "Apr", hackathons: 0 },
+    { month: "May", hackathons: 0 },
+    { month: "Jun", hackathons: 0 },
+  ]);
+  const [pieData, setPieData] = useState([
+    { name: "Participants", value: 0, color: "#8B5CF6" },
+    { name: "Organizers", value: 0, color: "#3B82F6" },
+    { name: "Mentors", value: 0, color: "#10B981" },
+    { name: "Judges", value: 0, color: "#F59E0B" },
+  ]);
+
+  useEffect(() => {
+    fetchStats();
+    fetchCharts();
+  }, []);
+
+  const fetchStats = async () => {
+    let totalUsers = "N/A";
+    let activeHackathons = "N/A";
+    try {
+      // Fetch total users
+      const userStatsResponse = await fetch('/api/users/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (userStatsResponse.ok) {
+        const userStats = await userStatsResponse.json();
+        totalUsers = userStats.totalUsers?.toLocaleString() || "N/A";
+      }
+    } catch (e) {
+      totalUsers = "N/A";
+    }
+    try {
+      // Fetch active hackathons
+      const hackathonStatsResponse = await fetch('/api/hackathons/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (hackathonStatsResponse.ok) {
+        const hackathonStats = await hackathonStatsResponse.json();
+        activeHackathons = hackathonStats.activeHackathons?.toString() || "N/A";
+      }
+    } catch (e) {
+      activeHackathons = "N/A";
+    }
+    setDashboardStats(prev => prev.map((stat, idx) => {
+      if (idx === 0) return { ...stat, value: totalUsers };
+      if (idx === 1) return { ...stat, value: activeHackathons };
+      return stat;
+    }));
+  };
+
+  const fetchCharts = async () => {
+    try {
+      // Fetch line chart data
+      const lineRes = await fetch('/api/hackathons/admin/monthly-stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (lineRes.ok) {
+        const lineData = await lineRes.json();
+        setChartData(lineData);
+      }
+    } catch (e) {
+      // leave as default
+    }
+    try {
+      // Fetch user role breakdown for pie chart
+      const pieRes = await fetch('/api/users/admin/role-breakdown', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (pieRes.ok) {
+        const pieDataRaw = await pieRes.json();
+        // Always show all roles in the same order
+        const roleOrder = ["Participants", "Organizers", "Mentors", "Judges"];
+        const pieDataFull = roleOrder.map(role => {
+          const found = pieDataRaw.find(p => p.name === role);
+          return found || { name: role, value: 0, color: pieData.find(p => p.name === role)?.color || "#ccc" };
+        });
+        setPieData(pieDataFull);
+      }
+    } catch (e) {
+      // leave as default
+    }
+  };
+
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
       <div className="flex items-center justify-between">

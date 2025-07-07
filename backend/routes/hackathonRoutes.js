@@ -29,6 +29,11 @@ router.patch('/:id/approval', protect, isAdmin, updateApprovalStatus);
 // ✅ Admin-only route to get all hackathons regardless of approval status
 router.get('/all', protect, isAdmin, getAllHackathonsRaw);
 
+// ✅ Admin Dashboard Routes
+router.get('/admin/stats', protect, isAdmin, require('../controllers/hackathonController').getHackathonStats);
+router.get('/admin/monthly-stats', protect, isAdmin, require('../controllers/hackathonController').getMonthlyHackathonStats);
+router.get('/admin/status-breakdown', protect, isAdmin, require('../controllers/hackathonController').getHackathonStatusBreakdown);
+
 // Organizer-only route: get hackathons created by logged-in organizer
 router.get('/my', protect, getMyHackathons); 
 

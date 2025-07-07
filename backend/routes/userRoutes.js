@@ -132,4 +132,9 @@ router.get('/me/saved-hackathons', protect, async (req, res) => {
   }
 });
 
+// ✅ Admin Dashboard Routes
+router.get('/admin/stats', protect, isAdmin, userController.getDashboardStats);
+router.get('/admin/monthly-stats', protect, isAdmin, userController.getMonthlyUserStats);
+router.get('/admin/role-breakdown', protect, isAdmin, userController.getUserRoleBreakdown);
+
 module.exports = router;

@@ -264,7 +264,7 @@ exports.deleteHackathon = async (req, res) => {
     }
 
     await Hackathon.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Hackathon deleted' });
+    res.json({ message: 'Hackathon deleted successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Error deleting hackathon' });
   }
@@ -325,5 +325,144 @@ exports.getAllHackathons = async (req, res) => {
     res.status(200).json(enriched);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// ✅ Admin Dashboard Hackathon Statistics
+exports.getHackathonStats = async (req, res) => {
+  try {
+    // Get total hackathons count
+    const totalHackathons = await Hackathon.countDocuments();
+    
+    // Get active hackathons (registration open)
+    const now = new Date();
+    const activeHackathons = await Hackathon.countDocuments({
+      registrationDeadline: { $gte: now },
+      approvalStatus: 'approved'
+    });
+
+    // Get approved hackathons
+    const approvedHackathons = await Hackathon.countDocuments({
+      approvalStatus: 'approved'
+    });
+
+    // Get pending hackathons
+    const pendingHackathons = await Hackathon.countDocuments({
+      approvalStatus: 'pending'
+    });
+
+    // Get total participants across all hackathons
+    const totalParticipants = await Hackathon.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalParticipants: { $sum: { $size: '$participants' } }
+        }
+      }
+    ]);
+
+    // Get hackathons created this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const hackathonsThisMonth = await Hackathon.countDocuments({
+      createdAt: { $gte: startOfMonth }
+    });
+
+    // Calculate percentage change from last month
+    const startOfLastMonth = new Date();
+    startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
+    startOfLastMonth.setDate(1);
+    startOfLastMonth.setHours(0, 0, 0, 0);
+    const endOfLastMonth = new Date();
+    endOfLastMonth.setDate(1);
+    endOfLastMonth.setHours(0, 0, 0, 0);
+    const hackathonsLastMonth = await Hackathon.countDocuments({
+      createdAt: { $gte: startOfLastMonth, $lt: endOfLastMonth }
+    });
+
+    const hackathonGrowthPercentage = hackathonsLastMonth > 0 
+      ? ((hackathonsThisMonth - hackathonsLastMonth) / hackathonsLastMonth * 100).toFixed(1)
+      : hackathonsThisMonth > 0 ? 100 : 0;
+
+    res.json({
+      totalHackathons,
+      activeHackathons,
+      approvedHackathons,
+      pendingHackathons,
+      totalParticipants: totalParticipants[0]?.totalParticipants || 0,
+      hackathonsThisMonth,
+      hackathonGrowthPercentage: hackathonGrowthPercentage > 0 ? `+${hackathonGrowthPercentage}%` : `${hackathonGrowthPercentage}%`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Get monthly hackathon creation data for charts
+exports.getMonthlyHackathonStats = async (req, res) => {
+  try {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const monthlyStats = await Hackathon.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sixMonthsAgo }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: '$createdAt' },
+            month: { $month: '$createdAt' }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1 }
+      }
+    ]);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const chartData = monthlyStats.map(stat => ({
+      month: monthNames[stat._id.month - 1],
+      hackathons: stat.count
+    }));
+
+    res.json(chartData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Get hackathon status breakdown for pie chart
+exports.getHackathonStatusBreakdown = async (req, res) => {
+  try {
+    const statusBreakdown = await Hackathon.aggregate([
+      {
+        $group: {
+          _id: '$approvalStatus',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const statusColors = {
+      approved: '#10B981',
+      pending: '#F59E0B',
+      rejected: '#EF4444'
+    };
+
+    const pieData = statusBreakdown.map(item => ({
+      name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+      value: item.count,
+      color: statusColors[item._id] || '#6B7280'
+    }));
+
+    res.json(pieData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };

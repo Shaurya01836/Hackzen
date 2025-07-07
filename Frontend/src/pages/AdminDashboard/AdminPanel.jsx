@@ -43,7 +43,6 @@ import { UsersManagement } from "./sections/users-management";
 import { HackathonsPage } from "./sections/hackathons-page";
 import { AnnouncementsPanel } from "./sections/announcements-panel";
 import { SubmissionsPage } from "./sections/submissions-page";
-import { MentorChatPage } from "./sections/mentor-chat-page";
 import { OrganizerRequestsPage } from "./sections/organizer-requests-V1";
 import { HackathonRequest } from "./sections/HackathonRequest";
 import { AnalyticsPage } from "./sections/analytics-page";
@@ -121,12 +120,6 @@ export default function AdminPanel() {
   ];
 
   const moderationMenuItems = [
-    {
-      title: "Mentor Chat",
-      icon: HeadphonesIcon,
-      key: "mentors",
-      onClick: () => setActiveSection("mentors"),
-    },
     {
       title: "Organizer Requests",
       icon: UserCheck,
