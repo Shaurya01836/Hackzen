@@ -25,10 +25,12 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ Add this
 import axios from "axios";
 
 export function MySubmissions() {
   const [projects, setProjects] = useState([]);
+  const navigate = useNavigate(); // ✅ Add this
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -54,7 +56,8 @@ export function MySubmissions() {
     return (
       <ACard
         key={submission._id}
-        className="w-full max-w-xs flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100"
+        onClick={() => navigate(`/dashboard/project-archive/${submission._id}`)} // ✅ Add this
+        className="w-full max-w-xs flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100 cursor-pointer"
       >
         {/* Banner / Logo */}
         <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
@@ -69,7 +72,7 @@ export function MySubmissions() {
           {/* Status Badge */}
           <div className="absolute top-2 right-2">
             <Badge
-              variant={submission.scores?.length > 0 ? "deafault" : "outline"}
+              variant={submission.scores?.length > 0 ? "default" : "outline"}
               className="font-semibold shadow"
             >
               {submission.scores?.length > 0 ? "Judged" : "Submitted"}
@@ -79,11 +82,9 @@ export function MySubmissions() {
 
         {/* Content */}
         <div className="p-4 flex flex-col gap-2 flex-1">
-          {/* Title */}
           <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2">
             {submission.title}
           </h3>
-          {/* One-line intro */}
           <p className="text-sm text-gray-600 mb-1 line-clamp-2">
             {submission.oneLineIntro || "No summary available"}
           </p>

@@ -19,13 +19,17 @@ import {
   SelectItem,
   SelectValue,
 } from "../../../components/CommonUI/select";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 export function ProjectArchive() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+const location = useLocation();
+const urlProjectId = location.pathname.match(/project-archive\/(\w+)/)?.[1] || null;
 
   const categories = [
     "all",
@@ -41,21 +45,28 @@ export function ProjectArchive() {
     "Other",
   ];
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/projects");
-        const data = await res.json();
-        setProjects(data);
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/projects");
+      const data = await res.json();
+      setProjects(data);
 
-    fetchProjects();
-  }, []);
+      // If user opened a direct project link, match by ID
+      if (urlProjectId) {
+        const matched = data.find((p) => p._id === urlProjectId);
+        if (matched) setSelectedProject(matched);
+      }
+    } catch (err) {
+      console.error("Failed to fetch projects:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProjects();
+}, [urlProjectId]);
+
 
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
@@ -63,20 +74,22 @@ export function ProjectArchive() {
       project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.skills?.some((tech) =>
         tech.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-
+    );
+    
     const matchesCategory =
-      selectedCategory === "all" || project.category === selectedCategory;
-
+    selectedCategory === "all" || project.category === selectedCategory;
+    
     const isSubmitted = project.status === "submitted";
-
+    
     return matchesSearch && matchesCategory && isSubmitted;
   });
-
+  
   const handleProjectClick = (project) => {
     setSelectedProject(project);
+navigate(`/dashboard/project-archive/${project._id}`);
   };
-
+  
+  
   const handleBackToProjects = () => {
     setSelectedProject(null);
   };
