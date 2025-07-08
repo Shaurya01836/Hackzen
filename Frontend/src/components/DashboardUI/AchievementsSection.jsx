@@ -35,107 +35,107 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
   const [showNotification, setShowNotification] = useState(false);
   const [currentBadge, setCurrentBadge] = useState(null);
 
-  // Fallback badge data if API fails (10 badges)
+  // Fallback badge data for participants (10 badges, exact order and names)
   const fallbackBadges = [
     {
       _id: '1',
-      name: 'First Victory',
+      name: 'Member of HackZen',
+      description: 'Welcome to HackZen! You joined the platform.',
+      type: 'member',
+      rarity: 'common',
+      criteria: 'Join HackZen',
+      iconUrl: '/badges/member.svg',
+      isUnlocked: !!user?._id
+    },
+    {
+      _id: '2',
+      name: 'First Submission',
+      description: 'Submit your first project.',
+      type: 'first-submission',
+      rarity: 'common',
+      criteria: 'Submit 1 project',
+      iconUrl: '/badges/first-submission.svg',
+      isUnlocked: user?.projects?.length >= 1
+    },
+    {
+      _id: '3',
+      name: 'Early Bird',
+      description: 'Register for a hackathon within 24 hours of its announcement.',
+      type: 'early-bird',
+      rarity: 'uncommon',
+      criteria: 'Register within 24h',
+      iconUrl: '/badges/early-bird.svg',
+      isUnlocked: false // TODO: implement logic if available
+    },
+    {
+      _id: '4',
+      name: 'Win 1 Hackathon',
       description: 'Win your first hackathon',
       type: 'first-win',
       rarity: 'common',
       criteria: 'Win 1 hackathon',
       iconUrl: '/badges/first-win.svg',
-      isUnlocked: false
+      isUnlocked: false // TODO: implement logic if available
     },
     {
-      _id: '2',
-      name: 'Streak Master',
+      _id: '5',
+      name: '7 Day Streak',
       description: 'Maintain a 7-day activity streak',
       type: 'streak-master',
       rarity: 'uncommon',
       criteria: '7-day streak',
       iconUrl: '/badges/streak.svg',
-      isUnlocked: false
+      isUnlocked: false // TODO: implement logic if available
     },
     {
-      _id: '3',
-      name: 'Team Player',
+      _id: '6',
+      name: 'Join 5 Different Teams',
       description: 'Join 5 different teams',
       type: 'team-player',
       rarity: 'rare',
       criteria: 'Join 5 teams',
       iconUrl: '/badges/team.svg',
-      isUnlocked: false
+      isUnlocked: false // TODO: implement logic if available
     },
     {
-      _id: '4',
-      name: 'Code Wizard',
+      _id: '7',
+      name: 'Submit 10 Projects',
       description: 'Submit 10 projects',
       type: 'code-wizard',
       rarity: 'epic',
       criteria: 'Submit 10 projects',
       iconUrl: '/badges/code.svg',
-      isUnlocked: false
+      isUnlocked: user?.projects?.length >= 10
     },
     {
-      _id: '5',
-      name: 'Mentor',
-      description: 'Help other participants as a mentor',
-      type: 'mentor',
-      rarity: 'legendary',
-      criteria: 'Become a mentor',
-      iconUrl: '/badges/mentor.svg',
-      isUnlocked: user?.role === 'mentor'
-    },
-    {
-      _id: '6',
-      name: 'Organizer',
-      description: 'Organize a successful hackathon',
-      type: 'organizer',
-      rarity: 'epic',
-      criteria: 'Organize 1 hackathon',
-      iconUrl: '/badges/organizer.svg',
-      isUnlocked: user?.role === 'organizer'
-    },
-    {
-      _id: '7',
-      name: 'Hackathon Veteran',
+      _id: '8',
+      name: 'Join 10 Hackathons',
       description: 'Participate in 10 hackathons',
       type: 'hackathon-veteran',
       rarity: 'rare',
       criteria: 'Join 10 hackathons',
       iconUrl: '/badges/veteran.svg',
-      isUnlocked: false
+      isUnlocked: user?.registeredHackathonIds?.length >= 10
     },
     {
-      _id: '8',
-      name: 'Innovation Leader',
+      _id: '9',
+      name: 'Win 3 Hackathons',
       description: 'Win 3 hackathons',
       type: 'innovation-leader',
       rarity: 'legendary',
       criteria: 'Win 3 hackathons',
       iconUrl: '/badges/innovation.svg',
-      isUnlocked: false
-    },
-    {
-      _id: '9',
-      name: 'Early Adopter',
-      description: 'Join the platform in its early days',
-      type: 'early-adopter',
-      rarity: 'rare',
-      criteria: 'Join within first month',
-      iconUrl: '/badges/early.svg',
-      isUnlocked: true // Most users will have this
+      isUnlocked: false // TODO: implement logic if available
     },
     {
       _id: '10',
-      name: 'Problem Solver',
-      description: 'Submit projects in 5 different categories',
-      type: 'problem-solver',
-      rarity: 'rare',
-      criteria: '5 different categories',
-      iconUrl: '/badges/solver.svg',
-      isUnlocked: false
+      name: 'Active Participant',
+      description: 'Participate in 3 hackathons',
+      type: 'active-participant',
+      rarity: 'common',
+      criteria: 'Join 3 hackathons',
+      iconUrl: '/badges/active.svg',
+      isUnlocked: user?.registeredHackathonIds?.length >= 3
     }
   ];
 
@@ -159,8 +159,23 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
     getAchievementStreak
   } = useAchievements(user?._id);
 
-  // Use fallback data if API fails or returns empty
-  const badges = apiBadges && apiBadges.length > 0 ? apiBadges : fallbackBadges;
+  // Merge backend badges with fallbackBadges for participants
+  let mergedBadges = fallbackBadges;
+  if (user?.role === 'participant' && apiBadges && apiBadges.length > 0) {
+    // Create a map of backend badges by type
+    const backendBadgeMap = Object.fromEntries(apiBadges.map(b => [b.type, b]));
+    // Merge: for each fallback badge, use backend if present, else fallback
+    mergedBadges = fallbackBadges.map(fb => {
+      if (backendBadgeMap[fb.type]) {
+        return { ...fb, ...backendBadgeMap[fb.type] };
+      }
+      return fb;
+    });
+  } else if (apiBadges && apiBadges.length > 0) {
+    mergedBadges = apiBadges;
+  }
+  const badges = mergedBadges;
+
   const progress = apiProgress && apiProgress.totalCount > 0 ? apiProgress : {
     unlockedCount: badges.filter(b => b.isUnlocked).length,
     totalCount: badges.length,
@@ -200,7 +215,7 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
   const totalCount = progress.totalCount;
   const progressPercentage = progress.progressPercentage;
 
-  const filteredBadges = badges.filter(badge => {
+  const filteredBadgesForDisplay = badges.filter(badge => {
     const matchesSearch = badge.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          badge.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRarity = filterRarity === 'all' || badge.rarity === filterRarity;
@@ -209,7 +224,7 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
     return matchesSearch && matchesRarity && matchesCategory;
   });
 
-  const sortedBadges = [...filteredBadges].sort((a, b) => {
+  const sortedBadges = [...filteredBadgesForDisplay].sort((a, b) => {
     switch (sortBy) {
       case 'recent':
         return (b.unlockedAt || 0) - (a.unlockedAt || 0);
@@ -247,231 +262,57 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
     );
   }
 
+  // Remove progress summary card and search/check controls
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-yellow-600" />
-            Achievements & Badges
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">{unlockedCount}</div>
-              <div className="text-sm text-gray-600">Unlocked</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">{totalCount}</div>
-              <div className="text-sm text-gray-600">Total</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {Math.round(progressPercentage)}%
-              </div>
-              <div className="text-sm text-gray-600">Progress</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {Object.keys(progress.rarityStats).length}
-              </div>
-              <div className="text-sm text-gray-600">Rarities</div>
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progress</span>
-              <span>{unlockedCount}/{totalCount}</span>
-            </div>
-            <Progress value={progressPercentage} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Rarity Breakdown */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Rarity Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {['common', 'uncommon', 'rare', 'epic', 'legendary'].map(rarity => (
-              <div key={rarity} className="text-center">
-                <div className={`w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                  rarity === 'common' ? 'bg-gray-100' :
-                  rarity === 'uncommon' ? 'bg-green-100' :
-                  rarity === 'rare' ? 'bg-blue-100' :
-                  rarity === 'epic' ? 'bg-purple-100' :
-                  'bg-yellow-100'
-                }`}>
-                  <Star className={`w-6 h-6 ${
-                    rarity === 'common' ? 'text-gray-600' :
-                    rarity === 'uncommon' ? 'text-green-600' :
-                    rarity === 'rare' ? 'text-blue-600' :
-                    rarity === 'epic' ? 'text-purple-600' :
-                    'text-yellow-600'
-                  }`} />
-                </div>
-                <div className="text-sm font-medium capitalize">{rarity}</div>
-                <div className="text-xs text-gray-600">{progress.rarityStats[rarity] || 0}</div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Filters and Controls */}
-      <Card>
-        <CardContent className="pt-8">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-2 flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  placeholder="Search badges..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-full sm:w-64"
-                />
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={checkForNewBadges}
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Check
-              </Button>
-              
-              <Select value={filterRarity} onValueChange={setFilterRarity}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <SelectValue placeholder="Rarity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Rarities</SelectItem>
-                  <SelectItem value="common">Common</SelectItem>
-                  <SelectItem value="uncommon">Uncommon</SelectItem>
-                  <SelectItem value="rare">Rare</SelectItem>
-                  <SelectItem value="epic">Epic</SelectItem>
-                  <SelectItem value="legendary">Legendary</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="first-win">First Win</SelectItem>
-                  <SelectItem value="streak-master">Streak</SelectItem>
-                  <SelectItem value="team-player">Team</SelectItem>
-                  <SelectItem value="code-wizard">Code</SelectItem>
-                  <SelectItem value="mentor">Mentor</SelectItem>
-                  <SelectItem value="organizer">Organizer</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Recent</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="rarity">Rarity</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2">
-              <Button
-                variant={viewMode === 'grid' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-              >
-                <Grid className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-       
-
       {/* Badges Display */}
       <Tabs defaultValue="all" className="w-full pt-8">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">All Badges ({filteredBadges.length})</TabsTrigger>
-          <TabsTrigger value="unlocked">Unlocked ({unlockedCount})</TabsTrigger>
-          <TabsTrigger value="locked">Locked ({filteredBadges.length - unlockedCount})</TabsTrigger>
+          <TabsTrigger value="all">All Badges ({badges.length})</TabsTrigger>
+          <TabsTrigger value="unlocked">Unlocked ({badges.filter(b => b.isUnlocked).length})</TabsTrigger>
+          <TabsTrigger value="locked">Locked ({badges.filter(b => !b.isUnlocked).length})</TabsTrigger>
         </TabsList>
-
         <TabsContent value="all" className="mt-6">
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-            : 'space-y-4'
-          }>
-            {sortedBadges.map(badge => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {badges.map(badge => (
               <AchievementBadge
                 key={badge._id}
                 badge={badge}
                 isUnlocked={badge.isUnlocked}
-                showDetails={viewMode === 'list'}
+                showDetails={false}
                 onShare={handleBadgeShareFromBadge}
               />
             ))}
           </div>
         </TabsContent>
-
         <TabsContent value="unlocked" className="mt-6">
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-            : 'space-y-4'
-          }>
-            {sortedBadges.filter(badge => badge.isUnlocked).map(badge => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {badges.filter(badge => badge.isUnlocked).map(badge => (
               <AchievementBadge
                 key={badge._id}
                 badge={badge}
                 isUnlocked={true}
-                showDetails={viewMode === 'list'}
+                showDetails={false}
                 onShare={handleBadgeShareFromBadge}
               />
             ))}
           </div>
         </TabsContent>
-
         <TabsContent value="locked" className="mt-6">
-          <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
-            : 'space-y-4'
-          }>
-            {sortedBadges.filter(badge => !badge.isUnlocked).map(badge => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {badges.filter(badge => !badge.isUnlocked).map(badge => (
               <AchievementBadge
                 key={badge._id}
                 badge={badge}
                 isUnlocked={false}
-                showDetails={viewMode === 'list'}
+                showDetails={false}
               />
             ))}
           </div>
         </TabsContent>
       </Tabs>
-       </CardContent>
-      </Card>
-
       {/* Empty State */}
-      {filteredBadges.length === 0 && (
+      {filteredBadgesForDisplay.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Target className="w-12 h-12 text-gray-400 mb-4" />
@@ -482,7 +323,6 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
           </CardContent>
         </Card>
       )}
-
       {/* Badge Notification */}
       {currentBadge && (
         <BadgeNotification

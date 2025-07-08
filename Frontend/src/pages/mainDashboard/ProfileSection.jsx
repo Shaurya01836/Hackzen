@@ -521,7 +521,7 @@ export function ProfileSection() {
           <CardContent className="pt-5 text-center">
             <Trophy className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">
-              {totalHackathons}
+              {user?.registeredHackathonIds?.length || 0}
             </p>
             <p className="text-sm text-gray-600">Hackathons</p>
           </CardContent>
@@ -529,22 +529,22 @@ export function ProfileSection() {
         <Card>
           <CardContent className="pt-5 text-center">
             <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">{totalWins}</p>
+            <p className="text-2xl font-bold text-green-600">0</p>
             <p className="text-sm text-gray-600">Wins</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5 text-center">
             <Star className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-yellow-600">{totalBadges}</p>
+            <p className="text-2xl font-bold text-yellow-600">{user?.badges?.length || 0}</p>
             <p className="text-sm text-gray-600">Badges</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-5 text-center">
-            <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-purple-600">#{currentRank}</p>
-            <p className="text-sm text-gray-600">Global Rank</p>
+            <Save className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-purple-600">{user?.projects?.length || 0}</p>
+            <p className="text-sm text-gray-600">Projects Submitted</p>
           </CardContent>
         </Card>
       </div>
