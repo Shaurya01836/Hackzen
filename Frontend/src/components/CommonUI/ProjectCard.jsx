@@ -9,7 +9,7 @@ export function ProjectCard({ project }) {
     project.logo?.url || project.images?.[0] || "/placeholder.svg?height=200&width=400";
 
   return (
-    <Link to={`/projects/${project._id}`}>
+    <Link to={`/dashboard/project-archive/${project._id}`}>
       <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
         <div className="relative h-36 overflow-hidden rounded-t-xl">
           <img

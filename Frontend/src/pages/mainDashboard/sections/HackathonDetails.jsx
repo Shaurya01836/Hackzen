@@ -13,6 +13,7 @@ import TeamManagementSection from "./components/Hackathon/TeamManagementSection"
 import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
+import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 
 export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const { user } = useAuth();
@@ -25,13 +26,15 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  const sections = [
-    { id: "overview", label: "Overview & Requirements" },
-    { id: "problems", label: "Problem Statements" },
-    { id: "timeline", label: "Timeline" },
-    { id: "team", label: "Team Management" },
-    { id: "community", label: "Community" },
-  ];
+const sections = [
+  { id: "overview", label: "Overview & Requirements" },
+  { id: "problems", label: "Problem Statements" },
+  { id: "timeline", label: "Timeline" },
+  { id: "team", label: "Team Management" },
+  { id: "community", label: "Community" },
+  { id: "projects", label: "Projects Gallery" }, // ✅ NEW
+];
+
 
   useEffect(() => {
     const fetchSavedHackathons = async () => {
@@ -156,6 +159,10 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
             />
           )}
           {activeTab === "community" && <HackathonCommunity />}
+          {activeTab === "projects" && (
+  <HackathonProjectsGallery hackathonId={hackathon._id} />
+)}
+
         </div>
       </main>
     </div>

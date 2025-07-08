@@ -192,3 +192,20 @@ exports.assignHackathonToProject = async (req, res) => {
     res.status(500).json({ message: "Error assigning hackathon", error: error.message });
   }
 };
+exports.getProjectsByHackathon = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+
+    const projects = await Project.find({
+      hackathon: hackathonId,
+      status: "submitted", // ✅ Only show submitted projects
+    })
+      .populate("submittedBy", "username avatar") // optional
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json(projects);
+  } catch (err) {
+    console.error("Error fetching projects for hackathon:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
