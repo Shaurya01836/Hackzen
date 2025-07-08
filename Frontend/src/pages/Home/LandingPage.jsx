@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "../../components/layout/Navbar";
 import Header from "../../components/layout/Header";
 import LogoCloud from "../../components/sections/LogoCloud";
@@ -9,6 +9,7 @@ import Footer from "../../components/layout/Footer";
 import MilestoneStats from "../../components/sections/MilestoneStats";
 import JoinCommunity from "../../components/sections/JoinCommunity";
 import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
+import { useAuth } from "../../context/AuthContext";
 
 function LandingPage() {
   return (
@@ -16,7 +17,6 @@ function LandingPage() {
       <Navbar />
 
       <section className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 ">
-        <SmoothCursor />
         <Header />
         <LogoCloud />
 

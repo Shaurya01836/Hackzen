@@ -54,7 +54,6 @@ import { SupportInboxPage } from "./sections/support-inbox-page";
 import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
 import { PendingChangesPage } from "./sections/pending-changes-page";
-import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 import AddCertificateForm from "./sections/AddCertificateForm";
 
 export default function AdminPanel() {
@@ -234,7 +233,6 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <SmoothCursor />
       <SidebarProvider>
         <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
           <SidebarHeader className="p-4">

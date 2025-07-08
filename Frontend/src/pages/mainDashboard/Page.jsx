@@ -1,12 +1,12 @@
 "use client";
 
+import { useState, useEffect } from "react"
+import { useAuth } from "../../context/AuthContext"
 import HackZenDashboard from "./Dashbord";
-import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 
 export default function Page() {
   return (
     <>
-      <SmoothCursor />
       <HackZenDashboard />
     </>
   );

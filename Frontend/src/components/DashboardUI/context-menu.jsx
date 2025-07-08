@@ -25,7 +25,7 @@ export default function DemoContextMenu() {
     <div className="flex h-screen items-center justify-center bg-gray-100">
       <ContextMenu>
         <ContextMenuTrigger>
-          <div className="p-6 bg-white rounded-lg shadow-md cursor-none select-none border border-gray-200 hover:shadow-lg transition">
+          <div className="p-6 bg-white rounded-lg shadow-md cursor-pointer select-none border border-gray-200 hover:shadow-lg transition">
             Right click (or long press) here
           </div>
         </ContextMenuTrigger>
@@ -37,7 +37,7 @@ export default function DemoContextMenu() {
 
           <ContextMenuItem
             onSelect={() => alert("New File")}
-            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
           >
             New File
             <ContextMenuShortcut>⌘N</ContextMenuShortcut>
@@ -45,7 +45,7 @@ export default function DemoContextMenu() {
 
           <ContextMenuItem
             onSelect={() => alert("Save")}
-            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
           >
             Save As...
             <ContextMenuShortcut>⌘S</ContextMenuShortcut>
@@ -56,7 +56,7 @@ export default function DemoContextMenu() {
           <ContextMenuCheckboxItem
             checked={checked}
             onCheckedChange={(checked) => setChecked(checked)}
-            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+            className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
           >
             Show Hidden Files
           </ContextMenuCheckboxItem>
@@ -73,19 +73,19 @@ export default function DemoContextMenu() {
           >
             <ContextMenuRadioItem
               value="apple"
-              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
             >
               Apple
             </ContextMenuRadioItem>
             <ContextMenuRadioItem
               value="banana"
-              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
             >
               Banana
             </ContextMenuRadioItem>
             <ContextMenuRadioItem
               value="orange"
-              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+              className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
             >
               Orange
             </ContextMenuRadioItem>
@@ -94,19 +94,19 @@ export default function DemoContextMenu() {
           <ContextMenuSeparator className="my-1 border-t border-gray-100" />
 
           <ContextMenuSub>
-            <ContextMenuSubTrigger inset className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none">
+            <ContextMenuSubTrigger inset className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer">
               More Options
             </ContextMenuSubTrigger>
             <ContextMenuSubContent className="bg-white border border-gray-200 shadow-md rounded-md">
               <ContextMenuItem
                 onSelect={() => alert("Settings")}
-                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
               >
                 Settings
               </ContextMenuItem>
               <ContextMenuItem
                 onSelect={() => alert("Help")}
-                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-none"
+                className="hover:bg-gray-100 px-2 py-2 rounded-md cursor-pointer"
               >
                 Help
               </ContextMenuItem>

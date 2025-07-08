@@ -7,7 +7,6 @@ import {
 } from "../../components/CommonUI/card";
 import React from "react";
 import Navbar from "../../components/layout/Navbar";
-import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 
 const team = [
   {
@@ -43,7 +42,6 @@ const team = [
 export default function TeamCards() {
   return (
     <>
-      <SmoothCursor />
       <Navbar />
       <div className="min-h-screen px-6 py-12 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-100 text-gray-800">
         <div className="max-w-5xl mx-auto">
