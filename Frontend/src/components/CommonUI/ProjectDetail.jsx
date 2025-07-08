@@ -100,6 +100,15 @@ export function ProjectDetail({ project, onBack }) {
       console.error("Failed to fetch user teams:", error);
     }
   };
+const getEmbeddableVideoLink = (url) => {
+  const match = url.match(
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w\-]+)/
+  );
+  if (match && match[1]) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return url; // fallback (e.g., Cloudinary video link)
+};
 
   const fetchProjectTeams = async () => {
     try {
@@ -466,22 +475,33 @@ export function ProjectDetail({ project, onBack }) {
                       <Play className="w-5 h-5" /> Videos
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-900">
-                      {project.videoLink ? (
-                        <iframe
-                          src={project.videoLink}
-                          title="Demo Video"
-                          className="w-full h-full"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white">
-                          <Play className="w-16 h-16" />
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
+               <CardContent>
+  <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-900">
+    {project.videoLink ? (
+      project.videoLink.includes("youtube.com") ||
+      project.videoLink.includes("youtu.be") ? (
+        <iframe
+          src={getEmbeddableVideoLink(project.videoLink)}
+          title="Demo Video"
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      ) : (
+        <video
+          src={project.videoLink}
+          controls
+          className="w-full h-full object-cover"
+        />
+      )
+    ) : (
+      <div className="w-full h-full flex items-center justify-center text-white">
+        <Play className="w-16 h-16" />
+      </div>
+    )}
+  </div>
+</CardContent>
+
                 </Card>
                 {project.description && (
                   <div

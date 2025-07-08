@@ -61,32 +61,44 @@ exports.createProject = async (req, res) => {
 
 
 // Get all projects
+// Get all projects
 exports.getAllProjects = async (req, res) => {
   try {
-    const projects = await Project.find().populate("submittedBy hackathon team");
+    const projects = await Project.find()
+      .populate("submittedBy", "name profileImage role") // 👈 key line
+      .populate("hackathon", "title")
+      .sort({ createdAt: -1 });
+
     res.json(projects);
   } catch (error) {
     res.status(500).json({ message: "Error fetching projects", error: error.message });
   }
 };
 
+
 // Get my projects
 exports.getMyProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ submittedBy: req.user._id }).populate("hackathon");
-    res.json(projects);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching your projects", error: error.message });
+    const projects = await Project.find({ submittedBy: req.user._id })
+      .populate("submittedBy", "name profileImage role") // ✅ this is the fix
+      .populate("hackathon", "title"); // if you want hackathon title also
+
+    res.status(200).json(projects);
+  } catch (err) {
+    console.error("Error fetching user projects:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // Get projects by hackathon
 exports.getProjectsByHackathon = async (req, res) => {
   try {
-    const projects = await Project.find({ hackathon: req.params.hackathonId }).populate("submittedBy");
+    const projects = await Project.find({ hackathon: req.params.hackathonId, status: "submitted" })
+      .populate("submittedBy", "name profileImage role"); // ✅ Add this
     res.json(projects);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching projects for hackathon", error: error.message });
+  } catch (err) {
+    console.error("Error fetching projects:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -198,9 +210,9 @@ exports.getProjectsByHackathon = async (req, res) => {
 
     const projects = await Project.find({
       hackathon: hackathonId,
-      status: "submitted", // ✅ Only show submitted projects
+      status: "submitted",
     })
-      .populate("submittedBy", "username avatar") // optional
+      .populate("submittedBy", "name profileImage role") // ✅ FIXED LINE
       .sort({ updatedAt: -1 });
 
     res.status(200).json(projects);

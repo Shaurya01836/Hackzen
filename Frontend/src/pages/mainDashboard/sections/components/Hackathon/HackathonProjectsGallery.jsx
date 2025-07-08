@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Card, CardContent } from "../../../../../components/CommonUI/card";
 import { Skeleton } from "../../../../../components/DashboardUI/skeleton";
+import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path as needed
 
 export default function HackathonProjectsGallery({ hackathonId }) {
   const [projects, setProjects] = useState([]);
@@ -50,27 +51,7 @@ export default function HackathonProjectsGallery({ hackathonId }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
-        <Card
-          key={project._id}
-          onClick={() => navigate(`/dashboard/project-archive/${project._id}`)}
-          className="hover:shadow-lg border border-gray-200 transition cursor-pointer"
-        >
-          <div className="h-40 bg-muted">
-            <img
-              src={project.logo?.url || "/placeholder-image.png"}
-              alt={project.title}
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <CardContent className="p-4">
-            <h3 className="text-lg font-semibold text-indigo-700">
-              {project.title}
-            </h3>
-            <p className="text-sm text-gray-500">
-              {project.oneLineIntro || "No description."}
-            </p>
-          </CardContent>
-        </Card>
+        <ProjectCard key={project._id} project={project} />
       ))}
     </div>
   );

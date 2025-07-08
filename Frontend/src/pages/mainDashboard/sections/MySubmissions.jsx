@@ -1,36 +1,25 @@
 "use client";
 
 import {
-  ArrowLeft,
   FileText,
-  Github,
-  Youtube,
   Award,
-  ExternalLink,
   Upload,
+  Search,
+  Code,
 } from "lucide-react";
 import {
   ACard,
   ACardContent,
-  ACardDescription,
-  ACardHeader,
-  ACardTitle,
 } from "../../../components/DashboardUI/AnimatedCard";
-import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../components/CommonUI/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/CommonUI/tabs";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Add this
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
 
 export function MySubmissions() {
   const [projects, setProjects] = useState([]);
-  const navigate = useNavigate(); // ✅ Add this
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -52,46 +41,18 @@ export function MySubmissions() {
   const judgedSubmissions = projects.filter((p) => p.scores?.length > 0);
   const pendingSubmissions = projects.filter((p) => p.scores?.length === 0);
 
-  const renderSubmissionCard = (submission) => {
-    return (
-      <ACard
-        key={submission._id}
-        onClick={() => navigate(`/dashboard/project-archive/${submission._id}`)} // ✅ Add this
-        className="w-full max-w-xs flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100 cursor-pointer"
-      >
-        {/* Banner / Logo */}
-        <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
-          <img
-            src={
-              submission.logo?.url ||
-              "https://www.hackquest.io/images/layout/hackathon_cover.png"
-            }
-            alt={submission.title}
-            className="w-full h-full object-cover"
-          />
-          {/* Status Badge */}
-          <div className="absolute top-2 right-2">
-            <Badge
-              variant={submission.scores?.length > 0 ? "default" : "outline"}
-              className="font-semibold shadow"
-            >
-              {submission.scores?.length > 0 ? "Judged" : "Submitted"}
-            </Badge>
-          </div>
-        </div>
+const renderSubmissionCard = (project) => (
+  <ProjectCard
+    key={project._id}
+    project={project}
+    onClick={() => navigate(`/dashboard/project-archive/${project._id}`)}
+    showActions={true}
+    highlightAuthor={true}
+    compact={false}
+  />
+);
 
-        {/* Content */}
-        <div className="p-4 flex flex-col gap-2 flex-1">
-          <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2">
-            {submission.title}
-          </h3>
-          <p className="text-sm text-gray-600 mb-1 line-clamp-2">
-            {submission.oneLineIntro || "No summary available"}
-          </p>
-        </div>
-      </ACard>
-    );
-  };
+
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">
@@ -104,6 +65,7 @@ export function MySubmissions() {
         </div>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <ACard>
           <ACardContent className="pt-4">
@@ -142,32 +104,29 @@ export function MySubmissions() {
         </ACard>
       </div>
 
+      {/* Tabs */}
       <Tabs defaultValue="all" className="space-y-6">
         <TabsList>
           <TabsTrigger value="all">All ({projects.length})</TabsTrigger>
-          <TabsTrigger value="judged">
-            Judged ({judgedSubmissions.length})
-          </TabsTrigger>
-          <TabsTrigger value="pending">
-            Pending ({pendingSubmissions.length})
-          </TabsTrigger>
+          <TabsTrigger value="judged">Judged ({judgedSubmissions.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending ({pendingSubmissions.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="all">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects.map(renderSubmissionCard)}
           </div>
         </TabsContent>
 
-        <TabsContent value="judged" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="judged">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {judgedSubmissions.map(renderSubmissionCard)}
           </div>
         </TabsContent>
 
-        <TabsContent value="pending" className="space-y-4">
+        <TabsContent value="pending">
           {pendingSubmissions.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingSubmissions.map(renderSubmissionCard)}
             </div>
           ) : (

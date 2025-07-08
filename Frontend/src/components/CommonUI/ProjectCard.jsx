@@ -8,6 +8,8 @@ export function ProjectCard({ project }) {
   const coverImage =
     project.logo?.url || project.images?.[0] || "/placeholder.svg?height=200&width=400";
 
+  const author = project.submittedBy || {}; // fallback in case it's not populated
+
   return (
     <Link to={`/dashboard/project-archive/${project._id}`}>
       <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
@@ -20,44 +22,30 @@ export function ProjectCard({ project }) {
         </div>
 
         <CardContent className="p-4 space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-gray-500">
-              {project.hackathon?.title || "Untitled Hackathon"}
-            </span>
-          </div>
+      
 
           <h3 className="font-semibold text-sm line-clamp-2 text-gray-900 group-hover:text-indigo-600">
             {project.title}
           </h3>
 
-          <div className="flex flex-wrap gap-1">
-            {(project.technologies || []).slice(0, 3).map((tech) => (
-              <Badge
-                key={tech}
-                variant="outline"
-                className="text-[10px] px-1.5 py-0.5"
-              >
-                {tech}
-              </Badge>
-            ))}
-          </div>
+       
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-100">
             <div className="flex items-center gap-2 pt-2">
               <Avatar className="w-6 h-6 ring-1 ring-gray-100">
                 <AvatarImage
-                  src={project.author?.avatar || "/placeholder.svg"}
+                  src={author.profileImage || "/placeholder.svg"}
                 />
                 <AvatarFallback className="text-[10px] bg-indigo-100 text-indigo-600">
-                  {project.author?.name?.[0] || "?"}
+                  {author.name?.[0]?.toUpperCase() || "?"}
                 </AvatarFallback>
               </Avatar>
               <div className="leading-tight">
                 <p className="text-xs font-medium text-gray-900">
-                  {project.author?.name || "Unknown"}
+                  {author.name || "Unknown"}
                 </p>
                 <p className="text-[10px] text-gray-500">
-                  {project.author?.role || "Contributor"}
+                  {author.role || "Contributor"}
                 </p>
               </div>
             </div>

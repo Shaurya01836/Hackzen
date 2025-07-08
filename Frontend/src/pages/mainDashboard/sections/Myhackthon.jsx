@@ -37,6 +37,7 @@ import ProjectSubmission from "./ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 import ParticipantSubmissionForm from "./ParticipantSubmitForm";
+import { ProjectCard } from "../../../components/CommonUI/ProjectCard"; // ✅ adjust path as needed
 
 export default function MyHackathons() {
   const navigate = useNavigate();
@@ -218,46 +219,7 @@ export default function MyHackathons() {
     );
   }
 
-  const renderProjectCard = (project) => (
-    <Card
-      key={project._id}
-      className="group w-full max-w-sm rounded-2xl bg-white/80 shadow-md hover:shadow-xl transition duration-300 border border-border/50 overflow-hidden cursor-pointer"
-      onClick={() => {
-        setSelectedProject(project);
-        navigate(`/dashboard/my-hackathons/${project._id}`);
-      }}
-    >
-      {/* Image */}
-      <div className="relative h-32 w-full bg-muted overflow-hidden">
-        <img
-          src={project.logo?.url || "/placeholder-image.png"}
-          alt={project.title || "Project image"}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-        <div className="absolute top-2 right-2">
-          <Badge className="bg-indigo-500 text-white text-xs font-semibold shadow-sm">
-            <Code className="w-3 h-3 mr-1" />
-            Project
-          </Badge>
-        </div>
-      </div>
 
-      {/* Header */}
-      <CardHeader className="px-4 pt-3 pb-1">
-        <CardTitle className="text-lg font-semibold text-foreground line-clamp-1 transition group-hover:text-indigo-600">
-          {project.title || "Untitled Project"}
-        </CardTitle>
-      </CardHeader>
-
-      {/* Content */}
-      <CardContent className="px-4 pb-4 pt-2 space-y-3">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Last updated:</span>
-          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   if (selectedProject) {
     return (
@@ -402,7 +364,9 @@ export default function MyHackathons() {
                       </p>
                     </CardContent>
                   </Card>
-                  {projects.map(renderProjectCard)}
+                {projects.map((project) => (
+  <ProjectCard key={project._id} project={project} />
+))}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
