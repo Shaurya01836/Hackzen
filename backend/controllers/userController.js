@@ -255,9 +255,12 @@ const changeUserRole = async (req, res) => {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.role = newRole;
-    await user.save();
-    res.json({ message: `User role updated to ${newRole}`, user });
+    // Reset user data for new role
+    await exports.resetUserDataForRole(user._id, newRole);
+
+    // Fetch updated user
+    const updatedUser = await User.findById(user._id);
+    res.json({ message: `User role updated to ${newRole} and data reset`, user: updatedUser });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -577,6 +580,28 @@ const testDatabase = async (req, res) => {
     console.error('Database test error:', err);
     res.status(500).json({ error: err.message });
   }
+};
+
+// Utility: Reset user data when role changes
+exports.resetUserDataForRole = async function(userId, newRole) {
+  const user = await User.findById(userId);
+  if (!user) throw new Error('User not found');
+
+  // Clear badges
+  user.badges = [];
+
+  // Reset participant-specific fields if switching to organizer
+  if (newRole === 'organizer') {
+    user.projects = [];
+    user.hackathonsJoined = [];
+    user.registeredHackathonIds = [];
+    // Optionally, keep hackathons where user is organizer
+  }
+  // You can add more logic for other roles here
+
+  user.role = newRole;
+  await user.save();
+  return user;
 };
 
 module.exports = {
