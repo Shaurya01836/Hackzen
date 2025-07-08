@@ -148,9 +148,9 @@ const checkAndUnlockBadges = async (userId, forceCheck = false) => {
       console.log(`[Badge] 📊 Evaluating criteria for badge: ${badge.type}`);
 
       // UNIVERSAL BADGES (available to all users)
-      if (badge.type === 'member') {
-        shouldUnlock = true; // Any authenticated user gets the member badge
-        console.log(`[Badge] ✅ Member badge will unlock for: ${user.email}`);
+      if (badge.type === 'member' && badge.role === 'participant' && user.role === 'participant') {
+        shouldUnlock = true;
+        console.log(`[Badge] ✅ Member badge will unlock for participant: ${user.email}`);
       }
 
       // PARTICIPANT BADGES
@@ -208,6 +208,8 @@ const checkAndUnlockBadges = async (userId, forceCheck = false) => {
       if (badge.role === 'organizer') {
         const hackathons = await Hackathon.find({ organizer: user._id });
         const hackathonCount = hackathons.length;
+        const hackathonIds = hackathons.map(h => h._id.toString());
+        console.log(`[Badge] Organizer badge check: Found ${hackathonCount} hackathons for user ${user.email}. Hackathon IDs:`, hackathonIds);
         const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants?.length || 0), 0);
         const allRatings = hackathons.flatMap(h => h.ratings || []);
         const avgRating = allRatings.length > 0 ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
@@ -393,19 +395,35 @@ exports.assignBadgeToUser = async (req, res) => {
 exports.getUserBadges = async (req, res) => {
   try {
     const userId = req.params.userId;
-    const user = await User.findById(userId).populate('badges');
+    // Populate badges.badge so we always have the ObjectId
+    const user = await User.findById(userId).populate('badges.badge');
     const allBadges = await Badge.find();
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    const userBadgeIds = user.badges.map(badge => badge._id.toString());
-    
-    const badgesWithStatus = allBadges.map(badge => ({
-      ...badge.toObject(),
-      isUnlocked: userBadgeIds.includes(badge._id.toString()),
-      unlockedAt: userBadgeIds.includes(badge._id.toString()) ? 
-        user.badges.find(b => b._id.toString() === badge._id.toString())?.unlockedAt || new Date() : null
-    }));
+    // Get all badge ObjectIds as strings from user's badges array
+    const userBadgeIds = user.badges.map(b => {
+      // b.badge can be an ObjectId or a populated Badge document
+      if (b.badge && b.badge._id) return b.badge._id.toString();
+      if (b.badge) return b.badge.toString();
+      return b.toString();
+    });
+
+    const badgesWithStatus = allBadges.map(badge => {
+      const unlockedIdx = userBadgeIds.indexOf(badge._id.toString());
+      const isUnlocked = unlockedIdx !== -1;
+      let unlockedAt = null;
+      if (isUnlocked) {
+        // Find the badge entry in user's badges array
+        const badgeEntry = user.badges[unlockedIdx];
+        unlockedAt = badgeEntry.unlockedAt || null;
+      }
+      return {
+        ...badge.toObject(),
+        isUnlocked,
+        unlockedAt
+      };
+    });
 
     res.json(badgesWithStatus);
   } catch (err) {
