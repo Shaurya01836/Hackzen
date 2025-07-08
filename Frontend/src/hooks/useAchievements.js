@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { socialSharing } from '../utils/socialSharing';
 
@@ -14,6 +14,10 @@ export const useAchievements = (userId) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newlyUnlockedBadges, setNewlyUnlockedBadges] = useState([]);
+  
+  // Add refs to prevent excessive calls
+  const lastCheckRef = useRef(0);
+  const isCheckingRef = useRef(false);
 
   // Fetch user's badges
   const fetchUserBadges = useCallback(async () => {
@@ -62,15 +66,27 @@ export const useAchievements = (userId) => {
     }
   }, [userId]);
 
-  // Check for new badges
-  const checkForNewBadges = useCallback(async () => {
-    if (!userId) return;
+  // Check for new badges with debouncing
+  const checkForNewBadges = useCallback(async (force = false) => {
+    if (!userId || isCheckingRef.current) return;
+
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastCheckRef.current;
+    
+    // Debounce: only allow checks every 5 minutes unless forced
+    if (!force && timeSinceLastCheck < 300000) {
+      console.log(`[Achievements] ⏱️ Skipping badge check (checked ${Math.round(timeSinceLastCheck/1000)}s ago)`);
+      return [];
+    }
 
     try {
+      isCheckingRef.current = true;
+      lastCheckRef.current = now;
+      
       const token = localStorage.getItem('token');
       
       const response = await axios.post(
-        'http://localhost:3000/api/badges/check',
+        `http://localhost:3000/api/badges/check${force ? '?force=true' : ''}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
@@ -80,6 +96,7 @@ export const useAchievements = (userId) => {
       const { unlockedBadges: newBadges } = response.data;
       
       if (newBadges && newBadges.length > 0) {
+        console.log(`[Achievements] 🎉 Found ${newBadges.length} new badges!`);
         setNewlyUnlockedBadges(prev => [...prev, ...newBadges]);
         
         // Refresh badges list
@@ -92,6 +109,8 @@ export const useAchievements = (userId) => {
     } catch (err) {
       console.error('Failed to check for new badges:', err);
       return [];
+    } finally {
+      isCheckingRef.current = false;
     }
   }, [userId, fetchUserBadges]);
 
@@ -195,14 +214,13 @@ export const useAchievements = (userId) => {
     fetchUserBadges();
   }, [fetchUserBadges]);
 
-  // Auto-check for new badges every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkForNewBadges();
-    }, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [checkForNewBadges]);
+  // DISABLED: Auto-check for new badges (removed polling to reduce API calls)
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     checkForNewBadges();
+  //   }, 10 * 60 * 1000); // 10 minutes
+  //   return () => clearInterval(interval);
+  // }, [checkForNewBadges]);
 
   return {
     // State

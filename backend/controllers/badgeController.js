@@ -4,6 +4,9 @@ const Project = require('../model/ProjectModel');
 const Hackathon = require('../model/HackathonModel');
 const SubmissionHistory = require('../model/SubmissionHistoryModel'); // Added for judge badges
 
+// Debounce mechanism to prevent excessive badge checks
+const badgeCheckDebounce = new Map();
+
 // Predefined achievement badges (10 badges)
 const ACHIEVEMENT_BADGES = [
   {
@@ -90,10 +93,22 @@ const ACHIEVEMENT_BADGES = [
 
 // Initialize achievement badges
 
-
-// Check and unlock badges for a user
-const checkAndUnlockBadges = async (userId) => {
-  console.log(`[Badge] Checking badges for user: ${userId}`);
+// Check and unlock badges for a user with debouncing
+const checkAndUnlockBadges = async (userId, forceCheck = false) => {
+  const now = Date.now();
+  const lastCheck = badgeCheckDebounce.get(userId) || 0;
+  const timeSinceLastCheck = now - lastCheck;
+  
+  // Debounce: only allow checks every 30 seconds unless forced
+  if (!forceCheck && timeSinceLastCheck < 30000) {
+    console.log(`[Badge] ⏱️ Skipping badge check for user ${userId} (checked ${Math.round(timeSinceLastCheck/1000)}s ago)`);
+    return [];
+  }
+  
+  // Update last check time
+  badgeCheckDebounce.set(userId, now);
+  
+  console.log(`[Badge] 🔍 Checking badges for user: ${userId}`);
   try {
     const user = await User.findById(userId)
       .populate('badges.badge')
@@ -102,10 +117,10 @@ const checkAndUnlockBadges = async (userId) => {
       .populate('registeredHackathonIds');
 
     if (!user) {
-      console.log(`[Badge] User not found: ${userId}`);
+      console.log(`[Badge] ❌ User not found: ${userId}`);
       return [];
     }
-    console.log(`[Badge] User: ${user.email}, Role: ${user.role}`);
+    console.log(`[Badge] 👤 User: ${user.email}, Role: ${user.role}`);
 
     const unlockedBadges = [];
     const allBadges = await Badge.find();
@@ -117,25 +132,25 @@ const checkAndUnlockBadges = async (userId) => {
       return badgeId;
     });
     
-    console.log(`[Badge] User has ${userBadgeIds.length} current badges:`, userBadgeIds);
+    console.log(`[Badge] 🏆 User has ${userBadgeIds.length} current badges:`, userBadgeIds);
 
     for (const badge of allBadges) {
       const badgeId = badge._id.toString();
-      console.log(`[Badge] Checking badge: ${badge.type} (${badgeId}) for role: ${badge.role}`);
+      console.log(`[Badge] 🔍 Checking badge: ${badge.type} (${badgeId}) for role: ${badge.role}`);
       
       // Skip if user already has this badge
       if (userBadgeIds.includes(badgeId)) {
-        console.log(`[Badge] Skipping already unlocked badge: ${badge.type} (${badgeId})`);
+        console.log(`[Badge] ⏭️ Skipping already unlocked badge: ${badge.type} (${badgeId})`);
         continue;
       }
 
       let shouldUnlock = false;
-      console.log(`[Badge] Evaluating criteria for badge: ${badge.type}`);
+      console.log(`[Badge] 📊 Evaluating criteria for badge: ${badge.type}`);
 
       // UNIVERSAL BADGES (available to all users)
       if (badge.type === 'member') {
         shouldUnlock = true; // Any authenticated user gets the member badge
-        console.log(`[Badge] Member badge will unlock for: ${user.email}`);
+        console.log(`[Badge] ✅ Member badge will unlock for: ${user.email}`);
       }
 
       // PARTICIPANT BADGES
@@ -143,7 +158,7 @@ const checkAndUnlockBadges = async (userId) => {
         switch (badge.type) {
           case 'first-submission':
             shouldUnlock = user.projects?.length >= 1;
-            console.log(`[Badge] First submission check: ${user.projects?.length || 0} projects`);
+            console.log(`[Badge] 📝 First submission check: ${user.projects?.length || 0} projects`);
             break;
           case 'early-bird':
             // Check if user registered for any hackathon within 24 hours of its creation
@@ -154,37 +169,37 @@ const checkAndUnlockBadges = async (userId) => {
               return timeDiff <= 24 * 60 * 60 * 1000; // 24 hours
             });
             shouldUnlock = earlyRegistrations?.length >= 1;
-            console.log(`[Badge] Early bird check: ${earlyRegistrations?.length || 0} early registrations`);
+            console.log(`[Badge] 🐦 Early bird check: ${earlyRegistrations?.length || 0} early registrations`);
             break;
           case 'first-win':
             shouldUnlock = user.hackathonsJoined?.some(h => h.status === 'ended' && h.winners?.includes(userId));
-            console.log(`[Badge] First win check: ${user.hackathonsJoined?.filter(h => h.status === 'ended' && h.winners?.includes(userId)).length} wins`);
+            console.log(`[Badge] 🏆 First win check: ${user.hackathonsJoined?.filter(h => h.status === 'ended' && h.winners?.includes(userId)).length} wins`);
             break;
           case 'streak-master':
             shouldUnlock = user.currentStreak >= 7;
-            console.log(`[Badge] Streak master check: ${user.currentStreak || 0} day streak`);
+            console.log(`[Badge] 🔥 Streak master check: ${user.currentStreak || 0} day streak`);
             break;
           case 'team-player':
             const uniqueTeams = new Set(user.projects?.map(p => p.team?.toString()).filter(Boolean));
             shouldUnlock = uniqueTeams.size >= 5;
-            console.log(`[Badge] Team player check: ${uniqueTeams.size} unique teams`);
+            console.log(`[Badge] 👥 Team player check: ${uniqueTeams.size} unique teams`);
             break;
           case 'code-wizard':
             shouldUnlock = user.projects?.length >= 10;
-            console.log(`[Badge] Code wizard check: ${user.projects?.length || 0} projects`);
+            console.log(`[Badge] 💻 Code wizard check: ${user.projects?.length || 0} projects`);
             break;
           case 'hackathon-veteran':
             shouldUnlock = user.registeredHackathonIds?.length >= 10;
-            console.log(`[Badge] Hackathon veteran check: ${user.registeredHackathonIds?.length || 0} hackathons`);
+            console.log(`[Badge] 🎯 Hackathon veteran check: ${user.registeredHackathonIds?.length || 0} hackathons`);
             break;
           case 'innovation-leader':
             const winCount = user.hackathonsJoined?.filter(h => h.status === 'ended' && h.winners?.includes(userId)).length;
             shouldUnlock = winCount >= 3;
-            console.log(`[Badge] Innovation leader check: ${winCount} wins`);
+            console.log(`[Badge] 🌟 Innovation leader check: ${winCount} wins`);
             break;
           case 'active-participant':
             shouldUnlock = user.registeredHackathonIds?.length >= 3;
-            console.log(`[Badge] Active participant check: ${user.registeredHackathonIds?.length || 0} hackathons`);
+            console.log(`[Badge] 🎪 Active participant check: ${user.registeredHackathonIds?.length || 0} hackathons`);
             break;
         }
       }
@@ -198,7 +213,7 @@ const checkAndUnlockBadges = async (userId) => {
         const avgRating = allRatings.length > 0 ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
         const has100Plus = hackathons.some(h => (h.participants?.length || 0) >= 100);
         
-        console.log(`[Badge] Organizer stats: ${hackathonCount} hackathons, ${totalParticipants} participants, ${avgRating.toFixed(2)} avg rating`);
+        console.log(`[Badge] 🎪 Organizer stats: ${hackathonCount} hackathons, ${totalParticipants} participants, ${avgRating.toFixed(2)} avg rating`);
         
         switch (badge.type) {
           case 'event-creator':
@@ -225,7 +240,7 @@ const checkAndUnlockBadges = async (userId) => {
         const judgeHackathons = await Hackathon.find({ judges: user._id });
         const judgedSubmissions = await SubmissionHistory.find({ judge: user._id });
         
-        console.log(`[Badge] Judge stats: ${judgeHackathons.length} hackathons, ${judgedSubmissions.length} submissions`);
+        console.log(`[Badge] ⚖️ Judge stats: ${judgeHackathons.length} hackathons, ${judgedSubmissions.length} submissions`);
         
         switch (badge.type) {
           case 'fair-evaluator':
@@ -252,7 +267,7 @@ const checkAndUnlockBadges = async (userId) => {
         const mentoredProjects = await Project.find({ mentor: user._id });
         const mentorHackathons = await Hackathon.find({ mentors: user._id });
         
-        console.log(`[Badge] Mentor stats: ${mentoredProjects.length} projects, ${mentorHackathons.length} hackathons`);
+        console.log(`[Badge] 🧑‍🏫 Mentor stats: ${mentoredProjects.length} projects, ${mentorHackathons.length} hackathons`);
         
         switch (badge.type) {
           case 'knowledge-sharer':
@@ -281,7 +296,7 @@ const checkAndUnlockBadges = async (userId) => {
           ...badge.toObject(),
           unlockedAt: new Date()
         });
-        console.log(`[Badge] ✅ Awarded badge: ${badge.type} to user: ${user.email}`);
+        console.log(`[Badge] 🎉 ✅ Awarded badge: ${badge.type} to user: ${user.email}`);
       } else {
         console.log(`[Badge] ❌ Skipped badge: ${badge.type} for user: ${user.email} (criteria not met)`);
       }
@@ -402,7 +417,8 @@ exports.getUserBadges = async (req, res) => {
 exports.checkUserBadges = async (req, res) => {
   try {
     const userId = req.user._id;
-    const unlockedBadges = await checkAndUnlockBadges(userId);
+    const forceCheck = req.query.force === 'true';
+    const unlockedBadges = await checkAndUnlockBadges(userId, forceCheck);
     
     res.json({ 
       message: 'Badge check completed', 

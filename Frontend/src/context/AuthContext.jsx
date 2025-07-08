@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
@@ -14,25 +14,43 @@ export const AuthProvider = ({ children }) => {
   });
 
   const [token, setToken] = useState(() => localStorage.getItem("token"));
+  
+  // Add refs to prevent excessive badge checks
+  const lastBadgeCheckRef = useRef(0);
+  const isCheckingBadgesRef = useRef(false);
 
-  // Check for new badges after login
-  const checkForNewBadges = async (userId) => {
-    if (!userId) return;
+  // Check for new badges after login with debouncing
+  const checkForNewBadges = async (userId, force = false) => {
+    if (!userId || isCheckingBadgesRef.current) return;
+    
+    const now = Date.now();
+    const timeSinceLastCheck = now - lastBadgeCheckRef.current;
+    
+    // Debounce: only allow checks every 10 minutes unless forced
+    if (!force && timeSinceLastCheck < 600000) {
+      console.log(`[Auth] ⏱️ Skipping badge check (checked ${Math.round(timeSinceLastCheck/1000)}s ago)`);
+      return;
+    }
     
     try {
+      isCheckingBadgesRef.current = true;
+      lastBadgeCheckRef.current = now;
+      
       const token = localStorage.getItem('token');
       if (!token) return;
       
       await axios.post(
-        'http://localhost:3000/api/badges/check',
+        `http://localhost:3000/api/badges/check${force ? '?force=true' : ''}`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
-      console.log('[Auth] Badge check completed after login');
+      console.log('[Auth] ✅ Badge check completed after login');
     } catch (err) {
       console.error('Failed to check badges after login:', err);
+    } finally {
+      isCheckingBadgesRef.current = false;
     }
   };
 
@@ -43,8 +61,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", authToken);
     
-    // Check for new badges after login
-    await checkForNewBadges(userData._id);
+    // Check for new badges after login (forced check)
+    await checkForNewBadges(userData._id, true);
   };
 
   // ✅ Logout handler
@@ -97,7 +115,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ✅ Refresh user info from backend
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
@@ -107,18 +125,22 @@ export const AuthProvider = ({ children }) => {
       if (res.data) {
         setUser(res.data);
         localStorage.setItem("user", JSON.stringify(res.data));
-        // Check for new badges after user refresh
-        await checkForNewBadges(res.data._id);
+        // Check for new badges after user refresh (not forced)
+        await checkForNewBadges(res.data._id, false);
       }
     } catch (err) {
       console.error("Failed to refresh user info:", err.message);
     }
-  };
+  }, []);
 
-  // Check for new badges when user changes
+  // Check for new badges when user changes (only on initial load)
   useEffect(() => {
     if (user?._id) {
-      checkForNewBadges(user._id);
+      // Only check on initial load, not on every user change
+      const hasCheckedBefore = lastBadgeCheckRef.current > 0;
+      if (!hasCheckedBefore) {
+        checkForNewBadges(user._id, false);
+      }
     }
   }, [user?._id]);
 

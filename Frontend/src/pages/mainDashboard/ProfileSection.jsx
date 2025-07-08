@@ -245,25 +245,11 @@ export function ProfileSection() {
   };
 
   useEffect(() => {
-    const pingAndFetchStreak = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        await axios.post(
-          "http://localhost:3000/api/users/streak",
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        // Now fetch the updated streak data
-        fetchStreakData();
-      } catch (err) {
-        console.error("Failed to ping streak:", err);
-      }
-    };
-
     const fetchUserData = async () => {
       try {
         await fetchUserProfile();
-        await pingAndFetchStreak();
+        // Only fetch streak data once on mount, don't ping repeatedly
+        await fetchStreakData();
         await fetch2FAStatus(); // Fetch 2FA status
       } catch (error) {
         console.error("Error fetching user data:", error);
