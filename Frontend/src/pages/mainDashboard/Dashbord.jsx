@@ -78,7 +78,7 @@ export default function HackZenDashboard() {
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
 
   const { user, refreshUser } = useAuth();
-  
+
   // Debug: Log user role for troubleshooting
   console.log("Dashboard - Current user:", user);
   console.log("Dashboard - User role:", user?.role);
@@ -164,49 +164,49 @@ export default function HackZenDashboard() {
   ];
 
   const organizerMenuItems = [
-  {
-    title: "Organizer Tools",
-    icon: Settings,
-    key: "organizer-tools",
-    onClick: () => changeView("organizer-tools"),
-  },
-  {
-    title: "Hackathons",
-    icon: CalendarX,
-    key: "created-hackathons", // ✅ keep this
-    onClick: () => changeView("created-hackathons"),
-  },
-  {
-    title: "Participant Overview",
-    icon: Users,
-    key: "participant-overview",
-    onClick: () => changeView("participant-overview"),
-  },
-  {
-    title: "Create Hackathons",
-    icon: PencilRulerIcon,
-    key: "create-hackathon", // ✅ FIX this key!
-    onClick: () => changeView("create-hackathon"),
-  },
-  {
-    title: "Review Submissions",
-    icon: Eye,
-    key: "review-submissions",
-    onClick: () => changeView("review-submissions"),
-  },
-  {
-    title: "Announcements",
-    icon: MessageSquare,
-    key: "announcements",
-    onClick: () => changeView("announcements"),
-  },
-  {
-    title: "Certificate Page",
-    icon: ShieldCheck,
-    key: "certificate-page",
-    onClick: () => changeView("certificate-page"),
-  },
-];
+    {
+      title: "Organizer Tools",
+      icon: Settings,
+      key: "organizer-tools",
+      onClick: () => changeView("organizer-tools"),
+    },
+    {
+      title: "Hackathons",
+      icon: CalendarX,
+      key: "created-hackathons", // ✅ keep this
+      onClick: () => changeView("created-hackathons"),
+    },
+    {
+      title: "Participant Overview",
+      icon: Users,
+      key: "participant-overview",
+      onClick: () => changeView("participant-overview"),
+    },
+    {
+      title: "Create Hackathons",
+      icon: PencilRulerIcon,
+      key: "create-hackathon", // ✅ FIX this key!
+      onClick: () => changeView("create-hackathon"),
+    },
+    {
+      title: "Review Submissions",
+      icon: Eye,
+      key: "review-submissions",
+      onClick: () => changeView("review-submissions"),
+    },
+    {
+      title: "Announcements",
+      icon: MessageSquare,
+      key: "announcements",
+      onClick: () => changeView("announcements"),
+    },
+    {
+      title: "Certificate Page",
+      icon: ShieldCheck,
+      key: "certificate-page",
+      onClick: () => changeView("certificate-page"),
+    },
+  ];
 
   const judgeMenuItems = [
     {
@@ -275,7 +275,7 @@ export default function HackZenDashboard() {
         return <DashboardJudgePanel onBack={() => changeView("profile")} />;
       case "my-judgments":
         return <div className="p-6">My Judgments Section - Coming Soon</div>;
-      
+
       case "certificate-page":
         return <CertificatesPage onBack={() => changeView("profile")} />;
       default:
@@ -310,7 +310,7 @@ export default function HackZenDashboard() {
     };
 
     pingStreak();
-    
+
     // Refresh user info to ensure we have the latest role
     refreshUser();
   }, [refreshUser]);
@@ -323,9 +323,11 @@ export default function HackZenDashboard() {
             className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={navigateToHome}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">H</span>
-            </div>
+             <img
+                src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png"
+                alt="HackZen Logo"
+                className="w-10 h-10 object-contain border rounded-full"
+              />
             <div>
               <h1 className="text-xl font-bold text-gray-900">HackZen</h1>
               <p className="text-sm text-gray-500">Hackathon Platform</p>

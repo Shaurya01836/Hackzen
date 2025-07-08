@@ -89,7 +89,7 @@ const FAQCard = ({ title, icon: Icon, data, delay = 0 }) => {
           {data.map((item, i) => (
             <div key={i}>
               <div
-                className="flex justify-between items-start p-4 rounded-xl cursor-none hover:bg-indigo-50 transition-all duration-300 border border-transparent hover:border-indigo-200"
+                className="flex justify-between items-start p-4 rounded-xl hover:bg-indigo-50 transition-all duration-300 border border-transparent hover:border-indigo-200"
                 onClick={() => toggle(i)}
               >
                 <div className="flex-1">
@@ -193,7 +193,7 @@ function CtaSection() {
               </div>
 
               <div className="flex-shrink-0">
-                <button className="cursor-none relative inline-flex items-center gap-3 bg-indigo-500 hover:bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl transition-all duration-300">
+                <button className=" relative inline-flex items-center gap-3 bg-indigo-500 hover:bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl transition-all duration-300">
                   <MessageCircle className="w-6 h-6" />
                   <span>Chat With Mentor</span>
                   <ArrowRight className="w-5 h-5" />

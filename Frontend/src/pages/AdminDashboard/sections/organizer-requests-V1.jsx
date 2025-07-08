@@ -225,7 +225,7 @@ export function OrganizerRequestsPage() {
      
 
       {/* Filters and Search */}
-      <Card>
+     
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
@@ -291,7 +291,7 @@ export function OrganizerRequestsPage() {
             </div>
           </div>
         </CardContent>
-      </Card>
+    
 
       {/* Results */}
       {filteredRequests.length === 0 ? (

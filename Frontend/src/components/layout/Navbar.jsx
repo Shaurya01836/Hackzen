@@ -91,10 +91,16 @@ function Navbar() {
       <nav className="px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <GitGraphIcon className="w-6 h-6 text-[#1b0c3f] hover:rotate-90 transition-all duration-200 ease-in-out" />
-            <h1 className="text-2xl font-bold font-heading1 text-[#1b0c3f]">
-              HackZen
-            </h1>
+            <Link to="/" className="flex items-center gap-2">
+              <img
+                src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png"
+                alt="HackZen Logo"
+                className="w-10 h-10 object-contain border rounded-full"
+              />
+              <h1 className="text-2xl font-bold font-heading1 text-[#1b0c3f]">
+                HackZen
+              </h1>
+            </Link>
           </div>
 
           {/* Desktop Nav */}
@@ -293,7 +299,7 @@ function Navbar() {
                       </Link>
                     )}
                     <Link
-                      to="/profile/account-settings"
+                      to="/dashboard/profile/account-settings"
                       className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
                     >
                       Settings

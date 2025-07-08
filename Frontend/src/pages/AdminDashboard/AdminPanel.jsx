@@ -151,7 +151,7 @@ export default function AdminPanel() {
       key: "flagged",
       onClick: () => setActiveSection("flagged"),
     },
-      {
+    {
       title: "Certifiacte Templates",
       icon: LayoutTemplateIcon,
       key: "certificateTemplate",
@@ -240,9 +240,11 @@ export default function AdminPanel() {
               className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={navigateToHome}
             >
-              <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
-              </div>
+              <img
+                src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png"
+                alt="HackZen Logo"
+                className="w-10 h-10 object-contain border rounded-full"
+              />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
                 <p className="text-sm text-gray-500">HackZen Management</p>
