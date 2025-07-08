@@ -164,10 +164,10 @@ const getUserById = async (req, res) => {
           if (badge) {
             validBadges.push(badgeEntry);
           } else {
-            console.log(`Removing broken badge reference: ${badgeId}`);
+            // console.log(`Removing broken badge reference: ${badgeId}`);
           }
         } catch (err) {
-          console.log(`Error checking badge: ${err.message}`);
+          // console.log(`Error checking badge: ${err.message}`);
         }
       }
       
@@ -175,7 +175,7 @@ const getUserById = async (req, res) => {
       if (validBadges.length !== user.badges.length) {
         user.badges = validBadges;
         await user.save();
-        console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
+        // console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
       }
     }
     
@@ -203,7 +203,7 @@ const saveHackathon = async (req, res) => {
     await user.save();
     res.status(200).json({ message: "Saved hackathons updated", savedHackathons: user.savedHackathons });
   } catch (err) {
-    console.error("Error saving hackathon:", err);
+    // console.error("Error saving hackathon:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -333,7 +333,7 @@ const getUserStreakData = async (req, res) => {
       max: maxStreak,
     });
   } catch (err) {
-    console.error("Get streak error:", err);
+    // console.error("Get streak error:", err);
     res.status(500).json({ message: "Failed to fetch streaks" });
   }
 };
@@ -341,20 +341,20 @@ const getUserStreakData = async (req, res) => {
 // ✅ Get current user info (for session refresh)
 const getMe = async (req, res) => {
   try {
-    console.log('=== getMe function called ===');
-    console.log('req.user:', req.user);
-    console.log('req.user._id:', req.user._id);
-    console.log('req.user._id type:', typeof req.user._id);
-    console.log('req.user._id toString:', req.user._id.toString());
+    // console.log('=== getMe function called ===');
+    // console.log('req.user:', req.user);
+    // console.log('req.user._id:', req.user._id);
+    // console.log('req.user._id type:', typeof req.user._id);
+    // console.log('req.user._id toString:', req.user._id.toString());
     
     // Populate badges.badge for full badge info
     const user = await User.findById(req.user._id)
       .select('-passwordHash')
       .populate('badges.badge');
     
-    console.log('Database query result:', user);
+    // console.log('Database query result:', user);
     if (!user) {
-      console.log('User not found in database');
+      // console.log('User not found in database');
       return res.status(404).json({ message: 'User not found' });
     }
     
@@ -370,10 +370,10 @@ const getMe = async (req, res) => {
           if (badge) {
             validBadges.push(badgeEntry);
           } else {
-            console.log(`Removing broken badge reference: ${badgeId}`);
+            // console.log(`Removing broken badge reference: ${badgeId}`);
           }
         } catch (err) {
-          console.log(`Error checking badge: ${err.message}`);
+          // console.log(`Error checking badge: ${err.message}`);
         }
       }
       
@@ -381,15 +381,15 @@ const getMe = async (req, res) => {
       if (validBadges.length !== user.badges.length) {
         user.badges = validBadges;
         await user.save();
-        console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
+        // console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
       }
     }
     
-    console.log('Sending user response:', { _id: user._id, email: user.email, role: user.role });
+    // console.log('Sending user response:', { _id: user._id, email: user.email, role: user.role });
     res.json(user);
   } catch (err) {
-    console.error('getMe error:', err);
-    console.error('Error stack:', err.stack);
+    // console.error('getMe error:', err);
+    // console.error('Error stack:', err.stack);
     res.status(500).json({ error: err.message });
   }
 };
@@ -558,18 +558,18 @@ const getJudgeStats = async (req, res) => {
 // ✅ Test endpoint to check database connection
 const testDatabase = async (req, res) => {
   try {
-    console.log('=== Testing database connection ===');
+    // console.log('=== Testing database connection ===');
     
     // Test basic user count
     const userCount = await User.countDocuments();
-    console.log('Total users in database:', userCount);
+    // console.log('Total users in database:', userCount);
     
     // Test finding a specific user by ID
     const testUserId = req.params.id || '686b6744dce4d0b41b175a04';
-    console.log('Testing user lookup for ID:', testUserId);
+    // console.log('Testing user lookup for ID:', testUserId);
     
     const testUser = await User.findById(testUserId);
-    console.log('Test user found:', testUser ? { _id: testUser._id, email: testUser.email } : 'null');
+    // console.log('Test user found:', testUser ? { _id: testUser._id, email: testUser.email } : 'null');
     
     res.json({
       success: true,
@@ -577,7 +577,7 @@ const testDatabase = async (req, res) => {
       testUser: testUser ? { _id: testUser._id, email: testUser.email, role: testUser.role } : null
     });
   } catch (err) {
-    console.error('Database test error:', err);
+    // console.error('Database test error:', err);
     res.status(500).json({ error: err.message });
   }
 };

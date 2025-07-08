@@ -25,13 +25,16 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
     images,
   } = hackathon;
 
-  const progress = Math.round((participants / maxParticipants) * 100);
+  // Defensive: ensure participants and maxParticipants are numbers and maxParticipants > 0
+  const safeParticipants = typeof participants === 'number' && !isNaN(participants) ? participants : 0;
+  const safeMaxParticipants = typeof maxParticipants === 'number' && maxParticipants > 0 ? maxParticipants : 1;
+  const progress = Math.min(100, Math.round((safeParticipants / safeMaxParticipants) * 100));
 
   const getRegistrationStatus = () => {
     const now = new Date();
     const deadline = new Date(registrationDeadline);
     if (now > deadline) return "Registration Closed";
-    if (participants >= maxParticipants && !isRegistered)
+    if (safeParticipants >= safeMaxParticipants && !isRegistered)
       return "Registration Full";
     if (isRegistered) return "Registered";
     return "Registration Open";
@@ -105,7 +108,7 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
             <div className="flex justify-between text-sm">
               <span>Registered</span>
               <span>
-                {participants}/{maxParticipants}
+                {safeParticipants}/{safeMaxParticipants}
               </span>
             </div>
             <Progress value={progress} className="h-2" />

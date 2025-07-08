@@ -86,6 +86,9 @@ export function ProfileSection() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [currentView, setCurrentViewState] = useState(getCurrentViewFromPath());
 
@@ -129,7 +132,6 @@ export function ProfileSection() {
 
   const [notifications, setNotifications] = useState(true);
   const [emailUpdates, setEmailUpdates] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [twoFAError, setTwoFAError] = useState("");
@@ -960,50 +962,94 @@ export function ProfileSection() {
               <Label htmlFor="current-password">Current Password</Label>
               <Input
                 id="current-password"
-                type={showPassword ? "text" : "password"}
+                type={showCurrentPassword ? "text" : "password"}
                 placeholder="Enter current password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
+                className="pr-10" // Add padding for eye icon
               />
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-6 h-full px-3"
-                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
+                style={{ top: '32px' }}
+                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               >
-                {showPassword ? (
-                  <EyeOff className="w-4 h-4" />
+                {showCurrentPassword ? (
+                  <EyeOff className="w-5 h-5" />
                 ) : (
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-5 h-5" />
                 )}
-              </Button>
+              </button>
             </div>
           )}
 
           {/* New Password */}
-          <div>
+          <div className="relative">
             <Label htmlFor="new-password">New Password</Label>
             <Input
               id="new-password"
-              type="password"
+              type={showNewPassword ? "text" : "password"}
               placeholder="Enter new password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
+              className="pr-10"
             />
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
+              style={{ top: '32px' }}
+              onClick={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
           </div>
 
           {/* Confirm New Password */}
-          <div>
+          <div className="relative">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
             <Input
               id="confirm-password"
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              className="pr-10"
             />
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
+              style={{ top: '32px' }}
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
           </div>
+
+          {/* Error and Success Messages */}
+          {passwordError && (
+            <div className="p-4 bg-red-100 border-2 border-red-500 rounded-lg flex items-center gap-2 mt-2">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" /></svg>
+              <span className="text-red-700 font-bold text-base">{passwordError}</span>
+            </div>
+          )}
+          
+          {passwordMessage && (
+            <div className="p-4 bg-green-100 border-2 border-green-500 rounded-lg flex items-center gap-2 mt-2">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+              <span className="text-green-700 font-bold text-base">{passwordMessage}</span>
+            </div>
+          )}
 
           <Button
             className="flex items-center gap-2 w-full sm:w-auto"
@@ -1379,13 +1425,29 @@ export function ProfileSection() {
     const userData = JSON.parse(localStorage.getItem("user"));
     const token = localStorage.getItem("token");
 
+    // Clear previous messages
+    setPasswordMessage("");
+    setPasswordError("");
+
     if (!userData?._id || !token) {
-      alert("Missing user session. Please re-login.");
+      setPasswordError("Missing user session. Please re-login.");
       return;
     }
 
     if (!newPassword || newPassword !== confirmPassword) {
-      alert("❌ Passwords do not match or are empty");
+      setPasswordError("Passwords do not match or are empty");
+      return;
+    }
+
+    // For email users, current password is required
+    if (user?.authProvider === "email" && !currentPassword) {
+      setPasswordError("Current password is required");
+      return;
+    }
+
+    // New: Check if current and new password are the same
+    if (user?.authProvider === "email" && currentPassword && newPassword && currentPassword === newPassword) {
+      setPasswordError("Your current and new password are the same");
       return;
     }
 
@@ -1403,12 +1465,18 @@ export function ProfileSection() {
         }
       );
 
-      alert("Password updated successfully!");
+      setPasswordMessage("Password updated successfully!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setPasswordMessage(""), 3000);
     } catch (err) {
-      alert(err.response?.data?.message || "Error updating password");
+      setPasswordError(err.response?.data?.message || "Error updating password");
     }
   };
 

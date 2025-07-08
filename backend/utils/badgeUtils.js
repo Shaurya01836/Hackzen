@@ -9,7 +9,7 @@ const Hackathon = require('../model/HackathonModel');
  */
 async function awardOrganizerBadges(user) {
   if (!user || user.role !== 'organizer') {
-    console.log('[Badge] Not an organizer or user missing');
+    // console.log('[Badge] Not an organizer or user missing');
     return;
   }
 
@@ -21,35 +21,35 @@ async function awardOrganizerBadges(user) {
   const avgRating = allRatings.length > 0 ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
   const has100Plus = hackathons.some(h => (h.participants?.length || 0) >= 100);
 
-  console.log(`[Badge] Organizer: ${user.email}, Hackathons: ${hackathonCount}, TotalParticipants: ${totalParticipants}, AvgRating: ${avgRating}, Has100Plus: ${has100Plus}`);
+  // console.log(`[Badge] Organizer: ${user.email}, Hackathons: ${hackathonCount}, TotalParticipants: ${totalParticipants}, AvgRating: ${avgRating}, Has100Plus: ${has100Plus}`);
 
   // Get all organizer badges
   const badges = await Badge.find({ role: 'organizer' });
-  console.log('[Badge] Organizer badges in DB:', badges.map(b => ({ type: b.type, id: b._id })));
+  // console.log('[Badge] Organizer badges in DB:', badges.map(b => ({ type: b.type, id: b._id })));
   const userBadgeTypes = user.badges.map(b => b.badge?.toString() || b.toString());
 
   // Helper to add badge if not already present
   async function addBadge(type) {
     const badge = badges.find(b => b.type === type);
     if (!badge) {
-      console.log(`[Badge] Badge type not found: ${type}`);
+      // console.log(`[Badge] Badge type not found: ${type}`);
       return;
     }
     const alreadyHas = user.badges.some(b => b.badge?.toString() === badge._id.toString());
     if (!alreadyHas) {
       user.badges.push({ badge: badge._id, unlockedAt: new Date() });
       await user.save();
-      console.log(`[Badge] Awarded badge: ${type} to user: ${user.email}`);
+      // console.log(`[Badge] Awarded badge: ${type} to user: ${user.email}`);
     } else {
-      console.log(`[Badge] User already has badge: ${type}`);
+      // console.log(`[Badge] User already has badge: ${type}`);
     }
     // Print user's badges after attempt
     const updatedUser = await User.findById(user._id).populate('badges.badge');
-    console.log(`[Badge] User's badges after awarding:`, updatedUser.badges.map(b => ({
-      type: b.badge?.type,
-      name: b.badge?.name,
-      unlockedAt: b.unlockedAt
-    })));
+    // console.log(`[Badge] User's badges after awarding:`, updatedUser.badges.map(b => ({
+    //   type: b.badge?.type,
+    //   name: b.badge?.name,
+    //   unlockedAt: b.unlockedAt
+    // })));
   }
 
   // Event Creator: Create 1 hackathon

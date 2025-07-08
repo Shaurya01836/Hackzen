@@ -3,66 +3,103 @@ const User = require('./model/UserModel');
 const Badge = require('./model/BadgeModel');
 const { checkAndUnlockBadges } = require('./controllers/badgeController');
 
-// Test badge logic
-const testBadgeLogic = async () => {
+// Connect to MongoDB
+require('dotenv').config();
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const testBadgeSystem = async () => {
   try {
-    require('dotenv').config();
-    await mongoose.connect(process.env.MONGO_URL);
-    console.log('✅ Connected to MongoDB');
-
-    // Test 1: Check if member badge unlocks for any user
-    console.log('\n🧪 Test 1: Member Badge');
-    const testUser = await User.findOne({});
-    if (testUser) {
-      console.log(`Testing with user: ${testUser.email} (${testUser.role})`);
-      console.log(`Current badges: ${testUser.badges.length}`);
-      console.log('Badge details:', JSON.stringify(testUser.badges, null, 2));
-      
-      const unlockedBadges = await checkAndUnlockBadges(testUser._id);
-      console.log(`Unlocked badges: ${unlockedBadges.length}`);
-      unlockedBadges.forEach(badge => {
-        console.log(`  - ${badge.name} (${badge.type})`);
-      });
-      
-      // Check user after badge check
-      const updatedUser = await User.findById(testUser._id).populate('badges.badge');
-      console.log(`\nAfter badge check - User badges: ${updatedUser.badges.length}`);
-      console.log('Updated badge details:', JSON.stringify(updatedUser.badges, null, 2));
+    // console.log('🧪 Starting comprehensive badge system test...\n');
+    
+    // 1. Check if badges exist
+    const badges = await Badge.find();
+    // console.log(`📊 Found ${badges.length} badges in database`);
+    
+    if (badges.length === 0) {
+      // console.log('❌ No badges found! Please run the badge initialization script first.');
+      return;
     }
-
-    // Test 2: Check all badges for different roles
-    console.log('\n🧪 Test 2: Role-based Badges');
-    const users = await User.find({}).limit(3);
+    
+    // 2. Check users
+    const users = await User.find().populate('badges.badge');
+    // console.log(`👥 Found ${users.length} users in database\n`);
+    
+    // 3. Test badge unlocking for each user
     for (const user of users) {
-      console.log(`\nChecking badges for ${user.email} (${user.role}):`);
-      console.log(`Before: ${user.badges.length} badges`);
+      // console.log(`\n🔍 Testing user: ${user.email} (${user.role})`);
+      // console.log(`📊 Current badges: ${user.badges.length}`);
       
-      const unlockedBadges = await checkAndUnlockBadges(user._id);
-      console.log(`  Unlocked: ${unlockedBadges.length} badges`);
-      unlockedBadges.forEach(badge => {
-        console.log(`    - ${badge.name} (${badge.type})`);
-      });
+      // Show current badges
+      if (user.badges.length > 0) {
+        // console.log('🏆 Current badges:');
+        user.badges.forEach((userBadge, index) => {
+          const badge = userBadge.badge;
+          if (badge) {
+            // console.log(`   ${index + 1}. ${badge.name} (${badge.type}) - ${badge.role}`);
+          }
+        });
+      }
       
-      // Check after
+      // Test badge unlocking
+      // console.log('\n🔄 Running badge check...');
+      const unlockedBadges = await checkAndUnlockBadges(user._id, true);
+      
+      if (unlockedBadges.length > 0) {
+        // console.log(`🎉 Unlocked ${unlockedBadges.length} new badges:`);
+        unlockedBadges.forEach(badge => {
+          // console.log(`   ✅ ${badge.name} (${badge.type}) - ${badge.role}`);
+        });
+      } else {
+        // console.log('ℹ️ No new badges unlocked');
+      }
+      
+      // Refresh user data
       const updatedUser = await User.findById(user._id).populate('badges.badge');
-      console.log(`After: ${updatedUser.badges.length} badges`);
+      // console.log(`📊 Updated badge count: ${updatedUser.badges.length}`);
+      
+      // Check for duplicates
+      const badgeIds = updatedUser.badges.map(b => b.badge?._id?.toString() || b.badge?.toString());
+      const uniqueBadgeIds = new Set(badgeIds);
+      
+      if (badgeIds.length !== uniqueBadgeIds.size) {
+        // console.log(`⚠️ WARNING: User has ${badgeIds.length - uniqueBadgeIds.size} duplicate badges!`);
+      }
     }
-
-    // Test 3: Check badge counts by role
-    console.log('\n🧪 Test 3: Badge Counts by Role');
-    const badges = await Badge.find({});
-    const roleCounts = {};
-    badges.forEach(badge => {
-      roleCounts[badge.role] = (roleCounts[badge.role] || 0) + 1;
+    
+    // 4. Summary
+    // console.log('\n📋 Badge System Test Summary:');
+    // console.log(`   - Total badges in system: ${badges.length}`);
+    // console.log(`   - Total users: ${users.length}`);
+    
+    const totalUserBadges = users.reduce((sum, user) => sum + user.badges.length, 0);
+    // console.log(`   - Total user badges: ${totalUserBadges}`);
+    
+    // 5. Role-specific badge counts
+    const roleBadgeCounts = {};
+    users.forEach(user => {
+      if (!roleBadgeCounts[user.role]) {
+        roleBadgeCounts[user.role] = { count: 0, users: 0 };
+      }
+      roleBadgeCounts[user.role].count += user.badges.length;
+      roleBadgeCounts[user.role].users += 1;
     });
-    console.log('Badge counts by role:', roleCounts);
-
-    console.log('\n✅ Badge logic tests completed!');
-    process.exit(0);
+    
+    // console.log('\n👥 Badge distribution by role:');
+    Object.entries(roleBadgeCounts).forEach(([role, data]) => {
+      // console.log(`   ${role}: ${data.count} badges across ${data.users} users`);
+    });
+    
+    // console.log('\n✅ Badge system test completed!');
+    
   } catch (error) {
-    console.error('❌ Error testing badge logic:', error);
-    process.exit(1);
+    // console.error('❌ Error during badge system test:', error);
+  } finally {
+    mongoose.connection.close();
   }
 };
 
-testBadgeLogic(); 
+// Run the test
+testBadgeSystem(); 

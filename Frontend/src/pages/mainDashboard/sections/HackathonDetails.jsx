@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useToast } from "../../../hooks/use-toast";
 import { useAuth } from "../../../context/AuthContext";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 import HeaderSection from "./components/Hackathon/HeaderSection";
 import HackathonHero from "./components/Hackathon/HackathonHero";
@@ -13,11 +14,31 @@ import TeamManagementSection from "./components/Hackathon/TeamManagementSection"
 import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
-import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 
-export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
+export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
+  const { hackathonId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Use hackathon from location.state if available, else prop, else null
+  const stateHackathon = location.state?.hackathon;
+  const source = location.state?.source;
+  const [hackathon, setHackathon] = useState(stateHackathon || propHackathon || null);
+  const [loading, setLoading] = useState(!stateHackathon && !propHackathon && !!hackathonId);
+  const [error, setError] = useState(null);
+
+  // Defensive: loading/error/null checks at the very top
+  if (loading) {
+    return <div className="p-10 text-center text-lg">Loading hackathon details...</div>;
+  }
+  if (error) {
+    return <div className="p-10 text-center text-red-600 font-bold">{error}</div>;
+  }
+  if (!hackathon) {
+    return <div className="p-10 text-center text-red-600 font-bold">Hackathon not found.</div>;
+  }
 
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
@@ -26,18 +47,34 @@ export function HackathonDetails({ hackathon, onBack, backButtonLabel }) {
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-const sections = [
-  { id: "overview", label: "Overview & Requirements" },
-  { id: "problems", label: "Problem Statements" },
-  { id: "timeline", label: "Timeline" },
-  { id: "team", label: "Team Management" },
-  { id: "community", label: "Community" },
-  { id: "projects", label: "Projects Gallery" }, // ✅ NEW
-];
+  const sections = [
+    { id: "overview", label: "Overview & Requirements" },
+    { id: "problems", label: "Problem Statements" },
+    { id: "timeline", label: "Timeline" },
+    { id: "team", label: "Team Management" },
+    { id: "community", label: "Community" },
+  ];
 
+  // Fetch hackathon by ID if not provided as prop or state
+  useEffect(() => {
+    if (!stateHackathon && !propHackathon && hackathonId) {
+      setLoading(true);
+      axios
+        .get(`http://localhost:3000/api/hackathons/${hackathonId}`)
+        .then((res) => {
+          setHackathon(res.data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError("Failed to load hackathon details");
+          setLoading(false);
+        });
+    }
+  }, [stateHackathon, propHackathon, hackathonId]);
 
   useEffect(() => {
     const fetchSavedHackathons = async () => {
+      if (!hackathon || !hackathon._id) return;
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
@@ -62,7 +99,7 @@ const sections = [
     };
 
     fetchSavedHackathons();
-  }, [hackathon._id]);
+  }, [hackathon && hackathon._id]);
 
   useEffect(() => {
     const currentScrollY = window.scrollY;
@@ -71,6 +108,7 @@ const sections = [
   }, [lastScrollY]);
 
   const refreshRegistrationStatus = async () => {
+    if (!hackathon || !hackathon._id) return;
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
@@ -89,8 +127,9 @@ const sections = [
   };
 
   useEffect(() => {
+    if (!hackathon || !hackathon._id) return;
     refreshRegistrationStatus();
-  }, [hackathon._id]);
+  }, [hackathon && hackathon._id]);
 
   // Scroll to top when component mounts
   useEffect(() => {
@@ -114,8 +153,10 @@ const sections = [
     <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       <HeaderSection
         hackathon={hackathon}
-        onBack={onBack}
-        backButtonLabel={backButtonLabel}
+        onBack={onBack || (() => navigate("/dashboard/my-hackathons"))}
+        backButtonLabel={
+          backButtonLabel || (source === 'my-hackathons' ? 'Back to My Hackathons' : 'Back to Explore')
+        }
         isSaved={isSaved}
         isRegistered={isRegistered}
         setShowRegistration={setShowRegistration}
@@ -159,10 +200,6 @@ const sections = [
             />
           )}
           {activeTab === "community" && <HackathonCommunity />}
-          {activeTab === "projects" && (
-  <HackathonProjectsGallery hackathonId={hackathon._id} />
-)}
-
         </div>
       </main>
     </div>

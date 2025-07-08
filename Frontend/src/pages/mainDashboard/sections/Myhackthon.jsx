@@ -37,7 +37,51 @@ import ProjectSubmission from "./ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 import ParticipantSubmissionForm from "./ParticipantSubmitForm";
-import { ProjectCard } from "../../../components/CommonUI/ProjectCard"; // ✅ adjust path as needed
+import { HackathonDetails } from "./HackathonDetails";
+
+// Helper to transform hackathon data for HackathonDetails
+function transformHackathonData(hackathon) {
+  return {
+    ...hackathon,
+    name: hackathon.title || hackathon.name,
+    prize: hackathon.prizePool?.amount
+      ? `$${hackathon.prizePool.amount.toLocaleString()} ${hackathon.prizePool.currency || "USD"}`
+      : hackathon.prize || "TBA",
+    participants: hackathon.participants?.length || 0,
+    maxParticipants: hackathon.maxParticipants || 100,
+    rating: 4.5,
+    reviews: 12,
+    difficulty: hackathon.difficultyLevel || hackathon.difficulty,
+    status:
+      hackathon.status === "upcoming"
+        ? "Registration Open"
+        : hackathon.status === "ongoing"
+        ? "Ongoing"
+        : "Ended",
+    startDate: new Date(hackathon.startDate).toLocaleDateString(),
+    endDate: new Date(hackathon.endDate).toLocaleDateString(),
+    registrationDeadline: new Date(hackathon.registrationDeadline).toLocaleDateString(),
+    organizer: hackathon.organizer?.name || "Unknown Organizer",
+    organizerLogo: hackathon.organizer?.logo || null,
+    featured: hackathon.tags?.includes("featured") || false,
+    sponsored: hackathon.tags?.includes("sponsored") || false,
+    requirements: hackathon.requirements || [
+      "Valid student/professional ID",
+      "Team size: 2-4 members",
+      "Original project submission",
+      "Attend mandatory sessions",
+    ],
+    perks: hackathon.perks || [
+      "Free accommodation",
+      "Meals included",
+      "Networking opportunities",
+      "Workshop access",
+      "Mentorship sessions",
+    ],
+    tags: hackathon.tags || [hackathon.category],
+    problemStatements: hackathon.problemStatements || [],
+  };
+}
 
 export default function MyHackathons() {
   const navigate = useNavigate();
@@ -53,6 +97,7 @@ export default function MyHackathons() {
   const [editMode, setEditMode] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+  const [selectedHackathonDetails, setSelectedHackathonDetails] = useState(null);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
@@ -87,17 +132,19 @@ export default function MyHackathons() {
     fetchProjects();
   }, [urlProjectId]);
 
-  // Fetch Hackathons
-  useEffect(() => {
-    const fetchRegisteredHackathons = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/registration/my", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        const data = await res.json();
-        const formatted = data.map((reg) => {
+  // Move fetchRegisteredHackathons out so we can call it on location change
+  const fetchRegisteredHackathons = async () => {
+    try {
+      setLoadingHackathons(true);
+      const res = await fetch("http://localhost:3000/api/registration/my", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const data = await res.json();
+      const formatted = data
+        .filter((reg) => reg.hackathonId) // Only keep registrations with a valid hackathon
+        .map((reg) => {
           const h = reg.hackathonId;
           return {
             id: h._id,
@@ -117,53 +164,67 @@ export default function MyHackathons() {
             submitted: false,
           };
         });
-        setHackathons(formatted);
-      } catch (err) {
-        console.error("Failed to fetch registered hackathons", err);
-      } finally {
-        setLoadingHackathons(false);
-      }
-    };
+      setHackathons(formatted);
+    } catch (err) {
+      console.error("Failed to fetch registered hackathons", err);
+    } finally {
+      setLoadingHackathons(false);
+    }
+  };
 
-    const fetchSavedHackathons = async () => {
-      try {
-        const res = await fetch(
-          "http://localhost:3000/api/users/me/saved-hackathons",
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        const data = await res.json();
-        const formatted = data.map((h) => ({
-          id: h._id,
-          name: h.title,
-          image: h.images?.banner?.url,
-          images: h.images,
-          status: h.status,
-          deadline: new Date(h.registrationDeadline).toDateString(),
-          participants: h.participants?.length || 0,
-          description: h.description,
-          prize: `$${h.prizePool?.amount?.toLocaleString()}`,
-          startDate: new Date(h.startDate).toDateString(),
-          endDate: new Date(h.endDate).toDateString(),
-          category: h.category,
-          difficulty: h.difficultyLevel,
-          registered: false,
-          submitted: false,
-        }));
-        setSavedHackathons(formatted);
-      } catch (err) {
-        console.error("Failed to fetch saved hackathons", err);
-      } finally {
-        setSavedLoading(false);
-      }
-    };
+  // Fetch saved hackathons
+  const fetchSavedHackathons = async () => {
+    try {
+      setSavedLoading(true);
+      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      const data = await res.json();
+      const formatted = data.map((h) => ({
+        id: h._id,
+        name: h.title,
+        image: h.images?.banner?.url,
+        images: h.images,
+        status: h.status,
+        deadline: new Date(h.registrationDeadline).toDateString(),
+        participants: h.participants?.length || 0,
+        description: h.description,
+        prize: `$${h.prizePool?.amount?.toLocaleString()}`,
+        startDate: new Date(h.startDate).toDateString(),
+        endDate: new Date(h.endDate).toDateString(),
+        category: h.category,
+        difficulty: h.difficultyLevel,
+        saved: true,
+      }));
+      setSavedHackathons(formatted);
+    } catch (err) {
+      console.error("Failed to fetch saved hackathons", err);
+      setSavedHackathons([]);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
 
+  // Fetch on mount and whenever the location is /dashboard/my-hackathons
+  useEffect(() => {
+    if (location.pathname === "/dashboard/my-hackathons") {
+      fetchRegisteredHackathons();
+      fetchSavedHackathons();
+    }
+  }, [location.pathname]);
+
+  // Refresh data when component mounts
+  useEffect(() => {
     fetchRegisteredHackathons();
     fetchSavedHackathons();
   }, []);
+
+  // Function to refresh saved hackathons (can be called from child components)
+  const refreshSavedHackathons = () => {
+    fetchSavedHackathons();
+  };
 
   const handleHackathonClick = (hackathonId, hackathonTitle) => {
     navigate(
@@ -219,7 +280,46 @@ export default function MyHackathons() {
     );
   }
 
+  const renderProjectCard = (project) => (
+    <Card
+      key={project._id}
+      className="group w-full max-w-sm rounded-2xl bg-white/80 shadow-md hover:shadow-xl transition duration-300 border border-border/50 overflow-hidden cursor-pointer"
+      onClick={() => {
+        setSelectedProject(project);
+        navigate(`/dashboard/my-hackathons/${project._id}`);
+      }}
+    >
+      {/* Image */}
+      <div className="relative h-32 w-full bg-muted overflow-hidden">
+        <img
+          src={project.logo?.url || "/placeholder-image.png"}
+          alt={project.title || "Project image"}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        <div className="absolute top-2 right-2">
+          <Badge className="bg-indigo-500 text-white text-xs font-semibold shadow-sm">
+            <Code className="w-3 h-3 mr-1" />
+            Project
+          </Badge>
+        </div>
+      </div>
 
+      {/* Header */}
+      <CardHeader className="px-4 pt-3 pb-1">
+        <CardTitle className="text-lg font-semibold text-foreground line-clamp-1 transition group-hover:text-indigo-600">
+          {project.title || "Untitled Project"}
+        </CardTitle>
+      </CardHeader>
+
+      {/* Content */}
+      <CardContent className="px-4 pb-4 pt-2 space-y-3">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Last updated:</span>
+          <span>{new Date(project.updatedAt).toLocaleDateString()}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   if (selectedProject) {
     return (
@@ -364,9 +464,7 @@ export default function MyHackathons() {
                       </p>
                     </CardContent>
                   </Card>
-                {projects.map((project) => (
-  <ProjectCard key={project._id} project={project} />
-))}
+                  {projects.map(renderProjectCard)}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -432,14 +530,12 @@ export default function MyHackathons() {
               {loadingHackathons ? (
                 <HackathonsSkeleton />
               ) : hackathons.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {hackathons.map((hackathon) => (
                     <Card
                       key={hackathon.id}
                       className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
-                      onClick={() =>
-                        handleHackathonClick(hackathon.id, hackathon.name)
-                      }
+                      onClick={() => navigate(`/dashboard/explore-hackathons?hackathon=${hackathon.id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=my-hackathons`)}
                     >
                       {/* Banner */}
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
@@ -473,12 +569,13 @@ export default function MyHackathons() {
                           </span>
                         </div>
                         <div className="flex gap-2 mt-2">
+                          {/* Only keep Submit button if not submitted */}
                           {!hackathon.submitted && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                              onClick={(e) => {
+                              onClick={e => {
                                 e.stopPropagation();
                                 setSelectedHackathon(hackathon);
                                 setShowSubmissionForm(true);
@@ -515,7 +612,7 @@ export default function MyHackathons() {
             </TabsContent>
 
             <TabsContent value="saved" className="space-y-4">
-              {savedLoading ? (
+              {savedLoading && savedHackathons.length > 0 ? (
                 <HackathonsSkeleton />
               ) : savedHackathons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -523,9 +620,7 @@ export default function MyHackathons() {
                     <Card
                       key={hackathon.id}
                       className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
-                      onClick={() =>
-                        handleHackathonClick(hackathon.id, hackathon.name)
-                      }
+                      onClick={() => navigate(`/dashboard/explore-hackathons?hackathon=${hackathon.id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=my-hackathons`)}
                     >
                       {/* Banner */}
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
@@ -591,6 +686,15 @@ export default function MyHackathons() {
           </Tabs>
         </section>
       </div>
+      {selectedHackathonDetails ? (
+        <HackathonDetails
+          hackathon={selectedHackathonDetails}
+          backButtonLabel={"Back to My Hackathons"}
+          onBack={() => setSelectedHackathonDetails(null)}
+        />
+      ) : (
+        ""
+      )}
     </div>
   );
 }
