@@ -35,13 +35,21 @@ async function awardOrganizerBadges(user) {
       console.log(`[Badge] Badge type not found: ${type}`);
       return;
     }
-    if (!user.badges.some(b => b.badge?.toString() === badge._id.toString())) {
+    const alreadyHas = user.badges.some(b => b.badge?.toString() === badge._id.toString());
+    if (!alreadyHas) {
       user.badges.push({ badge: badge._id, unlockedAt: new Date() });
       await user.save();
       console.log(`[Badge] Awarded badge: ${type} to user: ${user.email}`);
     } else {
       console.log(`[Badge] User already has badge: ${type}`);
     }
+    // Print user's badges after attempt
+    const updatedUser = await User.findById(user._id).populate('badges.badge');
+    console.log(`[Badge] User's badges after awarding:`, updatedUser.badges.map(b => ({
+      type: b.badge?.type,
+      name: b.badge?.name,
+      unlockedAt: b.unlockedAt
+    })));
   }
 
   // Event Creator: Create 1 hackathon

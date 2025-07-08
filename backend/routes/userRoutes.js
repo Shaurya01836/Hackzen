@@ -89,15 +89,15 @@ router.get('/logout', (req, res) => {
 });
 
 // 👤 User Routes
+// ✅ Get current user info (for session refresh) - THIS MUST COME FIRST!
+router.get('/me', protect, userController.getMe);
+
 router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUserById);
 router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isOrganizerOrAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
-
-// ✅ Get current user info (for session refresh)
-router.get('/me', protect, userController.getMe);
 
 // Test route removed for now to fix the server startup
 

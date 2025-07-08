@@ -339,29 +339,45 @@ const AchievementsSection = ({ user, onBadgeUnlocked }) => {
   // Get role-specific fallback badges
   const fallbackBadges = getFallbackBadges(user?.role);
 
-  // Filter API badges by user role
-  const roleSpecificApiBadges = apiBadges?.filter(badge => badge.role === user?.role) || [];
+  // Filter API badges to show ONLY badges for the user's specific role
+  const roleSpecificApiBadges = apiBadges?.filter(badge => {
+    // Only show badges that match the user's exact role
+    return badge.role === user?.role;
+  }) || [];
 
   // Merge backend badges with fallbackBadges for the specific role
   let mergedBadges = fallbackBadges;
   if (roleSpecificApiBadges.length > 0) {
     // Create a map of backend badges by type
     const backendBadgeMap = Object.fromEntries(roleSpecificApiBadges.map(b => [b.type, b]));
+    
     // Merge: for each fallback badge, use backend if present, else fallback
     mergedBadges = fallbackBadges.map(fb => {
       if (backendBadgeMap[fb.type]) {
-        return { ...fb, ...backendBadgeMap[fb.type] };
+        const backendBadge = backendBadgeMap[fb.type];
+        return { 
+          ...fb, 
+          ...backendBadge,
+          // Ensure isUnlocked is properly set
+          isUnlocked: backendBadge.isUnlocked || fb.isUnlocked || false
+        };
       }
       return fb;
     });
+    
+    // Add any backend badges that don't exist in fallback (but only for the user's role)
+    const fallbackTypes = new Set(fallbackBadges.map(b => b.type));
+    const additionalBackendBadges = roleSpecificApiBadges.filter(b => !fallbackTypes.has(b.type));
+    mergedBadges = [...mergedBadges, ...additionalBackendBadges];
   }
 
   const badges = mergedBadges;
 
+  // Calculate progress from API or fallback
   const progress = apiProgress && apiProgress.totalCount > 0 ? apiProgress : {
     unlockedCount: badges.filter(b => b.isUnlocked).length,
     totalCount: badges.length,
-    progressPercentage: (badges.filter(b => b.isUnlocked).length / badges.length) * 100,
+    progressPercentage: badges.length > 0 ? (badges.filter(b => b.isUnlocked).length / badges.length) * 100 : 0,
     rarityStats: badges.filter(b => b.isUnlocked).reduce((acc, badge) => {
       acc[badge.rarity] = (acc[badge.rarity] || 0) + 1;
       return acc;

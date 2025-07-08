@@ -2,6 +2,7 @@ const Badge = require('../model/BadgeModel');
 const User = require('../model/UserModel');
 const Project = require('../model/ProjectModel');
 const Hackathon = require('../model/HackathonModel');
+const SubmissionHistory = require('../model/SubmissionHistoryModel'); // Added for judge badges
 
 // Predefined achievement badges (10 badges)
 const ACHIEVEMENT_BADGES = [
@@ -88,125 +89,226 @@ const ACHIEVEMENT_BADGES = [
 ];
 
 // Initialize achievement badges
-const initializeAchievementBadges = async () => {
-  try {
-    // Clear all existing badges first
-    await Badge.deleteMany({});
-    console.log('✅ Cleared existing badges');
-    
-    // Insert only the 10 achievement badges
-    await Badge.insertMany(ACHIEVEMENT_BADGES);
-    console.log(`✅ Initialized ${ACHIEVEMENT_BADGES.length} achievement badges`);
-  } catch (error) {
-    console.error('Error initializing achievement badges:', error);
-  }
-};
+
 
 // Check and unlock badges for a user
 const checkAndUnlockBadges = async (userId) => {
+  console.log(`[Badge] Checking badges for user: ${userId}`);
   try {
     const user = await User.findById(userId)
-      .populate('badges')
+      .populate('badges.badge')
       .populate('projects')
-      .populate('hackathonsJoined');
+      .populate('hackathonsJoined')
+      .populate('registeredHackathonIds');
 
-    if (!user) return [];
+    if (!user) {
+      console.log(`[Badge] User not found: ${userId}`);
+      return [];
+    }
+    console.log(`[Badge] User: ${user.email}, Role: ${user.role}`);
 
     const unlockedBadges = [];
     const allBadges = await Badge.find();
+    
+    // Get user's current badges with proper population
+    const userWithBadges = await User.findById(userId).populate('badges.badge');
+    const userBadgeIds = userWithBadges.badges.map(b => {
+      const badgeId = b.badge?._id?.toString() || b.badge?.toString() || b.toString();
+      return badgeId;
+    });
+    
+    console.log(`[Badge] User has ${userBadgeIds.length} current badges:`, userBadgeIds);
 
     for (const badge of allBadges) {
+      const badgeId = badge._id.toString();
+      console.log(`[Badge] Checking badge: ${badge.type} (${badgeId}) for role: ${badge.role}`);
+      
       // Skip if user already has this badge
-      if (user.badges.some(userBadge => userBadge._id.toString() === badge._id.toString())) {
+      if (userBadgeIds.includes(badgeId)) {
+        console.log(`[Badge] Skipping already unlocked badge: ${badge.type} (${badgeId})`);
         continue;
       }
 
       let shouldUnlock = false;
+      console.log(`[Badge] Evaluating criteria for badge: ${badge.type}`);
 
-      switch (badge.type) {
-        case 'first-win':
-          // Check if user has won any hackathons
-          const wonHackathons = user.hackathonsJoined.filter(h => h.status === 'ended' && h.winners?.includes(userId));
-          shouldUnlock = wonHackathons.length >= 1;
-          break;
+      // UNIVERSAL BADGES (available to all users)
+      if (badge.type === 'member') {
+        shouldUnlock = true; // Any authenticated user gets the member badge
+        console.log(`[Badge] Member badge will unlock for: ${user.email}`);
+      }
 
-        case 'streak-master':
-          // Check if user has 7-day streak (this would need streak tracking)
-          shouldUnlock = user.currentStreak >= 7;
-          break;
+      // PARTICIPANT BADGES
+      if (badge.role === 'participant') {
+        switch (badge.type) {
+          case 'first-submission':
+            shouldUnlock = user.projects?.length >= 1;
+            console.log(`[Badge] First submission check: ${user.projects?.length || 0} projects`);
+            break;
+          case 'early-bird':
+            // Check if user registered for any hackathon within 24 hours of its creation
+            const earlyRegistrations = user.hackathonsJoined?.filter(h => {
+              const hackathonCreated = new Date(h.createdAt);
+              const userRegistered = new Date(h.registrationDate || hackathonCreated);
+              const timeDiff = userRegistered.getTime() - hackathonCreated.getTime();
+              return timeDiff <= 24 * 60 * 60 * 1000; // 24 hours
+            });
+            shouldUnlock = earlyRegistrations?.length >= 1;
+            console.log(`[Badge] Early bird check: ${earlyRegistrations?.length || 0} early registrations`);
+            break;
+          case 'first-win':
+            shouldUnlock = user.hackathonsJoined?.some(h => h.status === 'ended' && h.winners?.includes(userId));
+            console.log(`[Badge] First win check: ${user.hackathonsJoined?.filter(h => h.status === 'ended' && h.winners?.includes(userId)).length} wins`);
+            break;
+          case 'streak-master':
+            shouldUnlock = user.currentStreak >= 7;
+            console.log(`[Badge] Streak master check: ${user.currentStreak || 0} day streak`);
+            break;
+          case 'team-player':
+            const uniqueTeams = new Set(user.projects?.map(p => p.team?.toString()).filter(Boolean));
+            shouldUnlock = uniqueTeams.size >= 5;
+            console.log(`[Badge] Team player check: ${uniqueTeams.size} unique teams`);
+            break;
+          case 'code-wizard':
+            shouldUnlock = user.projects?.length >= 10;
+            console.log(`[Badge] Code wizard check: ${user.projects?.length || 0} projects`);
+            break;
+          case 'hackathon-veteran':
+            shouldUnlock = user.registeredHackathonIds?.length >= 10;
+            console.log(`[Badge] Hackathon veteran check: ${user.registeredHackathonIds?.length || 0} hackathons`);
+            break;
+          case 'innovation-leader':
+            const winCount = user.hackathonsJoined?.filter(h => h.status === 'ended' && h.winners?.includes(userId)).length;
+            shouldUnlock = winCount >= 3;
+            console.log(`[Badge] Innovation leader check: ${winCount} wins`);
+            break;
+          case 'active-participant':
+            shouldUnlock = user.registeredHackathonIds?.length >= 3;
+            console.log(`[Badge] Active participant check: ${user.registeredHackathonIds?.length || 0} hackathons`);
+            break;
+        }
+      }
 
-        case 'team-player':
-          // Check if user has been in 5 different teams
-          const uniqueTeams = new Set(user.projects.map(p => p.team?.toString()).filter(Boolean));
-          shouldUnlock = uniqueTeams.size >= 5;
-          break;
+      // ORGANIZER BADGES
+      if (badge.role === 'organizer') {
+        const hackathons = await Hackathon.find({ organizer: user._id });
+        const hackathonCount = hackathons.length;
+        const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants?.length || 0), 0);
+        const allRatings = hackathons.flatMap(h => h.ratings || []);
+        const avgRating = allRatings.length > 0 ? (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
+        const has100Plus = hackathons.some(h => (h.participants?.length || 0) >= 100);
+        
+        console.log(`[Badge] Organizer stats: ${hackathonCount} hackathons, ${totalParticipants} participants, ${avgRating.toFixed(2)} avg rating`);
+        
+        switch (badge.type) {
+          case 'event-creator':
+            shouldUnlock = hackathonCount >= 1;
+            break;
+          case 'community-builder':
+            shouldUnlock = has100Plus;
+            break;
+          case 'innovation-catalyst':
+            shouldUnlock = hackathonCount >= 5;
+            break;
+          case 'excellence-curator':
+            shouldUnlock = avgRating >= 4.5;
+            break;
+          case 'hackathon-legend':
+            shouldUnlock = hackathonCount >= 10 && totalParticipants >= 1000;
+            break;
+        }
+      }
 
-        case 'code-wizard':
-          // Check if user has submitted 10 projects
-          shouldUnlock = user.projects.length >= 10;
-          break;
+      // JUDGE BADGES
+      if (badge.role === 'judge') {
+        // Get hackathons where user is a judge
+        const judgeHackathons = await Hackathon.find({ judges: user._id });
+        const judgedSubmissions = await SubmissionHistory.find({ judge: user._id });
+        
+        console.log(`[Badge] Judge stats: ${judgeHackathons.length} hackathons, ${judgedSubmissions.length} submissions`);
+        
+        switch (badge.type) {
+          case 'fair-evaluator':
+            shouldUnlock = judgedSubmissions.length >= 1;
+            break;
+          case 'insightful-reviewer':
+            shouldUnlock = judgedSubmissions.length >= 50;
+            break;
+          case 'quality-guardian':
+            shouldUnlock = judgeHackathons.length >= 5;
+            break;
+          case 'expert-arbiter':
+            shouldUnlock = judgedSubmissions.length >= 100;
+            break;
+          case 'judgment-master':
+            shouldUnlock = judgeHackathons.length >= 10;
+            break;
+        }
+      }
 
-        case 'mentor':
-          // Check if user is a mentor
-          shouldUnlock = user.role === 'mentor';
-          break;
-
-        case 'organizer':
-          // Check if user has organized hackathons
-          const organizedHackathons = await Hackathon.find({ organizer: userId });
-          shouldUnlock = organizedHackathons.length >= 1;
-          break;
-
-        case 'hackathon-veteran':
-          // Check if user has participated in 10 hackathons
-          shouldUnlock = user.hackathonsJoined.length >= 10;
-          break;
-
-        case 'innovation-leader':
-          // Check if user has won 3 hackathons
-          const wonHackathonsCount = user.hackathonsJoined.filter(h => 
-            h.status === 'ended' && h.winners?.includes(userId)
-          ).length;
-          shouldUnlock = wonHackathonsCount >= 3;
-          break;
-
-        case 'early-adopter':
-          // Check if user joined within first month of platform launch
-          const platformLaunch = new Date('2024-01-01'); // Adjust as needed
-          const userJoinDate = user.createdAt;
-          shouldUnlock = userJoinDate.getTime() - platformLaunch.getTime() <= 30 * 24 * 60 * 60 * 1000;
-          break;
-
-        case 'problem-solver':
-          // Check if user has submitted projects in 5 different categories
-          const categories = new Set(user.projects.map(p => p.category).filter(Boolean));
-          shouldUnlock = categories.size >= 5;
-          break;
+      // MENTOR BADGES
+      if (badge.role === 'mentor') {
+        // Get projects where user is a mentor
+        const mentoredProjects = await Project.find({ mentor: user._id });
+        const mentorHackathons = await Hackathon.find({ mentors: user._id });
+        
+        console.log(`[Badge] Mentor stats: ${mentoredProjects.length} projects, ${mentorHackathons.length} hackathons`);
+        
+        switch (badge.type) {
+          case 'knowledge-sharer':
+            shouldUnlock = mentoredProjects.length >= 1;
+            break;
+          case 'team-guide':
+            shouldUnlock = mentoredProjects.length >= 10;
+            break;
+          case 'skill-developer':
+            // Check if user helped 5 teams win hackathons
+            const winningTeams = mentoredProjects.filter(p => p.hackathon?.winners?.includes(p.team?.toString()));
+            shouldUnlock = winningTeams.length >= 5;
+            break;
+          case 'innovation-coach':
+            shouldUnlock = mentoredProjects.length >= 25;
+            break;
+          case 'mentorship-legend':
+            shouldUnlock = mentoredProjects.length >= 50;
+            break;
+        }
       }
 
       if (shouldUnlock) {
-        user.badges.push(badge._id);
+        user.badges.push({ badge: badge._id, unlockedAt: new Date() });
         unlockedBadges.push({
           ...badge.toObject(),
           unlockedAt: new Date()
         });
+        console.log(`[Badge] ✅ Awarded badge: ${badge.type} to user: ${user.email}`);
+      } else {
+        console.log(`[Badge] ❌ Skipped badge: ${badge.type} for user: ${user.email} (criteria not met)`);
       }
     }
-
+    
     if (unlockedBadges.length > 0) {
       await user.save();
+      console.log(`[Badge] 💾 Saved ${unlockedBadges.length} new badges for user: ${user.email}`);
+    } else {
+      console.log(`[Badge] ℹ️ No new badges unlocked for user: ${user.email}`);
     }
-
+    
+    console.log(`[Badge] ✅ Badge check complete for user: ${user.email}`);
     return unlockedBadges;
   } catch (error) {
-    console.error('Error checking badges:', error);
+    console.error('❌ Error checking badges:', error);
     return [];
   }
 };
 
 exports.createBadge = async (req, res) => {
   try {
-    const { name, description, iconUrl, criteria, type, rarity } = req.body;
+    const { name, description, iconUrl, criteria, type, rarity, role } = req.body;
+
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required for badge creation.' });
+    }
 
     const badge = await Badge.create({ 
       name, 
@@ -214,7 +316,8 @@ exports.createBadge = async (req, res) => {
       iconUrl, 
       criteria, 
       type, 
-      rarity 
+      rarity, 
+      role
     });
     res.status(201).json(badge);
   } catch (err) {
@@ -345,5 +448,45 @@ exports.getUserProgress = async (req, res) => {
   }
 };
 
-// Initialize badges on module load
-initializeAchievementBadges();
+// Manually unlock member badge for testing
+exports.unlockMemberBadge = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+    const memberBadge = await Badge.findOne({ type: 'member' });
+    
+    if (!user || !memberBadge) {
+      return res.status(404).json({ message: 'User or member badge not found' });
+    }
+
+    // Check if user already has the member badge
+    const hasMemberBadge = user.badges.some(b => {
+      const badgeId = b.badge?.toString() || b.toString();
+      return badgeId === memberBadge._id.toString();
+    });
+
+    if (hasMemberBadge) {
+      return res.json({ message: 'User already has member badge', hasBadge: true });
+    }
+
+    // Add member badge to user
+    user.badges.push({ badge: memberBadge._id, unlockedAt: new Date() });
+    await user.save();
+
+    console.log(`[Badge] Manually awarded member badge to user: ${user.email}`);
+    
+    res.json({ 
+      message: 'Member badge unlocked successfully', 
+      badge: memberBadge,
+      hasBadge: true 
+    });
+  } catch (err) {
+    console.error('Error unlocking member badge:', err);
+    res.status(500).json({ message: 'Failed to unlock member badge', error: err.message });
+  }
+};
+
+// Export checkAndUnlockBadges for testing
+module.exports.checkAndUnlockBadges = checkAndUnlockBadges;
+
+

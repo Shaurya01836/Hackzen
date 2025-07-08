@@ -1,5 +1,4 @@
-  require('dotenv').config();
-  const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const Badge = require('../model/BadgeModel');
 const User = require('../model/UserModel');
 
@@ -57,9 +56,37 @@ const initializeBadges = async () => {
     await mongoose.connect(process.env.MONGO_URL);
     console.log('✅ Connected to MongoDB');
 
-    // Clear ALL existing badges
-    const deleteResult = await Badge.deleteMany({});
-    console.log(`✅ Cleared ${deleteResult.deletedCount} existing badges`);
+    // Check if badges already exist
+    const existingBadges = await Badge.find({});
+    console.log(`📊 Found ${existingBadges.length} existing badges`);
+
+    if (existingBadges.length === ALL_BADGES.length) {
+      console.log('✅ All 25 badges already exist in database');
+      
+      // Verify each badge exists
+      for (const badgeData of ALL_BADGES) {
+        const existingBadge = await Badge.findOne({ type: badgeData.type, role: badgeData.role });
+        if (!existingBadge) {
+          console.log(`❌ Missing badge: ${badgeData.name} (${badgeData.type})`);
+        }
+      }
+      
+      console.log('🎉 Badge system is properly initialized!');
+      console.log('📋 Badge breakdown:');
+      console.log(`   - Participant badges: ${PARTICIPANT_BADGES.length}`);
+      console.log(`   - Organizer badges: ${ORGANIZER_BADGES.length}`);
+      console.log(`   - Judge badges: ${JUDGE_BADGES.length}`);
+      console.log(`   - Mentor badges: ${MENTOR_BADGES.length}`);
+      console.log(`   - Total: ${ALL_BADGES.length} badges`);
+      
+      process.exit(0);
+    }
+
+    // Clear existing badges if count doesn't match
+    if (existingBadges.length > 0) {
+      const deleteResult = await Badge.deleteMany({});
+      console.log(`✅ Cleared ${deleteResult.deletedCount} existing badges`);
+    }
 
     // Insert new badges
     const badges = await Badge.insertMany(ALL_BADGES);
@@ -77,7 +104,7 @@ const initializeBadges = async () => {
 
     console.log('🎉 Badge initialization complete!');
     console.log('📊 Summary:');
-    console.log(`   - Deleted ${deleteResult.deletedCount} old badges`);
+    console.log(`   - Deleted ${existingBadges.length} old badges`);
     console.log(`   - Inserted ${badges.length} new badges`);
     console.log(`   - Updated ${users.length} users`);
     console.log('📋 Badge breakdown:');
@@ -85,6 +112,7 @@ const initializeBadges = async () => {
     console.log(`   - Organizer badges: ${ORGANIZER_BADGES.length}`);
     console.log(`   - Judge badges: ${JUDGE_BADGES.length}`);
     console.log(`   - Mentor badges: ${MENTOR_BADGES.length}`);
+    console.log(`   - Total: ${ALL_BADGES.length} badges`);
 
     process.exit(0);
   } catch (error) {

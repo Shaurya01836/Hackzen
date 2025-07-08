@@ -15,12 +15,36 @@ export const AuthProvider = ({ children }) => {
 
   const [token, setToken] = useState(() => localStorage.getItem("token"));
 
+  // Check for new badges after login
+  const checkForNewBadges = async (userId) => {
+    if (!userId) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      await axios.post(
+        'http://localhost:3000/api/badges/check',
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      console.log('[Auth] Badge check completed after login');
+    } catch (err) {
+      console.error('Failed to check badges after login:', err);
+    }
+  };
+
   // ✅ Login helper
-  const login = (userData, authToken) => {
+  const login = async (userData, authToken) => {
     setUser(userData);
     setToken(authToken);
     localStorage.setItem("user", JSON.stringify(userData));
     localStorage.setItem("token", authToken);
+    
+    // Check for new badges after login
+    await checkForNewBadges(userData._id);
   };
 
   // ✅ Logout handler
@@ -83,11 +107,20 @@ export const AuthProvider = ({ children }) => {
       if (res.data) {
         setUser(res.data);
         localStorage.setItem("user", JSON.stringify(res.data));
+        // Check for new badges after user refresh
+        await checkForNewBadges(res.data._id);
       }
     } catch (err) {
       console.error("Failed to refresh user info:", err.message);
     }
   };
+
+  // Check for new badges when user changes
+  useEffect(() => {
+    if (user?._id) {
+      checkForNewBadges(user._id);
+    }
+  }, [user?._id]);
 
   return (
     <AuthContext.Provider value={{ user, token, login, logout, refreshUser }}>

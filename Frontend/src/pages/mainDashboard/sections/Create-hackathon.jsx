@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/CommonUI/badge"
 import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
+import { useAchievements } from '../../../hooks/useAchievements';
 
 export function CreateHackathon({ onBack }) {
-  const { user, token } = useAuth() // Using AuthContext instead of localStorage
+  const { user, token } = useAuth(); // Use AuthContext only
+  const userId = user?._id;
+  const { checkForNewBadges } = useAchievements(userId);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -286,6 +289,8 @@ export function CreateHackathon({ onBack }) {
       }
 
       const data = await response.json()
+      // Call badge check after successful creation
+      await checkForNewBadges();
       alert(isDraft ? "✅ Hackathon saved as draft!" : "✅ Hackathon created successfully!")
       onBack() // Redirect to CreatedHackathons
     } catch (error) {

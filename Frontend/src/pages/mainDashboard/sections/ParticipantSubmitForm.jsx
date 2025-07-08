@@ -26,6 +26,7 @@ import {
 } from "../../../components/CommonUI/tabs";
 import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
 import axios from "axios";
+import { useAchievements } from '../../../hooks/useAchievements';
 
 export default function ProjectSubmissionForm({
   hackathon,
@@ -39,6 +40,10 @@ export default function ProjectSubmissionForm({
   const [termsAndConditions, setTermsAndConditions] = useState([]);
   const [organizerAnswers, setOrganizerAnswers] = useState({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userId = user?._id;
+  const { checkForNewBadges } = useAchievements(userId);
 
   useEffect(() => {
     const fetchCustomForm = async () => {
@@ -85,6 +90,8 @@ export default function ProjectSubmissionForm({
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      // Call badge check after successful submission
+      await checkForNewBadges();
       alert("🎉 Project submitted successfully!");
       navigate("/dashboard/my-hackathons");
     } catch (err) {

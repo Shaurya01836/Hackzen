@@ -143,15 +143,42 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// ✅ Get single user by ID
 // ✅ Get single user by ID (now includes registeredHackathonIds)
 const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('badges hackathonsJoined projects organization registeredHackathonIds')
+      .populate('hackathonsJoined projects organization registeredHackathonIds')
       .select('-passwordHash');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Clean up broken badge references
+    if (user.badges && user.badges.length > 0) {
+      const Badge = require('../model/BadgeModel');
+      const validBadges = [];
+      
+      for (const badgeEntry of user.badges) {
+        try {
+          const badgeId = badgeEntry.badge?.toString() || badgeEntry.toString();
+          const badge = await Badge.findById(badgeId);
+          if (badge) {
+            validBadges.push(badgeEntry);
+          } else {
+            console.log(`Removing broken badge reference: ${badgeId}`);
+          }
+        } catch (err) {
+          console.log(`Error checking badge: ${err.message}`);
+        }
+      }
+      
+      // Update user with only valid badges
+      if (validBadges.length !== user.badges.length) {
+        user.badges = validBadges;
+        await user.save();
+        console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
+      }
+    }
+    
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -317,13 +344,42 @@ const getMe = async (req, res) => {
     console.log('req.user._id type:', typeof req.user._id);
     console.log('req.user._id toString:', req.user._id.toString());
     
-    // First try without populate to see if the basic query works
-    const user = await User.findById(req.user._id).select('-passwordHash');
+    // Populate badges.badge for full badge info
+    const user = await User.findById(req.user._id)
+      .select('-passwordHash')
+      .populate('badges.badge');
     
     console.log('Database query result:', user);
     if (!user) {
       console.log('User not found in database');
       return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Clean up broken badge references
+    if (user.badges && user.badges.length > 0) {
+      const Badge = require('../model/BadgeModel');
+      const validBadges = [];
+      
+      for (const badgeEntry of user.badges) {
+        try {
+          const badgeId = badgeEntry.badge?._id?.toString() || badgeEntry.badge?.toString() || badgeEntry.toString();
+          const badge = await Badge.findById(badgeId);
+          if (badge) {
+            validBadges.push(badgeEntry);
+          } else {
+            console.log(`Removing broken badge reference: ${badgeId}`);
+          }
+        } catch (err) {
+          console.log(`Error checking badge: ${err.message}`);
+        }
+      }
+      
+      // Update user with only valid badges
+      if (validBadges.length !== user.badges.length) {
+        user.badges = validBadges;
+        await user.save();
+        console.log(`Cleaned up badges: ${user.badges.length} -> ${validBadges.length}`);
+      }
     }
     
     console.log('Sending user response:', { _id: user._id, email: user.email, role: user.role });

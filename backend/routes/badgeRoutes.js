@@ -25,6 +25,9 @@ router.get('/user/:userId', controller.getUserBadges);
 // ✅ Check and unlock badges for current user
 router.post('/check', protect, controller.checkUserBadges);
 
+// 🧪 Manually unlock member badge (for testing)
+router.post('/unlock-member', protect, controller.unlockMemberBadge);
+
 // 📊 Get user's achievement progress
 router.get('/progress/:userId', controller.getUserProgress);
 
