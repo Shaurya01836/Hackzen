@@ -13,6 +13,7 @@ import {
 import { Button } from "../CommonUI/button";
 import { Shield, User, Megaphone, Brain, Gavel, Key } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { buildApiUrl, getAuthHeaders } from "../../lib/api";
 
 const roleDetails = {
   participant: { icon: <User />, label: "Participant", desc: "Attends the event." },
@@ -30,21 +31,40 @@ export default function ChangeRoleDialog({ userId, currentRole, onRoleUpdate }) 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      await axios.patch(
-        `https://hackzen.onrender.com/api/users/${userId}/role`,
+      const apiUrl = buildApiUrl(`/users/${userId}/role`);
+      const headers = getAuthHeaders();
+      
+      console.log("Making API call to:", apiUrl);
+      console.log("Headers:", headers);
+      console.log("Request body:", { newRole: selectedRole });
+      
+      const response = await axios.patch(
+        apiUrl,
         { newRole: selectedRole },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: headers,
         }
       );
+      
+      console.log("Role update successful:", response.data);
       onRoleUpdate(selectedRole);
-      setOpen(false); // <-- CLOSE POPUP
+      setOpen(false);
     } catch (err) {
       console.error("Failed to update role:", err);
-      alert("Failed to update role.");
+      
+      let errorMessage = "Failed to update role.";
+      if (err.response) {
+        // Server responded with error status
+        errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        // Network error
+        errorMessage = "Network error: Unable to connect to server. Please check your connection.";
+      } else {
+        // Other error
+        errorMessage = err.message || "An unexpected error occurred.";
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
