@@ -881,24 +881,28 @@ exports.getHackathonStatusBreakdown = async (req, res) => {
 // Admin: Hackathon Category Breakdown for Analytics
 exports.getCategoryBreakdown = async (req, res) => {
   try {
-    // Expanded color palette (12+ distinct colors)
+    // Improved, visually distinct, accessible color palette
     const palette = [
-      '#8B5CF6', // Purple
-      '#3B82F6', // Blue
-      '#10B981', // Green
-      '#F59E0B', // Amber
-      '#EF4444', // Red
       '#6366F1', // Indigo
-      '#F472B6', // Pink
+      '#F59E42', // Orange
+      '#10B981', // Green
+      '#F43F5E', // Rose
+      '#3B82F6', // Blue
       '#FBBF24', // Yellow
-      '#34D399', // Emerald
-      '#60A5FA', // Light Blue
-      '#A78BFA', // Violet
-      '#F87171', // Light Red
-      '#FCD34D', // Gold
-      '#6EE7B7', // Teal
-      '#818CF8', // Periwinkle
-      '#FCA5A5', // Salmon
+      '#A21CAF', // Purple
+      '#F472B6', // Pink
+      '#0EA5E9', // Sky
+      '#F87171', // Red
+      '#22D3EE', // Cyan
+      '#84CC16', // Lime
+      '#EAB308', // Gold
+      '#D946EF', // Fuchsia
+      '#14B8A6', // Teal
+      '#FACC15', // Amber
+      '#64748B', // Slate
+      '#E11D48', // Crimson
+      '#7C3AED', // Violet
+      '#FDE68A', // Light Yellow
     ];
     const breakdown = await Hackathon.aggregate([
       { $group: { _id: '$category', count: { $sum: 1 } } },
