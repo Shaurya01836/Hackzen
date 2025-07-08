@@ -26,8 +26,8 @@ app.use(cors({
 }));
 
 // ✅ JSON + URL encoded parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ✅ Session middleware (MongoDB session store)
 app.use(session({

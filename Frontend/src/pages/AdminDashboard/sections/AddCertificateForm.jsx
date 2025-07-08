@@ -54,32 +54,39 @@ export default function AddCertificateForm() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError("")
-    setSuccess(false)
+  e.preventDefault();
+  setError("");
+  setSuccess(false);
 
-    try {
-      const res = await fetch("http://localhost:3000/api/certificate-pages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
+  try {
+    const token = localStorage.getItem("token"); // or use context if using AuthProvider
 
-      if (!res.ok) throw new Error("Failed to add certificate.")
+    const res = await fetch("http://localhost:3000/api/certificate-pages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // ✅ Add this header
+      },
+      body: JSON.stringify(formData),
+    });
 
-      setSuccess(true)
-      setFormData({
-        title: "",
-        description: "",
-        preview: "",
-        isDefault: false,
-      })
-    } catch (err) {
-      setError(err.message || "Something went wrong.")
+    if (!res.ok) {
+      const errRes = await res.json();
+      throw new Error(errRes.error || "Failed to add certificate.");
     }
+
+    setSuccess(true);
+    setFormData({
+      title: "",
+      description: "",
+      preview: "",
+      isDefault: false,
+    });
+  } catch (err) {
+    setError(err.message || "Something went wrong.");
   }
+};
+
 
   const removePreviewImage = () => {
     setFormData((prev) => ({
@@ -89,7 +96,7 @@ export default function AddCertificateForm() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-0">
+    <div className="min-h-screen  bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 p-0">
       {/* Header Section */}
       <div className="text-center mb-8 pt-10">
         <h1 className="text-4xl font-bold text-gray-800 mb-2">Add New Certificate Template</h1>

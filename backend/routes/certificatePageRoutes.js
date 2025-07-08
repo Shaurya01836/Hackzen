@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
+
 const {
   getCertificates,
   createCertificate,
   deleteCertificate
 } = require('../controllers/certificatePageController');
 
-// GET all certificate pages
-router.get('/', getCertificates);
+const { protect } = require('../middleware/authMiddleware'); // ✅ Renamed middleware
 
-// POST a new certificate page
-router.post('/', createCertificate);
+// GET: fetch all certificate pages (admin + user-created)
+router.get('/', protect, getCertificates);
 
-// DELETE a certificate page by ID
-router.delete('/:id', deleteCertificate);
+// POST: create a new certificate page
+router.post('/', protect, createCertificate);
+
+// DELETE: delete a certificate page by ID (only owner or admin)
+router.delete('/:id', protect, deleteCertificate);
 
 module.exports = router;

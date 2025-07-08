@@ -1,42 +1,95 @@
-const CertificatePage = require('../model/CertificatePageModel');
+const CertificatePage = require("../model/CertificatePageModel");
+const mongoose = require("mongoose");
 
-// Get all certificates
+// Get certificates - Admin shared (public or isDefault) + Organizer's own
 exports.getCertificates = async (req, res) => {
   try {
-    const certificates = await CertificatePage.find();
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: User not found" });
+    }
+
+    const certificates = await CertificatePage.find({
+      $or: [
+        { visibility: "public" },
+        { isDefault: true },
+        { createdBy: new mongoose.Types.ObjectId(userId) },
+      ],
+    }).populate("createdBy", "name email role");
+
     res.status(200).json(certificates);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch certificate pages.' });
+    console.error("Error fetching certificates:", err);
+    res.status(500).json({ error: "Failed to fetch certificate pages." });
   }
 };
 
-// Create a new certificate
+// Create new certificate
 exports.createCertificate = async (req, res) => {
   try {
-    const { title, description, preview, color, isDefault } = req.body;
+    const {
+      title,
+      description = "",
+      preview,
+      color = "bg-gradient-to-br from-gray-50 to-slate-50",
+      isDefault = false,
+      visibility, // allow override if organizer wants to make it public later
+      fields = [] // <-- accept fields from request
+    } = req.body;
+
+    const createdBy = req.user?._id;
+    const role = req.user?.role;
+
+    if (!createdBy) {
+      return res.status(401).json({ error: "Unauthorized: User not found" });
+    }
+
+    // Force visibility = public if admin
+    const finalVisibility = role === "admin" ? "public" : (visibility || "private");
 
     const newCertificate = new CertificatePage({
       title,
       description,
-      preview, // optional, defaults to placeholder.svg if not sent
-      color,   // optional, defaults to defined default in schema
-      isDefault
+      preview,
+      color,
+      isDefault,
+      visibility: finalVisibility,
+      createdBy,
+      fields // <-- save fields array
     });
 
     await newCertificate.save();
-    res.status(201).json(newCertificate);
+    return res.status(201).json(newCertificate);
   } catch (err) {
-    res.status(400).json({ error: 'Failed to create certificate page.' });
+    console.error("Error creating certificate:", err);
+    return res.status(400).json({ error: "Failed to create certificate page." });
   }
 };
 
-// Delete a certificate
+
+// Delete certificate (admin or creator only)
 exports.deleteCertificate = async (req, res) => {
   try {
     const { id } = req.params;
+    const currentUser = req.user;
+
+    const cert = await CertificatePage.findById(id);
+    if (!cert) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+
+    const isAdmin = currentUser.role === "admin";
+    const isOwner = cert.createdBy?.toString() === currentUser._id.toString();
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: "Not authorized to delete this certificate" });
+    }
+
     await CertificatePage.findByIdAndDelete(id);
-    res.status(200).json({ message: 'Certificate deleted successfully' });
+    res.status(200).json({ message: "Certificate deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete certificate page.' });
+    console.error("Error deleting certificate:", err);
+    res.status(500).json({ error: "Failed to delete certificate page." });
   }
 };

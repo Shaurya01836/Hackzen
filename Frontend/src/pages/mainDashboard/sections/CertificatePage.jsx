@@ -1,27 +1,45 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Card, CardContent } from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Plus, Upload, Info } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import { Plus, Upload, Info } from "lucide-react";
+import CertificateEditor from "./CertificateEditor";
 
 export default function CertificatesPage() {
-  const [templates, setTemplates] = useState([]) // <-- default removed
+  const [templates, setTemplates] = useState([]);
+  const [showEditor, setShowEditor] = useState(false);
 
-  useEffect(() => {
-    fetch("http://localhost:3000/api/certificate-pages")
-      .then((res) => res.json())
-      .then((data) => setTemplates(data))
-      .catch((err) => console.error("Failed to load templates:", err))
-  }, [])
+ useEffect(() => {
+  const token = localStorage.getItem("token"); // or from your Auth context
+
+  fetch("http://localhost:3000/api/certificate-pages", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => setTemplates(data))
+    .catch((err) => console.error("Failed to load templates:", err));
+}, []);
+
+
+  if (showEditor) {
+    return <CertificateEditor onBack={() => setShowEditor(false)} />;
+  }
 
   return (
     <div className="md:min-h-screen flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Page Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Manage Certificates</h1>
-        <p className="text-gray-600">Create, upload, or reuse certificates to share with participants or winners.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          Manage Certificates
+        </h1>
+        <p className="text-gray-600">
+          Create, upload, or reuse certificates to share with participants or
+          winners.
+        </p>
       </div>
 
       {/* Certificate Templates Grid */}
@@ -52,8 +70,12 @@ export default function CertificatesPage() {
               <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-10">
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-white text-lg drop-shadow-lg">{template.title}</h3>
-                    <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">{template.description}</p>
+                    <h3 className="font-semibold text-white text-lg drop-shadow-lg">
+                      {template.title}
+                    </h3>
+                    <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
+                      {template.description}
+                    </p>
                   </div>
                   <Button
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-lg"
@@ -84,6 +106,7 @@ export default function CertificatesPage() {
               </div>
               <Button
                 variant="outline"
+                onClick={() => setShowEditor(true)}
                 className="border-gray-300 text-gray-700 hover:border-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 transition-colors bg-transparent"
                 size="sm"
               >
@@ -103,12 +126,13 @@ export default function CertificatesPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm text-yellow-800">
-              <span className="font-medium">Automatic Branding:</span> All certificate templates automatically include
-              your organization name and HackZen branding for authenticity.
+              <span className="font-medium">Automatic Branding:</span> All
+              certificate templates automatically include your organization name
+              and HackZen branding for authenticity.
             </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
