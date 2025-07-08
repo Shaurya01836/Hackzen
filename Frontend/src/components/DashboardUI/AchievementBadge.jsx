@@ -16,7 +16,10 @@ import {
   Users,
   Code,
   Heart,
-  Award
+  Award,
+  TrendingUp,
+  Eye,
+  Shield
 } from 'lucide-react';
 import {
   Dialog,
@@ -35,16 +38,38 @@ import {
 import { useToast } from '../../hooks/use-toast';
 
 const badgeIcons = {
+  // Participant badges
+  'member': Trophy,
+  'first-submission': Code,
+  'early-bird': Star,
   'first-win': Trophy,
   'streak-master': Zap,
   'team-player': Users,
   'code-wizard': Code,
-  'mentor': Heart,
-  'organizer': Target,
   'hackathon-veteran': Award,
   'innovation-leader': Star,
-  'early-adopter': Star,
-  'problem-solver': Target
+  'active-participant': TrendingUp,
+  
+  // Organizer badges
+  'event-creator': Target,
+  'community-builder': Users,
+  'innovation-catalyst': Star,
+  'excellence-curator': Award,
+  'hackathon-legend': Trophy,
+  
+  // Judge badges
+  'fair-evaluator': Target,
+  'insightful-reviewer': Eye,
+  'quality-guardian': Shield,
+  'expert-arbiter': Award,
+  'judgment-master': Trophy,
+  
+  // Mentor badges
+  'knowledge-sharer': Heart,
+  'team-guide': Users,
+  'skill-developer': Code,
+  'innovation-coach': Star,
+  'mentorship-legend': Award
 };
 
 const badgeColors = {

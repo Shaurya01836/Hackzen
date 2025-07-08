@@ -5,6 +5,7 @@ const User = require('../model/UserModel');
 const RoleInvite = require('../model/RoleInviteModel');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const { awardOrganizerBadges } = require('../utils/badgeUtils');
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -83,6 +84,12 @@ exports.createHackathon = async (req, res) => {
       type: 'info',
       hackathon: newHackathon._id
     });
+
+    // Award organizer badges in real time
+    const organizer = await User.findById(req.user.id);
+    if (organizer) {
+      await awardOrganizerBadges(organizer);
+    }
 
     res.status(201).json(newHackathon);
   } catch (err) {
