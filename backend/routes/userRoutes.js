@@ -138,6 +138,7 @@ router.get('/me/saved-hackathons', protect, async (req, res) => {
 router.get('/admin/stats', protect, isAdmin, userController.getDashboardStats);
 router.get('/admin/monthly-stats', protect, isAdmin, userController.getMonthlyUserStats);
 router.get('/admin/role-breakdown', protect, isAdmin, userController.getUserRoleBreakdown);
+router.get('/admin/weekly-engagement', protect, isAdmin, userController.getWeeklyEngagementStats);
 
 // ✅ Judge Dashboard Routes
 router.get('/judge-stats', protect, userController.getJudgeStats);

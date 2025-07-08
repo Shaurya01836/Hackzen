@@ -32,6 +32,7 @@ router.get('/all', protect, isAdmin, getAllHackathonsRaw);
 // ✅ Admin Dashboard Routes
 router.get('/admin/stats', protect, isAdmin, require('../controllers/hackathonController').getHackathonStats);
 router.get('/admin/monthly-stats', protect, isAdmin, require('../controllers/hackathonController').getMonthlyHackathonStats);
+router.get('/admin/category-breakdown', protect, isAdmin, require('../controllers/hackathonController').getCategoryBreakdown);
 router.get('/admin/status-breakdown', protect, isAdmin, require('../controllers/hackathonController').getHackathonStatusBreakdown);
 
 // Organizer-only route: get hackathons created by logged-in organizer

@@ -877,3 +877,40 @@ exports.getHackathonStatusBreakdown = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Admin: Hackathon Category Breakdown for Analytics
+exports.getCategoryBreakdown = async (req, res) => {
+  try {
+    // Expanded color palette (12+ distinct colors)
+    const palette = [
+      '#8B5CF6', // Purple
+      '#3B82F6', // Blue
+      '#10B981', // Green
+      '#F59E0B', // Amber
+      '#EF4444', // Red
+      '#6366F1', // Indigo
+      '#F472B6', // Pink
+      '#FBBF24', // Yellow
+      '#34D399', // Emerald
+      '#60A5FA', // Light Blue
+      '#A78BFA', // Violet
+      '#F87171', // Light Red
+      '#FCD34D', // Gold
+      '#6EE7B7', // Teal
+      '#818CF8', // Periwinkle
+      '#FCA5A5', // Salmon
+    ];
+    const breakdown = await Hackathon.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+    const pieData = breakdown.map((item, idx) => ({
+      name: item._id || 'Other',
+      value: item.count,
+      color: palette[idx % palette.length]
+    }));
+    res.json(pieData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

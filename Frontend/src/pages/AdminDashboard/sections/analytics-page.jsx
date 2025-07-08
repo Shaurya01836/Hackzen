@@ -20,44 +20,79 @@ import {
   Area,
 } from "recharts"
 import { TrendingUp, Users, Target, DollarSign, Download, Calendar } from "lucide-react"
-
-const monthlyData = [
-  { month: "Jan", users: 1200, hackathons: 12, revenue: 15000, submissions: 450 },
-  { month: "Feb", users: 1800, hackathons: 19, revenue: 22000, submissions: 680 },
-  { month: "Mar", users: 2400, hackathons: 15, revenue: 18000, submissions: 520 },
-  { month: "Apr", users: 3200, hackathons: 25, revenue: 35000, submissions: 890 },
-  { month: "May", users: 2800, hackathons: 22, revenue: 28000, submissions: 750 },
-  { month: "Jun", users: 3800, hackathons: 30, revenue: 42000, submissions: 1200 },
-]
-
-const userGrowthData = [
-  { month: "Jan", newUsers: 450, totalUsers: 8500 },
-  { month: "Feb", newUsers: 680, totalUsers: 9180 },
-  { month: "Mar", newUsers: 520, totalUsers: 9700 },
-  { month: "Apr", newUsers: 890, totalUsers: 10590 },
-  { month: "May", newUsers: 750, totalUsers: 11340 },
-  { month: "Jun", newUsers: 1200, totalUsers: 12540 },
-]
-
-const categoryData = [
-  { name: "AI/ML", value: 35, color: "#8B5CF6" },
-  { name: "Web Dev", value: 28, color: "#3B82F6" },
-  { name: "Mobile", value: 18, color: "#10B981" },
-  { name: "Blockchain", value: 12, color: "#F59E0B" },
-  { name: "IoT", value: 7, color: "#EF4444" },
-]
-
-const engagementData = [
-  { day: "Mon", sessions: 1200, duration: 45 },
-  { day: "Tue", sessions: 1800, duration: 52 },
-  { day: "Wed", sessions: 1600, duration: 48 },
-  { day: "Thu", sessions: 2200, duration: 58 },
-  { day: "Fri", sessions: 2800, duration: 62 },
-  { day: "Sat", sessions: 2400, duration: 55 },
-  { day: "Sun", sessions: 1900, duration: 49 },
-]
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export function AnalyticsPage() {
+  // State for all analytics data
+  const [userStats, setUserStats] = useState(null);
+  const [userMonthlyStats, setUserMonthlyStats] = useState([]);
+  const [hackathonStats, setHackathonStats] = useState(null);
+  const [hackathonMonthlyStats, setHackathonMonthlyStats] = useState([]);
+  const [statusData, setStatusData] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [engagementData, setEngagementData] = useState([]);
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { Authorization: `Bearer ${token}` };
+        // Fetch all analytics endpoints in parallel
+        const [userStatsRes, userMonthlyRes, hackathonStatsRes, hackathonMonthlyRes, statusRes, engagementRes, categoryRes] = await Promise.all([
+          axios.get("http://localhost:3000/api/users/admin/stats", { headers }),
+          axios.get("http://localhost:3000/api/users/admin/monthly-stats", { headers }),
+          axios.get("http://localhost:3000/api/hackathons/admin/stats", { headers }),
+          axios.get("http://localhost:3000/api/hackathons/admin/monthly-stats", { headers }),
+          axios.get("http://localhost:3000/api/hackathons/admin/status-breakdown", { headers }),
+          axios.get("http://localhost:3000/api/users/admin/weekly-engagement", { headers }),
+          axios.get("http://localhost:3000/api/hackathons/admin/category-breakdown", { headers }),
+        ]);
+        setUserStats(userStatsRes.data);
+        setUserMonthlyStats(userMonthlyRes.data);
+        setHackathonStats(hackathonStatsRes.data);
+        setHackathonMonthlyStats(hackathonMonthlyRes.data);
+        setStatusData(statusRes.data);
+        setEngagementData(engagementRes.data);
+        setCategoryData(categoryRes.data);
+      } catch (err) {
+        // Optionally handle error
+        setUserStats(null);
+        setUserMonthlyStats([]);
+        setHackathonStats(null);
+        setHackathonMonthlyStats([]);
+        setStatusData([]);
+        setEngagementData([]);
+        setCategoryData([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAnalytics();
+  }, []);
+
+  // Prepare chart data
+  const monthlyData = hackathonMonthlyStats.map((h, i) => ({
+    month: h.month,
+    hackathons: h.hackathons,
+    users: userMonthlyStats[i]?.users || 0,
+    revenue: 0, // Placeholder, add revenue if available
+    submissions: 0, // Placeholder, add submissions if available
+  }));
+
+  const userGrowthData = userMonthlyStats.map((u, i) => ({
+    month: u.month,
+    newUsers: u.users,
+    totalUsers: userMonthlyStats.slice(0, i + 1).reduce((sum, curr) => sum + curr.users, 0),
+  }));
+
+  // Fallback for loading state
+  if (loading) {
+    return <div className="p-10 text-center text-lg">Loading analytics...</div>;
+  }
+
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between">
@@ -81,10 +116,10 @@ export function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Users</p>
-                <p className="text-2xl font-bold text-black">12,847</p>
+                <p className="text-2xl font-bold text-black">{userStats?.totalUsers ?? '-'}</p>
                 <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +18.2% from last month
+                  {userStats?.userGrowthPercentage ?? '-'} from last month
                 </p>
               </div>
               <Users className="w-8 h-8 text-purple-500" />
@@ -96,10 +131,10 @@ export function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Hackathons</p>
-                <p className="text-2xl font-bold text-black">123</p>
+                <p className="text-2xl font-bold text-black">{hackathonStats?.totalHackathons ?? '-'}</p>
                 <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +25% from last month
+                  {hackathonStats?.hackathonGrowthPercentage ?? '-'} from last month
                 </p>
               </div>
               <Target className="w-8 h-8 text-blue-600" />
@@ -111,10 +146,10 @@ export function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Total Revenue</p>
-                <p className="text-2xl font-bold text-black">$160K</p>
+                <p className="text-2xl font-bold text-black">Will be updated soon</p>
                 <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +32% from last month
+                  Will be updated soon
                 </p>
               </div>
               <DollarSign className="w-8 h-8 text-green-400" />
@@ -126,10 +161,10 @@ export function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-700 text-sm">Avg. Engagement</p>
-                <p className="text-2xl font-bold text-black">4.2h</p>
+                <p className="text-2xl font-bold text-black">Will be updated soon</p>
                 <p className="text-gray-600 text-sm flex items-center mt-1">
                   <TrendingUp className="w-3 h-3 mr-1" />
-                  +12% from last month
+                  Will be updated soon
                 </p>
               </div>
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-500 to-orange-500 flex items-center justify-center text-white text-sm font-bold">
@@ -165,7 +200,7 @@ export function AnalyticsPage() {
                   }}
                 />
                 <Bar dataKey="hackathons" fill="#8B5CF6" name="Hackathons" />
-                <Bar dataKey="submissions" fill="#3B82F6" name="Submissions" />
+                <Bar dataKey="users" fill="#3B82F6" name="Users" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -251,26 +286,30 @@ export function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={engagementData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="day" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.8)",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
-                    borderRadius: "8px",
-                    color: "white",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="sessions"
-                  stroke="#F59E0B"
-                  strokeWidth={3}
-                  dot={{ fill: "#F59E0B", strokeWidth: 2, r: 6 }}
-                />
-              </LineChart>
+              {engagementData && engagementData.length > 0 ? (
+                <LineChart data={['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day => engagementData.find(d => d.day === day) || { day, sessions: 0 })}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="day" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="sessions"
+                    stroke="#F59E0B"
+                    strokeWidth={3}
+                    dot={{ fill: "#F59E0B", strokeWidth: 2, r: 6 }}
+                  />
+                </LineChart>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400">No engagement data available</div>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>

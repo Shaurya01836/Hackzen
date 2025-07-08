@@ -24,7 +24,8 @@ import InviteAccept from "./pages/InviteAccept";
 import InviteRole from "./pages/InviteRole";
 // import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
-import JudgePanel from "./pages/JudgePanel/JudgePage"
+import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
+import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 
 function App() {
   return (
@@ -46,6 +47,9 @@ function App() {
         path="/admin"
         element={<Navigate to="/admin/dashboard" replace />}
       />
+
+<Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
+<Route path="/dashboard/exploreh/:id" element={<DashboardPage />} />
 
       {/* Dashboard */}
       <Route

@@ -604,6 +604,49 @@ exports.resetUserDataForRole = async function(userId, newRole) {
   return user;
 };
 
+// Admin: Weekly Engagement Analytics
+const getWeeklyEngagementStats = async (req, res) => {
+  try {
+    // Get all users' activity logs for the last 7 days
+    const now = new Date();
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      days.push(d.toISOString().split('T')[0]);
+    }
+    // Map: day string (YYYY-MM-DD) => { sessions: count, duration: avg (placeholder) }
+    const engagementMap = {};
+    days.forEach(day => {
+      engagementMap[day] = { sessions: 0, duration: 0 };
+    });
+    // Get all users' activityLog
+    const users = await User.find({}, 'activityLog');
+    users.forEach(user => {
+      if (Array.isArray(user.activityLog)) {
+        user.activityLog.forEach(dateStr => {
+          if (engagementMap[dateStr]) {
+            engagementMap[dateStr].sessions += 1;
+          }
+        });
+      }
+    });
+    // Prepare result for chart (use weekday names)
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const result = days.map(dateStr => {
+      const d = new Date(dateStr);
+      return {
+        day: weekDays[d.getDay()],
+        sessions: engagementMap[dateStr].sessions,
+        duration: 45 // Placeholder, as duration is not tracked
+      };
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
@@ -622,6 +665,7 @@ module.exports = {
   getMonthlyUserStats,
   getUserRoleBreakdown,
   getJudgeStats,
+  getWeeklyEngagementStats,
 };
 
 
