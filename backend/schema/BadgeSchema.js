@@ -4,15 +4,15 @@ const BadgeSchema = new Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
   iconUrl: { type: String, required: true },
-  criteria: { type: String, required: true }, // e.g., "Win 3 hackathons"
+  criteria: { type: String, required: true },
   type: { 
     type: String, 
-    enum: [
-      'first-win', 'streak-master', 'team-player', 'code-wizard', 
-      'mentor', 'organizer', 'hackathon-veteran', 'innovation-leader',
-      'early-adopter', 'problem-solver'
-    ],
     required: true 
+  },
+  role: {
+    type: String,
+    enum: ['participant', 'organizer', 'judge', 'mentor'],
+    required: true
   },
   rarity: { 
     type: String, 

@@ -216,12 +216,12 @@ function Navbar() {
                       </div>
                     ) : (
                       <AnimatedList>
-                        {[...notifications].reverse().map((n) => (
+                        {[...notifications].map((n) => (
                           <div
                             key={n._id}
                             className="group bg-white/30 rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%]"
                           >
-                            <div className="font-medium text-black group-hover:text-indigo-600">
+                            <div className="font-medium text-black ">
                               {n.message}
                             </div>
                             <div className="text-xs text-gray-700 mt-1">

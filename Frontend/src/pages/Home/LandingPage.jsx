@@ -8,7 +8,6 @@ import FeaturedHackCards from "../../components/common/FeaturedHackCards";
 import Footer from "../../components/layout/Footer";
 import MilestoneStats from "../../components/sections/MilestoneStats";
 import JoinCommunity from "../../components/sections/JoinCommunity";
-import { SmoothCursor } from "../../components/Magic UI/SmoothScroll";
 import { useAuth } from "../../context/AuthContext";
 
 function LandingPage() {
