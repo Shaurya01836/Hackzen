@@ -17,7 +17,13 @@ import {
   Code,
   FileText,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  Clock,
+  Award,
+  Shield
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { Button } from "../../../components/CommonUI/button"
@@ -133,7 +139,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
           ...prev,
           ...autoFillData
         }));
-        
+
         // Set flag to show auto-fill message
         if (hasPreviousData) {
           setHasAutoFilled(true);
@@ -158,6 +164,13 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     "Blockchain",
     "Cybersecurity",
     "Open Innovation"
+  ]
+
+  const steps = [
+    { id: 1, title: "Personal Info", icon: User, description: "Basic information" },
+    { id: 2, title: "Background", icon: GraduationCap, description: "Academic & professional" },
+    { id: 3, title: "Team & Project", icon: Users, description: "Team details & ideas" },
+    { id: 4, title: "Review", icon: CheckCircle, description: "Final confirmation" }
   ]
 
   const validateStep = step => {
@@ -241,7 +254,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       const data = await response.json();
       console.log("Registration response:", data);
-      
+
       if (!response.ok) {
         if (data.message && data.message.includes("Already registered")) {
           console.log("Already registered, treating as success");
@@ -250,7 +263,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
         }
         throw new Error(data.message || "Failed to register");
       }
-      
+
       // Show success message with team information
       if (data.team) {
         console.log("Team created successfully:", data.team);
@@ -267,7 +280,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
           duration: 3000
         });
       }
-      
+
       onSuccess(); // success handler
     } catch (error) {
       console.error("Registration failed:", error);
@@ -285,80 +298,40 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+          <div className="space-y-8 py-4">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <User className="w-8 h-8 text-blue-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Personal Information
               </h2>
-              <p className="text-gray-600">Tell us about yourself</p>
-              
-              {hasAutoFilled && (
-                
-                  <div className="flex items-center justify-between">
-                   
-                    <div className="flex gap-2">
-                
-                      
-                     
-                  
-                        {async () => {
-                          try {
-                            const token = localStorage.getItem("token");
-                            const response = await fetch("http://localhost:3000/api/registration/last-registration", {
-                              headers: {
-                                Authorization: `Bearer ${token}`,
-                              },
-                            });
-
-                            if (response.ok) {
-                              const data = await response.json();
-                              if (data.hasPreviousRegistration && data.formData) {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  ...data.formData
-                                }));
-                                toast({
-                                  title: "Auto-fill Refreshed",
-                                  description: "Your latest registration details have been loaded.",
-                                  duration: 2000
-                                });
-                              }
-                            }
-                          } catch (error) {
-                            console.log("Could not refresh auto-fill data:", error);
-                          }
-                        }}
-                      
-                       
-                   
-                    </div>
-                 
-                </div>
-              )}
+              <p className="text-gray-600 text-lg">Let's start with your basic details</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="fullName" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Full Name *
-                  
                 </Label>
                 <Input
                   id="fullName"
                   value={formData.fullName}
                   onChange={e => handleInputChange("fullName", e.target.value)}
                   placeholder="Enter your full name"
-                  className={`${errors.fullName ? "border-red-500" : ""} ${hasAutoFilled && formData.fullName ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.fullName ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.fullName ? "border-blue-300 bg-blue-50" : ""}`}
                 />
-               
                 {errors.fullName && (
-                  <p className="text-sm text-red-500">{errors.fullName}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.fullName}
+                  </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Mail className="w-4 h-4" />
                   Email Address *
                 </Label>
@@ -368,33 +341,34 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.email}
                   onChange={e => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email"
-                  className={`${errors.email ? "border-red-500" : ""} ${hasAutoFilled && formData.email ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.email ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.email ? "border-blue-300 bg-blue-50" : ""}`}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.email}
+                  </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Phone Number
-                
                 </Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={e => handleInputChange("phone", e.target.value)}
                   placeholder="Enter your phone number"
-                  className={`${hasAutoFilled && formData.phone ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.phone ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="age" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="age" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   Age
-                 
                 </Label>
                 <Input
                   id="age"
@@ -402,20 +376,19 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.age}
                   onChange={e => handleInputChange("age", e.target.value)}
                   placeholder="Enter your age"
-                  className={`${hasAutoFilled && formData.age ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.age ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="gender" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="gender" className="text-sm font-semibold text-gray-700">
                   Gender
-                 
                 </Label>
                 <Select
                   value={formData.gender}
                   onValueChange={value => handleInputChange("gender", value)}
                 >
-                  <SelectTrigger className={`${hasAutoFilled && formData.gender ? "border-blue-300 bg-blue-50" : ""}`}>
+                  <SelectTrigger className={`h-12 text-base ${hasAutoFilled && formData.gender ? "border-blue-300 bg-blue-50" : ""}`}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -426,26 +399,21 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label
-                  htmlFor="collegeOrCompany"
-                  className="flex items-center gap-2"
-                >
+              <div className="space-y-3">
+                <Label htmlFor="collegeOrCompany" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Building className="w-4 h-4" />
                   College/Company *
-                 
                 </Label>
                 <Input
                   id="collegeOrCompany"
                   value={formData.collegeOrCompany}
-                  onChange={e =>
-                    handleInputChange("collegeOrCompany", e.target.value)
-                  }
+                  onChange={e => handleInputChange("collegeOrCompany", e.target.value)}
                   placeholder="Enter your college or company"
-                  className={`${errors.collegeOrCompany ? "border-red-500" : ""} ${hasAutoFilled && formData.collegeOrCompany ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.collegeOrCompany ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.collegeOrCompany ? "border-blue-300 bg-blue-50" : ""}`}
                 />
                 {errors.collegeOrCompany && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
                     {errors.collegeOrCompany}
                   </p>
                 )}
@@ -456,129 +424,114 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Academic/Professional Details
+          <div className="space-y-8 py-4">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
+                <GraduationCap className="w-8 h-8 text-purple-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                Academic & Professional Background
               </h2>
-              <p className="text-gray-600">
-                Help us understand your background
-              </p>
+              <p className="text-gray-600 text-lg">Help us understand your experience level</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="degreeOrRole"
-                  className="flex items-center gap-2"
-                >
+              <div className="space-y-3">
+                <Label htmlFor="degreeOrRole" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <GraduationCap className="w-4 h-4" />
                   Degree/Role
-                 
                 </Label>
                 <Input
                   id="degreeOrRole"
                   value={formData.degreeOrRole}
-                  onChange={e =>
-                    handleInputChange("degreeOrRole", e.target.value)
-                  }
+                  onChange={e => handleInputChange("degreeOrRole", e.target.value)}
                   placeholder="e.g., Computer Science, Software Engineer"
-                  className={`${hasAutoFilled && formData.degreeOrRole ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.degreeOrRole ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="yearOfStudyOrExperience" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="yearOfStudyOrExperience" className="text-sm font-semibold text-gray-700">
                   Year of Study/Experience
-                  
                 </Label>
                 <Input
                   id="yearOfStudyOrExperience"
                   type="number"
                   value={formData.yearOfStudyOrExperience}
-                  onChange={e =>
-                    handleInputChange("yearOfStudyOrExperience", e.target.value)
-                  }
+                  onChange={e => handleInputChange("yearOfStudyOrExperience", e.target.value)}
                   placeholder="e.g., 2 (years)"
-                  className={`${hasAutoFilled && formData.yearOfStudyOrExperience ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.yearOfStudyOrExperience ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="github" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="github" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Github className="w-4 h-4" />
                   GitHub Profile
-                 
                 </Label>
                 <Input
                   id="github"
                   value={formData.github}
                   onChange={e => handleInputChange("github", e.target.value)}
                   placeholder="https://github.com/username"
-                  className={`${hasAutoFilled && formData.github ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.github ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="linkedin" className="flex items-center gap-2">
+              <div className="space-y-3">
+                <Label htmlFor="linkedin" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                   <Linkedin className="w-4 h-4" />
                   LinkedIn Profile
-                
                 </Label>
                 <Input
                   id="linkedin"
                   value={formData.linkedin}
                   onChange={e => handleInputChange("linkedin", e.target.value)}
                   placeholder="https://linkedin.com/in/username"
-                  className={`${hasAutoFilled && formData.linkedin ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.linkedin ? "border-blue-300 bg-blue-50" : ""}`}
                 />
               </div>
-
-              
             </div>
           </div>
         )
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+          <div className="space-y-8 py-4">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <Users className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Team & Project Details
               </h2>
-              <p className="text-gray-600">
-                Tell us about your team and project idea
-              </p>
+              <p className="text-gray-600 text-lg">Tell us about your team and project idea</p>
             </div>
 
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="teamName" className="flex items-center gap-2">
+                <div className="space-y-3">
+                  <Label htmlFor="teamName" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <Users className="w-4 h-4" />
                     Team Name *
                   </Label>
                   <Input
                     id="teamName"
                     value={formData.teamName}
-                    onChange={e =>
-                      handleInputChange("teamName", e.target.value)
-                    }
+                    onChange={e => handleInputChange("teamName", e.target.value)}
                     placeholder="Enter your team name"
-                    className={errors.teamName ? "border-red-500" : ""}
+                    className={`h-12 text-base ${errors.teamName ? "border-red-500 focus:border-red-500" : ""}`}
                   />
-                  
-                  <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                    <strong>Team Size:</strong> This hackathon allows teams of {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members
-                    {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
-                  </div>
                   {errors.teamName && (
-                    <p className="text-sm text-red-500">{errors.teamName}</p>
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.teamName}
+                    </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="track" className="flex items-center gap-2">
+                <div className="space-y-3">
+                  <Label htmlFor="track" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <Code className="w-4 h-4" />
                     Track *
                   </Label>
@@ -586,9 +539,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     value={formData.track}
                     onValueChange={value => handleInputChange("track", value)}
                   >
-                    <SelectTrigger
-                      className={errors.track ? "border-red-500" : ""}
-                    >
+                    <SelectTrigger className={`h-12 text-base ${errors.track ? "border-red-500 focus:border-red-500" : ""}`}>
                       <SelectValue placeholder="Select your preferred track" />
                     </SelectTrigger>
                     <SelectContent>
@@ -600,74 +551,83 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     </SelectContent>
                   </Select>
                   {errors.track && (
-                    <p className="text-sm text-red-500">{errors.track}</p>
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.track}
+                    </p>
                   )}
                 </div>
+              </div>
 
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="teamDescription" className="flex items-center gap-2">
-                    <FileText className="w-4 h-4" />
-                    Team Description (Optional)
-                  </Label>
-                  <Textarea
-                    id="teamDescription"
-                    value={formData.teamDescription}
-                    onChange={e =>
-                      handleInputChange("teamDescription", e.target.value)
-                    }
-                    placeholder="Describe your team's goals, skills, and what you hope to achieve (max 300 characters)"
-                    maxLength={300}
-                    rows={3}
-                  />
-                  <p className="text-sm text-gray-500 text-right">
-                    {formData.teamDescription.length}/300 characters
-                  </p>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium text-blue-800">Team Information</span>
                 </div>
+                <p className="text-sm text-blue-700">
+                  This hackathon allows teams of <strong>{hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members</strong>
+                  {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="projectIdea"
-                    className="flex items-center gap-2"
-                  >
-                    <Lightbulb className="w-4 h-4" />
-                    Project Idea (Optional)
-                  </Label>
-                  <Textarea
-                    id="projectIdea"
-                    value={formData.projectIdea}
-                    onChange={e =>
-                      handleInputChange("projectIdea", e.target.value)
-                    }
-                    placeholder="Briefly describe your project idea (max 500 characters)"
-                    maxLength={500}
-                    rows={4}
-                  />
-                  <p className="text-sm text-gray-500 text-right">
-                    {formData.projectIdea.length}/500 characters
-                  </p>
-                </div>
+              <div className="space-y-3">
+                <Label htmlFor="teamDescription" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Team Description (Optional)
+                </Label>
+                <Textarea
+                  id="teamDescription"
+                  value={formData.teamDescription}
+                  onChange={e => handleInputChange("teamDescription", e.target.value)}
+                  placeholder="Describe your team's goals, skills, and what you hope to achieve"
+                  maxLength={300}
+                  rows={3}
+                  className="text-base resize-none"
+                />
+                <p className="text-sm text-gray-500 text-right">
+                  {formData.teamDescription.length}/300 characters
+                </p>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="heardFrom">
-                    How did you hear about this hackathon?
-                  </Label>
-                  <Select
-                    value={formData.heardFrom}
-                    onValueChange={value => handleInputChange("heardFrom", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select an option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Social Media">Social Media</SelectItem>
-                      <SelectItem value="Friends">Friends</SelectItem>
-                      <SelectItem value="College">College</SelectItem>
-                      <SelectItem value="Website">Website</SelectItem>
-                      <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-3">
+                <Label htmlFor="projectIdea" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4" />
+                  Project Idea (Optional)
+                </Label>
+                <Textarea
+                  id="projectIdea"
+                  value={formData.projectIdea}
+                  onChange={e => handleInputChange("projectIdea", e.target.value)}
+                  placeholder="Briefly describe your project idea"
+                  maxLength={500}
+                  rows={4}
+                  className="text-base resize-none"
+                />
+                <p className="text-sm text-gray-500 text-right">
+                  {formData.projectIdea.length}/500 characters
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="heardFrom" className="text-sm font-semibold text-gray-700">
+                  How did you hear about this hackathon?
+                </Label>
+                <Select
+                  value={formData.heardFrom}
+                  onValueChange={value => handleInputChange("heardFrom", value)}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="Select an option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Social Media">Social Media</SelectItem>
+                    <SelectItem value="Friends">Friends</SelectItem>
+                    <SelectItem value="College">College</SelectItem>
+                    <SelectItem value="Website">Website</SelectItem>
+                    <SelectItem value="Email">Email</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
@@ -675,92 +635,129 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
 
       case 4:
         return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">
+          <div className="space-y-8 py-4">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Review & Submit
               </h2>
-              <p className="text-gray-600">
-                Please review your information before submitting
-              </p>
+              <p className="text-gray-600 text-lg">Please review your information before submitting</p>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  Registration Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="font-medium text-gray-700">Personal Info</p>
-                    <p>{formData.fullName}</p>
-                    <p>{formData.email}</p>
-                    <p>{formData.collegeOrCompany}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-2 border-gray-100 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <User className="w-5 h-5 text-blue-600" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Name:</span>
+                    <span className="font-medium">{formData.fullName}</span>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-700">Track & Team</p>
-                    <p>Track: {formData.track}</p>
-                    {formData.teamName && <p>Team: {formData.teamName}</p>}
-                    {formData.teamDescription && <p className="text-sm text-gray-600 mt-1">Description: {formData.teamDescription}</p>}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Email:</span>
+                    <span className="font-medium">{formData.email}</span>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">College/Company:</span>
+                    <span className="font-medium">{formData.collegeOrCompany}</span>
+                  </div>
+                  {formData.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Phone:</span>
+                      <span className="font-medium">{formData.phone}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-            <Card className="border-yellow-200 bg-yellow-50">
+              <Card className="border-2 border-gray-100 shadow-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Users className="w-5 h-5 text-green-600" />
+                    Team & Project
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Team Name:</span>
+                    <span className="font-medium">{formData.teamName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Track:</span>
+                    <span className="font-medium">{formData.track}</span>
+                  </div>
+                  {formData.teamDescription && (
+                    <div>
+                      <span className="text-gray-600">Description:</span>
+                      <p className="font-medium text-xs mt-1">{formData.teamDescription}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
               <CardContent className="pt-6">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-yellow-800">
-                      Important Notes
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-5 h-5 text-yellow-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-yellow-800 text-lg mb-3">
+                      Important Information
                     </h3>
-                    <ul className="text-sm text-yellow-700 mt-2 space-y-1">
-                      <li>
-                        Registration deadline: {hackathon.registrationDeadline}
-                      </li>
-                      <li>
-                        You will receive a confirmation email after registration
-                      </li>
-                      <li>Your team will be automatically created with you as the leader and member</li>
-                      <li>Team size: {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members</li>
-                      <li>You can invite team members via email or team code after registration</li>
-                      <li>
-                        All communication will be through the provided email
-                      </li>
-                    </ul>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-700">Registration deadline: {hackathon.registrationDeadline}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-700">Team size: {hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Award className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-700">Confirmation email will be sent</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-yellow-600" />
+                        <span className="text-yellow-700">Team will be created automatically</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <div className="flex items-start space-x-2">
+            <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg">
               <Checkbox
                 id="acceptedTerms"
                 checked={formData.acceptedTerms}
-                onCheckedChange={checked =>
-                  handleInputChange("acceptedTerms", checked)
-                }
-                className={errors.acceptedTerms ? "border-red-500" : ""}
+                onCheckedChange={checked => handleInputChange("acceptedTerms", checked)}
+                className={`${errors.acceptedTerms ? "border-red-500" : ""} data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 data-[state=checked]:text-white`}
               />
               <div className="grid gap-1.5 leading-none">
-                <Label
-                  htmlFor="acceptedTerms"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
+                <Label htmlFor="acceptedTerms" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   I accept the terms and conditions *
                 </Label>
-                <p className="text-xs text-muted-foreground">
-                  By registering, you agree to the hackathon rules and code of
-                  conduct.
+                <p className="text-xs text-gray-600">
+                  By registering, you agree to the hackathon rules and code of conduct.
                 </p>
               </div>
             </div>
             {errors.acceptedTerms && (
-              <p className="text-sm text-red-500">{errors.acceptedTerms}</p>
+              <p className="text-sm text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.acceptedTerms}
+              </p>
             )}
           </div>
         )
@@ -771,71 +768,81 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-auto">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 z-50 overflow-auto">
       <div className="min-h-screen">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b z-10">
-          <div className="flex items-center justify-between p-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Details
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Register for {hackathon.name}
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Step {currentStep} of {totalSteps}
-                </p>
+        <div className="sticky top-0 bg-white/90 backdrop-blur-sm border-b border-gray-200 z-10">
+          <div className="max-w-6xl mx-auto px-6 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBack}
+                  className="flex items-center gap-2 hover:bg-gray-100"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">
+                    Register for {hackathon.name}
+                  </h1>
+                  <p className="text-xs text-gray-500">
+                    Step {currentStep} of {totalSteps}
+                  </p>
+                </div>
               </div>
+              <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50">
+                {hackathon.status}
+              </Badge>
             </div>
-            <Badge
-              variant="outline"
-              className="text-green-600 border-green-600"
-            >
-              {hackathon.status}
-            </Badge>
-          </div>
 
-          {/* Progress Bar */}
-          <div className="px-6 pb-4">
-            <Progress value={progress} className="h-2" />
+            {/* Simple Progress Bar */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium text-gray-600 min-w-[60px]">
+                {Math.round(progress)}%
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="max-w-4xl mx-auto p-6">
-          <Card>
+          <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <CardContent className="p-8">{renderStep()}</CardContent>
           </Card>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-between mt-8">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={currentStep === 1}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 px-6 py-3 h-12"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
 
             {currentStep < totalSteps ? (
-              <Button onClick={handleNext} className="flex items-center gap-2">
+              <Button 
+                onClick={handleNext} 
+                className="flex items-center gap-2 px-6 py-3 h-12 bg-indigo-600 hover:bg-indigo-700"
+              >
                 Next
-                <ArrowLeft className="w-4 h-4 rotate-180" />
+                <ChevronRight className="w-4 h-4" />
               </Button>
             ) : (
               <Button
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                className="flex items-center gap-2 px-8 py-3 h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
               >
                 {isSubmitting ? (
                   <>

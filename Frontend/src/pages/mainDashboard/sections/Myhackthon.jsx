@@ -468,11 +468,14 @@ export default function MyHackathons() {
               {loadingHackathons ? (
                 <HackathonsSkeleton />
               ) : hackathons.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {hackathons.map((hackathon) => (
                     <Card
                       key={hackathon.id}
-                      className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden"
+                      className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+                      onClick={() =>
+                        handleHackathonClick(hackathon.id, hackathon.name)
+                      }
                     >
                       {/* Banner */}
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
@@ -506,40 +509,20 @@ export default function MyHackathons() {
                           </span>
                         </div>
                         <div className="flex gap-2 mt-2">
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                            onClick={() =>
-                              handleHackathonClick(hackathon.id, hackathon.name)
-                            }
-                          >
-                            View
-                          </Button>
                           {!hackathon.submitted && (
                             <Button
                               variant="outline"
                               size="sm"
                               className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedHackathon(hackathon);
                                 setShowSubmissionForm(true);
                               }}
                             >
-                            Submit
+                              Submit
                             </Button>
                           )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                            onClick={() => {
-                              setSelectedHackathon(hackathon);
-                              setCurrentView("edit-project");
-                            }}
-                          >
-                            Edit
-                          </Button>
                         </div>
                       </CardContent>
                     </Card>
