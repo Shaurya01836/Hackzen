@@ -6,7 +6,7 @@ const userController = require('../controllers/userController');
 const { protect, isAdmin, isOrganizerOrAdmin } = require('../middleware/authMiddleware');
 const trackStreak = require("../middleware/trackStreak");
 const User = require('../model/UserModel');
-
+const RoleInvite = require('../model/RoleInviteModel');
 // 🔐 OAuth Routes
 router.get('/github', (req, res, next) => {
   const redirectTo = req.query.redirectTo;
@@ -87,7 +87,22 @@ router.get('/logout', (req, res) => {
     });
   });
 });
+router.get('/me/judge-hackathons', protect, async (req, res) => {
+  try {
+    const invites = await RoleInvite.find({
+      invitedUser: req.user.id,
+      role: 'judge',
+      status: 'accepted'
+    }).populate('hackathon');
 
+    const hackathons = invites.map(invite => invite.hackathon);
+    res.status(200).json(hackathons);
+  } catch (err) {
+    console.error('Error fetching judge hackathons:', err);
+    res.status(500).json({ message: 'Failed to fetch judge hackathons' });
+  }
+});
+router.get('/judge-stats', protect, userController.getJudgeStats);
 // 👤 User Routes
 // ✅ Get current user info (for session refresh) - THIS MUST COME FIRST!
 router.get('/me', protect, userController.getMe);
@@ -141,6 +156,5 @@ router.get('/admin/role-breakdown', protect, isAdmin, userController.getUserRole
 router.get('/admin/weekly-engagement', protect, isAdmin, userController.getWeeklyEngagementStats);
 
 // ✅ Judge Dashboard Routes
-router.get('/judge-stats', protect, userController.getJudgeStats);
 
 module.exports = router;

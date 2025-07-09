@@ -1,5 +1,6 @@
 const Score = require("../model/ScoreModel");
 const Project = require("../model/ProjectModel");
+const RoleInvite = require("../model/RoleInviteModel");
 
 exports.createOrUpdateScore = async (req, res) => {
   const judge = req.user._id;
@@ -27,6 +28,16 @@ exports.createOrUpdateScore = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error submitting score" });
+  }
+};
+exports.getMyScoredProjects = async (req, res) => {
+  try {
+    const scores = await Score.find({ judge: req.user._id }).select("project");
+    const projectIds = scores.map(score => score.project.toString());
+    res.json(projectIds);
+  } catch (err) {
+    console.error("Failed to get judged project IDs", err);
+    res.status(500).json({ message: "Failed to fetch judged projects" });
   }
 };
 

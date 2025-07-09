@@ -23,7 +23,28 @@ export default function JudgePanel({ onBack }) {
     completedJudgments: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [hackathons, setHackathons] = useState([]);
+  const [loadingHackathons, setLoadingHackathons] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchHackathons = async () => {
+      try {
+        const token = localStorage.getItem("token");
+const res = await fetch("http://localhost:3000/api/users/me/judge-hackathons", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setHackathons(data);
+      } catch (err) {
+        console.error("Error fetching judge hackathons", err);
+      } finally {
+        setLoadingHackathons(false);
+      }
+    };
+
+    fetchHackathons();
+  }, []);
 
   useEffect(() => {
     const fetchJudgeData = async () => {
@@ -86,11 +107,11 @@ export default function JudgePanel({ onBack }) {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard icon={<Trophy className="h-5 w-5 text-blue-600" />} label="Hackathons" value={judgeData.totalHackathons} />
         <StatCard icon={<FileText className="h-5 w-5 text-green-600" />} label="Submissions" value={judgeData.totalSubmissions} />
-        <StatCard icon={<Star className="h-5 w-5 text-yellow-600" />} label="Avg Rating" value={judgeData.averageRating.toFixed(1)} />
+        <StatCard icon={<Star className="h-5 w-5 text-yellow-600" />} label="Avg Rating" value={Number(judgeData.averageRating).toFixed(2)} />
         <StatCard icon={<Gavel className="h-5 w-5 text-purple-600" />} label="Completed" value={judgeData.completedJudgments} />
       </div>
 
@@ -130,6 +151,59 @@ export default function JudgePanel({ onBack }) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Hackathons You're Judging */}
+      <h2 className="text-xl font-semibold mt-12 mb-4">Hackathons You’re Judging</h2>
+      {loadingHackathons ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="animate-pulse h-52" />
+          ))}
+        </div>
+      ) : hackathons.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {hackathons.map((hackathon) => (
+            <Card
+              key={hackathon._id}
+              className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+              onClick={() =>
+                navigate(`/dashboard/explore-hackathons?hackathon=${hackathon._id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=judge`)
+              }
+            >
+              <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
+                <img
+                  src={
+                    hackathon.images?.logo?.url ||
+                    hackathon.images?.banner?.url ||
+                    "/assets/default-banner.png"
+                  }
+                  alt={hackathon.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <CardHeader className="px-4 pt-3 pb-1">
+                <CardTitle className="text-lg font-semibold text-indigo-700 line-clamp-1 group-hover:text-indigo-900 transition">
+                  {hackathon.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-2 space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    <Trophy className="inline w-4 h-4 mr-1" />
+                    {hackathon.prize}
+                  </span>
+                  <span>
+                    <Star className="inline w-4 h-4 mr-1" />
+                    {hackathon.difficulty}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <p className="text-gray-500">You’re not assigned to judge any hackathons yet.</p>
+      )}
     </div>
   );
 }

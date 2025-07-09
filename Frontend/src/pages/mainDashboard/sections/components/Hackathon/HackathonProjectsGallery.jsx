@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Card, CardContent } from "../../../../../components/CommonUI/card";
 import { Skeleton } from "../../../../../components/DashboardUI/skeleton";
-import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path as needed
+import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
 
 export default function HackathonProjectsGallery({ hackathonId }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [judgeScores, setJudgeScores] = useState([]);
   const navigate = useNavigate();
 
+  // Fetch projects for the hackathon
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -27,6 +30,32 @@ export default function HackathonProjectsGallery({ hackathonId }) {
 
     if (hackathonId) fetchProjects();
   }, [hackathonId]);
+
+  // Fetch current user + judge scores if applicable
+  useEffect(() => {
+    const fetchUserAndScores = async () => {
+      const token = localStorage.getItem("token");
+
+      try {
+        const userRes = await axios.get("http://localhost:3000/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const currentUser = userRes.data;
+        setUser(currentUser);
+
+        if (currentUser.role === "judge") {
+          const scoreRes = await axios.get("http://localhost:3000/api/scores/my-scored-projects", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setJudgeScores(scoreRes.data); // Array of project IDs
+        }
+      } catch (err) {
+        console.error("Failed to fetch user or judge scores", err);
+      }
+    };
+
+    fetchUserAndScores();
+  }, []);
 
   if (loading) {
     return (
@@ -51,7 +80,12 @@ export default function HackathonProjectsGallery({ hackathonId }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
-        <ProjectCard key={project._id} project={project} />
+        <ProjectCard
+          key={project._id}
+          project={project}
+          user={user}
+          judgeScores={judgeScores}
+        />
       ))}
     </div>
   );

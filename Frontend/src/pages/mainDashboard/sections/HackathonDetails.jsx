@@ -14,6 +14,7 @@ import TeamManagementSection from "./components/Hackathon/TeamManagementSection"
 import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
+import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();
@@ -47,13 +48,15 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  const sections = [
-    { id: "overview", label: "Overview & Requirements" },
-    { id: "problems", label: "Problem Statements" },
-    { id: "timeline", label: "Timeline" },
-    { id: "team", label: "Team Management" },
-    { id: "community", label: "Community" },
-  ];
+const sections = [
+  { id: "overview", label: "Overview & Requirements" },
+  { id: "problems", label: "Problem Statements" },
+  { id: "timeline", label: "Timeline" },
+  { id: "team", label: "Team Management" },
+  { id: "community", label: "Community" },
+  { id: "projects", label: "Project Gallery" }, // ✅ ADD THIS
+];
+
 
   // Fetch hackathon by ID if not provided as prop or state
   useEffect(() => {
@@ -200,6 +203,10 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
             />
           )}
           {activeTab === "community" && <HackathonCommunity />}
+          {activeTab === "projects" && (
+  <HackathonProjectsGallery hackathonId={hackathon._id} />
+)}
+
         </div>
       </main>
     </div>

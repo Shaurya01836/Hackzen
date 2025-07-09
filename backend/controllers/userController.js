@@ -5,7 +5,7 @@ const Organization = require('../model/OrganizationModel');
 const Project = require('../model/ProjectModel');
 const Hackathon = require('../model/HackathonModel');
 const RoleInvite = require('../model/RoleInviteModel');
-
+const Score = require('../model/ScoreModel');
 // ✅ Generate JWT token
 const generateToken = (user) => {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -535,28 +535,60 @@ const getUserRoleBreakdown = async (req, res) => {
 const getJudgeStats = async (req, res) => {
   try {
     const userId = req.user._id;
-    
-    // Get hackathons where user is a judge
-    const RoleInvite = require('../model/RoleInviteModel');
-    const judgeInvites = await RoleInvite.find({ 
-      invitedUser: userId, 
-      role: 'judge', 
-      status: 'accepted' 
+
+    // 1️⃣ Find accepted judge invites
+    const judgeInvites = await RoleInvite.find({
+      invitedUser: userId,
+      role: 'judge',
+      status: 'accepted'
     }).populate('hackathon');
-    
+
     const totalHackathons = judgeInvites.length;
-    
-    // For now, return mock data since we don't have submission/judgment models yet
+
+    // 2️⃣ Count total submitted projects in those hackathons
+    const hackathonIds = judgeInvites.map(invite => invite.hackathon._id);
+    const totalSubmissions = await Project.countDocuments({
+      hackathon: { $in: hackathonIds },
+      status: 'submitted'
+    });
+
+    // 3️⃣ Count how many projects this judge has scored
+    const completedJudgments = await Score.countDocuments({
+      judge: userId,
+      hackathon: { $in: hackathonIds }
+    });
+
+    // 4️⃣ Calculate average score across all judged projects
+    const allScores = await Score.find({
+      judge: userId,
+      hackathon: { $in: hackathonIds }
+    });
+
+    let total = 0;
+    let count = 0;
+
+    for (const score of allScores) {
+      if (Array.isArray(score.scores)) {
+        total += score.scores.reduce((sum, s) => sum + s, 0);
+        count += score.scores.length;
+      }
+    }
+
+    const averageRating = count > 0 ? total / count : 0;
+
     res.json({
       totalHackathons,
-      totalSubmissions: 12, // Mock data
-      averageRating: 4.2, // Mock data
-      completedJudgments: 8 // Mock data
+      totalSubmissions,
+      completedJudgments,
+      averageRating: averageRating.toFixed(1)
     });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("❌ Error in getJudgeStats:", err);
+    res.status(500).json({ message: "Failed to load judge stats" });
   }
 };
+
 
 // ✅ Test endpoint to check database connection
 const testDatabase = async (req, res) => {

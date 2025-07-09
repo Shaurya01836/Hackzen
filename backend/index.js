@@ -1,6 +1,5 @@
 // Disable all console.log and console.info output globally
-console.log = function () {};
-console.info = function () {};
+
 
 require("dotenv").config();
 
