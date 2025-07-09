@@ -92,8 +92,6 @@ navigate(`/dashboard/project-archive/${project._id}`);
   
   const handleBackToProjects = () => {
     setSelectedProject(null);
-    // Navigate back to project archive page
-    navigate("/dashboard/project-archive", { replace: true });
   };
 
   const renderLoadingCards = () => (
@@ -120,7 +118,7 @@ navigate(`/dashboard/project-archive/${project._id}`);
         <ProjectCard
           key={project._id}
           project={project}
-          source="archive"
+          onClick={handleProjectClick}
         />
       ))}
     </div>

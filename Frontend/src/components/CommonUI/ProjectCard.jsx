@@ -4,22 +4,14 @@ import { Card, CardContent } from "../CommonUI/card";
 import { Badge } from "../CommonUI/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../DashboardUI/avatar";
 
-export function ProjectCard({ project, source = "archive" }) {
+export function ProjectCard({ project }) {
   const coverImage =
     project.logo?.url || project.images?.[0] || "/placeholder.svg?height=200&width=400";
 
   const author = project.submittedBy || {}; // fallback in case it's not populated
 
-  // Determine the navigation path based on source
-  const getNavigationPath = () => {
-    if (source === "my-hackathons") {
-      return `/dashboard/my-hackathons/${project._id}`;
-    }
-    return `/dashboard/project-archive/${project._id}`;
-  };
-
   return (
-    <Link to={getNavigationPath()}>
+    <Link to={`/dashboard/project-archive/${project._id}`}>
       <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
         <div className="relative h-36 overflow-hidden rounded-t-xl">
           <img

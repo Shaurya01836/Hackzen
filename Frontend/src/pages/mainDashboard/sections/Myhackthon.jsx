@@ -288,8 +288,7 @@ export default function MyHackathons() {
           project={selectedProject}
           onBack={() => {
             setSelectedProject(null);
-            // Navigate back to my-hackathons page
-            navigate("/dashboard/my-hackathons", { replace: true });
+            navigate("/dashboard/my-hackathons");
           }}
         />
         <div className="fixed bottom-8 right-8">
@@ -426,7 +425,7 @@ export default function MyHackathons() {
                     </CardContent>
                   </Card>
                   {projects.map((project) => (
-                    <ProjectCard key={project._id} project={project} source="my-hackathons" />
+                    <ProjectCard key={project._id} project={project} />
                   ))}
                 </div>
               ) : (
