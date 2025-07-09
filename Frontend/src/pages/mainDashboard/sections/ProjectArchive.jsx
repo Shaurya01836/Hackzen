@@ -92,10 +92,11 @@ navigate(`/dashboard/project-archive/${project._id}`);
   
   const handleBackToProjects = () => {
     setSelectedProject(null);
+    navigate('/dashboard/project-archive');
   };
 
   const renderLoadingCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-5">
       {[...Array(6)].map((_, i) => (
         <Card key={i} className="animate-pulse border-gray-200">
           <div className="h-48 bg-gray-200 rounded-t-xl"></div>
@@ -113,7 +114,7 @@ navigate(`/dashboard/project-archive/${project._id}`);
   );
 
   const renderProjectGrid = (projectList) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-5 mt-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-5 mt-5">
       {projectList.map((project) => (
         <ProjectCard
           key={project._id}
