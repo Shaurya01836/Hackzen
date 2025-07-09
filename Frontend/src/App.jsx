@@ -49,7 +49,6 @@ function App() {
         element={<Navigate to="/admin/dashboard" replace />}
       />
 <Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
-<Route path="/dashboard/exploreh/:id" element={<DashboardPage />} />
 
       {/* Dashboard */}
       <Route

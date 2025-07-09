@@ -304,9 +304,11 @@ export default function HackZenDashboard() {
             className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={navigateToHome}
           >
-               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg">H</span>
-            </div>
+               <img
+              src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png"
+              alt="HackZen Logo"
+              className="w-10 h-10 object-contain border rounded-full"
+            />
             <div>
               <h1 className="text-xl font-bold text-gray-900">HackZen</h1>
               <p className="text-sm text-gray-500">Hackathon Platform</p>
