@@ -28,22 +28,23 @@ export default function FeaturedHackCards({ hackathons: propHackathons }) {
   const [loading, setLoading] = useState(!propHackathons);
 
   useEffect(() => {
-    if (propHackathons) {
-      // Use provided hackathons and filter for approved ones, limit to 3
-      const approvedHackathons = propHackathons
-        .filter((h) => h.approvalStatus === "approved")
+    const filterActiveHackathons = (hackathons) => {
+      const currentDate = new Date();
+      return hackathons
+        .filter((h) => h.approvalStatus === "approved" && new Date(h.endDate) > currentDate)
         .slice(0, 3);
-      setHackathons(approvedHackathons);
+    };
+
+    if (propHackathons) {
+      const approvedActiveHackathons = filterActiveHackathons(propHackathons);
+      setHackathons(approvedActiveHackathons);
       setLoading(false);
     } else {
-      // Fetch hackathons from API if not provided as props
       const fetchHackathons = async () => {
         try {
           const res = await axios.get("http://localhost:3000/api/hackathons");
-          const approvedHackathons = res.data
-            .filter((h) => h.approvalStatus === "approved")
-            .slice(0, 3); // Limit to 3 hackathons
-          setHackathons(approvedHackathons);
+          const approvedActiveHackathons = filterActiveHackathons(res.data);
+          setHackathons(approvedActiveHackathons);
         } catch (err) {
           console.error("Hackathon fetch error:", err.message);
         } finally {
