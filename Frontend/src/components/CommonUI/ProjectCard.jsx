@@ -4,11 +4,16 @@ import { Card, CardContent } from "../CommonUI/card";
 import { Badge } from "../CommonUI/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../DashboardUI/avatar";
 
-export function ProjectCard({ project, onClick }) {
+export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
   const coverImage =
-    project.logo?.url || project.images?.[0] || "/placeholder.svg?height=200&width=400";
+    project.logo?.url ||
+    project.images?.[0] ||
+    "/placeholder.svg?height=200&width=400";
 
   const author = project.submittedBy || {}; // fallback in case it's not populated
+  // ✅ Show judged badge only if judge and already scored this project
+  const alreadyScored =
+    user?.role === "judge" && judgeScores.includes(project._id);
 
   const CardContentEl = (
     <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
@@ -18,6 +23,11 @@ export function ProjectCard({ project, onClick }) {
           alt={project.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
+        {alreadyScored && (
+          <div className="absolute top-2 right-2 bg-green-600 text-white text-[10px] px-2 py-1 rounded-full z-10 shadow">
+            ✅ Judged
+          </div>
+        )}
       </div>
       <CardContent className="p-4 space-y-2">
         <h3 className="font-semibold text-sm line-clamp-2 text-gray-900 group-hover:text-indigo-600">
@@ -26,9 +36,7 @@ export function ProjectCard({ project, onClick }) {
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-2 pt-2">
             <Avatar className="w-6 h-6 ring-1 ring-gray-100">
-              <AvatarImage
-                src={author.profileImage || "/placeholder.svg"}
-              />
+              <AvatarImage src={author.profileImage || "/placeholder.svg"} />
               <AvatarFallback className="text-[10px] bg-indigo-100 text-indigo-600">
                 {author.name?.[0]?.toUpperCase() || "?"}
               </AvatarFallback>

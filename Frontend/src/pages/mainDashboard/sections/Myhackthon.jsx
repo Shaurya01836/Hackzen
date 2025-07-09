@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import {
@@ -40,50 +39,6 @@ import ParticipantSubmissionForm from "./ParticipantSubmitForm";
 import { HackathonDetails } from "./HackathonDetails";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
 
-// Helper to transform hackathon data for HackathonDetails
-function transformHackathonData(hackathon) {
-  return {
-    ...hackathon,
-    name: hackathon.title || hackathon.name,
-    prize: hackathon.prizePool?.amount
-      ? `$${hackathon.prizePool.amount.toLocaleString()} ${hackathon.prizePool.currency || "USD"}`
-      : hackathon.prize || "TBA",
-    participants: hackathon.participants?.length || 0,
-    maxParticipants: hackathon.maxParticipants || 100,
-    rating: 4.5,
-    reviews: 12,
-    difficulty: hackathon.difficultyLevel || hackathon.difficulty,
-    status:
-      hackathon.status === "upcoming"
-        ? "Registration Open"
-        : hackathon.status === "ongoing"
-        ? "Ongoing"
-        : "Ended",
-    startDate: new Date(hackathon.startDate).toLocaleDateString(),
-    endDate: new Date(hackathon.endDate).toLocaleDateString(),
-    registrationDeadline: new Date(hackathon.registrationDeadline).toLocaleDateString(),
-    organizer: hackathon.organizer?.name || "Unknown Organizer",
-    organizerLogo: hackathon.organizer?.logo || null,
-    featured: hackathon.tags?.includes("featured") || false,
-    sponsored: hackathon.tags?.includes("sponsored") || false,
-    requirements: hackathon.requirements || [
-      "Valid student/professional ID",
-      "Team size: 2-4 members",
-      "Original project submission",
-      "Attend mandatory sessions",
-    ],
-    perks: hackathon.perks || [
-      "Free accommodation",
-      "Meals included",
-      "Networking opportunities",
-      "Workshop access",
-      "Mentorship sessions",
-    ],
-    tags: hackathon.tags || [hackathon.category],
-    problemStatements: hackathon.problemStatements || [],
-  };
-}
-
 export default function MyHackathons() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,13 +53,15 @@ export default function MyHackathons() {
   const [editMode, setEditMode] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState(null);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
-  const [selectedHackathonDetails, setSelectedHackathonDetails] = useState(null);
+  const [selectedHackathonDetails, setSelectedHackathonDetails] =
+    useState(null);
 
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
 
   // Get projectId from URL if present
-  const urlProjectId = location.pathname.match(/my-hackathons\/(\w+)/)?.[1] || null;
+  const urlProjectId =
+    location.pathname.match(/my-hackathons\/(\w+)/)?.[1] || null;
 
   // Fetch Projects
   useEffect(() => {
@@ -177,11 +134,14 @@ export default function MyHackathons() {
   const fetchSavedHackathons = async () => {
     try {
       setSavedLoading(true);
-      const res = await fetch("http://localhost:3000/api/users/me/saved-hackathons", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await fetch(
+        "http://localhost:3000/api/users/me/saved-hackathons",
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       const data = await res.json();
       const formatted = data.map((h) => ({
         id: h._id,
@@ -221,19 +181,6 @@ export default function MyHackathons() {
     fetchRegisteredHackathons();
     fetchSavedHackathons();
   }, []);
-
-  // Function to refresh saved hackathons (can be called from child components)
-  const refreshSavedHackathons = () => {
-    fetchSavedHackathons();
-  };
-
-  const handleHackathonClick = (hackathonId, hackathonTitle) => {
-    navigate(
-      `/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodeURIComponent(
-        hackathonTitle
-      )}&source=my-hackathons`
-    );
-  };
 
   const handleCreateProject = () => {
     setCurrentView("create-project");
@@ -505,7 +452,15 @@ export default function MyHackathons() {
                     <Card
                       key={hackathon.id}
                       className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
-                      onClick={() => navigate(`/dashboard/explore-hackathons?hackathon=${hackathon.id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=my-hackathons`)}
+                      onClick={() =>
+                        navigate(
+                          `/dashboard/explore-hackathons?hackathon=${
+                            hackathon.id
+                          }&title=${encodeURIComponent(
+                            hackathon.name || hackathon.title
+                          )}&source=my-hackathons`
+                        )
+                      }
                     >
                       {/* Banner */}
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
@@ -545,7 +500,7 @@ export default function MyHackathons() {
                               variant="outline"
                               size="sm"
                               className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                              onClick={e => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedHackathon(hackathon);
                                 setShowSubmissionForm(true);
@@ -590,7 +545,15 @@ export default function MyHackathons() {
                     <Card
                       key={hackathon.id}
                       className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
-                      onClick={() => navigate(`/dashboard/explore-hackathons?hackathon=${hackathon.id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=my-hackathons`)}
+                      onClick={() =>
+                        navigate(
+                          `/dashboard/explore-hackathons?hackathon=${
+                            hackathon.id
+                          }&title=${encodeURIComponent(
+                            hackathon.name || hackathon.title
+                          )}&source=my-hackathons`
+                        )
+                      }
                     >
                       {/* Banner */}
                       <div className="h-32 w-full bg-indigo-50 flex items-center justify-center overflow-hidden">
