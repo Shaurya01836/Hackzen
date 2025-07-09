@@ -1,15 +1,14 @@
 import { Badge } from "../CommonUI/badge";
 import { Button } from "../CommonUI/button";
 import { ACard } from "./AnimatedCard";
-import { Trophy, Clock, MapPin } from "lucide-react";
+import { Trophy } from "lucide-react";
 
-
-export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
+export function HackathonCard({ hackathon, onClick }) {
   return (
     <ACard
-      key={hackathon.id}
+      key={hackathon._id}
       className="w-full max-w-md flex flex-col overflow-y-hidden max-h-96 cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
-      onClick={() => onClick && onClick(hackathon.id, hackathon.name)}
+      onClick={() => onClick && onClick(hackathon._id, hackathon.name)}
     >
       {/* Thumbnail Section */}
       <div className="relative h-40 w-full">
@@ -34,18 +33,9 @@ export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
       {/* Card Content */}
       <div className="p-4 flex flex-col gap-3 flex-1">
         <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-1 ">
-          {hackathon.name}
+          {hackathon.name || hackathon.title}
         </h3>
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-          <div className="flex items-center gap-1">
-            <Clock className="w-4 h-4 text-indigo-500" />
-            {hackathon.deadline}
-          </div>
-          <div className="flex items-center gap-1">
-            <MapPin className="w-4 h-4 text-indigo-500" />
-            {hackathon.location || "Online"}
-          </div>
-        </div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500"></div>
         <div className="flex gap-2 flex-wrap mt-1">
           <Badge
             variant="outline"
@@ -59,31 +49,6 @@ export function HackathonCard({ hackathon, onClick, onSubmitProject, onEdit }) {
           >
             {hackathon.difficulty}
           </Badge>
-        </div>
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
-          <Button
-            size="sm"
-            className="w-full"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevents card click from triggering
-              onSubmitProject && onSubmitProject(hackathon); // 🔥 This line triggers the form to open
-            }}
-          >
-            Submit Project
-          </Button>
-
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit && onEdit(hackathon);
-            }}
-          >
-            Edit
-          </Button>
         </div>
       </div>
     </ACard>

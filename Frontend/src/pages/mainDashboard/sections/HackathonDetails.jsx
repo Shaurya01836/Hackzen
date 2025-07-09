@@ -44,7 +44,8 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const defaultTab = location.state?.defaultTab;
+  const [activeTab, setActiveTab] = useState(defaultTab || "overview");
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
