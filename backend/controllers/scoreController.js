@@ -1,53 +1,63 @@
-const Score = require('../model/ScoreModel');
+const Score = require("../model/ScoreModel");
+const Project = require("../model/ProjectModel");
 
-exports.submitScore = async (req, res) => {
+exports.createOrUpdateScore = async (req, res) => {
+  const judge = req.user._id;
+  const { project, hackathon, scores, feedback } = req.body;
+
   try {
-    const { project, criteria, score, feedback } = req.body;
+    let existing = await Score.findOne({ project, judge });
 
-    const newScore = await Score.create({
-      project,
-      judge: req.user._id,
-      criteria,
-      score,
-      feedback
-    });
-
-    res.status(201).json(newScore);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to submit score', error: err.message });
-  }
-};
-
-exports.getScoresByProject = async (req, res) => {
-  try {
-    const scores = await Score.find({ project: req.params.projectId }).populate('judge');
-    res.json(scores);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch project scores', error: err.message });
-  }
-};
-
-exports.getScoresByJudge = async (req, res) => {
-  try {
-    const scores = await Score.find({ judge: req.params.judgeId }).populate('project');
-    res.json(scores);
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch judge scores', error: err.message });
-  }
-};
-
-exports.deleteScore = async (req, res) => {
-  try {
-    const score = await Score.findById(req.params.id);
-    if (!score) return res.status(404).json({ message: 'Score not found' });
-
-    if (!score.judge.equals(req.user._id) && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to delete this score' });
+    if (existing) {
+      existing.scores = scores;
+      existing.feedback = feedback;
+      await existing.save();
+      return res.json({ message: "Score updated successfully" });
     }
 
-    await score.remove();
-    res.json({ message: 'Score deleted' });
+    const newScore = new Score({ project, hackathon, judge, scores, feedback });
+    await newScore.save();
+
+    // Optionally: Push the score ref to Project
+    await Project.findByIdAndUpdate(project, {
+      $addToSet: { scores: newScore._id }
+    });
+
+    res.status(201).json({ message: "Score submitted" });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to delete score', error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Error submitting score" });
+  }
+};
+
+exports.getScoresForProject = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+    const scores = await Score.find({ project: projectId }).populate("judge", "name email");
+    res.json(scores);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get scores" });
+  }
+};
+
+exports.getProjectsToScore = async (req, res) => {
+  try {
+    const judge = req.user._id;
+    const hackathonId = req.params.hackathonId;
+
+    const projects = await Project.find({ hackathon: hackathonId }).populate("submittedBy");
+    const scored = await Score.find({ hackathon: hackathonId, judge });
+
+    const scoredMap = {};
+    scored.forEach(s => scoredMap[s.project.toString()] = true);
+
+    const data = projects.map(p => ({
+      ...p.toObject(),
+      alreadyScored: scoredMap[p._id.toString()] || false,
+    }));
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get projects" });
   }
 };

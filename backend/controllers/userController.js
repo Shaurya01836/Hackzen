@@ -2,6 +2,9 @@ const User = require('../model/UserModel');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Organization = require('../model/OrganizationModel');
+const Project = require('../model/ProjectModel');
+const Hackathon = require('../model/HackathonModel');
+const RoleInvite = require('../model/RoleInviteModel');
 
 // ✅ Generate JWT token
 const generateToken = (user) => {

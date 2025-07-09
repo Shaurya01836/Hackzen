@@ -27,6 +27,7 @@ import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetail
 import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 
+
 function App() {
   return (
     <>
@@ -47,7 +48,6 @@ function App() {
         path="/admin"
         element={<Navigate to="/admin/dashboard" replace />}
       />
-
 <Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
 <Route path="/dashboard/exploreh/:id" element={<DashboardPage />} />
 
@@ -64,7 +64,6 @@ function App() {
       <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
       <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
       <Route path="/dashboard/my-hackathons/:projectId" element={<DashboardPage />} />
-      <Route path="/dashboard/my-hackathons/hackathon/:hackathonId" element={<HackathonDetails />} />
 
       {/* Explore */}
       <Route path="/explore" element={<ExploreHackathons />} />
