@@ -63,6 +63,7 @@ function App() {
       <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
       <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
       <Route path="/dashboard/my-hackathons/:projectId" element={<DashboardPage />} />
+      <Route path="/dashboard/my-submissions/:projectId" element={<DashboardPage />} />
 
       {/* Explore */}
       <Route path="/explore" element={<ExploreHackathons />} />

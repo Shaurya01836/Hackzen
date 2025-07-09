@@ -290,6 +290,7 @@ export default function MyHackathons() {
             setSelectedProject(null);
             navigate("/dashboard/my-hackathons");
           }}
+          backButtonLabel="Back to My Hackathons"
         />
         <div className="fixed bottom-8 right-8">
           <Button
@@ -425,7 +426,14 @@ export default function MyHackathons() {
                     </CardContent>
                   </Card>
                   {projects.map((project) => (
-                    <ProjectCard key={project._id} project={project} />
+                    <ProjectCard
+                      key={project._id}
+                      project={project}
+                      onClick={() => {
+                        setSelectedProject(project);
+                        navigate(`/dashboard/my-hackathons/${project._id}`);
+                      }}
+                    />
                   ))}
                 </div>
               ) : (

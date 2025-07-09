@@ -40,7 +40,7 @@ import {
 import { useToast } from "../../hooks/use-toast";
 import axios from "axios";
 
-export function ProjectDetail({ project, onBack }) {
+export function ProjectDetail({ project, onBack, backButtonLabel }) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -411,7 +411,7 @@ const getEmbeddableVideoLink = (url) => {
             onClick={onBack}
             className="flex items-center gap-2 hover:bg-gray-100"
           >
-            <ArrowLeft className="w-4 h-4" /> Back
+            <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
           </Button>
           <div className="flex items-center gap-2">
             <Button

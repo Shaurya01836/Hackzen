@@ -16,10 +16,24 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
+import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import { useLocation } from "react-router-dom";
 
 export function MySubmissions() {
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Support direct linking to a project detail
+  useEffect(() => {
+    const match = location.pathname.match(/my-submissions\/(\w+)/);
+    const urlProjectId = match ? match[1] : null;
+    if (urlProjectId && projects.length > 0) {
+      const found = projects.find((p) => p._id === urlProjectId);
+      if (found) setSelectedProject(found);
+    }
+  }, [location.pathname, projects]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -45,7 +59,10 @@ const renderSubmissionCard = (project) => (
   <ProjectCard
     key={project._id}
     project={project}
-    onClick={() => navigate(`/dashboard/project-archive/${project._id}`)}
+    onClick={() => {
+      setSelectedProject(project);
+      navigate(`/dashboard/my-submissions/${project._id}`);
+    }}
     showActions={true}
     highlightAuthor={true}
     compact={false}
@@ -53,6 +70,19 @@ const renderSubmissionCard = (project) => (
 );
 
 
+
+  if (selectedProject) {
+    return (
+      <ProjectDetail
+        project={selectedProject}
+        onBack={() => {
+          setSelectedProject(null);
+          navigate("/dashboard/my-submissions");
+        }}
+        backButtonLabel="Back to My Submissions"
+      />
+    );
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">

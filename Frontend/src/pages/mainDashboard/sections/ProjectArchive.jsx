@@ -127,7 +127,7 @@ navigate(`/dashboard/project-archive/${project._id}`);
 
   if (selectedProject) {
     return (
-      <ProjectDetail project={selectedProject} onBack={handleBackToProjects} />
+      <ProjectDetail project={selectedProject} onBack={handleBackToProjects} backButtonLabel="Back to Project Archive" />
     );
   }
 
