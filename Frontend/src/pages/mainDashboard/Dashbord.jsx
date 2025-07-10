@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../lib/utils";
-import axios from "axios";
 import {
   Users,
   Trophy,
@@ -71,7 +70,7 @@ export default function HackZenDashboard() {
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
     // Extract section from /dashboard/section pattern
-    const match = path.match(/^\/dashboard\/([^\/]+)/);
+    const match = path.match(/^\/dashboard\/([^/]+)/);
     return match ? match[1] : "profile";
   };
 
@@ -316,7 +315,7 @@ export default function HackZenDashboard() {
           </div>
         </SidebarHeader>
 
-        <SidebarContent>
+        <SidebarContent className="scrollbar-hide">
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -441,7 +440,7 @@ export default function HackZenDashboard() {
             <span className="capitalize">{currentView.replace("-", " ")}</span>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">{renderContent()}</main>
+        <main className="flex-1 overflow-auto scrollbar-hide">{renderContent()}</main>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -76,7 +76,7 @@ export function PendingChangesPage() {
 
       {pendingChanges.length === 0 ? (
         <Card>
-          <CardContent className="text-center py-12">
+          <CardContent className="text-center py-12 pt-12">
             <Clock className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg">No pending changes</p>
             <p className="text-gray-400 text-sm mt-2">

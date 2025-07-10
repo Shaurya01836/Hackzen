@@ -63,7 +63,7 @@ export default function AdminPanel() {
   // Extract the active section from the current URL path
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
-    const match = path.match(/^\/admin\/([^\/]+)/);
+    const match = path.match(/^\/admin\/([^/]+)/);
     return match ? match[1] : "dashboard";
   };
 
@@ -252,7 +252,7 @@ export default function AdminPanel() {
             </div>
           </SidebarHeader>
 
-          <SidebarContent>
+          <SidebarContent className="scrollbar-hide">
             {/* Core Management */}
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-red-600">
@@ -404,7 +404,7 @@ export default function AdminPanel() {
 
           <SidebarFooter className="p-4">
             <div className="text-xs text-gray-500 text-center">
-              Admin Panel v1.0
+              Scroll to see more content
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -419,7 +419,7 @@ export default function AdminPanel() {
               <span className="capitalize">{activeSection.replace("-", " ")}</span>
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">{renderContent()}</main>
+          <main className="flex-1 overflow-auto p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 scrollbar-hide">{renderContent()}</main>
         </SidebarInset>
       </SidebarProvider>
     </div>
