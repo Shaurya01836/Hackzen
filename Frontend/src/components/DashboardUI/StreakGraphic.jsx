@@ -66,8 +66,8 @@ const StreakGraphic = ({ data = [], current = 0, max = 0 }) => {
   const today = dayjs().format("YYYY-MM-DD");
 
   return (
-    <div className="rounded-lg text-gray-900 py-6 px-6 md:px-24 ring-1 ring-indigo-300">
-      <h2 className="text-2xl font-bold text-center mb-6">Streaks</h2>
+    <div className="rounded-lg text-gray-900 py-6 px-6 ">
+    
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {months.map((monthLabel, index) => {

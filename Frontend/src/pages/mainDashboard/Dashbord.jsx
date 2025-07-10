@@ -45,10 +45,7 @@ import { useAuth } from "../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
 import { MySubmissions } from "./sections/MySubmissions";
-import { ChatRooms } from "./sections/Chat-rooms";
 import { CreatedHackathons } from "./sections/Created-hackathons";
-import { ParticipantOverview } from "./sections/ParticipantOverview";
-import { ReviewSubmissions } from "./sections/ReviewSubmissions";
 import { Announcements } from "./sections/Announcements";
 import { OrganizerTools } from "./sections/OrganizerTools";
 import { ExploreHackathons } from "./sections/ExploreHackathon";
@@ -136,12 +133,7 @@ export default function HackZenDashboard() {
       key: "my-community",
       onClick: () => changeView("my-community"),
     },
-    // {
-    //   title: "Chat Rooms",
-    //   icon: MessageSquare,
-    //   key: "chat-rooms",
-    //   onClick: () => changeView("chat-rooms"),
-    // },
+
     {
       title: "Blogs",
       icon: NotebookTabs,
@@ -175,24 +167,14 @@ export default function HackZenDashboard() {
       key: "created-hackathons", // ✅ keep this
       onClick: () => changeView("created-hackathons"),
     },
-    {
-      title: "Participant Overview",
-      icon: Users,
-      key: "participant-overview",
-      onClick: () => changeView("participant-overview"),
-    },
+
     {
       title: "Create Hackathons",
       icon: PencilRulerIcon,
       key: "create-hackathon", // ✅ FIX this key!
       onClick: () => changeView("create-hackathon"),
     },
-    {
-      title: "Review Submissions",
-      icon: Eye,
-      key: "review-submissions",
-      onClick: () => changeView("review-submissions"),
-    },
+
     {
       title: "Announcements",
       icon: MessageSquare,
@@ -221,7 +203,6 @@ export default function HackZenDashboard() {
       onClick: () => changeView("my-judgments"),
     },
   ];
-
 
   // Function to render content based on current view
   const renderContent = () => {
@@ -261,9 +242,7 @@ export default function HackZenDashboard() {
       case "organizer-tools":
         return <OrganizerTools onBack={() => changeView("profile")} />;
       case "create-hackathon":
-        return (
-          <CreateHackathon onBack={() => changeView("profile")} />
-        );
+        return <CreateHackathon onBack={() => changeView("profile")} />;
       case "blogs":
         return <Blogs onBack={() => changeView("profile")} />;
       case "project-archive":
@@ -290,7 +269,6 @@ export default function HackZenDashboard() {
   };
 
   useEffect(() => {
- 
     // Refresh user info to ensure we have the latest role
     refreshUser();
   }, []); // Empty dependency array to run only once
@@ -303,7 +281,7 @@ export default function HackZenDashboard() {
             className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={navigateToHome}
           >
-               <img
+            <img
               src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png"
               alt="HackZen Logo"
               className="w-10 h-10 object-contain border rounded-full"
@@ -440,7 +418,9 @@ export default function HackZenDashboard() {
             <span className="capitalize">{currentView.replace("-", " ")}</span>
           </div>
         </header>
-        <main className="flex-1 overflow-auto scrollbar-hide">{renderContent()}</main>
+        <main className="flex-1 overflow-auto scrollbar-hide">
+          {renderContent()}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

@@ -152,10 +152,7 @@ export function ProfileSection() {
     bannerImage: "",
   });
 
-  const totalHackathons = 12;
-  const totalWins = 3;
-  const totalBadges = 8;
-  const currentRank = 95;
+
 
   // Fetch 2FA status from backend
   const fetch2FAStatus = async () => {
@@ -356,205 +353,281 @@ export function ProfileSection() {
   );
 
   const renderOverview = () => (
-    <div className="flex flex-col gap-6 w-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <Card className="w-full overflow-hidden relative rounded-2xl">
+    <div className="flex flex-col gap-8 w-full">
+      {/* Hero Profile Card */}
+      <Card className="w-full overflow-hidden relative rounded-3xl border-0 bg-gradient-to-br from-white via-purple-50/30 to-white">
         {/* Loader Overlay */}
         {isUploading && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/70">
-            <svg
-              className="animate-spin h-12 w-12 text-purple-600"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v8z"
-              ></path>
-            </svg>
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3">
+              <svg
+                className="animate-spin h-10 w-10 text-purple-600"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8z"
+                ></path>
+              </svg>
+              <span className="text-sm text-purple-600 font-medium">Uploading...</span>
+            </div>
           </div>
         )}
         {/* Banner */}
-        <div className="relative h-48 w-full rounded-t-2xl overflow-hidden">
+        <div className="relative h-48 w-full overflow-hidden">
           <img
             src={user?.bannerImage || "/assets/default-banner.png"}
             alt="Banner"
             className="w-full h-full object-cover"
           />
         </div>
-
-        {/* Avatar */}
-        <div className="flex justify-center -mt-16 z-10">
-          <Avatar className="w-28 h-28 border-[3px] border-white shadow-xl">
-            <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
-            <AvatarFallback className="text-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-
-        {/* Profile Info */}
-        <CardHeader className="pt-4 pb-2 text-center">
-          <CardTitle className="text-2xl font-semibold text-gray-800">
-            {user?.name}
-          </CardTitle>
-
-          <div className="flex gap-2 pt-2 justify-center flex-wrap">
-            <Badge
-              variant="outline"
-              className="bg-purple-100 text-purple-800 border-purple-300"
-            >
-              {user?.role || "Unknown"}
-            </Badge>
+        {/* Profile Info Section */}
+        <div className="relative px-8 pb-8">
+          {/* Avatar */}
+          <div className="flex justify-center -mt-20 mb-6">
+            <div className="relative group">
+              <Avatar className="w-28 h-28 border-2">
+                <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
+                <AvatarFallback className="text-3xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white font-semibold">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="space-y-5 px-6 pb-6 text-sm text-gray-700">
-          {/* Section: Personal Information */}
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Personal Information
-            </h3>
-
-            {/* Name & Email */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-              <div className="flex items-center gap-2">
-                <UserCircle2 className="w-4 h-4 text-indigo-500" />
-                <span>{user?.name || "N/A"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-indigo-500" />
-                <span>{user?.email || "N/A"}</span>
-              </div>
+          {/* User Info */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              {user?.name}
+            </h2>
+            <div className="flex gap-2 justify-center mb-4">
+              <Badge
+                variant="outline"
+                className="bg-purple-100 text-purple-800 border-purple-300 px-3 py-1 text-sm font-medium"
+              >
+                {user?.role || "Unknown"}
+              </Badge>
             </div>
-
-            {/* Phone & Location */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 mt-2">
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-indigo-500" />
-                <span>{user?.phone || "N/A"}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-indigo-500" />
-                <span>{user?.location || "N/A"}</span>
-              </div>
-            </div>
-
             {/* Bio */}
-            <div className="flex items-start gap-2 mt-3">
-              <div className="pt-1">
-                <Info className="w-4 h-4 text-indigo-500" />
+            {user?.bio && (
+              <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                {user.bio}
+              </p>
+            )}
+          </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {user?.registeredHackathonIds?.length || 0}
+                </p>
+                <p className="text-sm text-gray-500 font-medium">Hackathons</p>
               </div>
-              <span className="whitespace-pre-wrap">
-                {user?.bio || "No bio added yet."}
-              </span>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">0</p>
+                <p className="text-sm text-gray-500 font-medium">Wins</p>
+              </div>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">{user?.badges?.length || 0}</p>
+                <p className="text-sm text-gray-500 font-medium">Badges</p>
+              </div>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Save className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">{user?.projects?.length || 0}</p>
+                <p className="text-sm text-gray-500 font-medium">Projects</p>
+              </div>
             </div>
           </div>
-
-          {/* Section: Social Links */}
-          <div className="border-t border-gray-200 pt-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Social Links
-            </h3>
-            <div className="flex flex-wrap gap-4 text-indigo-600">
-              {user?.website && (
-                <a
-                  href={user.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-indigo-800 transition"
-                >
-                  <Globe className="w-4 h-4" />
-                  <span className="underline text-sm">Website</span>
-                </a>
-              )}
-              {user?.github && (
-                <a
-                  href={user.github}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-indigo-800 transition"
-                >
-                  <Github className="w-4 h-4" />
-                  <span className="underline text-sm">GitHub</span>
-                </a>
-              )}
-              {user?.linkedin && (
-                <a
-                  href={user.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 hover:text-indigo-800 transition"
-                >
-                  <Linkedin className="w-4 h-4" />
-                  <span className="underline text-sm">LinkedIn</span>
-                </a>
-              )}
+          {/* Contact & Social Info */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Contact Information */}
+            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0 ">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <UserCircle2 className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Contact Information</h3>
+                    <p className="text-sm text-gray-500">Your personal details</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Email</p>
+                      <p className="text-gray-700 font-medium">{user?.email || "Not provided"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Phone</p>
+                      <p className="text-gray-700 font-medium">{user?.phone || "Not provided"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 font-medium">Location</p>
+                      <p className="text-gray-700 font-medium">{user?.location || "Not provided"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Social Links */}
+            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0">
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Social Links</h3>
+                    <p className="text-sm text-gray-500">Connect with me online</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {user?.website && (
+                    <a
+                      href={user.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100 hover:from-orange-100 hover:to-red-100 transition-all group"
+                    >
+                      <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-200 transition-colors">
+                        <Globe className="w-4 h-4 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">Website</p>
+                        <p className="text-gray-700 font-medium group-hover:text-orange-700 transition-colors">Visit my website</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
+                    </a>
+                  )}
+                  {user?.github && (
+                    <a
+                      href={user.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100 hover:from-gray-100 hover:to-slate-100 transition-all group"
+                    >
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                        <Github className="w-4 h-4 text-gray-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">GitHub</p>
+                        <p className="text-gray-700 font-medium group-hover:text-gray-800 transition-colors">View my projects</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </a>
+                  )}
+                  {user?.linkedin && (
+                    <a
+                      href={user.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-indigo-100 transition-all group"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                        <Linkedin className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">LinkedIn</p>
+                        <p className="text-gray-700 font-medium group-hover:text-blue-700 transition-colors">Connect professionally</p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    </a>
+                  )}
+                  {!user?.website && !user?.github && !user?.linkedin && (
+                    <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <Info className="w-4 h-4 text-gray-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500 font-medium">No social links</p>
+                        <p className="text-gray-500 text-sm">Add your social profiles in edit mode</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-        </CardContent>
+        </div>
       </Card>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-5 text-center">
-            <Trophy className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-indigo-600">
-              {user?.registeredHackathonIds?.length || 0}
-            </p>
-            <p className="text-sm text-gray-600">Hackathons</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5 text-center">
-            <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">0</p>
-            <p className="text-sm text-gray-600">Wins</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5 text-center">
-            <Star className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-yellow-600">{user?.badges?.length || 0}</p>
-            <p className="text-sm text-gray-600">Badges</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5 text-center">
-            <Save className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-purple-600">{user?.projects?.length || 0}</p>
-            <p className="text-sm text-gray-600">Projects Submitted</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Achievements Section */}
-      <div className="space-y-4">
-        <AchievementsSection
-          user={user}
-          onBadgeUnlocked={(badge) => {
-            console.log("Badge unlocked:", badge);
-            // You can add notification logic here
-          }}
-        />
-      </div>
-
-      <section className="py-10">
-        <StreakGraphic
-          data={streakData.activityLog}
-          current={streakData.currentStreak}
-          max={streakData.maxStreak}
-        />
-      </section>
+      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
+        <div className="space-y-6 p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              <Star className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Achievements & Badges</h3>
+          </div>
+          <AchievementsSection
+            user={user}
+            onBadgeUnlocked={(badge) => {
+              console.log("Badge unlocked:", badge);
+              // You can add notification logic here
+            }}
+          />
+        </div>
+      </Card>
+      {/* Activity Streak Section */}
+      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
+        <div className="space-y-6 p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Activity Streak</h3>
+          </div>
+          <div className="">
+            <StreakGraphic
+              data={streakData.activityLog}
+              current={streakData.currentStreak}
+              max={streakData.maxStreak}
+            />
+          </div>
+        </div>
+      </Card>
     </div>
   );
 
