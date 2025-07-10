@@ -1,6 +1,6 @@
 import Login from "../pages/Auth/Login";
 
-function LoginModal({ onClose }) {
+function LoginModal({ onClose, onSwitchToRegister }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
       <button
@@ -9,7 +9,7 @@ function LoginModal({ onClose }) {
       >
         &times;
       </button>
-      <Login onClose={onClose}/> {/* ✅ pass onClose to Login */}
+      <Login onClose={onClose} onSwitchToRegister={onSwitchToRegister} />
     </div>
   );
 }

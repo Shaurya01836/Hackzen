@@ -1,5 +1,5 @@
 "use client";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   BellIcon,
   GitGraphIcon,
@@ -19,8 +19,6 @@ import useDropdownTimeout from "../../hooks/useDropdownTimeout";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotificationDropdown, setShowNotificationDropdown] =
@@ -31,6 +29,12 @@ function Navbar() {
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check URL search parameters for modal state
+  const searchParams = new URLSearchParams(location.search);
+  const showLogin = searchParams.get('modal') === 'login';
+  const showRegister = searchParams.get('modal') === 'register';
 
   const { handleMouseEnter: notifEnter, handleMouseLeave: notifLeave } =
     useDropdownTimeout(setShowNotificationDropdown);
@@ -57,6 +61,18 @@ function Navbar() {
     setShowProfileDropdown(false);
   };
 
+  const handleLoginClick = () => {
+    navigate("/?modal=login");
+  };
+
+  const handleRegisterClick = () => {
+    navigate("/?modal=register");
+  };
+
+  const handleCloseAuthModal = () => {
+    navigate("/");
+  };
+
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -78,7 +94,7 @@ function Navbar() {
 
   return (
     <div className="relative">
-      {(showLogin || showRegister || showSignOutConfirm) && (
+      {showSignOutConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30"></div>
       )}
 
@@ -87,6 +103,19 @@ function Navbar() {
         onClose={() => setShowSignOutConfirm(false)}
         onConfirm={handleSignOut}
       />
+
+      {/* Auth Modals */}
+      {showLogin && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30">
+          <LoginModal onClose={handleCloseAuthModal} />
+        </div>
+      )}
+
+      {showRegister && (
+        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30">
+          <RegisterModal onClose={handleCloseAuthModal} />
+        </div>
+      )}
 
       <nav className="px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between">
@@ -189,11 +218,6 @@ function Navbar() {
             </Link>
           </div>
 
-          {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
-          {showRegister && (
-            <RegisterModal onClose={() => setShowRegister(false)} />
-          )}
-
           {/* Right Section */}
           <div className="hidden md:flex items-center gap-4">
             {/* Notifications */}
@@ -245,10 +269,10 @@ function Navbar() {
             {/* Auth Buttons */}
             {!user ? (
               <>
-                <InteractiveHoverButton onClick={() => setShowLogin(true)}>
+                <InteractiveHoverButton onClick={handleLoginClick}>
                   Login
                 </InteractiveHoverButton>
-                <InteractiveHoverButton onClick={() => setShowRegister(true)}>
+                <InteractiveHoverButton onClick={handleRegisterClick}>
                   Register
                 </InteractiveHoverButton>
               </>
@@ -387,13 +411,13 @@ function Navbar() {
             {!user ? (
               <>
                 <button
-                  onClick={() => setShowLogin(true)}
+                  onClick={handleLoginClick}
                   className="text-left text-indigo-600"
                 >
                   Login
                 </button>
                 <button
-                  onClick={() => setShowRegister(true)}
+                  onClick={handleRegisterClick}
                   className="text-left text-indigo-600"
                 >
                   Register

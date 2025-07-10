@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-function Login({ onClose }) {
+function Login({ onClose, onSwitchToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -47,15 +47,17 @@ function Login({ onClose }) {
       // Save using context
       login(res.data.user, res.data.token);
 
+      // Call onClose if provided
+      if (onClose) onClose();
+
       // Redirect by role or to redirectTo if specified
       const role = res.data.user.role;
-      if (onClose) onClose();
       if (redirectTo) {
         navigate(redirectTo);
       } else if (role === "admin") {
         navigate("/admin");
       } else {
-        navigate("/");
+        navigate("/dashboard");
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -80,13 +82,15 @@ function Login({ onClose }) {
         // Save using context
         login(res.data.user, res.data.token);
         
+        // Call onClose if provided
         if (onClose) onClose();
+
         if (redirectTo) {
           navigate(redirectTo);
         } else if (res.data.user.role === "admin") {
           navigate("/admin");
         } else {
-          navigate("/");
+          navigate("/dashboard");
         }
       } else {
         setTwoFAError("Invalid 2FA code");
@@ -125,6 +129,19 @@ function Login({ onClose }) {
       ? `http://localhost:3000/api/users/github?redirectTo=${encodeURIComponent(redirectTo)}`
       : "http://localhost:3000/api/users/github";
     window.location.href = githubUrl;
+  };
+
+  const handleSwitchToRegister = (e) => {
+    e.preventDefault();
+    if (onSwitchToRegister) {
+      onSwitchToRegister();
+    } else {
+      // Fallback to direct navigation if smooth transition not available
+      const registerUrl = redirectTo 
+        ? `/?modal=register&redirectTo=${encodeURIComponent(redirectTo)}`
+        : "/?modal=register";
+      navigate(registerUrl);
+    }
   };
 
   return (
@@ -246,7 +263,8 @@ function Login({ onClose }) {
           <p className="text-sm text-center text-gray-500">
             Don't have an account?{" "}
             <a
-              href={redirectTo ? `/register?redirectTo=${encodeURIComponent(redirectTo)}` : "/register"}
+              href="#"
+              onClick={handleSwitchToRegister}
               className="text-[#1b0c3f] font-medium hover:underline"
             >
               Sign up

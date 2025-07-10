@@ -1,6 +1,6 @@
 import Register from "../pages/Auth/Register";
 
-function RegisterModal({ onClose }) {
+function RegisterModal({ onClose, onSwitchToLogin }) {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4">
       <button
@@ -9,7 +9,7 @@ function RegisterModal({ onClose }) {
       >
         &times;
       </button>
-      <Register />
+      <Register onClose={onClose} onSwitchToLogin={onSwitchToLogin} />
     </div>
   );
 }

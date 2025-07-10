@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-function Register() {
+function Register({ onClose, onSwitchToLogin }) {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -41,6 +41,9 @@ function Register() {
       // Store token and user info using context
       login(res.data.user, res.data.token);
 
+      // Call onClose if provided
+      if (onClose) onClose();
+
       // Navigate to redirectTo if specified, otherwise to dashboard
       if (redirectTo) {
         navigate(redirectTo);
@@ -66,6 +69,19 @@ function Register() {
       ? `http://localhost:3000/api/users/github?redirectTo=${encodeURIComponent(redirectTo)}`
       : "http://localhost:3000/api/users/github";
     window.location.href = githubUrl;
+  };
+
+  const handleSwitchToLogin = (e) => {
+    e.preventDefault();
+    if (onSwitchToLogin) {
+      onSwitchToLogin();
+    } else {
+      // Fallback to direct navigation if smooth transition not available
+      const loginUrl = redirectTo 
+        ? `/?modal=login&redirectTo=${encodeURIComponent(redirectTo)}`
+        : "/?modal=login";
+      navigate(loginUrl);
+    }
   };
 
   return (
@@ -149,7 +165,8 @@ function Register() {
       <p className="text-sm text-center text-gray-500">
         Already have an account?{" "}
         <a
-          href={redirectTo ? `/login?redirectTo=${encodeURIComponent(redirectTo)}` : "/login"}
+          href="#"
+          onClick={handleSwitchToLogin}
           className="text-[#1b0c3f] font-medium hover:underline"
         >
           Login

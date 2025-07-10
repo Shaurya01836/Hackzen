@@ -27,71 +27,82 @@ import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetail
 import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 
-
 function App() {
   return (
     <>
-    <Toaster position="top-center" reverseOrder={false} />
-    <Routes>
-      {/* Landing and auth */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/oauth-success" element={<OAuthSuccess />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/loader" element={<Loader />} />
+      <Toaster position="top-center" reverseOrder={false} />
+      <Routes>
+        {/* Landing and auth */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/loader" element={<Loader />} />
 
-      {/* Admin */}
-      <Route path="/admin/hackathons/:id" element={<HackathonDetailsPage />} />
-      <Route path="/admin/:section" element={<AdminPanel />} />
-      <Route
-        path="/admin"
-        element={<Navigate to="/admin/dashboard" replace />}
-      />
-<Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
+        {/* Admin */}
+        <Route
+          path="/admin/hackathons/:id"
+          element={<HackathonDetailsPage />}
+        />
+        <Route path="/admin/:section" element={<AdminPanel />} />
+        <Route
+          path="/admin"
+          element={<Navigate to="/admin/dashboard" replace />}
+        />
+        <Route
+          path="/dashboard/project-archive/:id"
+          element={<DashboardPage />}
+        />
 
-      {/* Dashboard */}
-      <Route
-        path="/dashboard"
-        element={<Navigate to="/dashboard/profile" replace />}
-      />
-      <Route path="/dashboard/:section" element={<DashboardPage />} />
-      <Route
-        path="/dashboard/hackathon/:id"
-        element={<HackathonDetailsPage />}
-      />
-      <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
-      <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
-      <Route path="/dashboard/my-hackathons/:projectId" element={<DashboardPage />} />
-      <Route path="/dashboard/my-submissions/:projectId" element={<DashboardPage />} />
+        {/* Dashboard */}
+        <Route
+          path="/dashboard"
+          element={<Navigate to="/dashboard/profile" replace />}
+        />
+        <Route path="/dashboard/:section" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/hackathon/:id"
+          element={<HackathonDetailsPage />}
+        />
+        <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
+        <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/my-hackathons/:projectId"
+          element={<DashboardPage />}
+        />
+        <Route
+          path="/dashboard/my-submissions/:projectId"
+          element={<DashboardPage />}
+        />
 
-      {/* Explore */}
-      <Route path="/explore" element={<ExploreHackathons />} />
-      <Route path="/explore/:id" element={<HackathonDetailsPage />} />
+        {/* Explore */}
+        <Route path="/explore" element={<ExploreHackathons />} />
+        <Route path="/explore/:id" element={<HackathonDetailsPage />} />
 
-      {/* Profile */}
-      <Route path="/dashboard/profile" element={<DashboardPage />} />
-      <Route path="/dashboard/profile/edit" element={<DashboardPage />} />
-      <Route
-        path="/dashboard/profile/account-settings"
-        element={<DashboardPage />}
-      />
-      <Route
-        path="/dashboard/profile/privacy-security"
-        element={<DashboardPage />}
-      />
-      <Route
-        path="/dashboard/profile/help-support"
-        element={<DashboardPage />}
-      />
-      <Route path="/invite/:inviteId" element={<InviteAccept />} />
-      <Route path="/invite/role" element={<InviteRole />} />
+        {/* Profile */}
+        <Route path="/dashboard/profile" element={<DashboardPage />} />
+        <Route path="/dashboard/profile/edit" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/profile/account-settings"
+          element={<DashboardPage />}
+        />
+        <Route
+          path="/dashboard/profile/privacy-security"
+          element={<DashboardPage />}
+        />
+        <Route
+          path="/dashboard/profile/help-support"
+          element={<DashboardPage />}
+        />
+        <Route path="/invite/:inviteId" element={<InviteAccept />} />
+        <Route path="/invite/role" element={<InviteRole />} />
 
-      {/* Catch-all route */}
-      <Route path="*" element={<NotFound />} />
+        {/* Catch-all route */}
+        <Route path="*" element={<NotFound />} />
 
-      <Route path="/judge" element={<JudgePanel />} />
-    </Routes>
+        <Route path="/judge" element={<JudgePanel />} />
+      </Routes>
     </>
   );
 }
