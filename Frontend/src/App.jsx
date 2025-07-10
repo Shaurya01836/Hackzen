@@ -26,6 +26,7 @@ import InviteRole from "./pages/InviteRole";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
 import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
+import CreatedHackathons from "./pages/mainDashboard/sections/Created-hackathons";
 
 function App() {
   return (
@@ -75,6 +76,10 @@ function App() {
           path="/dashboard/my-submissions/:projectId"
           element={<DashboardPage />}
         />
+
+        {/* Created Hackathons */}
+        <Route path="/dashboard/created-hackathons" element={<DashboardPage />} />
+        <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
 
         {/* Explore */}
         <Route path="/explore" element={<ExploreHackathons />} />

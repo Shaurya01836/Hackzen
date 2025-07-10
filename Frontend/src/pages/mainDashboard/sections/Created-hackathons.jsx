@@ -44,11 +44,10 @@ import HackathonEditModal from "./HackathonEditModal"; // Adjust path
 import CustomSubmissionForm from "./CustomSubmissionForm";
 import InnerCreatedCard from "./InnerCreatedCard"; // Adjust path
 import { cn } from "../../../lib/utils";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function CreatedHackathons({ onCreateNew }) {
   const [hackathons, setHackathons] = useState([]);
-  const [selectedHackathon, setSelectedHackathon] = useState(null);
-  const [showModal, setShowModal] = useState(false);
   const [editHackathon, setEditHackathon] = useState(null);
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [submissionHackathon, setSubmissionHackathon] = useState(null);
@@ -57,6 +56,8 @@ export function CreatedHackathons({ onCreateNew }) {
   const [showInnerCard, setShowInnerCard] = useState(false);
   const [innerCardHackathon, setInnerCardHackathon] = useState(null);
   const hackathonToDelete = useRef(null);
+  const navigate = useNavigate();
+  const { hackathonId } = useParams();
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -77,6 +78,18 @@ export function CreatedHackathons({ onCreateNew }) {
     fetchHackathons();
   }, []);
 
+  useEffect(() => {
+    if (hackathonId && hackathons.length > 0) {
+      const found = hackathons.find((h) => h._id === hackathonId);
+      if (found) {
+        setInnerCardHackathon(found);
+        setShowInnerCard(true);
+      }
+    } else {
+      setShowInnerCard(false);
+    }
+  }, [hackathonId, hackathons]);
+
   const liveHackathons = hackathons.filter((h) => h.status === "ongoing");
   const completedHackathons = hackathons.filter((h) => h.status === "ended");
   const draftHackathons = hackathons.filter((h) => h.status === "draft");
@@ -93,15 +106,6 @@ export function CreatedHackathons({ onCreateNew }) {
   const registrationOpenHackathons = hackathons.filter(
     (h) => new Date(h.registrationDeadline) > new Date()
   );
-
-  const handleEdit = (hackathon) => {
-    setEditHackathon(hackathon);
-  };
-
-  const handleViewDetails = (hackathon) => {
-    setSelectedHackathon(hackathon);
-    setShowModal(true);
-  };
 
   const handleDelete = (hackathon) => {
     hackathonToDelete.current = hackathon;
@@ -179,8 +183,7 @@ export function CreatedHackathons({ onCreateNew }) {
   };
 
   const handleCardClick = (hackathon) => {
-    setInnerCardHackathon(hackathon);
-    setShowInnerCard(true);
+    navigate(`/dashboard/created-hackathons/${hackathon._id}`);
   };
 
   // Prevent card click when clicking on action buttons
@@ -275,32 +278,7 @@ export function CreatedHackathons({ onCreateNew }) {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 mt-3 pt-2 border-t border-gray-100">
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(hackathon);
-              }}
-            >
-              <Edit3 className="w-3 h-3 mr-1" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(hackathon);
-              }}
-            >
-              <Settings className="w-3 h-3 mr-1" />
-              Manage
-            </Button>
-          </div>
+          {/* Removed Edit and Manage buttons as per new requirements */}
         </div>
       </Card>
     );
@@ -310,10 +288,11 @@ export function CreatedHackathons({ onCreateNew }) {
     return (
       <InnerCreatedCard
         hackathon={innerCardHackathon}
-        onBack={() => setShowInnerCard(false)}
+        onBack={() => navigate("/dashboard/created-hackathons")}
         onEdit={(hackathon) => {
           setEditHackathon(hackathon);
           setShowInnerCard(false);
+          navigate("/dashboard/created-hackathons");
         }}
       />
     );
@@ -456,12 +435,6 @@ export function CreatedHackathons({ onCreateNew }) {
             </TabsContent>
           </Tabs>
 
-          <HackathonDetailModal
-            isOpen={showModal}
-            onClose={() => setShowModal(false)}
-            hackathon={selectedHackathon}
-          />
-
           {editHackathon && (
             <HackathonEditModal
               hackathon={editHackathon}
@@ -508,3 +481,5 @@ export function CreatedHackathons({ onCreateNew }) {
     </>
   );
 }
+
+export default CreatedHackathons;

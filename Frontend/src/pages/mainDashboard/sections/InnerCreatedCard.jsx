@@ -23,6 +23,7 @@ import {
   ACardContent,
 } from "../../../components/DashboardUI/AnimatedCard";
 import CustomSubmissionForm from "./CustomSubmissionForm";
+import HackathonEditModal from "./HackathonEditModal";
 import {
   ArrowLeft,
   CalendarDays,
@@ -144,7 +145,6 @@ const projectSubmissions = [
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
   onBack,
-  onEdit, // Add onEdit prop
 }) {
   // If hackathon data is passed as prop, use it instead of mock data
   const hackathonData = hackathonProp || {
@@ -160,6 +160,7 @@ export default function HackathonDetailsPage({
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const hackathonToDelete = useRef(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const filteredProjects = projectSubmissions.filter((project) => {
     const matchesSearch =
@@ -508,22 +509,6 @@ export default function HackathonDetailsPage({
                             <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2 mb-2">
                               {project.title}
                             </h3>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge
-                                variant="outline"
-                                className="text-xs"
-                              >
-                                {project.track}
-                              </Badge>
-                              {project.rank && (
-                                <div className="flex items-center gap-1">
-                                  <Trophy className="h-3 w-3 text-yellow-500" />
-                                  <span className="text-xs font-medium text-yellow-600">
-                                    #{project.rank}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
                           </div>
 
                           {/* Team Name Badge */}
@@ -567,7 +552,7 @@ export default function HackathonDetailsPage({
                       <Button
                         variant="outline"
                         className="w-full justify-start gap-2 text-left bg-transparent"
-                        onClick={() => onEdit && onEdit(hackathonData)}
+                        onClick={() => setShowEditModal(true)}
                       >
                         <Edit3 className="h-4 w-4" />
                         Edit Hackathon
@@ -644,7 +629,7 @@ export default function HackathonDetailsPage({
                 size="sm"
                 variant="outline"
                 className="flex-shrink-0 bg-transparent"
-                onClick={() => onEdit && onEdit(hackathonData)}
+                onClick={() => setShowEditModal(true)}
               >
                 <Edit3 className="h-4 w-4 mr-1" />
                 Edit
@@ -676,6 +661,16 @@ export default function HackathonDetailsPage({
             </div>
           </div>
         </div>
+      )}
+      {showEditModal && (
+        <HackathonEditModal
+          hackathon={hackathonData}
+          onClose={() => setShowEditModal(false)}
+          onUpdated={() => {
+            setShowEditModal(false);
+            window.location.reload(); // or re-fetch if you prefer
+          }}
+        />
       )}
       {showDeleteDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
