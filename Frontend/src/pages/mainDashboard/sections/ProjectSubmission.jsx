@@ -273,6 +273,7 @@ const method = mode === "edit" ? "PUT" : "POST";
 
       alert("✅ Project saved successfully!");
       onSave?.(created);
+         window.location.href = '/dashboard/my-hackathons';
     } catch (error) {
       alert("❌ Error: " + error.message);
     }
@@ -280,27 +281,28 @@ const method = mode === "edit" ? "PUT" : "POST";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <Card className="border-gray-200 shadow-sm">
+          <Card className="border-gray-200 shadow-lg rounded-2xl">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-6">
                 <Button
                   variant="ghost"
                   onClick={onBack}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                  className="flex items-center gap-2 text-indigo-600 hover:bg-indigo-50 font-semibold text-base px-4 py-2 rounded-lg shadow-none"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Back
                 </Button>
                 <div className="flex items-center gap-3">
+                  {getStatusBadge()}
                   {isIncomplete && (
                     <Badge variant="destructive">Incomplete Project</Badge>
                   )}
-                 
                 </div>
               </div>
+              
 
               {/* Project Title and One-Line Intro - Full Width */}
               <div className="space-y-4">
@@ -738,48 +740,49 @@ const method = mode === "edit" ? "PUT" : "POST";
               Last saved: {new Date().toLocaleTimeString()}
             </span>
           </div>
-   <div className="flex gap-4">
-  {mode === "edit" && (
-    <Button
-      variant="destructive"
-      onClick={async () => {
-        const confirmed = confirm("Are you sure you want to delete this project?");
-        if (!confirmed) return;
+          <div className="flex gap-4">
+            {mode === "edit" && (
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  const confirmed = confirm("Are you sure you want to delete this project?");
+                  if (!confirmed) return;
 
-        try {
-          const token = localStorage.getItem("token");
-          const res = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+                  try {
+                    const token = localStorage.getItem("token");
+                    const res = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
+                      method: "DELETE",
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
 
-          const result = await res.json();
-          if (!res.ok) throw new Error(result.message || "Failed to delete");
+                    const result = await res.json();
+                    if (!res.ok) throw new Error(result.message || "Failed to delete");
 
-          alert("Project deleted successfully");
-          onBack?.(); // Redirect user after deletion
-        } catch (err) {
-          alert("Delete failed: " + err.message);
-        }
-      }}
-    >
-      Delete Project
-    </Button>
-  )}
-  <Button
-    onClick={handleSave}
-    size="lg"
-    className="flex items-center gap-2"
-  >
-    <Save className="w-4 h-4" />
-    Save Project
-  </Button>
-</div>
+                    alert("Project deleted successfully");
+                    onBack?.(); // Redirect user after deletion
+                  } catch (err) {
+                    alert("Delete failed: " + err.message);
+                  }
+                }}
+              >
+                Delete Project
+              </Button>
+            )}
+            <Button
+              onClick={handleSave}
+              size="lg"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg shadow-lg font-bold text-base transition-all duration-200"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              Save Project
+            </Button>
+          </div>
+        </div>
 
         </div>
       </div>
-    </div>
-  );
-}
+
+            );
+          }

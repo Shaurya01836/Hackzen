@@ -84,25 +84,40 @@ export default function ProjectSubmissionForm({
     const fetchSubmissions = async () => {
       try {
         const token = localStorage.getItem("token");
+        const hackathonId = hackathon._id || hackathon.id;
         const res = await axios.get(
-          `http://localhost:3000/api/submissions?hackathonId=${hackathon.id}&userId=${userId}`,
+          `http://localhost:3000/api/submission-form/submissions?hackathonId=${hackathonId}&userId=${userId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const submissions = res.data.submissions || [];
-        setSubmittedProjectIds(submissions.map((s) => s.projectId));
+        const projectIds = submissions.map((s) => s.projectId);
+        setSubmittedProjectIds(projectIds);
       } catch (err) {
+        console.error("Error fetching submissions:", err);
         setSubmittedProjectIds([]);
       }
     };
-    if (hackathon.id && userId) fetchSubmissions();
-  }, [hackathon.id, userId]);
+    if ((hackathon._id || hackathon.id) && userId) fetchSubmissions();
+  }, [hackathon._id, hackathon.id, userId]);
+
+  useEffect(() => {
+    if (selectedProjectId && submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())) {
+      setSelectedProjectId("");
+      toast({
+        title: 'Already Submitted',
+        description: 'You have already submitted this project in this hackathon.',
+        duration: 4000,
+      });
+    }
+  }, [selectedProjectId, submittedProjectIds, toast]);
 
   const handleOrganizerAnswer = (questionId, answer) => {
     setOrganizerAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
   const handleProjectSelect = (projectId) => {
-    if (submittedProjectIds.includes(projectId)) {
+    const isSubmitted = submittedProjectIds.some(id => id.toString() === projectId.toString());
+    if (isSubmitted) {
       toast({
         title: 'Already Submitted',
         description: 'You have already submitted this project in this hackathon.',
@@ -135,7 +150,7 @@ export default function ProjectSubmissionForm({
       return;
     }
 
-    if (submittedProjectIds.includes(selectedProjectId)) {
+    if (submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())) {
       toast({
         title: 'Already Submitted',
         description: 'You have already submitted this project in this hackathon.',
@@ -172,6 +187,10 @@ export default function ProjectSubmissionForm({
       );
       console.log('✅ Submission successful:', response.data);
       
+      // Add the just-submitted project to the submitted list
+      setSubmittedProjectIds((prev) => [...prev, selectedProjectId]);
+      setSelectedProjectId(""); // Optionally clear the selection
+      
       // Call badge check after successful submission
       await checkForNewBadges();
       
@@ -204,11 +223,26 @@ export default function ProjectSubmissionForm({
     }
   };
 
-  // Stepper for navigation
-  const steps = [
-    { key: "project-selection", label: "Select Project" },
-    { key: "terms-submit", label: "Q&A & Submit" },
-  ];
+  // Keep all projects but mark submitted ones as disabled
+  const allProjects = userProjects;
+
+  // Check if there are custom questions or terms
+  const hasCustomQuestions = organizerQuestions.length > 0;
+  const hasTerms = termsAndConditions.length > 0;
+  const hasCustomForm = hasCustomQuestions || hasTerms;
+  
+  // Check if there are any required questions
+  const hasRequiredQuestions = organizerQuestions.some(q => q.required);
+
+  // Dynamic stepper based on whether there are custom questions/terms
+  const steps = hasCustomForm 
+    ? [
+        { key: "project-selection", label: "Select Project" },
+        { key: "terms-submit", label: "Q&A & Submit" },
+      ]
+    : [
+        { key: "project-selection", label: "Submit Project" },
+      ];
   const currentStep = steps.findIndex((s) => s.key === activeTab);
 
   return (
@@ -256,28 +290,55 @@ export default function ProjectSubmissionForm({
           <CardContent>
             <form onSubmit={handleSubmit}>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-2 mb-8 ">
-                  <TabsTrigger
-                    value="project-selection"
-                    className={`transition-all ${
-                      activeTab === "project-selection"
-                        ? "bg-indigo-600 text-white"
-                        : "text-black"
-                    }`}
-                  >
-                    Select Project
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="terms-submit"
-                    className={`transition-all ${
-                      activeTab === "terms-submit"
-                        ? "bg-indigo-600 text-white"
-                        : "text-black"
-                    }`}
-                  >
-                    Q&A & Submit
-                  </TabsTrigger>
-                </TabsList>
+                {hasCustomForm ? (
+                  <TabsList className="grid w-full grid-cols-2 mb-8 ">
+                    <TabsTrigger
+                      value="project-selection"
+                      className={`transition-all ${
+                        activeTab === "project-selection"
+                          ? "bg-indigo-600 text-white"
+                          : "text-black"
+                      }`}
+                    >
+                      Select Project
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="terms-submit"
+                      className={`transition-all ${
+                        activeTab === "terms-submit"
+                          ? "bg-indigo-600 text-white"
+                          : "text-gray-400 cursor-not-allowed"
+                      }`}
+                      disabled={
+                        !selectedProjectId ||
+                        selectedProjectId === "create-new" ||
+                        !selectedProblem ||
+                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                      }
+                    >
+                      Q&A & Submit
+                      {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
+                        <span className="ml-2 text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
+                          Locked
+                        </span>
+                      )}
+                      {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
+                        <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                          Ready
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+                ) : (
+                  <TabsList className="grid w-full grid-cols-1 mb-8 ">
+                    <TabsTrigger
+                      value="project-selection"
+                      className="bg-indigo-600 text-white"
+                    >
+                      Submit Project
+                    </TabsTrigger>
+                  </TabsList>
+                )}
 
                 {/* Step 1: Select Project */}
                 <TabsContent
@@ -289,30 +350,56 @@ export default function ProjectSubmissionForm({
                       Select Project<span className="text-red-500">*</span>
                     </Label>
                     <Select
+                      key={submittedProjectIds.join(",")}
                       value={selectedProjectId}
                       onValueChange={handleProjectSelect}
                       required
                     >
                       <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
-                        <SelectValue placeholder="Choose..." />
+                        <SelectValue placeholder={allProjects.length === 0 ? "No projects available" : "Choose..."} />
                       </SelectTrigger>
                       <SelectContent>
-                        {userProjects.map((project) => (
-                          <SelectItem
-                            key={project._id}
-                            value={project._id}
-                            className={`text-black ${submittedProjectIds.includes(project._id) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={submittedProjectIds.includes(project._id)}
-                          >
-                            {project.title}
-                          </SelectItem>
-                        ))}
-                        <SelectItem
-                          value="create-new"
-                          className="text-indigo-600 font-semibold"
-                        >
-                          + Create New Project
-                        </SelectItem>
+                        {allProjects.length === 0 ? (
+                          <div className="px-4 py-2 text-gray-500">No projects available. Create a project first.</div>
+                        ) : (
+                          <>
+                            {/* Available projects */}
+                            {allProjects
+                              .filter(project => !submittedProjectIds.some(id => id.toString() === project._id.toString()))
+                              .map((project) => (
+                                <SelectItem
+                                  key={project._id}
+                                  value={project._id}
+                                  className="text-black"
+                                >
+                                  {project.title}
+                                </SelectItem>
+                              ))
+                            }
+                            
+                            {/* Submitted projects (disabled) */}
+                            {allProjects
+                              .filter(project => submittedProjectIds.some(id => id.toString() === project._id.toString()))
+                              .map((project) => (
+                                <SelectItem
+                                  key={project._id}
+                                  value={project._id}
+                                  className="text-gray-400 cursor-not-allowed"
+                                  disabled={true}
+                                >
+                                  {project.title} (Already Submitted)
+                                </SelectItem>
+                              ))
+                            }
+                            
+                            <SelectItem
+                              value="create-new"
+                              className="text-indigo-600 font-semibold"
+                            >
+                              + Create New Project
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     {selectedProjectId === "create-new" && (
@@ -352,16 +439,58 @@ export default function ProjectSubmissionForm({
                   </div>
 
                   <div className="flex justify-end">
-                    <Button
-                      type="button"
-                      onClick={() => setActiveTab("terms-submit")}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
-                      disabled={
-                        !selectedProjectId || selectedProjectId === "create-new" || !selectedProblem
-                      }
-                    >
-                      Next <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    {hasCustomForm ? (
+                      <>
+                        {/* Show guidance message when requirements not met */}
+                        {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
+                          <div className="flex-1 text-sm text-gray-500">
+                            {!selectedProjectId || selectedProjectId === "create-new" ? "Please select a project" : ""}
+                            {(!selectedProjectId || selectedProjectId === "create-new") && !selectedProblem ? " and " : ""}
+                            {!selectedProblem ? "choose a problem statement" : ""}
+                            {" to proceed to Q&A & Submit"}
+                          </div>
+                        )}
+                        {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
+                          <div className="flex-1 text-sm text-green-600">
+                            ✓ Ready to proceed to Q&A & Submit
+                          </div>
+                        )}
+                        <Button
+                          type="button"
+                          onClick={() => setActiveTab("terms-submit")}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
+                          disabled={
+                            !selectedProjectId ||
+                            selectedProjectId === "create-new" ||
+                            !selectedProblem ||
+                            submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                          }
+                        >
+                          Next <ChevronRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="submit"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
+                        disabled={
+                          !selectedProjectId ||
+                          selectedProjectId === "create-new" ||
+                          !selectedProblem ||
+                          submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
+                          isSubmitting
+                        }
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                            Submitting...
+                          </>
+                        ) : (
+                          "Submit Project →"
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </TabsContent>
 
@@ -370,6 +499,17 @@ export default function ProjectSubmissionForm({
                   value="terms-submit"
                   className="space-y-6 animate-fade-in"
                 >
+                  {!hasCustomForm && (
+                    <div className="text-center py-8">
+                      <div className="text-gray-500 mb-4">
+                        <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-lg font-medium text-gray-700">Ready to Submit!</p>
+                        <p className="text-sm text-gray-500">No additional questions or terms required.</p>
+                      </div>
+                    </div>
+                  )}
                   {organizerQuestions.length > 0 && (
                     <>
                       <h3 className="text-xl font-bold text-black mb-2">
@@ -418,16 +558,18 @@ export default function ProjectSubmissionForm({
                           ))}
                         </ul>
                       </div>
-                      <label className="flex items-center space-x-2 text-sm text-black font-medium">
-                        <input
-                          type="checkbox"
-                          checked={agreedToTerms}
-                          onChange={(e) => setAgreedToTerms(e.target.checked)}
-                          required
-                          className="accent-indigo-600"
-                        />
-                        <span>I agree to the terms above</span>
-                      </label>
+                      {hasTerms && (
+                        <label className="flex items-center space-x-2 text-sm text-black font-medium">
+                          <input
+                            type="checkbox"
+                            checked={agreedToTerms}
+                            onChange={(e) => setAgreedToTerms(e.target.checked)}
+                            required
+                            className="accent-indigo-600"
+                          />
+                          <span>I agree to the terms above</span>
+                        </label>
+                      )}
                     </>
                   )}
 
@@ -435,13 +577,21 @@ export default function ProjectSubmissionForm({
                     <Button
                       type="button"
                       onClick={() => setActiveTab("project-selection")}
-                      className="bg-indigo-100 text-black hover:bg-indigo-200 px-6 py-2 rounded-lg transition-all"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
                     >
                       <ChevronLeft className="mr-2 h-4 w-4" /> Back
                     </Button>
                     <Button
                       type="submit"
-                      disabled={!agreedToTerms || isSubmitting || !selectedProjectId || selectedProjectId === "create-new" || !selectedProblem}
+                      disabled={
+                        (hasTerms && !agreedToTerms) || 
+                        (hasRequiredQuestions && !organizerQuestions.every(q => !q.required || organizerAnswers[q.id])) ||
+                        isSubmitting || 
+                        !selectedProjectId || 
+                        selectedProjectId === "create-new" || 
+                        !selectedProblem ||
+                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                      }
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
