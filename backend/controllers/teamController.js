@@ -2,6 +2,7 @@ const Team = require('../model/TeamModel');
 const HackathonRegistration = require('../model/HackathonRegistrationModel');
 const User = require('../model/UserModel');
 const Hackathon = require('../model/HackathonModel');
+const Submission = require('../model/SubmissionModel'); // ✅ Added for cleaning up submissions
 const crypto = require('crypto');
 
 const createTeam = async (req, res) => {
@@ -384,6 +385,8 @@ const deleteTeam = async (req, res) => {
       await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
       // Remove from user's registeredHackathonIds
       await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+      // ✅ Clean up submissions for this user and hackathon
+      await Submission.deleteMany({ hackathonId, submittedBy: memberId });
     }
 
     await Team.findByIdAndDelete(req.params.id);
@@ -431,6 +434,9 @@ const removeMember = async (req, res) => {
     
     // Remove from user's registeredHackathonIds
     await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+
+    // ✅ Clean up submissions for this user and hackathon
+    await Submission.deleteMany({ hackathonId, submittedBy: memberId });
 
     const populatedTeam = await Team.findById(team._id)
       .populate('members', 'name email avatar')
@@ -505,6 +511,9 @@ const leaveTeam = async (req, res) => {
     await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
     // Remove from user's registeredHackathonIds
     await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+
+    // ✅ Clean up submissions for this user and hackathon
+    await Submission.deleteMany({ hackathonId, submittedBy: userId });
 
     res.json({ message: 'You have left the team and have been unregistered from the hackathon.' });
   } catch (err) {

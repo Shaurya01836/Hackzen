@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Card,
@@ -42,7 +42,14 @@ export default function ProjectSubmissionForm({
   const [termsAndConditions, setTermsAndConditions] = useState([]);
   const [organizerAnswers, setOrganizerAnswers] = useState({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const { toast } = useToast();
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
 
   const user = JSON.parse(localStorage.getItem('user'));
   const userId = user?._id;
@@ -109,6 +116,25 @@ export default function ProjectSubmissionForm({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!selectedProjectId || selectedProjectId === "create-new") {
+      toast({
+        title: '❌ Error',
+        description: 'Please select a project to submit.',
+        duration: 4000,
+      });
+      return;
+    }
+
+    if (!selectedProblem) {
+      toast({
+        title: '❌ Error',
+        description: 'Please select a problem statement.',
+        duration: 4000,
+      });
+      return;
+    }
+
     if (submittedProjectIds.includes(selectedProjectId)) {
       toast({
         title: 'Already Submitted',
@@ -118,6 +144,7 @@ export default function ProjectSubmissionForm({
       return;
     }
 
+    setIsSubmitting(true);
     const token = localStorage.getItem("token");
     const answersArray = Object.entries(organizerAnswers).map(
       ([id, answer]) => ({
@@ -135,28 +162,45 @@ export default function ProjectSubmissionForm({
     console.log('handleSubmit: payload =', payload);
 
     try {
-      await axios.post(
+      console.log('🚀 Submitting project with payload:', payload);
+      const response = await axios.post(
         "http://localhost:3000/api/submission-form/submit",
         payload,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log('✅ Submission successful:', response.data);
+      
       // Call badge check after successful submission
       await checkForNewBadges();
+      
+      // Show success state
+      setShowSuccess(true);
+      
+      // Show success toast
       toast({
-        title: 'Success',
-        description: 'Project submitted successfully!',
-        duration: 4000,
+        title: '🎉 Success!',
+        description: 'Your project has been submitted successfully!',
+        duration: 5000,
       });
-      setTimeout(() => navigate("/dashboard/my-hackathons"), 1200);
+      
+      // Robust redirect after 2 seconds
+      setTimeout(() => {
+        // Use hard redirect to ensure navigation always works
+        window.location.href = "/dashboard/my-hackathons";
+      }, 2000);
+      
     } catch (err) {
-      console.error("Error submitting project:", err);
+      console.error("❌ Error submitting project:", err);
+      console.error("❌ Error response:", err.response?.data);
       toast({
-        title: 'Error',
-        description: err.response?.data?.error || 'Failed to submit project.',
-        duration: 4000,
+        title: '❌ Error',
+        description: err.response?.data?.error || 'Failed to submit project. Please try again.',
+        duration: 5000,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -397,10 +441,17 @@ export default function ProjectSubmissionForm({
                     </Button>
                     <Button
                       type="submit"
-                      disabled={!agreedToTerms}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
+                      disabled={!agreedToTerms || isSubmitting || !selectedProjectId || selectedProjectId === "create-new" || !selectedProblem}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Submit →
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Submit →"
+                      )}
                     </Button>
                   </div>
                 </TabsContent>
@@ -409,6 +460,28 @@ export default function ProjectSubmissionForm({
           </CardContent>
         </Card>
       </div>
+      
+      {/* Success Overlay */}
+      {showSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center animate-fade-in">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Success!</h3>
+            <p className="text-gray-600 mb-6">Your project has been submitted successfully!</p>
+            <div className="flex items-center justify-center space-x-2 mb-4">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+            </div>
+            <p className="text-sm text-gray-500">Redirecting to My Hackathons...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Animation for fade-in */}
       <style>{`
         .animate-fade-in {

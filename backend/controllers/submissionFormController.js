@@ -30,11 +30,22 @@ exports.submitProjectWithAnswers = async (req, res) => {
     const { hackathonId, projectId, customAnswers, problemStatement } = req.body;
     const userId = req.user._id;
 
+    // ✅ Check if user is currently registered for this hackathon
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(400).json({ 
+        error: "You must be registered for this hackathon to submit a project. Please register first and then try submitting again." 
+      });
+    }
+
     // Check for duplicate submission
     const existing = await Submission.findOne({ hackathonId, projectId, submittedBy: userId });
     if (existing) {
       console.error('❌ Duplicate submission attempt:', { hackathonId, projectId, userId });
-      return res.status(400).json({ error: "You have already submitted this project to this hackathon." });
+      return res.status(400).json({ 
+        error: "You have already submitted this project to this hackathon. You cannot submit the same project twice." 
+      });
     }
 
     // Create new submission

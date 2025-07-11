@@ -3,6 +3,7 @@ const Registration = require("../model/HackathonRegistrationModel");
 const Hackathon = require("../model/HackathonModel");
 const User = require("../model/UserModel"); // ✅ required for syncing
 const Team = require("../model/TeamModel");
+const Submission = require("../model/SubmissionModel"); // ✅ Added for cleaning up submissions
 
 const registerForHackathon = async (req, res) => {
   try {
@@ -254,6 +255,8 @@ const unregisterFromHackathon = async (req, res) => {
         await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
         // Remove from user's registeredHackathonIds
         await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+        // ✅ Clean up submissions for this user and hackathon
+        await Submission.deleteMany({ hackathonId, submittedBy: memberId });
       }
 
       // Delete the team
@@ -288,6 +291,9 @@ const unregisterFromHackathon = async (req, res) => {
 
       // Remove from user's registeredHackathonIds
       await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+
+      // ✅ Clean up submissions for this user and hackathon
+      await Submission.deleteMany({ hackathonId, submittedBy: userId });
 
       res.json({ 
         message: 'You have been unregistered from the hackathon.',
