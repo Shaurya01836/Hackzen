@@ -500,10 +500,19 @@ export default function MyHackathons() {
                               variant="outline"
                               size="sm"
                               className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
                                 setSelectedHackathon(hackathon);
                                 setShowSubmissionForm(true);
+                                // Fetch the full hackathon object from the backend
+                                try {
+                                  const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon.id}`);
+                                  const fullHackathon = await res.json();
+                                  setSelectedHackathon(fullHackathon);
+                                  setShowSubmissionForm(true);
+                                } catch (err) {
+                                  alert('Failed to load hackathon details.');
+                                }
                               }}
                             >
                               Submit

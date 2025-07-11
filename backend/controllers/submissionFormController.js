@@ -1,6 +1,7 @@
 // controllers/submissionFormController.js
 const Hackathon = require("../model/HackathonModel");
 const Project = require("../model/ProjectModel");
+const Submission = require("../model/SubmissionModel");
 
 exports.saveHackathonForm = async (req, res) => {
   try {
@@ -26,26 +27,29 @@ exports.saveHackathonForm = async (req, res) => {
 
 exports.submitProjectWithAnswers = async (req, res) => {
   try {
-    const { hackathonId, projectId, customAnswers } = req.body;
+    const { hackathonId, projectId, customAnswers, problemStatement } = req.body;
+    const userId = req.user._id;
 
-    const project = await Project.findById(projectId);
-    if (!project) return res.status(404).json({ error: "Project not found" });
+    // Check for duplicate submission
+    const existing = await Submission.findOne({ hackathonId, projectId, submittedBy: userId });
+    if (existing) {
+      console.error('❌ Duplicate submission attempt:', { hackathonId, projectId, userId });
+      return res.status(400).json({ error: "You have already submitted this project to this hackathon." });
+    }
 
-    // Attach the hackathon to the project
-    project.hackathon = hackathonId;
-    project.status = "submitted";
-    project.submittedAt = new Date();
-    project.customAnswers = customAnswers;
-    await project.save();
-
-    // Optional: Add project ID to Hackathon's submissions list
-    await Hackathon.findByIdAndUpdate(hackathonId, {
-      $addToSet: { submittedProjects: project._id },
+    // Create new submission
+    const submission = await Submission.create({
+      hackathonId,
+      projectId,
+      submittedBy: userId,
+      problemStatement,
+      customAnswers,
+      status: 'submitted',
     });
 
-    res.status(200).json({ success: true, project });
+    res.status(200).json({ success: true, submission });
   } catch (err) {
-    console.error("❌ Error in submitProjectWithAnswers:", err);
-    res.status(500).json({ error: "Server error during submission" });
+    console.error("❌ Error in submitProjectWithAnswers:", err, req.body);
+    res.status(500).json({ error: "Server error during submission", details: err.message, stack: err.stack });
   }
 };

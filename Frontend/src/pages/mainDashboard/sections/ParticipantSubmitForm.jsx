@@ -27,6 +27,7 @@ import {
 import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
 import axios from "axios";
 import { useAchievements } from '../../../hooks/useAchievements';
+import { useToast } from '../../../hooks/use-toast';
 
 export default function ProjectSubmissionForm({
   hackathon,
@@ -36,20 +37,30 @@ export default function ProjectSubmissionForm({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("project-selection");
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedProblem, setSelectedProblem] = useState("");
   const [organizerQuestions, setOrganizerQuestions] = useState([]);
   const [termsAndConditions, setTermsAndConditions] = useState([]);
   const [organizerAnswers, setOrganizerAnswers] = useState({});
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const { toast } = useToast();
 
   const user = JSON.parse(localStorage.getItem('user'));
   const userId = user?._id;
   const { checkForNewBadges } = useAchievements(userId);
 
+  // Track which projects have already been submitted to this hackathon
+  const [submittedProjectIds, setSubmittedProjectIds] = useState([]);
+
   useEffect(() => {
     const fetchCustomForm = async () => {
+      if (!hackathon || (!hackathon.id && !hackathon._id)) {
+        console.warn('fetchCustomForm: No valid hackathon id found:', hackathon);
+        return;
+      }
       try {
+        console.log('fetchCustomForm: hackathon =', hackathon);
         const res = await axios.get(
-          `http://localhost:3000/api/hackathons/${hackathon.id}`
+          `http://localhost:3000/api/hackathons/${hackathon._id || hackathon.id}`
         );
         const form = res.data.customForm || {};
         setOrganizerQuestions(form.questions || []);
@@ -61,12 +72,51 @@ export default function ProjectSubmissionForm({
     fetchCustomForm();
   }, [hackathon]);
 
+  useEffect(() => {
+    // Fetch all submissions for this hackathon and user
+    const fetchSubmissions = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get(
+          `http://localhost:3000/api/submissions?hackathonId=${hackathon.id}&userId=${userId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const submissions = res.data.submissions || [];
+        setSubmittedProjectIds(submissions.map((s) => s.projectId));
+      } catch (err) {
+        setSubmittedProjectIds([]);
+      }
+    };
+    if (hackathon.id && userId) fetchSubmissions();
+  }, [hackathon.id, userId]);
+
   const handleOrganizerAnswer = (questionId, answer) => {
     setOrganizerAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
+  const handleProjectSelect = (projectId) => {
+    if (submittedProjectIds.includes(projectId)) {
+      toast({
+        title: 'Already Submitted',
+        description: 'You have already submitted this project in this hackathon.',
+        duration: 4000,
+      });
+      return;
+    }
+    setSelectedProjectId(projectId);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (submittedProjectIds.includes(selectedProjectId)) {
+      toast({
+        title: 'Already Submitted',
+        description: 'You have already submitted this project in this hackathon.',
+        duration: 4000,
+      });
+      return;
+    }
 
     const token = localStorage.getItem("token");
     const answersArray = Object.entries(organizerAnswers).map(
@@ -77,10 +127,12 @@ export default function ProjectSubmissionForm({
     );
 
     const payload = {
-      hackathonId: hackathon.id,
+      hackathonId: hackathon._id || hackathon.id,
       projectId: selectedProjectId,
+      problemStatement: selectedProblem,
       customAnswers: answersArray,
     };
+    console.log('handleSubmit: payload =', payload);
 
     try {
       await axios.post(
@@ -92,11 +144,19 @@ export default function ProjectSubmissionForm({
       );
       // Call badge check after successful submission
       await checkForNewBadges();
-      alert("🎉 Project submitted successfully!");
-      navigate("/dashboard/my-hackathons");
+      toast({
+        title: 'Success',
+        description: 'Project submitted successfully!',
+        duration: 4000,
+      });
+      setTimeout(() => navigate("/dashboard/my-hackathons"), 1200);
     } catch (err) {
       console.error("Error submitting project:", err);
-      alert("Failed to submit project.");
+      toast({
+        title: 'Error',
+        description: err.response?.data?.error || 'Failed to submit project.',
+        duration: 4000,
+      });
     }
   };
 
@@ -186,7 +246,7 @@ export default function ProjectSubmissionForm({
                     </Label>
                     <Select
                       value={selectedProjectId}
-                      onValueChange={setSelectedProjectId}
+                      onValueChange={handleProjectSelect}
                       required
                     >
                       <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
@@ -197,7 +257,8 @@ export default function ProjectSubmissionForm({
                           <SelectItem
                             key={project._id}
                             value={project._id}
-                            className="text-black"
+                            className={`text-black ${submittedProjectIds.includes(project._id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={submittedProjectIds.includes(project._id)}
                           >
                             {project.title}
                           </SelectItem>
@@ -218,13 +279,41 @@ export default function ProjectSubmissionForm({
                     )}
                   </div>
 
+                  {/* Problem Statement Dropdown */}
+                  <div className="space-y-3 text-black">
+                    <Label className="text-black font-semibold">
+                      Problem Statement<span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={selectedProblem}
+                      onValueChange={setSelectedProblem}
+                      required
+                      disabled={!hackathon.problemStatements || hackathon.problemStatements.length === 0}
+                    >
+                      <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
+                        <SelectValue placeholder={hackathon.problemStatements && hackathon.problemStatements.length > 0 ? "Select a problem statement..." : "No problem statements available"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hackathon.problemStatements && hackathon.problemStatements.length > 0 ? (
+                          hackathon.problemStatements.map((statement, idx) => (
+                            <SelectItem key={idx} value={statement} className="text-black">
+                              {statement.length > 80 ? statement.slice(0, 80) + "..." : statement}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-problem" disabled>No problem statements available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="flex justify-end">
                     <Button
                       type="button"
                       onClick={() => setActiveTab("terms-submit")}
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
                       disabled={
-                        !selectedProjectId || selectedProjectId === "create-new"
+                        !selectedProjectId || selectedProjectId === "create-new" || !selectedProblem
                       }
                     >
                       Next <ChevronRight className="ml-2 h-4 w-4" />

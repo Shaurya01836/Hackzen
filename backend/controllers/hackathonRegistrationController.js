@@ -166,7 +166,7 @@ const getHackathonParticipants = async (req, res) => {
       teamName: reg.formData.teamName,
       teamCode: reg.formData.teamCode,
       projectIdea: reg.formData.projectIdea,
-      track: reg.formData.track,
+
       github: reg.formData.github,
       linkedin: reg.formData.linkedin,
       resumeURL: reg.formData.resumeURL,
@@ -191,11 +191,7 @@ const getHackathonParticipants = async (req, res) => {
         acc[location] = (acc[location] || 0) + 1;
         return acc;
       }, {}),
-      skillDistribution: participants.reduce((acc, p) => {
-        const track = p.track || 'Not specified';
-        acc[track] = (acc[track] || 0) + 1;
-        return acc;
-      }, {})
+      skillDistribution: {} // Track field removed
     };
 
     // Convert to array format for frontend

@@ -14,7 +14,6 @@ import {
   GraduationCap,
   Users,
   Lightbulb,
-  Code,
   FileText,
   CheckCircle,
   AlertCircle,
@@ -68,7 +67,6 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     teamDescription: "",
     teamCode: generateTeamCode(),
     projectIdea: "",
-    track: "",
     github: "",
     linkedin: "",
     resumeURL: "",
@@ -158,13 +156,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
 
-  const tracks = [
-    "Web Development",
-    "AI/ML",
-    "Blockchain",
-    "Cybersecurity",
-    "Open Innovation"
-  ]
+
 
   const steps = [
     { id: 1, title: "Personal Info", icon: User, description: "Basic information" },
@@ -193,7 +185,6 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
       case 3:
         if (!formData.teamName.trim())
           newErrors.teamName = "Team name is required"
-        if (!formData.track) newErrors.track = "Please select a track"
         break
       case 4:
         if (!formData.acceptedTerms)
@@ -498,136 +489,172 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
       case 3:
         return (
           <div className="space-y-8 py-4">
+            {/* Enhanced Header */}
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <Users className="w-8 h-8 text-green-600" />
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-6 shadow-lg">
+                <Users className="w-10 h-10 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-4xl font-bold text-gray-900 mb-3">
                 Team & Project Details
               </h2>
-              <p className="text-gray-600 text-lg">Tell us about your team and project idea</p>
+              <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                Tell us about your team and share your innovative project idea. This helps organizers understand your goals and match you with the right opportunities.
+              </p>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <Label htmlFor="teamName" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Users className="w-4 h-4" />
+            <div className="space-y-8">
+              {/* Team Name Section */}
+              <Card className="border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="w-5 h-5 text-blue-600" />
+                    </div>
                     Team Name *
-                  </Label>
-                  <Input
-                    id="teamName"
-                    value={formData.teamName}
-                    onChange={e => handleInputChange("teamName", e.target.value)}
-                    placeholder="Enter your team name"
-                    className={`h-12 text-base ${errors.teamName ? "border-red-500 focus:border-red-500" : ""}`}
-                  />
-                  {errors.teamName && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.teamName}
-                    </p>
-                  )}
-                </div>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Choose a creative and memorable name for your team</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Input
+                      id="teamName"
+                      value={formData.teamName}
+                      onChange={e => handleInputChange("teamName", e.target.value)}
+                      placeholder="e.g., CodeCrafters, InnovateHub, TechPioneers"
+                      className={`h-14 text-lg ${errors.teamName ? "border-red-500 focus:border-red-500" : "focus:border-blue-500"}`}
+                    />
+                    {errors.teamName && (
+                      <p className="text-sm text-red-500 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        {errors.teamName}
+                      </p>
+                    )}
+                    {formData.teamName && !errors.teamName && (
+                      <p className="text-sm text-green-600 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Great team name!
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
 
-                <div className="space-y-3">
-                  <Label htmlFor="track" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Code className="w-4 h-4" />
-                    Track *
-                  </Label>
+            
+
+              {/* Team Description Section */}
+              <Card className="border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                    </div>
+                    Team Description
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Tell us about your team's skills, goals, and what you hope to achieve</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Textarea
+                      id="teamDescription"
+                      value={formData.teamDescription}
+                      onChange={e => handleInputChange("teamDescription", e.target.value)}
+                      placeholder="Describe your team's expertise, background, and what makes you unique. What skills do you bring to the table?"
+                      maxLength={300}
+                      rows={4}
+                      className="text-base resize-none focus:border-purple-500"
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-500">
+                        {formData.teamDescription.length > 0 ? `${formData.teamDescription.length}/300 characters` : "Optional"}
+                      </p>
+                      {formData.teamDescription.length > 200 && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm">Great description!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Project Idea Section */}
+              <Card className="border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Lightbulb className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    Project Idea
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">Share your innovative project concept (optional but recommended)</p>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Textarea
+                      id="projectIdea"
+                      value={formData.projectIdea}
+                      onChange={e => handleInputChange("projectIdea", e.target.value)}
+                      placeholder="Describe your project idea, the problem it solves, and the technology you plan to use. Be creative and innovative!"
+                      maxLength={500}
+                      rows={5}
+                      className="text-base resize-none focus:border-yellow-500"
+                    />
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-500">
+                        {formData.projectIdea.length > 0 ? `${formData.projectIdea.length}/500 characters` : "Optional"}
+                      </p>
+                      {formData.projectIdea.length > 300 && (
+                        <div className="flex items-center gap-1 text-yellow-600">
+                          <Lightbulb className="w-4 h-4" />
+                          <span className="text-sm">Innovative idea!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* How did you hear about us */}
+              <Card className="border-2 border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-3 text-xl">
+                    <div className="p-2 bg-indigo-100 rounded-lg">
+                      <Mail className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    How did you hear about us?
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">This helps us improve our outreach and connect with the right communities</p>
+                </CardHeader>
+                <CardContent>
                   <Select
-                    value={formData.track}
-                    onValueChange={value => handleInputChange("track", value)}
+                    value={formData.heardFrom}
+                    onValueChange={value => handleInputChange("heardFrom", value)}
                   >
-                    <SelectTrigger className={`h-12 text-base ${errors.track ? "border-red-500 focus:border-red-500" : ""}`}>
-                      <SelectValue placeholder="Select your preferred track" />
+                    <SelectTrigger className="h-14 text-lg focus:border-indigo-500">
+                      <SelectValue placeholder="Select how you discovered this hackathon" />
                     </SelectTrigger>
                     <SelectContent>
-                      {tracks.map(track => (
-                        <SelectItem key={track} value={track}>
-                          {track}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="Social Media">📱 Social Media</SelectItem>
+                      <SelectItem value="Friends">👥 Friends & Colleagues</SelectItem>
+                      <SelectItem value="College">🎓 College/University</SelectItem>
+                      <SelectItem value="Website">🌐 Website/Online Search</SelectItem>
+                      <SelectItem value="Email">📧 Email Newsletter</SelectItem>
+                      <SelectItem value="Other">🔍 Other</SelectItem>
                     </SelectContent>
                   </Select>
-                  {errors.track && (
-                    <p className="text-sm text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {errors.track}
-                    </p>
-                  )}
+                </CardContent>
+              </Card>
+
+              {/* Progress Indicator */}
+              <div className="flex items-center justify-center gap-2 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
                 </div>
-              </div>
-
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span className="font-medium text-blue-800">Team Information</span>
-                </div>
-                <p className="text-sm text-blue-700">
-                  This hackathon allows teams of <strong>{hackathon.teamSize?.min || 1} to {hackathon.teamSize?.max || 4} members</strong>
-                  {hackathon.teamSize?.allowSolo ? ' (solo participation allowed)' : ''}.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="teamDescription" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Team Description (Optional)
-                </Label>
-                <Textarea
-                  id="teamDescription"
-                  value={formData.teamDescription}
-                  onChange={e => handleInputChange("teamDescription", e.target.value)}
-                  placeholder="Describe your team's goals, skills, and what you hope to achieve"
-                  maxLength={300}
-                  rows={3}
-                  className="text-base resize-none"
-                />
-                <p className="text-sm text-gray-500 text-right">
-                  {formData.teamDescription.length}/300 characters
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="projectIdea" className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4" />
-                  Project Idea (Optional)
-                </Label>
-                <Textarea
-                  id="projectIdea"
-                  value={formData.projectIdea}
-                  onChange={e => handleInputChange("projectIdea", e.target.value)}
-                  placeholder="Briefly describe your project idea"
-                  maxLength={500}
-                  rows={4}
-                  className="text-base resize-none"
-                />
-                <p className="text-sm text-gray-500 text-right">
-                  {formData.projectIdea.length}/500 characters
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="heardFrom" className="text-sm font-semibold text-gray-700">
-                  How did you hear about this hackathon?
-                </Label>
-                <Select
-                  value={formData.heardFrom}
-                  onValueChange={value => handleInputChange("heardFrom", value)}
-                >
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder="Select an option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Social Media">Social Media</SelectItem>
-                    <SelectItem value="Friends">Friends</SelectItem>
-                    <SelectItem value="College">College</SelectItem>
-                    <SelectItem value="Website">Website</SelectItem>
-                    <SelectItem value="Email">Email</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <span className="text-sm text-gray-600 ml-2">Step 3 of 4</span>
               </div>
             </div>
           </div>
@@ -688,10 +715,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                     <span className="text-gray-600">Team Name:</span>
                     <span className="font-medium">{formData.teamName}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Track:</span>
-                    <span className="font-medium">{formData.track}</span>
-                  </div>
+
                   {formData.teamDescription && (
                     <div>
                       <span className="text-gray-600">Description:</span>

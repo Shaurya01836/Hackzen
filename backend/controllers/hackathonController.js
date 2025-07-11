@@ -164,7 +164,8 @@ exports.getHackathonById = async (req, res) => {
     
     res.json(hackathon);
   } catch (err) {
-    res.status(500).json({ message: 'Error retrieving hackathon' });
+    console.error('❌ Error in getHackathonById:', err);
+    res.status(500).json({ message: 'Error retrieving hackathon', error: err.message, stack: err.stack });
   }
 };
 

@@ -24,7 +24,6 @@ const HackathonRegistrationSchema = new Schema({
     teamDescription: String,
     teamCode: String,
     projectIdea: String,
-    track: String,
     github: String,
     linkedin: String,
     resumeURL: String,
