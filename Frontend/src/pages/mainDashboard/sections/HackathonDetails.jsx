@@ -193,16 +193,18 @@ const sections = [
           {activeTab === "timeline" && (
             <HackathonTimeline hackathon={hackathon} />
           )}
-          {activeTab === "team" && (
-            <TeamManagementSection
-              hackathon={hackathon}
-              isRegistered={isRegistered}
-              setIsRegistered={setIsRegistered}
-              refreshRegistrationStatus={refreshRegistrationStatus}
-              user={user}
-              toast={toast}
-            />
-          )}
+    {activeTab === "team" && (
+  <TeamManagementSection
+    hackathon={hackathon}
+    isRegistered={isRegistered}
+    setIsRegistered={setIsRegistered}
+    refreshRegistrationStatus={refreshRegistrationStatus}
+    user={user}
+    toast={toast}
+    setShowRegistration={setShowRegistration} // ✅ FIXED
+  />
+)}
+
           {activeTab === "community" && <HackathonCommunity />}
           {activeTab === "projects" && (
   <HackathonProjectsGallery hackathonId={hackathon._id} />

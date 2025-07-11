@@ -13,11 +13,6 @@ import {
 } from "../../../../../../components/DashboardUI/alert-dialog";
 import { Children } from "react";
 
-/**
- * BaseModal now accepts:
- * - triggerButton: JSX Element to open the modal
- * - content: JSX content inside the modal body (input, textarea, etc.)
- */
 export default function BaseModal({
   open,
   onOpenChange,
@@ -29,7 +24,7 @@ export default function BaseModal({
   content,
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open ?? false} onOpenChange={onOpenChange}>
       {triggerButton ? (
         <AlertDialogTrigger asChild>
           {Children.only(triggerButton)}
@@ -39,15 +34,21 @@ export default function BaseModal({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          {description && (
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          )}
         </AlertDialogHeader>
 
         {content}
 
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>{confirmLabel}</AlertDialogAction>
-        </AlertDialogFooter>
+        {onConfirm && (
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirm}>
+              {confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );

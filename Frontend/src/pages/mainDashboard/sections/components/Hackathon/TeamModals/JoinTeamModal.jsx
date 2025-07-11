@@ -1,16 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
+import { useEffect, useState } from "react";
 
 export default function JoinTeamModal({ open, onClose, onJoin, loading }) {
   const [teamCode, setTeamCode] = useState("");
+
+  useEffect(() => {
+    if (!open) setTeamCode(""); // Clear input when modal closes
+  }, [open]);
 
   const handleJoin = () => {
     if (!teamCode.trim()) return;
     onJoin(teamCode);
   };
+
 
   return (
     <BaseModal

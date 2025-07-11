@@ -31,6 +31,7 @@ export default function TeamManagementSection({
   sectionRef,
   user,
   toast,
+  setShowRegistration, // ✅ Add this
 }) {
   const [userTeams, setUserTeams] = useState([]);
   const [teamInvites, setTeamInvites] = useState([]);
@@ -42,28 +43,31 @@ export default function TeamManagementSection({
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
   const [revokeInviteData, setRevokeInviteData] = useState(null);
 
-  const handleJoinTeam = async (teamCode) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        `http://localhost:3000/api/teams/join`,
-        { code: teamCode, hackathonId: hackathon._id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast({
-        title: "Joined!",
-        description: `You joined team: ${res.data.name}`,
-      });
-      setShowJoinTeam(false);
-      fetchUserTeams();
-      refreshRegistrationStatus();
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err?.response?.data?.message || "Failed to join team",
-      });
-    }
-  };
+const handleJoinTeam = async (teamCode) => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await axios.get(
+      `http://localhost:3000/api/teams/join/${teamCode}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { hackathonId: hackathon._id },
+      }
+    );
+    toast({
+      title: "Joined!",
+      description: `You joined team: ${res.data.name}`,
+    });
+    setShowJoinTeam(false);
+    fetchUserTeams();
+    refreshRegistrationStatus();
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: err?.response?.data?.message || "Failed to join team",
+    });
+  }
+};
+
 
   const handleEditDescription = async (teamId, newDescription) => {
     try {
@@ -100,6 +104,24 @@ export default function TeamManagementSection({
       });
     }
   };
+const registerForHackathon = async ({ hackathonId, token, toast, setIsRegistered, refreshRegistrationStatus }) => {
+  try {
+    await axios.post("http://localhost:3000/api/registration", {
+      hackathonId,
+    }, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    toast({ title: "Registered", description: "You have successfully registered." });
+    setIsRegistered(true);
+    refreshRegistrationStatus?.(); // Optional if passed
+  } catch (err) {
+    toast({
+      title: "Error",
+      description: err?.response?.data?.message || "Registration failed",
+    });
+  }
+};
 
   const handleLeaveTeam = async (teamId) => {
     try {
@@ -165,13 +187,16 @@ export default function TeamManagementSection({
               Choose how you'd like to participate in this hackathon.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                onClick={() => setShowUnregisterDialog(true)}
-                className="flex-1 sm:flex-none"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Register for Hackathon
-              </Button>
+  <Button
+  onClick={() => setShowRegistration(true)} // ✅ Use modal trigger
+  className="flex-1 sm:flex-none"
+>
+  <UserPlus className="w-4 h-4 mr-2" />
+  Register for Hackathon
+</Button>
+
+
+
               <Button
                 onClick={() => setShowJoinTeam(true)}
                 variant="outline"
@@ -331,26 +356,48 @@ export default function TeamManagementSection({
                 <CardTitle>Pending Invites</CardTitle>
               </CardHeader>
               <CardContent>
-                {teamInvites.map((invite) => (
-                  <div
-                    key={invite._id}
-                    className="flex justify-between items-center border p-3 rounded-lg mb-2"
-                  >
-                    <div>
-                      <p className="font-medium">{invite.invitedEmail}</p>
-                      <p className="text-sm text-gray-500">
-                        Invited by {invite.invitedBy.name} to {invite.team.name}
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setRevokeInviteData(invite)}
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                ))}
+              {teamInvites.map((invite) => (
+  <div
+    key={invite._id}
+    className="flex justify-between items-center border p-3 rounded-lg mb-2"
+  >
+    <div>
+      <p className="font-medium">{invite.invitedEmail}</p>
+      <p className="text-sm text-gray-500">
+        Invited by <strong>{invite.invitedBy.name}</strong> to{" "}
+        <strong>{invite.team.name}</strong>
+      </p>
+      <div className="mt-1">
+        <Badge
+          variant={
+            invite.status === "pending"
+              ? "default"
+              : invite.status === "accepted"
+              ? "success"
+              : "destructive"
+          }
+        >
+          {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}
+        </Badge>
+      </div>
+    </div>
+
+    {invite.status === "pending" ? (
+      <Button
+        size="sm"
+        variant="destructive"
+        onClick={() => setRevokeInviteData(invite)}
+      >
+        Revoke
+      </Button>
+    ) : (
+      <Button size="sm" variant="outline" disabled>
+        {invite.status === "accepted" ? "Joined" : "Declined"}
+      </Button>
+    )}
+  </div>
+))}
+
               </CardContent>
             </Card>
           )}
@@ -366,11 +413,11 @@ export default function TeamManagementSection({
         onInviteSent={fetchTeamInvites}
       />
 
-      <JoinTeamModal
-        show={showJoinTeam}
-        onClose={() => setShowJoinTeam(false)}
-        onJoin={handleJoinTeam}
-      />
+     <JoinTeamModal
+  open={showJoinTeam}
+  onClose={() => setShowJoinTeam(false)}
+  onJoin={handleJoinTeam}
+/>
 
       <EditDescriptionModal
         team={editingTeam}
@@ -389,7 +436,8 @@ export default function TeamManagementSection({
         }}
       />
 
-      <RevokeInviteDialog
+        <RevokeInviteDialog
+        open={!!revokeInviteData} // ✅ FIXED: Required to trigger dialog visibility
         invite={revokeInviteData}
         onClose={() => setRevokeInviteData(null)}
         onRevoked={fetchTeamInvites}

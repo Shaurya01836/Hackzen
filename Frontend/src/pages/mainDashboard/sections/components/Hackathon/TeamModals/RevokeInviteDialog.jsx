@@ -11,18 +11,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../../../../../components/DashboardUI/alert-dialog";
+import { useToast } from "../../../../../../hooks/use-toast";
 
-export default function RevokeInviteDialog({
-  invite,
-  onClose,
-  onRevoked,
-}) {
+export default function RevokeInviteDialog({ open, invite, onClose, onRevoked }) {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleRevoke = async () => {
+    if (!invite?._id) return;
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+
       const res = await fetch(`http://localhost:3000/api/team-invites/${invite._id}`, {
         method: "DELETE",
         headers: {
@@ -30,22 +30,30 @@ export default function RevokeInviteDialog({
         },
       });
 
-      if (res.ok) {
-        onRevoked?.();
-        onClose();
-      } else {
+      if (!res.ok) {
         const data = await res.json();
-        console.error("Failed to revoke invite:", data.message);
+        throw new Error(data.message || "Failed to revoke invite");
       }
+
+      toast({
+        title: "Invite Revoked",
+        description: `The invite to ${invite.invitedEmail} has been revoked.`,
+      });
+
+      onRevoked?.();  // Optional callback to refresh invite list
+      onClose?.();    // Close dialog
     } catch (err) {
-      console.error("Error revoking invite:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Something went wrong while revoking.",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AlertDialog open={!!invite} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={onClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Revoke Invite</AlertDialogTitle>
