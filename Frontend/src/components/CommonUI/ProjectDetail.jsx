@@ -66,6 +66,8 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamDescription, setNewTeamDescription] = useState("");
   const [submittedUser, setSubmittedUser] = useState(null);
+  // Video preview state for YouTube
+  const [showVideo, setShowVideo] = useState(false);
 
   // Fetch user teams for this project's hackathon
   useEffect(() => {
@@ -109,6 +111,16 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
       return `https://www.youtube.com/embed/${match[1]}`;
     }
     return url; // fallback (e.g., Cloudinary video link)
+  };
+  // Helper to get YouTube thumbnail
+  const getYoutubeThumbnail = (url) => {
+    const match = url.match(
+      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/
+    );
+    if (match && match[1]) {
+      return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+    }
+    return null;
   };
 
   const fetchProjectTeams = async () => {
@@ -404,13 +416,14 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
-      <header className="border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
+      {/* Improved Header */}
+      <header className=" px-6 py-4 sticky top-0 z-20 ">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <Button
             variant="ghost"
             size="sm"
             onClick={onBack}
-            className="flex items-center gap-2 hover:bg-gray-100"
+            className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 text-gray-700 font-medium "
           >
             <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
           </Button>
@@ -418,14 +431,14 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 bg-transparent"
+              className="flex items-center gap-2 bg-transparent hover:bg-pink-50 rounded-full px-3 py-2 transition-all"
             >
               <Heart className="w-4 h-4" /> 7
             </Button>
             <Button
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 bg-transparent"
+              className="flex items-center gap-2 bg-transparent hover:bg-blue-50 rounded-full px-3 py-2 transition-all"
             >
               <Share2 className="w-4 h-4" />
             </Button>
@@ -433,54 +446,95 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
         </div>
       </header>
 
-      <div className=" px-6 py-8">
+      {/* Project Summary Card */}
+      <div className="px-6 pt-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-start gap-6">
-            <div className="w-24 h-24 flex items-center justify-center">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-6 rounded-2xl">
+            <div className="w-28 h-28 flex items-center justify-center rounded-2xl ">
               <img
                 src={project.logo?.url || "/placeholder.svg"}
                 alt="Project Logo"
-                className="rounded-2xl object-cover"
+                className="rounded-xl object-cover w-24 h-24 "
               />
             </div>
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                {project.title}
-              </h1>
+            <div className="flex-1 w-full">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <h1 className="text-4xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+                  {project.title}
+                </h1>
+                {project.category && (
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    {project.category}
+                  </Badge>
+                )}
+              </div>
               {project.oneLineIntro && (
-                <p className="text-gray-700 italic text-md mb-2">
+                <p className="text-gray-700 italic text-md mb-2 mt-1 max-w-2xl">
                   {project.oneLineIntro}
                 </p>
               )}
+              {/* Horizontal line below title/intro */}
+              <div className="border-t border-gray-200 my-4 w-full" />
+              {/* Project meta info */}
+              <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
+                {project.hackathon && (
+                  <span className="flex items-center gap-1">
+                    <Award className="w-4 h-4 text-yellow-500" />
+                    {project.hackathon.title}
+                  </span>
+                )}
+                {project.repoLink && (
+                  <a
+                    href={project.repoLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:underline hover:text-blue-600 transition-all"
+                  >
+                    <Github className="w-4 h-4" />
+                    Repo
+                  </a>
+                )}
+                {project.createdAt && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {new Date(project.createdAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            <Tabs defaultValue="overview" className="w-full">
-              <div className="flex justify-center mb-8">
-                <TabsList className="grid w-full max-w-md grid-cols-3">
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="hackathon">Hackathon</TabsTrigger>
-                  <TabsTrigger value="team">Team</TabsTrigger>
-                </TabsList>
-              </div>
-
+      {/* Horizontal line above tabs */}
+      <div className="max-w-7xl mx-auto px-6 pt-4">
+        <div className="border-t border-gray-200 mb-4 w-full" />
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="flex justify-center mb-8">
+            <TabsList className="grid w-full max-w-md grid-cols-3 rounded-xl">
+              <TabsTrigger value="overview" className="flex items-center gap-2">
+                <Play className="w-4 h-4" /> Overview
+              </TabsTrigger>
+              <TabsTrigger
+                value="hackathon"
+                className="flex items-center gap-2"
+              >
+                <Award className="w-4 h-4" /> Hackathon
+              </TabsTrigger>
+              <TabsTrigger value="team" className="flex items-center gap-2">
+                <Users className="w-4 h-4" /> Team
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          {/* Wrap the grid and sidebar in a single parent div to fix JSX error */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3">
               <TabsContent value="overview" className="space-y-8">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      <Play className="w-5 h-5" /> Videos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-900">
-                      {project.videoLink ? (
-                        project.videoLink.includes("youtube.com") ||
-                        project.videoLink.includes("youtu.be") ? (
+                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                    {project.videoLink ? (
+                      project.videoLink.includes("youtube.com") ||
+                      project.videoLink.includes("youtu.be") ? (
+                        showVideo ? (
                           <iframe
                             src={getEmbeddableVideoLink(project.videoLink)}
                             title="Demo Video"
@@ -489,47 +543,80 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
                             allowFullScreen
                           />
                         ) : (
-                          <video
-                            src={project.videoLink}
-                            controls
-                            className="w-full h-full object-cover"
-                          />
+                          <button
+                            className="absolute inset-0 w-full h-full flex items-center justify-center group bg-black/10 hover:bg-black/20 transition"
+                            aria-label="Play video"
+                            onClick={() => setShowVideo(true)}
+                          >
+                            <img
+                              src={getYoutubeThumbnail(project.videoLink)}
+                              alt="YouTube video thumbnail"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <span className="absolute inset-0 flex items-center justify-center">
+                              <span className="bg-white/80 rounded-full p-4 shadow-lg group-hover:scale-110 transition-transform">
+                                <Play className="w-10 h-10 text-purple-600" />
+                              </span>
+                            </span>
+                          </button>
                         )
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white">
-                          <Play className="w-16 h-16" />
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-                {project.description && (
-                  <div
-                    className="text-gray-600 text-lg leading-relaxed max-w-4xl"
-                    dangerouslySetInnerHTML={{ __html: project.description }}
-                  />
-                )}
-
-                {project.skills && project.skills.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Skills</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {project.skills.map((skill, index) => (
-                          <Badge
-                            key={index}
-                            variant="outline"
-                            className="px-3 py-1"
-                          >
-                            {skill}
-                          </Badge>
-                        ))}
+                        <video
+                          src={project.videoLink}
+                          controls
+                          className="w-full h-full object-cover rounded-xl"
+                        />
+                      )
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2 select-none">
+                        <span className="bg-purple-100 rounded-full p-6 mb-2 animate-pulse">
+                          <Play className="w-12 h-12 text-purple-400" />
+                        </span>
+                        <span className="font-semibold text-lg">
+                          No video available
+                        </span>
+                        <span className="text-sm text-gray-400">
+                          This project has not provided a demo video yet.
+                        </span>
                       </div>
-                    </CardContent>
+                    )}
+                  </div>
+                </Card>
+                {/* Description Section */}
+                {project.description && (
+                  <Card className="bg-white/50 px-6 py-6 mb-4">
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">
+                      Description
+                    </h2>
+                    <div
+                      className="prose prose-lg max-w-none text-gray-800 leading-relaxed"
+                      style={{ whiteSpace: "pre-line" }}
+                      dangerouslySetInnerHTML={{ __html: project.description }}
+                    />
                   </Card>
                 )}
+                {/* Horizontal line between video and description */}
+                <div className="border-t border-gray-200 my-6 w-full" />
+                {/* Skills Section */}
+                {project.skills && project.skills.length > 0 && (
+                  <div className=" px-6 py-5 mb-4">
+                    <h2 className="text-xl font-bold mb-3 text-gray-900">
+                      Tech Stack
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                      {project.skills.map((skill, index) => (
+                        <span
+                          key={index}
+                          className="px-4 py-1 rounded-full bg-gray-300 text-gray-800 font-semibold text-sm"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Horizontal line between description and skills */}
+                <div className="border-t border-gray-200 my-6 w-full" />
               </TabsContent>
 
               <TabsContent value="hackathon" className="space-y-8">
@@ -910,109 +997,132 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
                   </Card>
                 )}
               </TabsContent>
-            </Tabs>
-          </div>
+            </div>
+            {/* Sidebar */}
+            <div className="lg:col-span-1 space-y-6">
+              {project.submittedBy && (
+                <Card className="bg-white/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500">
+                      Team Leader
+                    </CardTitle>
+                  </CardHeader>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1 space-y-6">
-            {project.submittedBy && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">
-                    Team Leader
-                  </CardTitle>
-                </CardHeader>
-
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage
-                        src={submittedUser?.profileImage || "/placeholder.svg"}
-                        alt={submittedUser?.name || "Team Leader"}
-                      />
-                      <AvatarFallback>
-                        {submittedUser?.name?.[0]?.toUpperCase() || "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {submittedUser?.name || "Unknown"}
-                      </p>
+                  <CardContent>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarImage
+                          src={
+                            submittedUser?.profileImage || "/placeholder.svg"
+                          }
+                          alt={submittedUser?.name || "Team Leader"}
+                        />
+                        <AvatarFallback>
+                          {submittedUser?.name?.[0]?.toUpperCase() || "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {submittedUser?.name || "Unknown"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {project.repoLink && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">
-                    Github
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
-                      <Github className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">Repository</p>
-                      <a
-                        href={project.repoLink}
-                        target="_blank"
-                        className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+              {project.repoLink && (
+                <Card className="bg-white/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                      <Github className="w-4 h-4" /> Github
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center shadow hover:scale-105 transition-transform duration-200"
+                        aria-label="GitHub Repository"
                       >
-                        {project.repoLink} <ExternalLink className="w-3 h-3" />
-                      </a>
+                        <Github className="w-7 h-7 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        {/* Extract repo name from URL */}
+                        <p className="font-semibold text-gray-900 truncate">
+                          {(() => {
+                            try {
+                              const url = new URL(project.repoLink);
+                              return url.pathname.replace(/^\//, "");
+                            } catch {
+                              return project.repoLink;
+                            }
+                          })()}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <a
+                            href={project.repoLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline truncate max-w-[120px]"
+                            aria-label="Open GitHub repository"
+                          >
+                            {project.repoLink}
+                          </a>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(project.repoLink);
+                              toast({
+                                title: "Copied!",
+                                description:
+                                  "Repository URL copied to clipboard.",
+                                duration: 1500,
+                              });
+                            }}
+                            className="ml-1 p-1 rounded hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                            aria-label="Copy repository URL"
+                            type="button"
+                          >
+                            <Copy className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  </CardContent>
+                </Card>
+              )}
 
-            {user?.role === "judge" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">
-                    Judge Evaluation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <JudgeScoreForm
-                    projectId={project._id}
-                    hackathonId={project.hackathon?._id}
-                    onSubmitted={() => {
-                      toast({ title: "✅ Score Submitted", duration: 2000 });
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {project.category && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-gray-500">
-                    Sector
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <Layers className="w-5 h-5 text-gray-600" />
+              {user?.role === "judge" && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                      <Award className="w-4 h-4 text-yellow-500" /> Judge
+                      Evaluation
+                    </CardTitle>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Score this project based on the hackathon criteria. Your
+                      feedback helps determine the winners!
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {/* Progress bar placeholder for visual feedback */}
+                    <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
+                      {/* You can connect this to actual progress if available */}
+                      <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
                     </div>
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {project.category}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    <JudgeScoreForm
+                      projectId={project._id}
+                      hackathonId={project.hackathon?._id}
+                      onSubmitted={() => {
+                        toast({ title: "✅ Score Submitted", duration: 2000 });
+                      }}
+                    />
+                    {/* Enhanced submit button inside JudgeScoreForm is recommended for full effect */}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
-        </div>
+        </Tabs>
       </div>
 
       {/* Invite Modal */}
