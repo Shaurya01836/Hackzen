@@ -90,7 +90,13 @@ export default function ProjectSubmissionForm({
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const submissions = res.data.submissions || [];
-        const projectIds = submissions.map((s) => s.projectId);
+        // Ensure projectId is always a string
+        const projectIds = submissions.map((s) =>
+          s.projectId && typeof s.projectId === 'object' && s.projectId._id
+            ? s.projectId._id.toString()
+            : s.projectId?.toString()
+        );
+        console.log("DEBUG: projectIds from backend", projectIds, submissions);
         setSubmittedProjectIds(projectIds);
       } catch (err) {
         console.error("Error fetching submissions:", err);
@@ -225,6 +231,8 @@ export default function ProjectSubmissionForm({
 
   // Keep all projects but mark submitted ones as disabled
   const allProjects = userProjects;
+  console.log("DEBUG: allProjects", allProjects);
+  console.log("DEBUG: submittedProjectIds", submittedProjectIds);
 
   // Check if there are custom questions or terms
   const hasCustomQuestions = organizerQuestions.length > 0;

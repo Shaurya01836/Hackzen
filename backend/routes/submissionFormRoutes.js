@@ -7,6 +7,7 @@ const {
   submitProjectWithAnswers,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
+const Project = require("../model/ProjectModel");
 
 const { protect } = require("../middleware/authMiddleware");
 
@@ -19,53 +20,78 @@ router.post("/submit", protect, submitProjectWithAnswers);
 router.get("/submissions", async (req, res) => {
   try {
     const { hackathonId, userId } = req.query;
-    if (!hackathonId || !userId) return res.status(400).json({ error: 'hackathonId and userId required' });
-    
-    console.log('🔍 Checking submissions for hackathon:', hackathonId, 'user:', userId);
-    
-    // Check if user is currently registered for this hackathon
-    const HackathonRegistration = require("../model/HackathonRegistrationModel");
-    
-    // Convert to ObjectId if they're strings
-    const hackathonObjectId = mongoose.Types.ObjectId.isValid(hackathonId) ? hackathonId : null;
-    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? userId : null;
-    
-    if (!hackathonObjectId || !userObjectId) {
-      console.log('❌ Invalid ObjectId format:', { hackathonId, userId });
-      return res.json({ submissions: [] });
+
+    // 1. If both hackathonId and userId are provided: (for dropdown/duplicate prevention)
+    if (hackathonId && userId) {
+      const HackathonRegistration = require("../model/HackathonRegistrationModel");
+      const hackathonObjectId = mongoose.Types.ObjectId.isValid(hackathonId) ? hackathonId : null;
+      const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? userId : null;
+
+      if (!hackathonObjectId || !userObjectId) {
+        return res.json({ submissions: [] });
+      }
+
+      // Registration check
+      const isRegistered = await HackathonRegistration.findOne({ 
+        hackathonId: hackathonObjectId, 
+        userId: userObjectId 
+      }).sort({ createdAt: -1 });
+
+      if (!isRegistered) {
+        return res.json({ submissions: [] });
+      }
+
+      // Get all user's projects (do NOT filter by hackathon)
+      const userProjects = await Project.find({ 
+        submittedBy: userObjectId
+      }).select('_id');
+
+      const projectIds = userProjects.map(project => project._id);
+
+      // Find submissions for user's projects in this hackathon
+      const submissions = await Submission.find({ 
+        projectId: { $in: projectIds },
+        hackathonId: hackathonObjectId 
+      })
+        .populate('projectId', 'title description logo links attachments')
+        .populate('hackathonId', 'title name')
+        .sort({ submittedAt: -1 });
+
+      // For dropdown logic, we need to return submissions with projectId as string
+      const submissionsWithStringIds = submissions.map(submission => ({
+        ...submission.toObject(),
+        projectId: submission.projectId._id ? submission.projectId._id.toString() : submission.projectId.toString()
+      }));
+
+      return res.json({ submissions: submissionsWithStringIds });
     }
-    
-    // Get the most recent registration for this user and hackathon
-    const isRegistered = await HackathonRegistration.findOne({ 
-      hackathonId: hackathonObjectId, 
-      userId: userObjectId 
-    }).sort({ createdAt: -1 }); // Get the most recent registration
-    
-    console.log('📋 Registration status:', isRegistered ? 'REGISTERED' : 'NOT REGISTERED');
-    console.log('📋 Registration query:', { hackathonId, userId });
-    if (isRegistered) {
-      console.log('📋 Registration details:', {
-        id: isRegistered._id,
-        createdAt: isRegistered.createdAt,
-        formData: isRegistered.formData
-      });
+
+    // 2. If only userId is provided: (for My Submissions page)
+    if (userId && !hackathonId) {
+      const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? userId : null;
+      if (!userObjectId) return res.json({ submissions: [] });
+      
+      // Get all projects that belong to this user
+      const userProjects = await Project.find({ submittedBy: userObjectId }).select('_id');
+      const projectIds = userProjects.map(project => project._id);
+
+      // Find all submissions for user's projects
+      const submissions = await Submission.find({ projectId: { $in: projectIds } })
+        .populate('projectId', 'title description logo links attachments')
+        .populate('hackathonId', 'title name')
+        .sort({ submittedAt: -1 });
+      
+      // For My Submissions page, return full populated data
+      return res.json({ submissions });
     }
-    
-    // Only return submissions if user is currently registered
-    if (!isRegistered) {
-      console.log('❌ User not registered, returning empty submissions');
-      return res.json({ submissions: [] });
-    }
-    
-    const submissions = await Submission.find({ hackathonId, submittedBy: userId });
-    console.log('✅ Found submissions:', submissions.length);
-    res.json({ submissions });
+
+    // 3. If neither or only hackathonId is provided: error
+    return res.status(400).json({ error: 'userId required' });
   } catch (err) {
-    console.error('❌ Error fetching submissions:', err);
+    console.error('Error fetching submissions:', err);
     res.status(500).json({ error: 'Failed to fetch submissions' });
   }
 });
-
 // Debug endpoint to check registration status
 router.get("/debug/registration", async (req, res) => {
   try {
