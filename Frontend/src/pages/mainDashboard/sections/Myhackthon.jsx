@@ -59,6 +59,14 @@ export default function MyHackathons() {
   // State to manage which view to show
   const [currentView, setCurrentView] = useState("dashboard"); // 'dashboard' or 'create-project'
 
+  // Listen for ?createProject=1 in the URL to open the project creation form
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("createProject") === "1") {
+      setCurrentView("create-project");
+    }
+  }, [location.search]);
+
   // Get projectId from URL if present
   const urlProjectId =
     location.pathname.match(/my-hackathons\/(\w+)/)?.[1] || null;

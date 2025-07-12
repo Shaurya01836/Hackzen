@@ -13,6 +13,7 @@ const SubmissionSchema = new Schema({
       answer: { type: String },
     },
   ],
+  selectedMembers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 });
 
 module.exports = { SubmissionSchema }; 

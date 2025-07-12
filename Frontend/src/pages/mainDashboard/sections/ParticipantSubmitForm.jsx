@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -35,6 +35,7 @@ export default function ProjectSubmissionForm({
   userProjects = [],
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("project-selection");
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedProblem, setSelectedProblem] = useState("");
@@ -46,6 +47,9 @@ export default function ProjectSubmissionForm({
   const [showSuccess, setShowSuccess] = useState(false);
   const { toast } = useToast();
   const isMounted = useRef(true);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const [isLeader, setIsLeader] = useState(false);
 
   useEffect(() => {
     return () => { isMounted.current = false; };
@@ -117,11 +121,54 @@ export default function ProjectSubmissionForm({
     }
   }, [selectedProjectId, submittedProjectIds, toast]);
 
+  // Pre-select new project if redirected back from create project
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const newProjectId = params.get("newProjectId");
+    if (newProjectId) {
+      setSelectedProjectId(newProjectId);
+    }
+  }, [location.search]);
+
+  // Fetch team members for this hackathon
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const hackathonId = hackathon._id || hackathon.id;
+        const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathonId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const teams = await res.json();
+        // Find the team where the user is a member
+        if (Array.isArray(teams) && teams.length > 0) {
+          const user = JSON.parse(localStorage.getItem('user'));
+          const myTeam = teams.find(team => team.members.some(m => m._id === user._id));
+          if (myTeam) {
+            setTeamMembers(myTeam.members);
+            setIsLeader(myTeam.leader && myTeam.leader._id === user._id);
+            // By default, select all members
+            setSelectedMembers(myTeam.members.map(m => m._id));
+          }
+        }
+      } catch (err) {
+        setTeamMembers([]);
+        setIsLeader(false);
+      }
+    };
+    if (hackathon && (hackathon._id || hackathon.id)) fetchTeam();
+  }, [hackathon]);
+
   const handleOrganizerAnswer = (questionId, answer) => {
     setOrganizerAnswers((prev) => ({ ...prev, [questionId]: answer }));
   };
 
   const handleProjectSelect = (projectId) => {
+    if (projectId === "create-new") {
+      const returnUrl = encodeURIComponent(location.pathname + location.search);
+      navigate(`/dashboard/my-hackathons?createProject=1&hackathonId=${hackathon._id || hackathon.id}&returnUrl=${returnUrl}`);
+      return;
+    }
     const isSubmitted = submittedProjectIds.some(id => id.toString() === projectId.toString());
     if (isSubmitted) {
       toast({
@@ -179,6 +226,7 @@ export default function ProjectSubmissionForm({
       projectId: selectedProjectId,
       problemStatement: selectedProblem,
       customAnswers: answersArray,
+      selectedMembers,
     };
     console.log('handleSubmit: payload =', payload);
 
@@ -444,6 +492,34 @@ export default function ProjectSubmissionForm({
                         )}
                       </SelectContent>
                     </Select>
+                  </div>
+
+                  <div className="space-y-3 text-black">
+                    {isLeader && teamMembers.length > 0 && (
+                      <div className="mb-4">
+                        <Label className="text-black font-semibold">Select Team Members to Include in Submission</Label>
+                        <div className="border border-indigo-300 rounded p-2 bg-white">
+                          {teamMembers.map(member => (
+                            <label key={member._id} className="flex items-center space-x-2 mb-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedMembers.includes(member._id)}
+                                onChange={e => {
+                                  if (e.target.checked) {
+                                    setSelectedMembers(prev => [...prev, member._id]);
+                                  } else {
+                                    setSelectedMembers(prev => prev.filter(id => id !== member._id));
+                                  }
+                                }}
+                                disabled={member._id === userId} // leader always included
+                              />
+                              <span>{member.name} {member._id === userId ? "(You)" : ""}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">You (leader) are always included in the submission.</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-end">

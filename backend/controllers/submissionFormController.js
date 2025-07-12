@@ -27,7 +27,7 @@ exports.saveHackathonForm = async (req, res) => {
 
 exports.submitProjectWithAnswers = async (req, res) => {
   try {
-    const { hackathonId, projectId, customAnswers, problemStatement } = req.body;
+    const { hackathonId, projectId, customAnswers, problemStatement, selectedMembers = [] } = req.body;
     const userId = req.user._id;
 
     // ✅ Check if user is currently registered for this hackathon
@@ -56,6 +56,14 @@ exports.submitProjectWithAnswers = async (req, res) => {
       problemStatement,
       customAnswers,
       status: 'submitted',
+      selectedMembers,
+    });
+
+    // Update the project status and hackathon link
+    await Project.findByIdAndUpdate(projectId, {
+      status: 'submitted',
+      hackathon: hackathonId,
+      submittedAt: new Date(),
     });
 
     res.status(200).json({ success: true, submission });

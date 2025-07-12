@@ -39,17 +39,18 @@ import {
 import { Label } from "../../../components/CommonUI/label";
 import { RichTextEditor } from "./RichTextEditor";
 import { Textarea } from "../../../components/CommonUI/textarea";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const categories = [
   "AI/ML",
   "Blockchain",
-  "Web Development",
-  "Mobile App",
-  "IoT",
-  "Gaming",
-  "FinTech",
+  "Fintech",
+  "DevTools",
+  "Education",
   "HealthTech",
-  "EdTech",
+  "Sustainability",
+  "Gaming",
+  "Productivity",
   "Other",
 ];
 
@@ -273,7 +274,14 @@ const method = mode === "edit" ? "PUT" : "POST";
 
       alert("✅ Project saved successfully!");
       onSave?.(created);
-         window.location.href = '/dashboard/my-hackathons';
+      // Redirect back to returnUrl if present
+      const params = new URLSearchParams(location.search);
+      const returnUrl = params.get("returnUrl");
+      if (returnUrl && created && created.project && created.project._id) {
+        navigate(`${decodeURIComponent(returnUrl)}&newProjectId=${created.project._id}`);
+      } else {
+        window.location.href = '/dashboard/my-hackathons';
+      }
     } catch (error) {
       alert("❌ Error: " + error.message);
     }

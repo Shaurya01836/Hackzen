@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "../../../components/CommonUI/card";
 import { Input } from "../../../components/CommonUI/input";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Select,
   SelectContent,
@@ -50,111 +50,20 @@ import {
   Zap,
 } from "lucide-react";
 
-// Mock data
-const hackathonStats = {
-  totalParticipants: 1247,
-  totalTeams: 312,
-  totalSubmissions: 298,
-  topTracks: ["AI/ML", "Web3", "FinTech", "HealthTech"],
-  topLocations: ["San Francisco", "New York", "London", "Berlin"],
-  averageAge: 24,
-  genderDistribution: { male: 65, female: 32, other: 3 },
-  activeParticipants: 1180,
-  inactiveParticipants: 67,
-  duration: "48 hours",
-  lastSubmission: "2 hours ago",
-};
-
-const projectSubmissions = [
-  {
-    id: "1",
-    teamName: "Code Crusaders",
-    members: ["alice@example.com", "bob@example.com", "charlie@example.com"],
-    track: "AI/ML",
-    title: "Smart Health Assistant",
-    description:
-      "An AI-powered health monitoring app that provides personalized recommendations based on user data and medical history.",
-    links: {
-      github: "https://github.com/team/project",
-      website: "https://smarthealth.demo.com",
-      figma: "https://figma.com/design",
-    },
-    attachments: ["presentation.pdf", "demo-video.mp4"],
-    submittedOn: "2024-01-15T14:30:00Z",
-    status: "Winner",
-    score: 95,
-    rank: 1,
-  },
-  {
-    id: "2",
-    teamName: "Innovation Labs",
-    members: ["dev1@example.com", "dev2@example.com"],
-    track: "Web3",
-    title: "DeFi Portfolio Tracker",
-    description:
-      "A comprehensive dashboard for tracking DeFi investments across multiple blockchains with real-time analytics.",
-    links: {
-      github: "https://github.com/team/defi-tracker",
-      website: "https://defi-tracker.demo.com",
-    },
-    attachments: ["pitch-deck.pdf"],
-    submittedOn: "2024-01-15T16:45:00Z",
-    status: "Finalist",
-    score: 88,
-    rank: 3,
-  },
-  {
-    id: "3",
-    teamName: "Green Tech Solutions",
-    members: [
-      "eco@example.com",
-      "green@example.com",
-      "sustain@example.com",
-      "earth@example.com",
-    ],
-    track: "Climate Tech",
-    title: "Carbon Footprint Calculator",
-    description:
-      "An interactive tool that helps individuals and businesses calculate and reduce their carbon footprint through actionable insights.",
-    links: {
-      github: "https://github.com/team/carbon-calc",
-      figma: "https://figma.com/carbon-design",
-    },
-    attachments: ["research-paper.pdf", "user-study.pdf"],
-    submittedOn: "2024-01-15T18:20:00Z",
-    status: "Reviewed",
-    score: 82,
-  },
-  {
-    id: "4",
-    teamName: "FinTech Pioneers",
-    members: ["fintech@example.com", "money@example.com"],
-    track: "FinTech",
-    title: "Micro-Investment Platform",
-    description:
-      "A mobile app that enables users to invest spare change from daily transactions into diversified portfolios.",
-    links: {
-      github: "https://github.com/team/micro-invest",
-    },
-    attachments: ["business-plan.pdf"],
-    submittedOn: "2024-01-15T12:15:00Z",
-    status: "Pending",
-  },
-];
-
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
   onBack,
 }) {
-  // If hackathon data is passed as prop, use it instead of mock data
-  const hackathonData = hackathonProp || {
-    title: "AI Innovation Hackathon 2024",
-    description: "January 13-15, 2024 • San Francisco, CA",
-    status: "Completed",
-  };
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [filterTrack, setFilterTrack] = React.useState("all");
-  const [filterStatus, setFilterStatus] = React.useState("all");
+  // All hooks at the top!
+  const [hackathon, setHackathon] = useState(hackathonProp || null);
+  const [teams, setTeams] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterTrack, setFilterTrack] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [showSubmissionForm, setShowSubmissionForm] = useState(false);
   const [submissionHackathon, setSubmissionHackathon] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -162,7 +71,56 @@ export default function HackathonDetailsPage({
   const hackathonToDelete = useRef(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const filteredProjects = projectSubmissions.filter((project) => {
+  // Define these before your return
+  const totalParticipants = participants.length;
+  const totalTeams = teams.length;
+  const totalSubmissions = submissions.length;
+
+  useEffect(() => {
+    async function fetchAll() {
+      setLoading(true);
+      setFetchError(null);
+      const token = localStorage.getItem("token");
+      const id = hackathonProp?._id;
+      if (!id) return;
+      try {
+        const fetchJson = async (url) => {
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+          const text = await res.text();
+          try {
+            return JSON.parse(text);
+          } catch (err) {
+            throw new Error(`API error at ${url}: ${res.status} - ${text.slice(0, 100)}`);
+          }
+        };
+        const [h, t, s, p] = await Promise.all([
+          fetchJson(`http://localhost:3000/api/hackathons/${id}`),
+          fetchJson(`http://localhost:3000/api/teams/hackathon/${id}`),
+          fetchJson(`http://localhost:3000/api/projects/hackathon/${id}`),
+          fetchJson(`http://localhost:3000/api/registration/hackathon/${id}/participants`),
+        ]);
+        setHackathon(h);
+        setTeams(t);
+        setSubmissions(s);
+        setParticipants(p.participants || []);
+      } catch (err) {
+        setFetchError(err.message);
+        setHackathon(null);
+        setTeams([]);
+        setSubmissions([]);
+        setParticipants([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (hackathonProp?._id) fetchAll();
+  }, [hackathonProp]);
+
+  if (loading) return <div>Loading...</div>;
+  if (fetchError) return <div className="text-red-600 font-bold">Error: {fetchError}</div>;
+  if (!hackathon) return <div>No data found.</div>;
+
+  const filteredProjects = submissions.filter((project) => {
     const matchesSearch =
       project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,7 +144,7 @@ export default function HackathonDetailsPage({
   };
 
   const handleDelete = () => {
-    hackathonToDelete.current = hackathonData;
+    hackathonToDelete.current = hackathon;
     setShowDeleteDialog(true);
   };
 
@@ -266,7 +224,7 @@ export default function HackathonDetailsPage({
                   )}
                   <div className="flex-1">
                     <h1 className="text-xl font-bold text-gray-900 truncate">
-                      {hackathonData.title}
+                      {hackathon.title}
                     </h1>
                   </div>
                 </div>
@@ -274,7 +232,7 @@ export default function HackathonDetailsPage({
                   variant="outline"
                   className="bg-green-50 text-green-700 border-green-200 text-xs"
                 >
-                  {hackathonData.status || "Completed"}
+                  {hackathon.status || "Completed"}
                 </Badge>
               </div>
             </div>
@@ -292,7 +250,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Users className="w-8 h-8 text-indigo-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {hackathonStats.totalParticipants.toLocaleString()}
+                      {totalParticipants.toLocaleString()}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Participants
@@ -303,7 +261,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Users2 className="w-8 h-8 text-blue-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {hackathonStats.totalTeams}
+                      {totalTeams}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Teams
@@ -314,7 +272,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Upload className="w-8 h-8 text-green-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {hackathonStats.totalSubmissions}
+                      {totalSubmissions}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Submissions
@@ -325,7 +283,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Clock className="w-8 h-8 text-purple-500 mb-2" />
                     <p className="text-lg font-bold text-gray-900 mb-1">
-                      {hackathonStats.duration}
+                      {hackathon.duration}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Duration
@@ -336,7 +294,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <PieChart className="w-8 h-8 text-orange-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {hackathonStats.averageAge}
+                      {hackathon.averageAge}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Avg Age
@@ -347,7 +305,7 @@ export default function HackathonDetailsPage({
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <CalendarDays className="w-8 h-8 text-red-500 mb-2" />
                     <p className="text-lg font-bold text-gray-900 mb-1">
-                      {hackathonStats.lastSubmission}
+                      {hackathon.lastSubmission}
                     </p>
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Last Submit
@@ -364,7 +322,7 @@ export default function HackathonDetailsPage({
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      {hackathonStats.topTracks.map((track, index) => (
+                      {Array.isArray(hackathon.topTracks) && hackathon.topTracks.map((track, index) => (
                         <div
                           key={track}
                           className="flex items-center justify-between"
@@ -384,7 +342,7 @@ export default function HackathonDetailsPage({
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      {hackathonStats.topLocations.map((location, index) => (
+                      {Array.isArray(hackathon.topLocations) && hackathon.topLocations.map((location, index) => (
                         <div
                           key={location}
                           className="flex items-center justify-between"
@@ -418,7 +376,7 @@ export default function HackathonDetailsPage({
                       Submitted Projects
                     </h2>
                     <div className="text-sm text-gray-600">
-                      {filteredProjects.length} of {projectSubmissions.length}{" "}
+                      {filteredProjects.length} of {submissions.length}{" "}
                       projects
                     </div>
                   </div>
@@ -476,8 +434,8 @@ export default function HackathonDetailsPage({
                         <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
                           <img
                             src={
-                              hackathonData.images?.logo?.url ||
-                              hackathonData.images?.banner?.url ||
+                              hackathon.images?.logo?.url ||
+                              hackathon.images?.banner?.url ||
                               "/assets/default-banner.png"
                             }
                             alt={project.title}
@@ -569,7 +527,7 @@ export default function HackathonDetailsPage({
                         className="w-full justify-start gap-2 text-left bg-transparent"
                         onClick={() => {
                           setShowSubmissionForm(true);
-                          setSubmissionHackathon(hackathonData);
+                          setSubmissionHackathon(hackathon);
                         }}
                       >
                         <FormInputIcon className="h-4 w-4" />
@@ -608,10 +566,10 @@ export default function HackathonDetailsPage({
                         variant="outline"
                         className="w-full justify-start gap-2 text-left text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
                         onClick={handleDelete}
-                        disabled={deletingId === hackathonData._id}
+                        disabled={deletingId === hackathon._id}
                       >
                         <Trash2 className="h-4 w-4" />
-                        {deletingId === hackathonData._id
+                        {deletingId === hackathon._id
                           ? "Deleting..."
                           : "Delete Hackathon"}
                       </Button>
@@ -664,7 +622,7 @@ export default function HackathonDetailsPage({
       )}
       {showEditModal && (
         <HackathonEditModal
-          hackathon={hackathonData}
+          hackathon={hackathon}
           onClose={() => setShowEditModal(false)}
           onUpdated={() => {
             setShowEditModal(false);
