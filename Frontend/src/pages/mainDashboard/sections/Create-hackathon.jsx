@@ -11,12 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/CommonUI/badge"
 import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
-import { useAchievements } from '../../../hooks/useAchievements';
 
 export function CreateHackathon({ onBack }) {
-  const { user, token } = useAuth(); // Use AuthContext only
-  const userId = user?._id;
-  const { checkForNewBadges } = useAchievements(userId);
+  const { user, token } = useAuth() // Using AuthContext instead of localStorage
 
   const [formData, setFormData] = useState({
     title: "",
@@ -61,6 +58,7 @@ export function CreateHackathon({ onBack }) {
         endDate: "",
       },
     ],
+    maxSubmissionsPerParticipant: 1,
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -272,6 +270,7 @@ export function CreateHackathon({ onBack }) {
         judges: formData.judges, // ✅ Include this
         mentors: formData.mentors, // ✅ Include this
         participants: [],
+        maxSubmissionsPerParticipant: Number(formData.maxSubmissionsPerParticipant) || 1,
       }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
@@ -288,10 +287,12 @@ export function CreateHackathon({ onBack }) {
         throw new Error(errorData.message || "Failed to create hackathon")
       }
 
-      await response.json()
-      // Call badge check after successful creation
-      await checkForNewBadges();
-      alert(isDraft ? "✅ Hackathon saved as draft!" : "✅ Hackathon created successfully!")
+      const data = await response.json()
+      if (isDraft) {
+        alert("✅ Hackathon saved as draft!")
+      } else {
+        alert("✅ Hackathon created successfully! It will be reviewed by admin before appearing in the explore section.")
+      }
       onBack() // Redirect to CreatedHackathons
     } catch (error) {
       console.error("❌ Submission failed:", error)
@@ -471,13 +472,13 @@ export function CreateHackathon({ onBack }) {
             htmlFor={`upload-${type}`}
             className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200 ${
               uploadStates[type]?.uploading
-                ? "border-indigo-500 bg-indigo-50"
-                : "border-gray-300 hover:border-indigo-400 hover:bg-gray-50"
+                ? "border-purple-500 bg-purple-50"
+                : "border-gray-300 hover:border-purple-400 hover:bg-gray-50"
             }`}
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadStates[type]?.uploading ? (
-                <Loader2 className="w-8 h-8 mb-2 text-indigo-400 animate-spin" />
+                <Loader2 className="w-8 h-8 mb-2 text-purple-400 animate-spin" />
               ) : (
                 <Upload className="w-8 h-8 mb-2 text-gray-400" />
               )}
@@ -615,7 +616,7 @@ export function CreateHackathon({ onBack }) {
   return (
     <div
       ref={formTopRef}
-      className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen"
+      className="flex-1 space-y-6 p-6 bg-gradient-to-br from-white via-purple-50 to-purple-100 min-h-screen"
     >
       {/* Stepper Header */}
       <div className="flex items-center gap-4 mb-4">
@@ -624,6 +625,14 @@ export function CreateHackathon({ onBack }) {
           <p className="text-sm text-gray-500">Set up your hackathon event with all the necessary details</p>
         </div>
       </div>
+      
+      {/* Admin Approval Notice */}
+      <Alert className="border-yellow-200 bg-yellow-50">
+        <AlertCircle className="h-4 w-4 text-yellow-600" />
+        <AlertDescription className="text-yellow-800">
+          <strong>Admin Review Required:</strong> Your hackathon will be reviewed by admin before appearing in the explore section. You'll receive a notification once it's approved or rejected.
+        </AlertDescription>
+      </Alert>
       {/* Stepper Tabs */}
       <div className="flex gap-2 mb-6">
         {steps.map((label, idx) => (
@@ -634,8 +643,8 @@ export function CreateHackathon({ onBack }) {
             className={`flex-1 text-center py-2 rounded transition-all duration-150 font-medium border
               ${
                 step === idx
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow"
-                  : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
+                  ? "bg-purple-600 text-white border-purple-600 shadow"
+                  : "bg-white text-purple-700 border-purple-200 hover:bg-purple-50"
               }
               ${idx > step ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
             `}
@@ -654,7 +663,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-600" />
+                  <FileText className="w-5 h-5 text-purple-600" />
                   Basic Information
                 </CardTitle>
                 <CardDescription>Essential details about your hackathon</CardDescription>
@@ -846,7 +855,7 @@ export function CreateHackathon({ onBack }) {
                   <div className="flex flex-col justify-end">
                     <div className="p-3 bg-gray-50 rounded-lg border">
                       <p className="text-sm font-medium text-gray-700">Team Size Range</p>
-                      <p className="text-lg font-bold text-indigo-600">
+                      <p className="text-lg font-bold text-purple-600">
                         {formData.teamSize.min === formData.teamSize.max
                           ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
                           : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
@@ -857,6 +866,16 @@ export function CreateHackathon({ onBack }) {
                     </div>
                   </div>
                 </div>
+                <Label htmlFor="maxSubmissionsPerParticipant" className="block mt-4">Max Submission of Projects Per Team</Label>
+                <Input
+                  id="maxSubmissionsPerParticipant"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={formData.maxSubmissionsPerParticipant}
+                  onChange={e => setFormData(prev => ({ ...prev, maxSubmissionsPerParticipant: parseInt(e.target.value) || 1 }))}
+                  className="w-32"
+                />
                 {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
               </CardContent>
             </Card>
@@ -868,7 +887,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-indigo-600" />
+                  <Upload className="w-5 h-5 text-purple-600" />
                   Images & Media
                 </CardTitle>
                 <CardDescription>Upload images to make your hackathon more attractive</CardDescription>
@@ -902,7 +921,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-indigo-600" />
+                  <Calendar className="w-5 h-5 text-purple-600" />
                   Dates & Deadlines
                 </CardTitle>
                 <CardDescription>Set important dates for your hackathon</CardDescription>
@@ -1307,7 +1326,7 @@ export function CreateHackathon({ onBack }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-indigo-600" />
+                  <Users className="w-5 h-5 text-purple-600" />
                   Settings
                 </CardTitle>
               </CardHeader>
@@ -1361,7 +1380,7 @@ export function CreateHackathon({ onBack }) {
                   </p>
                   <div className="flex gap-2 mt-2">
                     {formData.category && <Badge variant="outline">{formData.category}</Badge>}
-                    <Badge variant="outline" className="border-indigo-200 text-indigo-700">{formData.difficultyLevel}</Badge>
+                    <Badge variant="outline">{formData.difficultyLevel}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -1376,7 +1395,7 @@ export function CreateHackathon({ onBack }) {
                 <Button
                   onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
-                  className="w-full bg-indigo-500 hover:bg-indigo-600"
+                  className="w-full bg-purple-500 hover:bg-purple-600"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {isSubmitting ? "Creating..." : "Create Hackathon"}
@@ -1389,12 +1408,20 @@ export function CreateHackathon({ onBack }) {
                 <Button onClick={onBack} variant="outline" className="w-full bg-transparent">
                   Cancel
                 </Button>
+                
+                {/* Admin Approval Notice */}
+                <Alert className="border-blue-200 bg-blue-50">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800 text-sm">
+                    <strong>Note:</strong> Your hackathon will be reviewed by admin before appearing in the explore section.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
 
             {/* Help */}
             <Alert>
-              <FileText className="h-4 w-4 text-indigo-600" />
+              <FileText className="h-4 w-4" />
               <AlertDescription>
                 <strong>Tip:</strong> You can save your hackathon as a draft and continue editing later. Required fields
                 are marked with an asterisk (*).

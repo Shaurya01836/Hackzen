@@ -10,7 +10,6 @@ import HackathonHero from "./components/Hackathon/HackathonHero";
 import HackathonOverview from "./components/Hackathon/HackathonOverview";
 import HackathonTimeline from "./components/Hackathon/HackathonTimeline";
 import HackathonProblems from "./components/Hackathon/HackathonProblems";
-import TeamManagementSection from "./components/Hackathon/TeamManagementSection";
 import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
@@ -53,9 +52,8 @@ const sections = [
   { id: "overview", label: "Overview & Requirements" },
   { id: "problems", label: "Problem Statements" },
   { id: "timeline", label: "Timeline" },
-  { id: "team", label: "Team Management" },
   { id: "community", label: "Community" },
-  { id: "projects", label: "Project Gallery" }, // ✅ ADD THIS
+  { id: "projects", label: "Project Gallery" },
 ];
 
 
@@ -193,18 +191,6 @@ const sections = [
           {activeTab === "timeline" && (
             <HackathonTimeline hackathon={hackathon} />
           )}
-    {activeTab === "team" && (
-  <TeamManagementSection
-    hackathon={hackathon}
-    isRegistered={isRegistered}
-    setIsRegistered={setIsRegistered}
-    refreshRegistrationStatus={refreshRegistrationStatus}
-    user={user}
-    toast={toast}
-    setShowRegistration={setShowRegistration} // ✅ FIXED
-  />
-)}
-
           {activeTab === "community" && <HackathonCommunity />}
           {activeTab === "projects" && (
   <HackathonProjectsGallery hackathonId={hackathon._id} />

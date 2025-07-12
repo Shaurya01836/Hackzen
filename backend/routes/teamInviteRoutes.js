@@ -18,6 +18,9 @@ router.get('/my', protect, teamInviteController.getMyInvites);
 // Get invites for a specific hackathon
 router.get('/hackathon/:hackathonId', protect, teamInviteController.getHackathonInvites);
 
+// Get invites for a specific project
+router.get('/project/:projectId', protect, teamInviteController.getProjectInvites);
+
 // Accept invite by id (for invite link)
 router.post('/:id/accept', protect, teamInviteController.acceptInviteById);
 

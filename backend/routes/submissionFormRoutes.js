@@ -5,6 +5,7 @@ const router = express.Router();
 const {
   saveHackathonForm,
   submitProjectWithAnswers,
+  getSubmissionById,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -57,13 +58,8 @@ router.get("/submissions", async (req, res) => {
         .populate('hackathonId', 'title name')
         .sort({ submittedAt: -1 });
 
-      // For dropdown logic, we need to return submissions with projectId as string
-      const submissionsWithStringIds = submissions.map(submission => ({
-        ...submission.toObject(),
-        projectId: submission.projectId._id ? submission.projectId._id.toString() : submission.projectId.toString()
-      }));
-
-      return res.json({ submissions: submissionsWithStringIds });
+      // Return full populated submissions for frontend
+      return res.json({ submissions });
     }
 
     // 2. If only userId is provided: (for My Submissions page)
@@ -114,5 +110,9 @@ router.get("/debug/registration", async (req, res) => {
     res.status(500).json({ error: 'Failed to check registration status' });
   }
 });
+
+// Add endpoints for deleting and editing a submission by ID
+router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);
+router.put("/submission/:id", protect, require("../controllers/submissionFormController").editSubmissionById);
 
 module.exports = router;

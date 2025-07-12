@@ -112,6 +112,8 @@ const HackathonSchema = new Schema({
 },
 submittedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
 
+  // Maximum number of submissions allowed per participant
+  maxSubmissionsPerParticipant: { type: Number, default: 1 },
 
   status: {
     type: String,

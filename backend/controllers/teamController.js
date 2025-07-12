@@ -277,6 +277,7 @@ const getTeamById = async (req, res) => {
 const joinTeamByCode = async (req, res) => {
   try {
     const { teamCode } = req.params;
+    const { hackathonId, projectId } = req.query;
     const userId = req.user._id;
 
     if (!req.user || !req.user._id) {
@@ -300,58 +301,68 @@ const joinTeamByCode = async (req, res) => {
     team.members.push(userId);
     await team.save();
 
-    // Register user for hackathon if not already registered
-    const hackathonId = team.hackathon;
-    const existingReg = await HackathonRegistration.findOne({ hackathonId, userId });
-    let registrationStatus = 'already_registered';
-    
-    if (!existingReg) {
-      try {
-        // Get user info for autofill
-        const user = await User.findById(userId);
-        const hackathon = await Hackathon.findById(hackathonId);
-        
-        if (!hackathon) {
-          throw new Error('Hackathon not found');
-        }
-        
-        // Create registration
-        await HackathonRegistration.create({
-          hackathonId,
-          userId,
-          formData: {
-            fullName: user.name,
-            email: user.email,
-            phone: user.phone || '',
-            teamName: team.name,
-            teamCode: teamCode.toUpperCase(),
-            acceptedTerms: true
-          },
-          acceptedTerms: true
-        });
-        
-        // Update Hackathon participants
-        if (!hackathon.participants.includes(userId)) {
-          hackathon.participants.push(userId);
-          await hackathon.save();
-        }
-        
-        // Update User's registeredHackathonIds
-        await User.findByIdAndUpdate(userId, {
-          $addToSet: { registeredHackathonIds: hackathonId },
-        });
-        
-        registrationStatus = 'registered';
-      } catch (regError) {
-        console.error('Auto-registration failed:', regError);
-        registrationStatus = 'registration_failed';
-      }
-    }
+    let registrationStatus = 'not_applicable';
+    let populatedTeam;
 
-    const populatedTeam = await Team.findById(team._id)
-      .populate('members', 'name email avatar')
-      .populate('leader', 'name email')
-      .populate('hackathon', 'title');
+    // Handle hackathon registration if applicable
+    if (team.hackathon) {
+      const existingReg = await HackathonRegistration.findOne({ hackathonId: team.hackathon, userId });
+      registrationStatus = 'already_registered';
+      
+      if (!existingReg) {
+        try {
+          // Get user info for autofill
+          const user = await User.findById(userId);
+          const hackathon = await Hackathon.findById(team.hackathon);
+          
+          if (!hackathon) {
+            throw new Error('Hackathon not found');
+          }
+          
+          // Create registration
+          await HackathonRegistration.create({
+            hackathonId: team.hackathon,
+            userId,
+            formData: {
+              fullName: user.name,
+              email: user.email,
+              phone: user.phone || '',
+              teamName: team.name,
+              teamCode: teamCode.toUpperCase(),
+              acceptedTerms: true
+            },
+            acceptedTerms: true
+          });
+          
+          // Update Hackathon participants
+          if (!hackathon.participants.includes(userId)) {
+            hackathon.participants.push(userId);
+            await hackathon.save();
+          }
+          
+          // Update User's registeredHackathonIds
+          await User.findByIdAndUpdate(userId, {
+            $addToSet: { registeredHackathonIds: team.hackathon },
+          });
+          
+          registrationStatus = 'registered';
+        } catch (regError) {
+          console.error('Auto-registration failed:', regError);
+          registrationStatus = 'registration_failed';
+        }
+      }
+
+      populatedTeam = await Team.findById(team._id)
+        .populate('members', 'name email avatar')
+        .populate('leader', 'name email')
+        .populate('hackathon', 'title');
+    } else if (team.project) {
+      // For project teams, no registration needed
+      populatedTeam = await Team.findById(team._id)
+        .populate('members', 'name email avatar')
+        .populate('leader', 'name email')
+        .populate('project', 'title');
+    }
 
     res.json({ 
       message: 'Successfully joined team', 

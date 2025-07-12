@@ -9,14 +9,14 @@ const RoleInvite = require('../model/RoleInviteModel');
 // POST /api/team-invites
 const createInvite = async (req, res) => {
   try {
-    const { invitedEmail, teamId, hackathonId } = req.body;
+    const { invitedEmail, teamId, hackathonId, projectId } = req.body;
     const invitedBy = req.user._id;
 
-    console.log('Creating invite:', { invitedEmail, teamId, hackathonId, invitedBy });
+    console.log('Creating invite:', { invitedEmail, teamId, hackathonId, projectId, invitedBy });
 
     // Validate required fields
-    if (!invitedEmail || !teamId || !hackathonId) {
-      return res.status(400).json({ error: 'Missing required fields: invitedEmail, teamId, hackathonId' });
+    if (!invitedEmail || !teamId || (!hackathonId && !projectId)) {
+      return res.status(400).json({ error: 'Missing required fields: invitedEmail, teamId, and either hackathonId or projectId' });
     }
 
     // Check for existing invite
@@ -37,15 +37,22 @@ const createInvite = async (req, res) => {
       invitedEmail,
       invitedBy,
       hackathon: hackathonId,
+      project: projectId,
     });
 
     // Send email
-    const hackathon = await Hackathon.findById(hackathonId);
+    const hackathon = hackathonId ? await Hackathon.findById(hackathonId) : null;
+    const Project = require('../model/ProjectModel');
+    const project = projectId ? await Project.findById(projectId) : null;
     const team = await Team.findById(teamId);
     const inviter = await User.findById(invitedBy);
     
-    if (!hackathon || !team || !inviter) {
-      return res.status(404).json({ error: 'Hackathon, team, or inviter not found' });
+    if (!team || !inviter) {
+      return res.status(404).json({ error: 'Team or inviter not found' });
+    }
+
+    if (!hackathon && !project) {
+      return res.status(404).json({ error: 'Hackathon or project not found' });
     }
 
     const inviteLink = `http://localhost:5173/invite/${invite._id}`;
@@ -74,26 +81,33 @@ const createInvite = async (req, res) => {
       return res.status(500).json({ error: 'Email service configuration error' });
     }
 
+    const contextTitle = hackathon ? hackathon.title : project.title;
+    const contextType = hackathon ? 'hackathon' : 'project';
+    const contextDetails = hackathon ? 
+      `<p style="color: #666; margin: 0 0 5px 0;"><strong>Prize Pool:</strong> $${hackathon.prizePool}</p>
+       <p style="color: #666; margin: 0;"><strong>Deadline:</strong> ${new Date(hackathon.endDate).toLocaleDateString()}</p>` :
+      `<p style="color: #666; margin: 0 0 5px 0;"><strong>Project:</strong> ${project.title}</p>
+       <p style="color: #666; margin: 0;"><strong>Description:</strong> ${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}</p>`;
+
     const emailTemplate = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 28px;">🎉 Team Invitation</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been invited to join a hackathon team!</p>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been invited to join a ${contextType} team!</p>
         </div>
         
         <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
           <h2 style="color: #333; margin-top: 0;">Hello there! 👋</h2>
           
           <p style="color: #555; line-height: 1.6;">
-            <strong>${inviter.name}</strong> has invited you to join their team for the hackathon:
+            <strong>${inviter.name}</strong> has invited you to join their team for the ${contextType}:
           </p>
           
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
-            <h3 style="color: #667eea; margin: 0 0 10px 0;">🏆 ${hackathon.title}</h3>
+            <h3 style="color: #667eea; margin: 0 0 10px 0;">🏆 ${contextTitle}</h3>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Team:</strong> ${team.name}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Team Code:</strong> ${team.teamCode}</p>
-            <p style="color: #666; margin: 0 0 5px 0;"><strong>Prize Pool:</strong> $${hackathon.prizePool}</p>
-            <p style="color: #666; margin: 0;"><strong>Deadline:</strong> ${new Date(hackathon.endDate).toLocaleDateString()}</p>
+            ${contextDetails}
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
@@ -124,7 +138,7 @@ const createInvite = async (req, res) => {
       const mailResult = await transporter.sendMail({
         from: `"HackZen Team" <${process.env.MAIL_USER}>`,
         to: invitedEmail,
-        subject: `🎉 You're invited to join ${team.name} for ${hackathon.title}!`,
+        subject: `🎉 You're invited to join ${team.name} for ${contextTitle}!`,
         html: emailTemplate
       });
 
@@ -189,7 +203,8 @@ const getMyInvites = async (req, res) => {
     })
       .populate('team', 'name')
       .populate('invitedBy', 'name')
-      .populate('hackathon', 'title');
+      .populate('hackathon', 'title')
+      .populate('project', 'title');
     res.json(invites);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch invites' });
@@ -227,6 +242,40 @@ const getHackathonInvites = async (req, res) => {
   } catch (err) {
     console.error('Error fetching hackathon invites:', err);
     res.status(500).json({ error: 'Failed to fetch hackathon invites', details: err.message });
+  }
+};
+
+// GET /api/team-invites/project/:projectId
+const getProjectInvites = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user._id;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    // Get all teams for this project where user is a member
+    const userTeams = await Team.find({
+      project: projectId,
+      members: userId
+    });
+
+    const teamIds = userTeams.map(team => team._id);
+
+    // Get all invites for these teams
+    const invites = await TeamInvite.find({
+      team: { $in: teamIds },
+      status: 'pending'
+    })
+    .populate('team', 'name')
+    .populate('invitedBy', 'name email')
+    .populate('project', 'title');
+
+    res.json(invites);
+  } catch (err) {
+    console.error('Error fetching project invites:', err);
+    res.status(500).json({ error: 'Failed to fetch project invites', details: err.message });
   }
 };
 
@@ -298,7 +347,8 @@ const getInviteById = async (req, res) => {
     const invite = await TeamInvite.findById(id)
       .populate('team', 'name description')
       .populate('invitedBy', 'name email')
-      .populate('hackathon', 'title prizePool endDate');
+      .populate('hackathon', 'title prizePool endDate')
+      .populate('project', 'title description');
     
     if (!invite) {
       return res.status(404).json({ error: 'Invite not found' });
@@ -403,6 +453,7 @@ module.exports = {
   respondToInvite,
   getMyInvites,
   getHackathonInvites,
+  getProjectInvites,
   getInviteById,
   acceptInviteById,
   deleteInvite,

@@ -5,7 +5,8 @@ const TeamInviteSchema = new Schema({
   invitedUser: { type: Schema.Types.ObjectId, ref: 'User' },
   invitedEmail: { type: String, required: true },
   invitedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  hackathon: { type: Schema.Types.ObjectId, ref: 'Hackathon', required: true },
+  hackathon: { type: Schema.Types.ObjectId, ref: 'Hackathon' },
+  project: { type: Schema.Types.ObjectId, ref: 'Project' },
   status: {
     type: String,
     enum: ['pending', 'accepted', 'declined'],

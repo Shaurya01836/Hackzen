@@ -7,7 +7,7 @@ import BaseModal from "./BaseModal";
 import { Copy } from "lucide-react";
 import { useToast } from "../../../../../../hooks/use-toast";
 
-export default function InviteModal({ onInvite, team, hackathon, show, onClose }) {
+export default function InviteModal({ onInvite, team, hackathon, project, show, onClose }) {
   const [email, setEmail] = useState("");
   const [inviteLink, setInviteLink] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -15,30 +15,54 @@ export default function InviteModal({ onInvite, team, hackathon, show, onClose }
 
   const handleInvite = async () => {
     if (!email.trim()) return;
-
+    // Robust null checks
+    if (!team || !team._id) {
+      toast({
+        title: "Error",
+        description: "Team not loaded. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!hackathon && !project) {
+      toast({
+        title: "Error",
+        description: "Context not loaded. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
+      const inviteData = {
+        invitedEmail: email,
+        teamId: team._id,
+      };
+      // Add context-specific ID
+      if (hackathon) {
+        inviteData.hackathonId = hackathon._id;
+      } else if (project) {
+        inviteData.projectId = project._id;
+      }
       const res = await fetch("http://localhost:3000/api/team-invites", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      body: JSON.stringify({
-  invitedEmail: email,
-  teamId: team._id,
-  hackathonId: hackathon._id,
-}),
-
+        body: JSON.stringify(inviteData),
       });
-
-      const data = await res.json();
-      if (res.ok) {
+      let data;
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        data = { message: "Invalid server response." };
+      }
+      if (res.ok && data.invite && data.invite._id) {
         onInvite?.(); // callback to refresh invite list
-        const link = `${window.location.origin}/invite/${data._id}`;
+        const link = `${window.location.origin}/invite/${data.invite._id}`;
         setInviteLink(link);
         setEmail("");
-
         toast({
           title: "Invite Sent",
           description: "Link generated. Share or copy it below.",
@@ -46,7 +70,7 @@ export default function InviteModal({ onInvite, team, hackathon, show, onClose }
       } else {
         toast({
           title: "Invite Failed",
-          description: data.message || "Could not send invite",
+          description: data.error || data.message || "Could not send invite",
           variant: "destructive",
         });
       }
@@ -54,7 +78,7 @@ export default function InviteModal({ onInvite, team, hackathon, show, onClose }
       console.error("Error sending invite:", err);
       toast({
         title: "Error",
-        description: "Something went wrong while sending the invite",
+        description: err.message || "Something went wrong while sending the invite",
         variant: "destructive",
       });
     }

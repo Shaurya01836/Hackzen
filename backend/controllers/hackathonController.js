@@ -36,6 +36,7 @@ exports.createHackathon = async (req, res) => {
       participants,
       teamSize
     } = req.body;
+    const maxSubmissionsPerParticipant = req.body.maxSubmissionsPerParticipant || 1;
 
      const newHackathon = await Hackathon.create({
       title,
@@ -67,6 +68,7 @@ exports.createHackathon = async (req, res) => {
       mentors,
       participants,
       teamSize: teamSize || { min: 1, max: 4, allowSolo: true },
+      maxSubmissionsPerParticipant,
       approvalStatus: 'pending' // Always set to pending for now, admin can approve later
     });
 
@@ -217,6 +219,11 @@ exports.updateHackathon = async (req, res) => {
       participants,
       teamSize
     } = req.body;
+
+    const maxSubmissionsPerParticipant = req.body.maxSubmissionsPerParticipant;
+    if (maxSubmissionsPerParticipant !== undefined) {
+      hackathon.maxSubmissionsPerParticipant = maxSubmissionsPerParticipant;
+    }
 
 
     console.log("Judges from request:", judges);

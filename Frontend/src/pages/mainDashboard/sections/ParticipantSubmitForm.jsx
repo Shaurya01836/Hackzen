@@ -28,6 +28,7 @@ import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
 import axios from "axios";
 import { useAchievements } from '../../../hooks/useAchievements';
 import { useToast } from '../../../hooks/use-toast';
+import ProjectTeamManagement from './components/ProjectTeamManagement';
 
 export default function ProjectSubmissionForm({
   hackathon,
@@ -50,6 +51,8 @@ export default function ProjectSubmissionForm({
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isLeader, setIsLeader] = useState(false);
+  // Store full submission objects for display
+  const [submissions, setSubmissions] = useState([]);
 
   useEffect(() => {
     return () => { isMounted.current = false; };
@@ -94,21 +97,91 @@ export default function ProjectSubmissionForm({
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const submissions = res.data.submissions || [];
+        setSubmissions(submissions);
         // Ensure projectId is always a string
         const projectIds = submissions.map((s) =>
           s.projectId && typeof s.projectId === 'object' && s.projectId._id
             ? s.projectId._id.toString()
             : s.projectId?.toString()
         );
-        console.log("DEBUG: projectIds from backend", projectIds, submissions);
         setSubmittedProjectIds(projectIds);
       } catch (err) {
-        console.error("Error fetching submissions:", err);
+        setSubmissions([]);
         setSubmittedProjectIds([]);
       }
     };
     if ((hackathon._id || hackathon.id) && userId) fetchSubmissions();
   }, [hackathon._id, hackathon.id, userId]);
+
+  // Helper: can edit/delete before deadline
+  const canEditOrDelete = () => {
+    const deadline = hackathon.submissionDeadline;
+    return !deadline || new Date() <= new Date(deadline);
+  };
+
+  // Delete submission handler
+  const handleDeleteSubmission = async (submissionId) => {
+    if (!window.confirm('Are you sure you want to delete this submission?')) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/submission-form/submission/${submissionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSubmissions(submissions.filter(s => s._id !== submissionId));
+      setSubmittedProjectIds(submittedProjectIds.filter(id => id !== submissionId));
+      toast({ title: 'Deleted', description: 'Submission deleted.' });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to delete submission.' });
+    }
+  };
+
+  // Edit submission handler (opens form pre-filled)
+  const [editingSubmission, setEditingSubmission] = useState(null);
+  const handleEditSubmission = (submission) => {
+    setEditingSubmission(submission);
+    setSelectedProjectId(submission.projectId._id || submission.projectId);
+    setSelectedProblem(submission.problemStatement);
+    setOrganizerAnswers(
+      (submission.customAnswers || []).reduce((acc, ans) => {
+        acc[ans.questionId] = ans.answer;
+        return acc;
+      }, {})
+    );
+    setSelectedMembers(submission.selectedMembers || []);
+    setActiveTab('project-selection');
+  };
+  // Save edited submission
+  const handleSaveEdit = async () => {
+    if (!editingSubmission) return;
+    try {
+      const token = localStorage.getItem("token");
+      const answersArray = Object.entries(organizerAnswers).map(
+        ([id, answer]) => ({ questionId: id, answer })
+      );
+      await axios.put(
+        `http://localhost:3000/api/submission-form/submission/${editingSubmission._id}`,
+        {
+          customAnswers: answersArray,
+          problemStatement: selectedProblem,
+          selectedMembers,
+          projectId: selectedProjectId,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast({ title: 'Updated', description: 'Submission updated.' });
+      setEditingSubmission(null);
+      // Refresh submissions
+      const hackathonId = hackathon._id || hackathon.id;
+      const res = await axios.get(
+        `http://localhost:3000/api/submission-form/submissions?hackathonId=${hackathonId}&userId=${userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setSubmissions(res.data.submissions || []);
+      setSubmittedProjectIds((res.data.submissions || []).map(s => s.projectId && typeof s.projectId === 'object' && s.projectId._id ? s.projectId._id.toString() : s.projectId?.toString()));
+    } catch (err) {
+      toast({ title: 'Error', description: err.response?.data?.error || 'Failed to update submission.' });
+    }
+  };
 
   useEffect(() => {
     if (selectedProjectId && submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())) {
@@ -282,6 +355,8 @@ export default function ProjectSubmissionForm({
   console.log("DEBUG: allProjects", allProjects);
   console.log("DEBUG: submittedProjectIds", submittedProjectIds);
 
+  const maxReached = submittedProjectIds.length >= (hackathon.maxSubmissionsPerParticipant || 1);
+
   // Check if there are custom questions or terms
   const hasCustomQuestions = organizerQuestions.length > 0;
   const hasTerms = termsAndConditions.length > 0;
@@ -303,6 +378,17 @@ export default function ProjectSubmissionForm({
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-8 px-4">
+      {/* Show allowed submissions info */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">
+        {hackathon.maxSubmissionsPerParticipant === 1
+          ? 'You can submit only 1 project to this hackathon.'
+          : `You can submit up to ${hackathon.maxSubmissionsPerParticipant} different projects to this hackathon.`}
+        {maxReached && (
+          <div className="mt-2 text-red-600 font-semibold">
+            You have already submitted {hackathon.maxSubmissionsPerParticipant} project{hackathon.maxSubmissionsPerParticipant > 1 ? 's' : ''} to this hackathon. No more submissions allowed.
+          </div>
+        )}
+      </div>
       <div className=" mx-auto space-y-4">
         <Button
           variant="outline"
@@ -311,6 +397,34 @@ export default function ProjectSubmissionForm({
         >
           <ArrowLeft className="mr-2 w-4 h-4" /> Back
         </Button>
+
+        {/* Submitted Projects List */}
+        {submissions.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-indigo-800 mb-2">Your Submissions</h2>
+            <div className="space-y-2">
+              {submissions.map(sub => (
+                <Card key={sub._id} className="flex flex-col md:flex-row items-center justify-between p-4">
+                  <div className="flex-1">
+                    <div className="font-semibold text-black">{sub.projectId?.title || sub.projectId?.name || 'Untitled Project'}</div>
+                    <div className="text-sm text-gray-600">Problem: {sub.problemStatement}</div>
+                    <div className="text-xs text-gray-400">Submitted: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : ''}</div>
+                  </div>
+                  {canEditOrDelete() && (
+                    <div className="flex gap-2 mt-2 md:mt-0">
+                      <Button size="sm" variant="outline" onClick={() => handleEditSubmission(sub)}>
+                        Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteSubmission(sub._id)}>
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Card>
           <CardHeader className="text-center pb-6">
@@ -410,6 +524,7 @@ export default function ProjectSubmissionForm({
                       value={selectedProjectId}
                       onValueChange={handleProjectSelect}
                       required
+                      disabled={maxReached && !editingSubmission}
                     >
                       <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
                         <SelectValue placeholder={allProjects.length === 0 ? "No projects available" : "Choose..."} />
@@ -421,7 +536,10 @@ export default function ProjectSubmissionForm({
                           <>
                             {/* Available projects */}
                             {allProjects
-                              .filter(project => !submittedProjectIds.some(id => id.toString() === project._id.toString()))
+                              .filter(project =>
+                                !submittedProjectIds.some(id => id.toString() === project._id.toString()) ||
+                                (editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
+                              )
                               .map((project) => (
                                 <SelectItem
                                   key={project._id}
@@ -435,7 +553,10 @@ export default function ProjectSubmissionForm({
                             
                             {/* Submitted projects (disabled) */}
                             {allProjects
-                              .filter(project => submittedProjectIds.some(id => id.toString() === project._id.toString()))
+                              .filter(project =>
+                                submittedProjectIds.some(id => id.toString() === project._id.toString()) &&
+                                !(editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
+                              )
                               .map((project) => (
                                 <SelectItem
                                   key={project._id}
@@ -522,6 +643,44 @@ export default function ProjectSubmissionForm({
                     )}
                   </div>
 
+                  {/* Team Management Section */}
+                  {selectedProjectId && selectedProjectId !== "create-new" && (
+                    <div className="mt-6">
+                      <ProjectTeamManagement
+                        project={allProjects.find(p => p._id === selectedProjectId)}
+                        hackathon={hackathon}
+                        user={user}
+                        toast={toast}
+                        onTeamUpdate={() => {
+                          // Refresh team data when team is updated
+                          const fetchTeam = async () => {
+                            try {
+                              const token = localStorage.getItem("token");
+                              const hackathonId = hackathon._id || hackathon.id;
+                              const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathonId}`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                              });
+                              const teams = await res.json();
+                              if (Array.isArray(teams) && teams.length > 0) {
+                                const user = JSON.parse(localStorage.getItem('user'));
+                                const myTeam = teams.find(team => team.members.some(m => m._id === user._id));
+                                if (myTeam) {
+                                  setTeamMembers(myTeam.members);
+                                  setIsLeader(myTeam.leader && myTeam.leader._id === user._id);
+                                  setSelectedMembers(myTeam.members.map(m => m._id));
+                                }
+                              }
+                            } catch (err) {
+                              setTeamMembers([]);
+                              setIsLeader(false);
+                            }
+                          };
+                          fetchTeam();
+                        }}
+                      />
+                    </div>
+                  )}
+
                   <div className="flex justify-end">
                     {hasCustomForm ? (
                       <>
@@ -562,7 +721,8 @@ export default function ProjectSubmissionForm({
                           selectedProjectId === "create-new" ||
                           !selectedProblem ||
                           submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
-                          isSubmitting
+                          isSubmitting ||
+                          maxReached
                         }
                       >
                         {isSubmitting ? (
@@ -674,7 +834,8 @@ export default function ProjectSubmissionForm({
                         !selectedProjectId || 
                         selectedProjectId === "create-new" || 
                         !selectedProblem ||
-                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
+                        maxReached
                       }
                       className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >

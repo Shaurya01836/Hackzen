@@ -48,6 +48,16 @@ exports.submitProjectWithAnswers = async (req, res) => {
       });
     }
 
+    // Check if user has reached the max submissions for this hackathon
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ error: "Hackathon not found" });
+    }
+    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId });
+    if (userSubmissionCount >= (hackathon.maxSubmissionsPerParticipant || 1)) {
+      return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
+    }
+
     // Create new submission
     const submission = await Submission.create({
       hackathonId,
@@ -70,5 +80,72 @@ exports.submitProjectWithAnswers = async (req, res) => {
   } catch (err) {
     console.error("❌ Error in submitProjectWithAnswers:", err, req.body);
     res.status(500).json({ error: "Server error during submission", details: err.message, stack: err.stack });
+  }
+};
+
+exports.deleteSubmissionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const submission = await Submission.findById(id).populate('hackathonId');
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    if (submission.submittedBy.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Not authorized to delete this submission' });
+    }
+    // Check deadline
+    const deadline = submission.hackathonId.submissionDeadline;
+    if (deadline && new Date() > new Date(deadline)) {
+      return res.status(400).json({ error: 'Cannot delete after submission deadline' });
+    }
+    await Submission.findByIdAndDelete(id);
+    res.json({ success: true, message: 'Submission deleted' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete submission', details: err.message });
+  }
+};
+
+exports.editSubmissionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const { customAnswers, problemStatement, selectedMembers, projectId } = req.body;
+    const submission = await Submission.findById(id).populate('hackathonId');
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    if (submission.submittedBy.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Not authorized to edit this submission' });
+    }
+    // Check deadline
+    const deadline = submission.hackathonId.submissionDeadline;
+    if (deadline && new Date() > new Date(deadline)) {
+      return res.status(400).json({ error: 'Cannot edit after submission deadline' });
+    }
+    // If projectId is being changed, validate
+    if (projectId && projectId.toString() !== submission.projectId.toString()) {
+      const Project = require('../model/ProjectModel');
+      const project = await Project.findById(projectId);
+      if (!project) return res.status(400).json({ error: 'Project not found' });
+      if (project.submittedBy.toString() !== userId.toString()) {
+        return res.status(403).json({ error: 'You do not own this project' });
+      }
+      // Check if this project is already submitted to this hackathon
+      const alreadySubmitted = await Submission.findOne({
+        hackathonId: submission.hackathonId._id,
+        projectId,
+        _id: { $ne: id },
+      });
+      if (alreadySubmitted) {
+        return res.status(400).json({ error: 'This project is already submitted to this hackathon' });
+      }
+      submission.projectId = projectId;
+    }
+    if (customAnswers !== undefined) submission.customAnswers = customAnswers;
+    if (problemStatement !== undefined) submission.problemStatement = problemStatement;
+    if (selectedMembers !== undefined) submission.selectedMembers = selectedMembers;
+    await submission.save();
+    // Populate projectId for response
+    await submission.populate('projectId');
+    res.json({ success: true, submission });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to edit submission', details: err.message });
   }
 };
