@@ -21,17 +21,6 @@ const HackathonSchema = new Schema({
 
   organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
-  category: {
-    type: String,
-    enum: [
-      'Artificial Intelligence', 'Blockchain', 'Blockchain & Web3', 'Cybersecurity',
-      'Fintech', 'Gaming', 'Healthcare', 'Sustainability',
-      'Mobile Development', 'Web Development', 'IoT',
-      'Data Science', 'DevOps', 'EdTech'
-    ],
-    required: true
-  },
-
   difficultyLevel: {
     type: String,
     enum: ['Beginner', 'Intermediate', 'Advanced'],
@@ -60,10 +49,19 @@ const HackathonSchema = new Schema({
 
   rounds: [{ // <-- NEW FIELD
     name: { type: String },
+    type: { type: String }, // <-- Added type field for round type
     description: { type: String },
     startDate: { type: Date },
     endDate: { type: Date }
   }],
+
+  // Track which participants/teams advance per round
+  roundProgress: [
+    {
+      roundIndex: { type: Number }, // index in rounds array
+      advancedParticipantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }], // or ref: 'Team' if team-based
+    }
+  ],
 
   requirements: [String],
   perks: [String],

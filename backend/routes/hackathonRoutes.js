@@ -38,6 +38,9 @@ router.get('/admin/status-breakdown', protect, isAdmin, require('../controllers/
 // Organizer-only route: get hackathons created by logged-in organizer
 router.get('/my', protect, getMyHackathons); 
 
+// Organizer/Admin: Mark which participants advance to a round
+router.patch('/:id/round-advancement', protect, isOrganizerOrAdmin, require('../controllers/hackathonController').markRoundAdvancement);
+
 // 🆓 Public routes
 router.get('/', getAllHackathons);
 router.get('/:id', getHackathonById);

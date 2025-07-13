@@ -54,6 +54,19 @@ export default function ProjectSubmissionForm({
   // Store full submission objects for display
   const [submissions, setSubmissions] = useState([]);
 
+  // State for PPT upload
+  const [pptFile, setPptFile] = useState(null);
+  const [pptUploading, setPptUploading] = useState(false);
+  const [pptUploadError, setPptUploadError] = useState("");
+  const [pptUploadSuccess, setPptUploadSuccess] = useState(false);
+
+  // State for PPT link and problem statement
+  const [pptLink, setPptLink] = useState("");
+  const [pptProblem, setPptProblem] = useState("");
+  const [pptLinkError, setPptLinkError] = useState("");
+  const [pptLinkSuccess, setPptLinkSuccess] = useState(false);
+  const [pptLinkSubmitting, setPptLinkSubmitting] = useState(false);
+
   useEffect(() => {
     return () => { isMounted.current = false; };
   }, []);
@@ -350,6 +363,114 @@ export default function ProjectSubmissionForm({
     }
   };
 
+  // Handler for PPT upload
+  const handlePptFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowedTypes = ["application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
+    if (!allowedTypes.includes(file.type)) {
+      setPptUploadError("Only PPT or PPTX files are allowed.");
+      setPptFile(null);
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setPptUploadError("File size must be less than 10MB.");
+      setPptFile(null);
+      return;
+    }
+    setPptUploadError("");
+    setPptFile(file);
+  };
+
+  // Handler for PPT form submit
+  const handlePptSubmit = async (e) => {
+    e.preventDefault();
+    if (!pptFile) {
+      setPptUploadError("Please select a PPT file to upload.");
+      return;
+    }
+    setPptUploading(true);
+    setPptUploadError("");
+    setPptUploadSuccess(false);
+    try {
+      // 1. Upload file to backend (now /api/uploads/ppt)
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("ppt", pptFile);
+      const uploadRes = await fetch("http://localhost:3000/api/uploads/ppt", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
+      // 2. Submit the PPT submission
+      const submissionRes = await fetch("http://localhost:3000/api/submission-form/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hackathonId: hackathon._id || hackathon.id,
+          pptFile: uploadData.url,
+          roundIndex: currentRound.roundIndex,
+        }),
+      });
+      const submissionData = await submissionRes.json();
+      if (!submissionRes.ok) throw new Error(submissionData.message || "Submission failed");
+      setPptUploadSuccess(true);
+      setPptFile(null);
+      toast({ title: "Success!", description: "PPT submitted successfully." });
+    } catch (err) {
+      setPptUploadError(err.message);
+    } finally {
+      setPptUploading(false);
+    }
+  };
+
+  // Handler for PPT link submit
+  const handlePptLinkSubmit = async (e) => {
+    e.preventDefault();
+    setPptLinkError("");
+    setPptLinkSuccess(false);
+    if (!pptProblem) {
+      setPptLinkError("Please select a problem statement.");
+      return;
+    }
+    if (!pptLink.trim() || !pptLink.startsWith("http")) {
+      setPptLinkError("Please enter a valid PPT link (e.g., Google Drive link).");
+      return;
+    }
+    setPptLinkSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const submissionRes = await fetch("http://localhost:3000/api/submission-form/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          hackathonId: hackathon._id || hackathon.id,
+          pptFile: pptLink.trim(),
+          problemStatement: pptProblem,
+          roundIndex: currentRound.roundIndex,
+        }),
+      });
+      const submissionData = await submissionRes.json();
+      if (!submissionRes.ok) throw new Error(submissionData.message || "Submission failed");
+      setPptLinkSuccess(true);
+      setPptLink("");
+      setPptProblem("");
+      toast({ title: "Success!", description: "PPT link submitted successfully." });
+    } catch (err) {
+      setPptLinkError(err.message);
+    } finally {
+      setPptLinkSubmitting(false);
+    }
+  };
+
   // Keep all projects but mark submitted ones as disabled
   const allProjects = userProjects;
   console.log("DEBUG: allProjects", allProjects);
@@ -376,517 +497,605 @@ export default function ProjectSubmissionForm({
       ];
   const currentStep = steps.findIndex((s) => s.key === activeTab);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-8 px-4">
-      {/* Show allowed submissions info */}
-      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">
-        {hackathon.maxSubmissionsPerParticipant === 1
-          ? 'You can submit only 1 project to this hackathon.'
-          : `You can submit up to ${hackathon.maxSubmissionsPerParticipant} different projects to this hackathon.`}
-        {maxReached && (
-          <div className="mt-2 text-red-600 font-semibold">
-            You have already submitted {hackathon.maxSubmissionsPerParticipant} project{hackathon.maxSubmissionsPerParticipant > 1 ? 's' : ''} to this hackathon. No more submissions allowed.
-          </div>
-        )}
+  // Determine current eligible round for the participant
+  const [currentRound, setCurrentRound] = useState(null);
+  useEffect(() => {
+    if (!hackathon || !Array.isArray(hackathon.rounds)) return;
+    // If no roundProgress, everyone is eligible for round 0
+    if (!Array.isArray(hackathon.roundProgress) || hackathon.roundProgress.length === 0) {
+      setCurrentRound({ ...hackathon.rounds[0], roundIndex: 0 });
+      return;
+    }
+    // Find the highest roundIndex the user is in advancedParticipantIds for
+    let eligibleRound = null;
+    for (let i = 0; i < hackathon.roundProgress.length; i++) {
+      const progress = hackathon.roundProgress[i];
+      if (progress.advancedParticipantIds && progress.advancedParticipantIds.includes(userId)) {
+        // Eligible for next round (if exists)
+        if (hackathon.rounds[progress.roundIndex + 1]) {
+          eligibleRound = { ...hackathon.rounds[progress.roundIndex + 1], roundIndex: progress.roundIndex + 1 };
+        }
+      }
+    }
+    // If not advanced, check if eligible for round 0
+    if (!eligibleRound && hackathon.roundProgress.every(rp => !rp.advancedParticipantIds.includes(userId))) {
+      eligibleRound = { ...hackathon.rounds[0], roundIndex: 0 };
+    }
+    setCurrentRound(eligibleRound);
+  }, [hackathon, userId]);
+
+  // Block access if not eligible
+  if (!currentRound) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-xl text-red-600 font-bold">
+        You are not eligible to submit in the current round. Please wait for results or contact the organizer.
       </div>
-      <div className=" mx-auto space-y-4">
-        <Button
-          variant="outline"
-          onClick={() => (onBack ? onBack() : navigate(-1))}
-          className="mb-2 border-indigo-300 text-indigo-700 hover:bg-indigo-100"
-        >
-          <ArrowLeft className="mr-2 w-4 h-4" /> Back
-        </Button>
+    );
+  }
 
-        {/* Submitted Projects List */}
-        {submissions.length > 0 && (
-          <div className="mb-6">
-            <h2 className="text-lg font-bold text-indigo-800 mb-2">Your Submissions</h2>
-            <div className="space-y-2">
-              {submissions.map(sub => (
-                <Card key={sub._id} className="flex flex-col md:flex-row items-center justify-between p-4">
-                  <div className="flex-1">
-                    <div className="font-semibold text-black">{sub.projectId?.title || sub.projectId?.name || 'Untitled Project'}</div>
-                    <div className="text-sm text-gray-600">Problem: {sub.problemStatement}</div>
-                    <div className="text-xs text-gray-400">Submitted: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : ''}</div>
-                  </div>
-                  {canEditOrDelete() && (
-                    <div className="flex gap-2 mt-2 md:mt-0">
-                      <Button size="sm" variant="outline" onClick={() => handleEditSubmission(sub)}>
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => handleDeleteSubmission(sub._id)}>
-                        Delete
-                      </Button>
-                    </div>
-                  )}
-                </Card>
-              ))}
-            </div>
+  // Render the correct form for the current round's type
+  // For now, show a placeholder for each type
+  if (currentRound.type === 'ppt') {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-8 px-4">
+        {/* Eligibility and round type logic */}
+        {!currentRound ? (
+          <div className="flex items-center justify-center text-xl text-red-600 font-bold min-h-[300px]">
+            You are not eligible to submit in the current round. Please wait for results or contact the organizer.
           </div>
-        )}
-
-        <Card>
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-3xl font-extrabold text-indigo-800 mb-2 tracking-tight">
-              Submit Project
-            </CardTitle>
-            <p className="text-lg text-black font-medium">
-              {hackathon?.name || "Hackathon"}
-            </p>
-            {/* Stepper */}
-            <div className="flex justify-center mt-4 gap-4">
-              {steps.map((step, idx) => (
-                <div key={step.key} className="flex items-center">
-                  <div
-                    className={`rounded-full w-7 h-7 flex items-center justify-center font-bold text-white transition-all
-                      ${idx <= currentStep ? "bg-indigo-600" : "bg-indigo-200"}
-                    `}
-                  >
-                    {idx + 1}
-                  </div>
-                  {idx < steps.length - 1 && (
-                    <div
-                      className={`w-8 h-1 ${
-                        idx < currentStep ? "bg-indigo-500" : "bg-indigo-200"
-                      } mx-1 rounded`}
-                    />
-                  )}
-                </div>
-              ))}
+        ) : currentRound.type === 'ppt' ? (
+          <form className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow" onSubmit={handlePptLinkSubmit}>
+            <h2 className="text-2xl font-bold mb-4 text-center">PPT Submission</h2>
+            <div className="mb-4">
+              <label className="block font-medium mb-2">Select Problem Statement</label>
+              <select
+                value={pptProblem}
+                onChange={e => setPptProblem(e.target.value)}
+                className="block w-full border rounded p-2 mb-2"
+                required
+                disabled={pptLinkSubmitting}
+              >
+                <option value="">-- Select a problem statement --</option>
+                {hackathon.problemStatements && hackathon.problemStatements.map((statement, idx) => (
+                  <option key={idx} value={statement}>{statement.length > 80 ? statement.slice(0, 80) + "..." : statement}</option>
+                ))}
+              </select>
+              <label className="block font-medium mb-2">Paste your PPT link (Google Drive, Dropbox, etc.)</label>
+              <input
+                type="url"
+                value={pptLink}
+                onChange={e => setPptLink(e.target.value)}
+                placeholder="https://drive.google.com/..."
+                className="block w-full border rounded p-2"
+                disabled={pptLinkSubmitting}
+                required
+              />
+              {pptLinkError && <div className="mt-2 text-red-600">{pptLinkError}</div>}
+              {pptLinkSuccess && <div className="mt-2 text-green-600">PPT link submitted successfully!</div>}
             </div>
-          </CardHeader>
+            <button
+              type="submit"
+              className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+              disabled={pptLinkSubmitting}
+            >
+              {pptLinkSubmitting ? "Submitting..." : "Submit PPT Link"}
+            </button>
+          </form>
+        ) : currentRound.type === 'quiz' ? (
+          <div className="flex items-center justify-center text-lg min-h-[300px]">Quiz Form (Coming Soon)</div>
+        ) : currentRound.type === 'project' ? (
+          <div>
+            {/* Show allowed submissions info */}
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">
+              {hackathon.maxSubmissionsPerParticipant === 1
+                ? 'You can submit only 1 project to this hackathon.'
+                : `You can submit up to ${hackathon.maxSubmissionsPerParticipant} different projects to this hackathon.`}
+              {maxReached && (
+                <div className="mt-2 text-red-600 font-semibold">
+                  You have already submitted {hackathon.maxSubmissionsPerParticipant} project{hackathon.maxSubmissionsPerParticipant > 1 ? 's' : ''} to this hackathon. No more submissions allowed.
+                </div>
+              )}
+            </div>
+            <div className=" mx-auto space-y-4">
+              <Button
+                variant="outline"
+                onClick={() => (onBack ? onBack() : navigate(-1))}
+                className="mb-2 border-indigo-300 text-indigo-700 hover:bg-indigo-100"
+              >
+                <ArrowLeft className="mr-2 w-4 h-4" /> Back
+              </Button>
 
-          <CardContent>
-            <form onSubmit={handleSubmit}>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                {hasCustomForm ? (
-                  <TabsList className="grid w-full grid-cols-2 mb-8 ">
-                    <TabsTrigger
-                      value="project-selection"
-                      className={`transition-all ${
-                        activeTab === "project-selection"
-                          ? "bg-indigo-600 text-white"
-                          : "text-black"
-                      }`}
-                    >
-                      Select Project
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="terms-submit"
-                      className={`transition-all ${
-                        activeTab === "terms-submit"
-                          ? "bg-indigo-600 text-white"
-                          : "text-gray-400 cursor-not-allowed"
-                      }`}
-                      disabled={
-                        !selectedProjectId ||
-                        selectedProjectId === "create-new" ||
-                        !selectedProblem ||
-                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
-                      }
-                    >
-                      Q&A & Submit
-                      {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
-                        <span className="ml-2 text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
-                          Locked
-                        </span>
-                      )}
-                      {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
-                        <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
-                          Ready
-                        </span>
-                      )}
-                    </TabsTrigger>
-                  </TabsList>
-                ) : (
-                  <TabsList className="grid w-full grid-cols-1 mb-8 ">
-                    <TabsTrigger
-                      value="project-selection"
-                      className="bg-indigo-600 text-white"
-                    >
-                      Submit Project
-                    </TabsTrigger>
-                  </TabsList>
-                )}
-
-                {/* Step 1: Select Project */}
-                <TabsContent
-                  value="project-selection"
-                  className="space-y-8 animate-fade-in"
-                >
-                  <div className="space-y-3 text-black">
-                    <Label className="text-black font-semibold">
-                      Select Project<span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      key={submittedProjectIds.join(",")}
-                      value={selectedProjectId}
-                      onValueChange={handleProjectSelect}
-                      required
-                      disabled={maxReached && !editingSubmission}
-                    >
-                      <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
-                        <SelectValue placeholder={allProjects.length === 0 ? "No projects available" : "Choose..."} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allProjects.length === 0 ? (
-                          <div className="px-4 py-2 text-gray-500">No projects available. Create a project first.</div>
-                        ) : (
-                          <>
-                            {/* Available projects */}
-                            {allProjects
-                              .filter(project =>
-                                !submittedProjectIds.some(id => id.toString() === project._id.toString()) ||
-                                (editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
-                              )
-                              .map((project) => (
-                                <SelectItem
-                                  key={project._id}
-                                  value={project._id}
-                                  className="text-black"
-                                >
-                                  {project.title}
-                                </SelectItem>
-                              ))
-                            }
-                            
-                            {/* Submitted projects (disabled) */}
-                            {allProjects
-                              .filter(project =>
-                                submittedProjectIds.some(id => id.toString() === project._id.toString()) &&
-                                !(editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
-                              )
-                              .map((project) => (
-                                <SelectItem
-                                  key={project._id}
-                                  value={project._id}
-                                  className="text-gray-400 cursor-not-allowed"
-                                  disabled={true}
-                                >
-                                  {project.title} (Already Submitted)
-                                </SelectItem>
-                              ))
-                            }
-                            
-                            <SelectItem
-                              value="create-new"
-                              className="text-indigo-600 font-semibold"
-                            >
-                              + Create New Project
-                            </SelectItem>
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {selectedProjectId === "create-new" && (
-                      <div className="mt-2 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-black">
-                        Please create your project from the <b>Projects</b>{" "}
-                        section before submitting.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Problem Statement Dropdown */}
-                  <div className="space-y-3 text-black">
-                    <Label className="text-black font-semibold">
-                      Problem Statement<span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={selectedProblem}
-                      onValueChange={setSelectedProblem}
-                      required
-                      disabled={!hackathon.problemStatements || hackathon.problemStatements.length === 0}
-                    >
-                      <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
-                        <SelectValue placeholder={hackathon.problemStatements && hackathon.problemStatements.length > 0 ? "Select a problem statement..." : "No problem statements available"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hackathon.problemStatements && hackathon.problemStatements.length > 0 ? (
-                          hackathon.problemStatements.map((statement, idx) => (
-                            <SelectItem key={idx} value={statement} className="text-black">
-                              {statement.length > 80 ? statement.slice(0, 80) + "..." : statement}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-problem" disabled>No problem statements available</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-3 text-black">
-                    {isLeader && teamMembers.length > 0 && (
-                      <div className="mb-4">
-                        <Label className="text-black font-semibold">Select Team Members to Include in Submission</Label>
-                        <div className="border border-indigo-300 rounded p-2 bg-white">
-                          {teamMembers.map(member => (
-                            <label key={member._id} className="flex items-center space-x-2 mb-1">
-                              <input
-                                type="checkbox"
-                                checked={selectedMembers.includes(member._id)}
-                                onChange={e => {
-                                  if (e.target.checked) {
-                                    setSelectedMembers(prev => [...prev, member._id]);
-                                  } else {
-                                    setSelectedMembers(prev => prev.filter(id => id !== member._id));
-                                  }
-                                }}
-                                disabled={member._id === userId} // leader always included
-                              />
-                              <span>{member.name} {member._id === userId ? "(You)" : ""}</span>
-                            </label>
-                          ))}
+              {/* Submitted Projects List */}
+              {submissions.length > 0 && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-bold text-indigo-800 mb-2">Your Submissions</h2>
+                  <div className="space-y-2">
+                    {submissions.map(sub => (
+                      <Card key={sub._id} className="flex flex-col md:flex-row items-center justify-between p-4">
+                        <div className="flex-1">
+                          <div className="font-semibold text-black">{sub.projectId?.title || sub.projectId?.name || 'Untitled Project'}</div>
+                          <div className="text-sm text-gray-600">Problem: {sub.problemStatement}</div>
+                          <div className="text-xs text-gray-400">Submitted: {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : ''}</div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">You (leader) are always included in the submission.</div>
-                      </div>
-                    )}
+                        {canEditOrDelete() && (
+                          <div className="flex gap-2 mt-2 md:mt-0">
+                            <Button size="sm" variant="outline" onClick={() => handleEditSubmission(sub)}>
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => handleDeleteSubmission(sub._id)}>
+                              Delete
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
+                    ))}
                   </div>
+                </div>
+              )}
 
-                  {/* Team Management Section */}
-                  {selectedProjectId && selectedProjectId !== "create-new" && (
-                    <div className="mt-6">
-                      <ProjectTeamManagement
-                        project={allProjects.find(p => p._id === selectedProjectId)}
-                        hackathon={hackathon}
-                        user={user}
-                        toast={toast}
-                        onTeamUpdate={() => {
-                          // Refresh team data when team is updated
-                          const fetchTeam = async () => {
-                            try {
-                              const token = localStorage.getItem("token");
-                              const hackathonId = hackathon._id || hackathon.id;
-                              const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathonId}`, {
-                                headers: { Authorization: `Bearer ${token}` },
-                              });
-                              const teams = await res.json();
-                              if (Array.isArray(teams) && teams.length > 0) {
-                                const user = JSON.parse(localStorage.getItem('user'));
-                                const myTeam = teams.find(team => team.members.some(m => m._id === user._id));
-                                if (myTeam) {
-                                  setTeamMembers(myTeam.members);
-                                  setIsLeader(myTeam.leader && myTeam.leader._id === user._id);
-                                  setSelectedMembers(myTeam.members.map(m => m._id));
-                                }
-                              }
-                            } catch (err) {
-                              setTeamMembers([]);
-                              setIsLeader(false);
-                            }
-                          };
-                          fetchTeam();
-                        }}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex justify-end">
-                    {hasCustomForm ? (
-                      <>
-                        {/* Show guidance message when requirements not met */}
-                        {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
-                          <div className="flex-1 text-sm text-gray-500">
-                            {!selectedProjectId || selectedProjectId === "create-new" ? "Please select a project" : ""}
-                            {(!selectedProjectId || selectedProjectId === "create-new") && !selectedProblem ? " and " : ""}
-                            {!selectedProblem ? "choose a problem statement" : ""}
-                            {" to proceed to Q&A & Submit"}
-                          </div>
-                        )}
-                        {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
-                          <div className="flex-1 text-sm text-green-600">
-                            ✓ Ready to proceed to Q&A & Submit
-                          </div>
-                        )}
-                        <Button
-                          type="button"
-                          onClick={() => setActiveTab("terms-submit")}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
-                          disabled={
-                            !selectedProjectId ||
-                            selectedProjectId === "create-new" ||
-                            !selectedProblem ||
-                            submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
-                          }
+              <Card>
+                <CardHeader className="text-center pb-6">
+                  <CardTitle className="text-3xl font-extrabold text-indigo-800 mb-2 tracking-tight">
+                    Submit Project
+                  </CardTitle>
+                  <p className="text-lg text-black font-medium">
+                    {hackathon?.name || "Hackathon"}
+                  </p>
+                  {/* Stepper */}
+                  <div className="flex justify-center mt-4 gap-4">
+                    {steps.map((step, idx) => (
+                      <div key={step.key} className="flex items-center">
+                        <div
+                          className={`rounded-full w-7 h-7 flex items-center justify-center font-bold text-white transition-all
+                            ${idx <= currentStep ? "bg-indigo-600" : "bg-indigo-200"}
+                          `}
                         >
-                          Next <ChevronRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        type="submit"
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
-                        disabled={
-                          !selectedProjectId ||
-                          selectedProjectId === "create-new" ||
-                          !selectedProblem ||
-                          submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
-                          isSubmitting ||
-                          maxReached
-                        }
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                            Submitting...
-                          </>
-                        ) : (
-                          "Submit Project →"
+                          {idx + 1}
+                        </div>
+                        {idx < steps.length - 1 && (
+                          <div
+                            className={`w-8 h-1 ${
+                              idx < currentStep ? "bg-indigo-500" : "bg-indigo-200"
+                            } mx-1 rounded`}
+                          />
                         )}
-                      </Button>
-                    )}
-                  </div>
-                </TabsContent>
-
-                {/* Step 2: Questions & Terms */}
-                <TabsContent
-                  value="terms-submit"
-                  className="space-y-6 animate-fade-in"
-                >
-                  {!hasCustomForm && (
-                    <div className="text-center py-8">
-                      <div className="text-gray-500 mb-4">
-                        <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-lg font-medium text-gray-700">Ready to Submit!</p>
-                        <p className="text-sm text-gray-500">No additional questions or terms required.</p>
                       </div>
-                    </div>
-                  )}
-                  {organizerQuestions.length > 0 && (
-                    <>
-                      <h3 className="text-xl font-bold text-black mb-2">
-                        Organizer Questions
-                      </h3>
-                      <div className="space-y-4">
-                        {organizerQuestions.map((q) => (
-                          <div key={q.id}>
-                            <Label className="text-black font-medium">
-                              {q.text}
-                              {q.required && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                            </Label>
-                            <Textarea
-                              value={organizerAnswers[q.id] || ""}
-                              onChange={(e) =>
-                                handleOrganizerAnswer(q.id, e.target.value)
-                              }
-                              required={q.required}
-                              className="mt-1 border-indigo-300 focus:ring-2 focus:ring-indigo-400 text-black"
-                              placeholder="Type your answer..."
-                            />
-                            {q.required && (
-                              <span className="text-xs text-indigo-500">
-                                This question is required.
+                    ))}
+                  </div>
+                </CardHeader>
+
+                <CardContent>
+                  <form onSubmit={handleSubmit}>
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                      {hasCustomForm ? (
+                        <TabsList className="grid w-full grid-cols-2 mb-8 ">
+                          <TabsTrigger
+                            value="project-selection"
+                            className={`transition-all ${
+                              activeTab === "project-selection"
+                                ? "bg-indigo-600 text-white"
+                                : "text-black"
+                            }`}
+                          >
+                            Select Project
+                          </TabsTrigger>
+                          <TabsTrigger
+                            value="terms-submit"
+                            className={`transition-all ${
+                              activeTab === "terms-submit"
+                                ? "bg-indigo-600 text-white"
+                                : "text-gray-400 cursor-not-allowed"
+                            }`}
+                            disabled={
+                              !selectedProjectId ||
+                              selectedProjectId === "create-new" ||
+                              !selectedProblem ||
+                              submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                            }
+                          >
+                            Q&A & Submit
+                            {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
+                              <span className="ml-2 text-xs bg-gray-200 text-gray-500 px-2 py-1 rounded-full">
+                                Locked
                               </span>
                             )}
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {termsAndConditions.length > 0 && (
-                    <>
-                      <h3 className="text-xl font-bold text-black mb-2">
-                        Terms & Conditions
-                      </h3>
-                      <div className="max-h-40 overflow-y-auto bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-2">
-                        <ul className="list-disc pl-6 space-y-1">
-                          {termsAndConditions.map((term, i) => (
-                            <li key={i} className="text-sm text-black">
-                              {term}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      {hasTerms && (
-                        <label className="flex items-center space-x-2 text-sm text-black font-medium">
-                          <input
-                            type="checkbox"
-                            checked={agreedToTerms}
-                            onChange={(e) => setAgreedToTerms(e.target.checked)}
-                            required
-                            className="accent-indigo-600"
-                          />
-                          <span>I agree to the terms above</span>
-                        </label>
-                      )}
-                    </>
-                  )}
-
-                  <div className="flex justify-between pt-4">
-                    <Button
-                      type="button"
-                      onClick={() => setActiveTab("project-selection")}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
-                    >
-                      <ChevronLeft className="mr-2 h-4 w-4" /> Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={
-                        (hasTerms && !agreedToTerms) || 
-                        (hasRequiredQuestions && !organizerQuestions.every(q => !q.required || organizerAnswers[q.id])) ||
-                        isSubmitting || 
-                        !selectedProjectId || 
-                        selectedProjectId === "create-new" || 
-                        !selectedProblem ||
-                        submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
-                        maxReached
-                      }
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                          Submitting...
-                        </>
+                            {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
+                              <span className="ml-2 text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">
+                                Ready
+                              </span>
+                            )}
+                          </TabsTrigger>
+                        </TabsList>
                       ) : (
-                        "Submit →"
+                        <TabsList className="grid w-full grid-cols-1 mb-8 ">
+                          <TabsTrigger
+                            value="project-selection"
+                            className="bg-indigo-600 text-white"
+                          >
+                            Submit Project
+                          </TabsTrigger>
+                        </TabsList>
                       )}
-                    </Button>
+
+                      {/* Step 1: Select Project */}
+                      <TabsContent
+                        value="project-selection"
+                        className="space-y-8 animate-fade-in"
+                      >
+                        <div className="space-y-3 text-black">
+                          <Label className="text-black font-semibold">
+                            Select Project<span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            key={submittedProjectIds.join(",")}
+                            value={selectedProjectId}
+                            onValueChange={handleProjectSelect}
+                            required
+                            disabled={maxReached && !editingSubmission}
+                          >
+                            <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
+                              <SelectValue placeholder={allProjects.length === 0 ? "No projects available" : "Choose..."} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {allProjects.length === 0 ? (
+                                <div className="px-4 py-2 text-gray-500">No projects available. Create a project first.</div>
+                              ) : (
+                                <>
+                                  {/* Available projects */}
+                                  {allProjects
+                                    .filter(project =>
+                                      !submittedProjectIds.some(id => id.toString() === project._id.toString()) ||
+                                      (editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
+                                    )
+                                    .map((project) => (
+                                      <SelectItem
+                                        key={project._id}
+                                        value={project._id}
+                                        className="text-black"
+                                      >
+                                        {project.title}
+                                      </SelectItem>
+                                    ))
+                                  }
+                                  
+                                  {/* Submitted projects (disabled) */}
+                                  {allProjects
+                                    .filter(project =>
+                                      submittedProjectIds.some(id => id.toString() === project._id.toString()) &&
+                                      !(editingSubmission && (editingSubmission.projectId._id === project._id || editingSubmission.projectId === project._id))
+                                    )
+                                    .map((project) => (
+                                      <SelectItem
+                                        key={project._id}
+                                        value={project._id}
+                                        className="text-gray-400 cursor-not-allowed"
+                                        disabled={true}
+                                      >
+                                        {project.title} (Already Submitted)
+                                      </SelectItem>
+                                    ))
+                                  }
+                                  
+                                  <SelectItem
+                                    value="create-new"
+                                    className="text-indigo-600 font-semibold"
+                                  >
+                                    + Create New Project
+                                  </SelectItem>
+                                </>
+                              )}
+                            </SelectContent>
+                          </Select>
+                          {selectedProjectId === "create-new" && (
+                            <div className="mt-2 p-4 bg-indigo-50 rounded-lg border border-indigo-200 text-black">
+                              Please create your project from the <b>Projects</b>{" "}
+                              section before submitting.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Problem Statement Dropdown */}
+                        <div className="space-y-3 text-black">
+                          <Label className="text-black font-semibold">
+                            Problem Statement<span className="text-red-500">*</span>
+                          </Label>
+                          <Select
+                            value={selectedProblem}
+                            onValueChange={setSelectedProblem}
+                            required
+                            disabled={!hackathon.problemStatements || hackathon.problemStatements.length === 0}
+                          >
+                            <SelectTrigger className="border-indigo-300 focus:ring-2 focus:ring-indigo-400">
+                              <SelectValue placeholder={hackathon.problemStatements && hackathon.problemStatements.length > 0 ? "Select a problem statement..." : "No problem statements available"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {hackathon.problemStatements && hackathon.problemStatements.length > 0 ? (
+                                hackathon.problemStatements.map((statement, idx) => (
+                                  <SelectItem key={idx} value={statement} className="text-black">
+                                    {statement.length > 80 ? statement.slice(0, 80) + "..." : statement}
+                                  </SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-problem" disabled>No problem statements available</SelectItem>
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-3 text-black">
+                          {isLeader && teamMembers.length > 0 && (
+                            <div className="mb-4">
+                              <Label className="text-black font-semibold">Select Team Members to Include in Submission</Label>
+                              <div className="border border-indigo-300 rounded p-2 bg-white">
+                                {teamMembers.map(member => (
+                                  <label key={member._id} className="flex items-center space-x-2 mb-1">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedMembers.includes(member._id)}
+                                      onChange={e => {
+                                        if (e.target.checked) {
+                                          setSelectedMembers(prev => [...prev, member._id]);
+                                        } else {
+                                          setSelectedMembers(prev => prev.filter(id => id !== member._id));
+                                        }
+                                      }}
+                                      disabled={member._id === userId} // leader always included
+                                    />
+                                    <span>{member.name} {member._id === userId ? "(You)" : ""}</span>
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">You (leader) are always included in the submission.</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Team Management Section */}
+                        {selectedProjectId && selectedProjectId !== "create-new" && (
+                          <div className="mt-6">
+                            <ProjectTeamManagement
+                              project={allProjects.find(p => p._id === selectedProjectId)}
+                              hackathon={hackathon}
+                              user={user}
+                              toast={toast}
+                              onTeamUpdate={() => {
+                                // Refresh team data when team is updated
+                                const fetchTeam = async () => {
+                                  try {
+                                    const token = localStorage.getItem("token");
+                                    const hackathonId = hackathon._id || hackathon.id;
+                                    const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathonId}`, {
+                                      headers: { Authorization: `Bearer ${token}` },
+                                    });
+                                    const teams = await res.json();
+                                    if (Array.isArray(teams) && teams.length > 0) {
+                                      const user = JSON.parse(localStorage.getItem('user'));
+                                      const myTeam = teams.find(team => team.members.some(m => m._id === user._id));
+                                      if (myTeam) {
+                                        setTeamMembers(myTeam.members);
+                                        setIsLeader(myTeam.leader && myTeam.leader._id === user._id);
+                                        setSelectedMembers(myTeam.members.map(m => m._id));
+                                      }
+                                    }
+                                  } catch (err) {
+                                    setTeamMembers([]);
+                                    setIsLeader(false);
+                                  }
+                                };
+                                fetchTeam();
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex justify-end">
+                          {hasCustomForm ? (
+                            <>
+                              {/* Show guidance message when requirements not met */}
+                              {(!selectedProjectId || selectedProjectId === "create-new" || !selectedProblem) && (
+                                <div className="flex-1 text-sm text-gray-500">
+                                  {!selectedProjectId || selectedProjectId === "create-new" ? "Please select a project" : ""}
+                                  {(!selectedProjectId || selectedProjectId === "create-new") && !selectedProblem ? " and " : ""}
+                                  {!selectedProblem ? "choose a problem statement" : ""}
+                                  {" to proceed to Q&A & Submit"}
+                                </div>
+                              )}
+                              {(selectedProjectId && selectedProjectId !== "create-new" && selectedProblem) && (
+                                <div className="flex-1 text-sm text-green-600">
+                                  ✓ Ready to proceed to Q&A & Submit
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                onClick={() => setActiveTab("terms-submit")}
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
+                                disabled={
+                                  !selectedProjectId ||
+                                  selectedProjectId === "create-new" ||
+                                  !selectedProblem ||
+                                  submittedProjectIds.some(id => id.toString() === selectedProjectId.toString())
+                                }
+                              >
+                                Next <ChevronRight className="ml-2 h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              type="submit"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
+                              disabled={
+                                !selectedProjectId ||
+                                selectedProjectId === "create-new" ||
+                                !selectedProblem ||
+                                submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
+                                isSubmitting ||
+                                maxReached
+                              }
+                            >
+                              {isSubmitting ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                  Submitting...
+                                </>
+                              ) : (
+                                "Submit Project →"
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      {/* Step 2: Questions & Terms */}
+                      <TabsContent
+                        value="terms-submit"
+                        className="space-y-6 animate-fade-in"
+                      >
+                        {!hasCustomForm && (
+                          <div className="text-center py-8">
+                            <div className="text-gray-500 mb-4">
+                              <svg className="w-12 h-12 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <p className="text-lg font-medium text-gray-700">Ready to Submit!</p>
+                              <p className="text-sm text-gray-500">No additional questions or terms required.</p>
+                            </div>
+                          </div>
+                        )}
+                        {organizerQuestions.length > 0 && (
+                          <>
+                            <h3 className="text-xl font-bold text-black mb-2">
+                              Organizer Questions
+                            </h3>
+                            <div className="space-y-4">
+                              {organizerQuestions.map((q) => (
+                                <div key={q.id}>
+                                  <Label className="text-black font-medium">
+                                    {q.text}
+                                    {q.required && (
+                                      <span className="text-red-500 ml-1">*</span>
+                                    )}
+                                  </Label>
+                                  <Textarea
+                                    value={organizerAnswers[q.id] || ""}
+                                    onChange={(e) =>
+                                      handleOrganizerAnswer(q.id, e.target.value)
+                                    }
+                                    required={q.required}
+                                    className="mt-1 border-indigo-300 focus:ring-2 focus:ring-indigo-400 text-black"
+                                    placeholder="Type your answer..."
+                                  />
+                                  {q.required && (
+                                    <span className="text-xs text-indigo-500">
+                                      This question is required.
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+
+                        {termsAndConditions.length > 0 && (
+                          <>
+                            <h3 className="text-xl font-bold text-black mb-2">
+                              Terms & Conditions
+                            </h3>
+                            <div className="max-h-40 overflow-y-auto bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-2">
+                              <ul className="list-disc pl-6 space-y-1">
+                                {termsAndConditions.map((term, i) => (
+                                  <li key={i} className="text-sm text-black">
+                                    {term}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                            {hasTerms && (
+                              <label className="flex items-center space-x-2 text-sm text-black font-medium">
+                                <input
+                                  type="checkbox"
+                                  checked={agreedToTerms}
+                                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                  required
+                                  className="accent-indigo-600"
+                                />
+                                <span>I agree to the terms above</span>
+                              </label>
+                            )}
+                          </>
+                        )}
+
+                        <div className="flex justify-between pt-4">
+                          <Button
+                            type="button"
+                            onClick={() => setActiveTab("project-selection")}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg shadow transition-all"
+                          >
+                            <ChevronLeft className="mr-2 h-4 w-4" /> Back
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={
+                              (hasTerms && !agreedToTerms) || 
+                              (hasRequiredQuestions && !organizerQuestions.every(q => !q.required || organizerAnswers[q.id])) ||
+                              isSubmitting || 
+                              !selectedProjectId || 
+                              selectedProjectId === "create-new" || 
+                              !selectedProblem ||
+                              submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
+                              maxReached
+                            }
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isSubmitting ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                                Submitting...
+                              </>
+                            ) : (
+                              "Submit →"
+                            )}
+                          </Button>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* Success Overlay */}
+            {showSuccess && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center animate-fade-in">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                   </div>
-                </TabsContent>
-              </Tabs>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Success Overlay */}
-      {showSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center animate-fade-in">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Success!</h3>
-            <p className="text-gray-600 mb-6">Your project has been submitted successfully!</p>
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-            </div>
-            <p className="text-sm text-gray-500">Redirecting to My Hackathons...</p>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">Success!</h3>
+                  <p className="text-gray-600 mb-6">Your project has been submitted successfully!</p>
+                  <div className="flex items-center justify-center space-x-2 mb-4">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                  </div>
+                  <p className="text-sm text-gray-500">Redirecting to My Hackathons...</p>
+                </div>
+              </div>
+            )}
+            
+            {/* Animation for fade-in */}
+            <style>{`
+              .animate-fade-in {
+                animation: fadeIn 0.5s;
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(16px);}
+                to { opacity: 1; transform: translateY(0);}
+              }
+            `}</style>
           </div>
-        </div>
-      )}
-      
-      {/* Animation for fade-in */}
-      <style>{`
-        .animate-fade-in {
-          animation: fadeIn 0.5s;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(16px);}
-          to { opacity: 1; transform: translateY(0);}
-        }
-      `}</style>
-    </div>
-  );
-}
+        ) : null}
+      </div>
+    );
+}}

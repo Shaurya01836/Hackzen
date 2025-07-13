@@ -1,9 +1,17 @@
 const { Schema } = require('mongoose');
 
 const SubmissionSchema = new Schema({
-  projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+  projectId: { type: Schema.Types.ObjectId, ref: 'Project' }, // not required for all rounds
   hackathonId: { type: Schema.Types.ObjectId, ref: 'Hackathon', required: true },
   submittedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  roundIndex: { type: Number }, // index in hackathon.rounds
+  pptFile: { type: String }, // URL to uploaded PPT file
+  quizAnswers: [
+    {
+      questionId: { type: String },
+      answer: { type: String },
+    },
+  ],
   submittedAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['submitted', 'reviewed'], default: 'submitted' },
   problemStatement: { type: String },

@@ -19,7 +19,6 @@ exports.createHackathon = async (req, res) => {
       submissionDeadline,
       maxParticipants,
       status,
-      category,
       difficultyLevel,
       location,
       prizePool,
@@ -30,7 +29,8 @@ exports.createHackathon = async (req, res) => {
       tags,
       images,
       mode,
-      rounds,
+      rounds, // Each round can now include a 'type' field (e.g., quiz, ppt, idea, pitch, project)
+      sponsorProblems,
       judges, 
       mentors, 
       participants,
@@ -47,7 +47,6 @@ exports.createHackathon = async (req, res) => {
       submissionDeadline,
       maxParticipants,
       status,
-      category,
       difficultyLevel: difficultyLevel || 'Beginner',
       location,
       organizer: req.user.id,
@@ -64,6 +63,7 @@ exports.createHackathon = async (req, res) => {
       perks,
       tags,
       rounds,
+      sponsorProblems,
       judges,
       mentors,
       participants,
@@ -202,7 +202,6 @@ exports.updateHackathon = async (req, res) => {
       submissionDeadline,
       maxParticipants,
       status,
-      category,
       difficultyLevel,
       location,
       prizePool,
@@ -214,6 +213,7 @@ exports.updateHackathon = async (req, res) => {
       perks,
       tags,
       rounds,
+      sponsorProblems,
       judges,
       mentors,
       participants,
@@ -357,7 +357,6 @@ exports.updateHackathon = async (req, res) => {
       submissionDeadline,
       maxParticipants,
       status,
-      category,
       difficultyLevel,
       location,
       mode,
@@ -367,6 +366,7 @@ exports.updateHackathon = async (req, res) => {
       perks,
       tags,
       rounds,
+      sponsorProblems,
       images,
       judges,
       mentors,
@@ -924,5 +924,36 @@ exports.getCategoryBreakdown = async (req, res) => {
     res.json(pieData);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+// Organizer/Admin: Mark which participants advance to a round
+exports.markRoundAdvancement = async (req, res) => {
+  try {
+    const { id } = req.params; // hackathon id
+    const { roundIndex, advancedParticipantIds } = req.body;
+    const hackathon = await Hackathon.findById(id);
+    if (!hackathon) return res.status(404).json({ message: 'Hackathon not found' });
+
+    // Only organizer or admin can update
+    if (
+      req.user.role !== 'admin' &&
+      (!hackathon.organizer || hackathon.organizer.toString() !== req.user.id)
+    ) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    // Find or create roundProgress entry
+    let progress = hackathon.roundProgress.find(rp => rp.roundIndex === roundIndex);
+    if (progress) {
+      progress.advancedParticipantIds = advancedParticipantIds;
+    } else {
+      hackathon.roundProgress.push({ roundIndex, advancedParticipantIds });
+    }
+    await hackathon.save();
+    res.json({ success: true, roundProgress: hackathon.roundProgress });
+  } catch (err) {
+    console.error('Error in markRoundAdvancement:', err);
+    res.status(500).json({ message: 'Server error updating round advancement' });
   }
 };

@@ -53,6 +53,7 @@ export function CreateHackathon({ onBack }) {
     rounds: [
       {
         name: "",
+        type: "project", // Default round type
         description: "",
         startDate: "",
         endDate: "",
@@ -109,7 +110,6 @@ export function CreateHackathon({ onBack }) {
     // Step 0: Basic Info
     if (step === 0) {
       if (!formData.title.trim()) newErrors.title = "Title is required"
-      if (!formData.category) newErrors.category = "Category is required"
       if (!formData.teamSize.min || !formData.teamSize.max) {
         newErrors.teamSize = "Team size limits are required"
       } else if (formData.teamSize.min > formData.teamSize.max) {
@@ -255,6 +255,7 @@ export function CreateHackathon({ onBack }) {
           .filter((r) => r.name.trim())
           .map((r) => ({
             name: r.name,
+            type: r.type, // Include round type
             description: r.description,
             startDate: r.startDate ? new Date(r.startDate).toISOString() : null,
             endDate: r.endDate ? new Date(r.endDate).toISOString() : null,
@@ -414,6 +415,7 @@ export function CreateHackathon({ onBack }) {
         ...formData.rounds,
         {
           name: "",
+          type: "project", // Default round type
           description: "",
           startDate: "",
           endDate: "",
@@ -694,26 +696,7 @@ export function CreateHackathon({ onBack }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger className={errors.category ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
-                  </div>
-
+                  {/* Removed category selection */}
                   <div>
                     <Label htmlFor="difficultyLevel">Difficulty Level</Label>
                     <Select
@@ -963,7 +946,30 @@ export function CreateHackathon({ onBack }) {
                                   placeholder="e.g., Ideation Phase, Prototype Development..."
                                 />
                               </div>
-                              <div className="md:col-span-2">
+                              <div>
+                                <Label htmlFor={`round-type-${index}`}>Round Type</Label>
+                                <Select
+                                  value={round.type || ""}
+                                  onValueChange={value => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], type: value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select round type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                                    <SelectItem value="quiz">Quiz</SelectItem>
+                                    <SelectItem value="ppt">PPT Submission</SelectItem>
+                                    <SelectItem value="idea">Idea Submission</SelectItem>
+                                    <SelectItem value="pitch">Pitch</SelectItem>
+                                    <SelectItem value="project">Project Submission</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="md:col-span-2">
                                 <Label htmlFor={`round-description-${index}`}>Description</Label>
                                 <Textarea
                                   id={`round-description-${index}`}
@@ -977,7 +983,6 @@ export function CreateHackathon({ onBack }) {
                                   rows={2}
                                 />
                               </div>
-                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <Label htmlFor={`round-start-${index}`}>Start Date </Label>
