@@ -58,7 +58,8 @@ export function CreateHackathon({ onBack }) {
         endDate: "",
       },
     ],
-    maxSubmissionsPerParticipant: 1,
+    submissionType: "single-project", // new field
+    roundType: "single-round", // new field
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -69,6 +70,7 @@ export function CreateHackathon({ onBack }) {
     logo: { uploading: false, error: null },
     gallery: { uploading: false, error: null },
   })
+  const [invalidComboError, setInvalidComboError] = useState("");
 
   const formTopRef = useRef(null)
 
@@ -270,7 +272,6 @@ export function CreateHackathon({ onBack }) {
         judges: formData.judges, // ✅ Include this
         mentors: formData.mentors, // ✅ Include this
         participants: [],
-        maxSubmissionsPerParticipant: Number(formData.maxSubmissionsPerParticipant) || 1,
       }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
@@ -866,17 +867,164 @@ export function CreateHackathon({ onBack }) {
                     </div>
                   </div>
                 </div>
-                <Label htmlFor="maxSubmissionsPerParticipant" className="block mt-4">Max Submission of Projects Per Team</Label>
-                <Input
-                  id="maxSubmissionsPerParticipant"
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={formData.maxSubmissionsPerParticipant}
-                  onChange={e => setFormData(prev => ({ ...prev, maxSubmissionsPerParticipant: parseInt(e.target.value) || 1 }))}
-                  className="w-32"
-                />
                 {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Submission Type *</Label>
+                    <Select
+                      value={formData.submissionType}
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({ ...prev, submissionType: value }));
+                        // Check for invalid combination
+                        if (value === "multi-project" && formData.roundType === "multi-round") {
+                          setInvalidComboError("Multi Project + Multi Round is not allowed.");
+                        } else {
+                          setInvalidComboError("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single-project">Single Project</SelectItem>
+                        <SelectItem value="multi-project">Multiple Projects</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Round Type *</Label>
+                    <Select
+                      value={formData.roundType}
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({ ...prev, roundType: value }));
+                        // Check for invalid combination
+                        if (formData.submissionType === "multi-project" && value === "multi-round") {
+                          setInvalidComboError("Multi Project + Multi Round is not allowed.");
+                        } else {
+                          setInvalidComboError("");
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single-round">Single Round</SelectItem>
+                        <SelectItem value="multi-round">Multi Round</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {invalidComboError && (
+                  <div className="text-red-600 text-sm font-medium mt-2">{invalidComboError}</div>
+                )}
+                {/* Show rounds section only if multi-round is selected and valid combination */}
+                {(formData.roundType === "single-round" || (formData.roundType === "multi-round" && formData.submissionType === "single-project")) && !invalidComboError && (
+                  <div className="mt-4">
+                    <Label>Rounds *</Label>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Hackathon Rounds</CardTitle>
+                        <CardDescription>Define the round(s) of your hackathon</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {(formData.roundType === "single-round"
+                          ? [formData.rounds[0] || { name: "", description: "", startDate: "", endDate: "" }]
+                          : formData.rounds
+                        ).map((round, index) => (
+                          <div key={index} className="p-4 border rounded-lg space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">Round {index + 1}</h4>
+                              {formData.roundType === "multi-round" && formData.rounds.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeRound(index)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`round-name-${index}`}>Round Name</Label>
+                                <Input
+                                  id={`round-name-${index}`}
+                                  value={round.name}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], name: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                  placeholder="e.g., Ideation Phase, Prototype Development..."
+                                />
+                              </div>
+                              <div className="md:col-span-2">
+                                <Label htmlFor={`round-description-${index}`}>Description</Label>
+                                <Textarea
+                                  id={`round-description-${index}`}
+                                  value={round.description}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], description: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                  placeholder="Describe what happens in this round..."
+                                  rows={2}
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`round-start-${index}`}>Start Date </Label>
+                                <Input
+                                  id={`round-start-${index}`}
+                                  type="datetime-local"
+                                  value={round.startDate}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], startDate: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`round-end-${index}`}>End Date</Label>
+                                <Input
+                                  id={`round-end-${index}`}
+                                  type="datetime-local"
+                                  value={round.endDate}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], endDate: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {formData.roundType === "multi-round" && (
+                          <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Round
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                    {/* Validation messages */}
+                    {formData.roundType === "single-round" && (!formData.rounds[0]?.name || !formData.rounds[0]?.description || !formData.rounds[0]?.startDate || !formData.rounds[0]?.endDate) && (
+                      <div className="text-red-600 text-xs mt-1">All round fields are required.</div>
+                    )}
+                    {formData.roundType === "multi-round" && formData.rounds.length === 0 && (
+                      <div className="text-red-600 text-xs mt-1">At least one round is required.</div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
@@ -1126,80 +1274,7 @@ export function CreateHackathon({ onBack }) {
               </CardContent>
             </Card>
 
-            {/* Hackathon Rounds */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Hackathon Rounds</CardTitle>
-                <CardDescription>Define the different rounds of your hackathon</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {formData.rounds.map((round, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Round {index + 1}</h4>
-                      {formData.rounds.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeRound(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`round-name-${index}`}>Round Name</Label>
-                        <Input
-                          id={`round-name-${index}`}
-                          value={round.name}
-                          onChange={(e) => updateRound(index, "name", e.target.value)}
-                          placeholder="e.g., Ideation Phase, Prototype Development..."
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label htmlFor={`round-description-${index}`}>Description</Label>
-                        <Textarea
-                          id={`round-description-${index}`}
-                          value={round.description}
-                          onChange={(e) => updateRound(index, "description", e.target.value)}
-                          placeholder="Describe what happens in this round..."
-                          rows={2}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`round-start-${index}`}>Start Date (Optional)</Label>
-                        <Input
-                          id={`round-start-${index}`}
-                          type="datetime-local"
-                          value={round.startDate}
-                          onChange={(e) => updateRound(index, "startDate", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`round-end-${index}`}>End Date (Optional)</Label>
-                        <Input
-                          id={`round-end-${index}`}
-                          type="datetime-local"
-                          value={round.endDate}
-                          onChange={(e) => updateRound(index, "endDate", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Round
-                </Button>
-              </CardContent>
-            </Card>
+            
           </>
         )}
         {step === 3 && (

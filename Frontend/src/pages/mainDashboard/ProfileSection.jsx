@@ -24,6 +24,8 @@ import {
   UserCircle2,
   Info,
   Shield,
+  Check,
+  X
 } from "lucide-react";
 import {
   Card,
@@ -150,9 +152,68 @@ export function ProfileSection() {
     github: "",
     linkedin: "",
     bannerImage: "",
+    // New fields from CompleteProfile
+    gender: "prefer-not-to-say",
+    userType: "",
+    domain: "",
+    course: "",
+    courseDuration: "",
+    collegeName: "",
+    country: "",
+    city: "",
+    courseSpecialization: "",
+    companyName: "",
+    jobTitle: "",
+    yearsOfExperience: "",
+    currentYear: "",
+    skills: "",
+    interests: "",
+    twitter: "",
+    instagram: "",
+    portfolio: "",
+    preferredHackathonTypes: "",
+    teamSizePreference: "any"
   });
 
+  // Inline editing state
+  const [inlineEditing, setInlineEditing] = useState({
+    personal: false,
+    academic: false,
+    institution: false,
+    professional: false,
+    skills: false,
+    preferences: false,
+    social: false,
+    all: false
+  });
 
+  const [inlineForm, setInlineForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    bio: "",
+    gender: "",
+    userType: "",
+    domain: "",
+    course: "",
+    courseDuration: "",
+    collegeName: "",
+    country: "",
+    city: "",
+    courseSpecialization: "",
+    companyName: "",
+    jobTitle: "",
+    yearsOfExperience: "",
+    currentYear: "",
+    skills: "",
+    interests: "",
+    twitter: "",
+    instagram: "",
+    portfolio: "",
+    preferredHackathonTypes: "",
+    teamSizePreference: ""
+  });
 
   // Fetch 2FA status from backend
   const fetch2FAStatus = async () => {
@@ -617,97 +678,422 @@ export function ProfileSection() {
       {/* Comprehensive Profile Information */}
       <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
         <div className="space-y-6 p-8">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
-              <UserCircle2 className="w-4 h-4 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
+                <UserCircle2 className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800">Profile Information</h3>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">Profile Information</h3>
+            <button
+              onClick={() => startInlineEdit('all')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Edit All Profile Details"
+            >
+              <SquarePen className="w-4 h-4 text-gray-600" />
+            </button>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Gender</span>
-                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.gender?.replace(/-/g, " ") || "Not specified"}</span>
+          {inlineEditing.all ? (
+            <div className="space-y-6 bg-blue-50 p-6 rounded-lg border border-blue-200">
+              {/* Personal Details */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Gender</Label>
+                    <select
+                      value={inlineForm.gender}
+                      onChange={(e) => handleInlineChange('gender', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">User Type</Label>
+                    <select
+                      value={inlineForm.userType}
+                      onChange={(e) => handleInlineChange('userType', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select user type</option>
+                      <option value="school">School Student</option>
+                      <option value="college">College Student</option>
+                      <option value="fresher">Fresher</option>
+                      <option value="professional">Professional</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Domain</Label>
+                    <select
+                      value={inlineForm.domain}
+                      onChange={(e) => handleInlineChange('domain', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select domain</option>
+                      <option value="engineering">Engineering</option>
+                      <option value="computer-science">Computer Science</option>
+                      <option value="information-technology">Information Technology</option>
+                      <option value="data-science">Data Science</option>
+                      <option value="artificial-intelligence">Artificial Intelligence</option>
+                      <option value="machine-learning">Machine Learning</option>
+                      <option value="cybersecurity">Cybersecurity</option>
+                      <option value="web-development">Web Development</option>
+                      <option value="mobile-development">Mobile Development</option>
+                      <option value="game-development">Game Development</option>
+                      <option value="design">Design</option>
+                      <option value="business">Business</option>
+                      <option value="management">Management</option>
+                      <option value="finance">Finance</option>
+                      <option value="marketing">Marketing</option>
+                      <option value="law">Law</option>
+                      <option value="medicine">Medicine</option>
+                      <option value="pharmacy">Pharmacy</option>
+                      <option value="nursing">Nursing</option>
+                      <option value="architecture">Architecture</option>
+                      <option value="arts">Arts</option>
+                      <option value="humanities">Humanities</option>
+                      <option value="social-sciences">Social Sciences</option>
+                      <option value="education">Education</option>
+                      <option value="agriculture">Agriculture</option>
+                      <option value="environmental-science">Environmental Science</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">User Type</span>
-                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.userType?.replace(/-/g, " ") || "Not specified"}</span>
+              </div>
+
+              {/* Academic Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Course</Label>
+                    <Input
+                      value={inlineForm.course}
+                      onChange={(e) => handleInlineChange('course', e.target.value)}
+                      placeholder="e.g., Computer Science"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Course Duration</Label>
+                    <select
+                      value={inlineForm.courseDuration}
+                      onChange={(e) => handleInlineChange('courseDuration', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select duration</option>
+                      <option value="1-year">1 Year</option>
+                      <option value="2-years">2 Years</option>
+                      <option value="3-years">3 Years</option>
+                      <option value="4-years">4 Years</option>
+                      <option value="5-years">5 Years</option>
+                      <option value="6-years">6 Years</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Current Year</Label>
+                    <select
+                      value={inlineForm.currentYear}
+                      onChange={(e) => handleInlineChange('currentYear', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select year</option>
+                      <option value="1st-year">1st Year</option>
+                      <option value="2nd-year">2nd Year</option>
+                      <option value="3rd-year">3rd Year</option>
+                      <option value="4th-year">4th Year</option>
+                      <option value="final-year">Final Year</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Specialization</Label>
+                    <Input
+                      value={inlineForm.courseSpecialization}
+                      onChange={(e) => handleInlineChange('courseSpecialization', e.target.value)}
+                      placeholder="e.g., Software Engineering"
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Domain</span>
-                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.domain?.replace(/-/g, " ") || "Not specified"}</span>
+              </div>
+
+              {/* Institution Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">College/University Name</Label>
+                    <Input
+                      value={inlineForm.collegeName}
+                      onChange={(e) => handleInlineChange('collegeName', e.target.value)}
+                      placeholder="Enter your college/university name"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Country</Label>
+                    <Input
+                      value={inlineForm.country}
+                      onChange={(e) => handleInlineChange('country', e.target.value)}
+                      placeholder="Enter your country"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">City</Label>
+                    <Input
+                      value={inlineForm.city}
+                      onChange={(e) => handleInlineChange('city', e.target.value)}
+                      placeholder="Enter your city"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Company Name</Label>
+                    <Input
+                      value={inlineForm.companyName}
+                      onChange={(e) => handleInlineChange('companyName', e.target.value)}
+                      placeholder="Enter your company name"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Job Title</Label>
+                    <Input
+                      value={inlineForm.jobTitle}
+                      onChange={(e) => handleInlineChange('jobTitle', e.target.value)}
+                      placeholder="Enter your job title"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Years of Experience</Label>
+                    <select
+                      value={inlineForm.yearsOfExperience}
+                      onChange={(e) => handleInlineChange('yearsOfExperience', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select experience</option>
+                      <option value="0-1">0-1 years</option>
+                      <option value="1-2">1-2 years</option>
+                      <option value="2-3">2-3 years</option>
+                      <option value="3-5">3-5 years</option>
+                      <option value="5-10">5-10 years</option>
+                      <option value="10+">10+ years</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skills and Interests */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Skills (comma separated)</Label>
+                    <Input
+                      value={inlineForm.skills}
+                      onChange={(e) => handleInlineChange('skills', e.target.value)}
+                      placeholder="e.g., JavaScript, Python, React"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Interests (comma separated)</Label>
+                    <Input
+                      value={inlineForm.interests}
+                      onChange={(e) => handleInlineChange('interests', e.target.value)}
+                      placeholder="e.g., AI, Web Development, Blockchain"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Hackathon Preferences */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Team Size Preference</Label>
+                    <select
+                      value={inlineForm.teamSizePreference}
+                      onChange={(e) => handleInlineChange('teamSizePreference', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="any">Any</option>
+                      <option value="solo">Solo</option>
+                      <option value="2-3">2-3</option>
+                      <option value="4-5">4-5</option>
+                      <option value="6+">6+</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Preferred Hackathon Types (comma separated)</Label>
+                    <Input
+                      value={inlineForm.preferredHackathonTypes}
+                      onChange={(e) => handleInlineChange('preferredHackathonTypes', e.target.value)}
+                      placeholder="e.g., web-development, ai-ml, blockchain"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Social Links */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-600">Twitter</Label>
+                    <Input
+                      value={inlineForm.twitter}
+                      onChange={(e) => handleInlineChange('twitter', e.target.value)}
+                      placeholder="https://twitter.com/username"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Instagram</Label>
+                    <Input
+                      value={inlineForm.instagram}
+                      onChange={(e) => handleInlineChange('instagram', e.target.value)}
+                      placeholder="https://instagram.com/username"
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Portfolio</Label>
+                    <Input
+                      value={inlineForm.portfolio}
+                      onChange={(e) => handleInlineChange('portfolio', e.target.value)}
+                      placeholder="https://your-portfolio.com"
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Save/Cancel Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-blue-200">
+                <Button
+                  onClick={() => saveInlineEdit('all')}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="w-4 h-4" />
+                  Save All Changes
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => cancelInlineEdit('all')}
+                  className="flex items-center gap-2"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Gender</span>
+                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.gender?.replace(/-/g, " ") || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">User Type</span>
+                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.userType?.replace(/-/g, " ") || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Domain</span>
+                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.domain?.replace(/-/g, " ") || "Not specified"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Details</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Course</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.course || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Course Duration</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.courseDuration || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Current Year</span>
+                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.currentYear?.replace(/-/g, " ") || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Specialization</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.courseSpecialization || "Not specified"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Institution Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">College/University</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.collegeName || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Country</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.country || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">City</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.city || "Not specified"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Company</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.companyName || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Job Title</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.jobTitle || "Not specified"}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Experience</span>
+                    <span className="text-sm font-medium text-gray-800">{user?.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"}</span>
+                  </div>
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Academic Information */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Details</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Course</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.course || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Course Duration</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.courseDuration || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Current Year</span>
-                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.currentYear?.replace(/-/g, " ") || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Specialization</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.courseSpecialization || "Not specified"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Institution Information */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">College/University</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.collegeName || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Country</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.country || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">City</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.city || "Not specified"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Professional Information */}
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Company</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.companyName || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Job Title</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.jobTitle || "Not specified"}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Experience</span>
-                  <span className="text-sm font-medium text-gray-800">{user?.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Skills and Interests */}
-          {(user?.skills?.length > 0 || user?.interests?.length > 0) && (
+          {/* Skills and Interests Display */}
+          {(user?.skills?.length > 0 || user?.interests?.length > 0) && !inlineEditing.all && (
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
               <div className="grid md:grid-cols-2 gap-4">
@@ -739,31 +1125,33 @@ export function ProfileSection() {
             </div>
           )}
 
-          {/* Hackathon Preferences */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Team Size Preference</span>
-                <span className="text-sm font-medium text-gray-800 capitalize">{user?.teamSizePreference || "Any"}</span>
-              </div>
-              {user?.preferredHackathonTypes?.length > 0 && (
-                <div>
-                  <h5 className="text-sm font-medium text-gray-600 mb-2">Preferred Hackathon Types</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {user.preferredHackathonTypes.map((type, index) => (
-                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
-                        {type.replace(/-/g, " ")}
-                      </span>
-                    ))}
-                  </div>
+          {/* Hackathon Preferences Display */}
+          {!inlineEditing.all && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Team Size Preference</span>
+                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.teamSizePreference || "Any"}</span>
                 </div>
-              )}
+                {user?.preferredHackathonTypes?.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-600 mb-2">Preferred Hackathon Types</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {user.preferredHackathonTypes.map((type, index) => (
+                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                          {type.replace(/-/g, " ")}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Additional Social Links */}
-          {(user?.twitter || user?.instagram || user?.portfolio) && (
+          {/* Additional Social Links Display */}
+          {(user?.twitter || user?.instagram || user?.portfolio) && !inlineEditing.all && (
             <div className="space-y-4">
               <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
               <div className="space-y-3">
@@ -1119,314 +1507,7 @@ export function ProfileSection() {
         </CardContent>
       </Card>
 
-      {/* Comprehensive Profile Information Section */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>Update your comprehensive profile details</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          {/* Personal Details */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="gender">Gender</Label>
-                <select
-                  id="gender"
-                  value={editForm.gender}
-                  onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="prefer-not-to-say">Prefer not to say</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="userType">User Type</Label>
-                <select
-                  id="userType"
-                  value={editForm.userType}
-                  onChange={(e) => setEditForm({ ...editForm, userType: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select user type</option>
-                  <option value="school">School Student</option>
-                  <option value="college">College Student</option>
-                  <option value="fresher">Fresher</option>
-                  <option value="professional">Professional</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="domain">Domain</Label>
-                <select
-                  id="domain"
-                  value={editForm.domain}
-                  onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select domain</option>
-                  <option value="engineering">Engineering</option>
-                  <option value="computer-science">Computer Science</option>
-                  <option value="information-technology">Information Technology</option>
-                  <option value="data-science">Data Science</option>
-                  <option value="artificial-intelligence">Artificial Intelligence</option>
-                  <option value="machine-learning">Machine Learning</option>
-                  <option value="cybersecurity">Cybersecurity</option>
-                  <option value="web-development">Web Development</option>
-                  <option value="mobile-development">Mobile Development</option>
-                  <option value="game-development">Game Development</option>
-                  <option value="design">Design</option>
-                  <option value="business">Business</option>
-                  <option value="management">Management</option>
-                  <option value="finance">Finance</option>
-                  <option value="marketing">Marketing</option>
-                  <option value="law">Law</option>
-                  <option value="medicine">Medicine</option>
-                  <option value="pharmacy">Pharmacy</option>
-                  <option value="nursing">Nursing</option>
-                  <option value="architecture">Architecture</option>
-                  <option value="arts">Arts</option>
-                  <option value="humanities">Humanities</option>
-                  <option value="social-sciences">Social Sciences</option>
-                  <option value="education">Education</option>
-                  <option value="agriculture">Agriculture</option>
-                  <option value="environmental-science">Environmental Science</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-          </div>
 
-          {/* Academic Information */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Information</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="course">Course</Label>
-                <Input
-                  id="course"
-                  value={editForm.course}
-                  onChange={(e) => setEditForm({ ...editForm, course: e.target.value })}
-                  placeholder="e.g., Computer Science, Engineering"
-                />
-              </div>
-              <div>
-                <Label htmlFor="courseDuration">Course Duration</Label>
-                <select
-                  id="courseDuration"
-                  value={editForm.courseDuration}
-                  onChange={(e) => setEditForm({ ...editForm, courseDuration: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select duration</option>
-                  <option value="1-year">1 Year</option>
-                  <option value="2-years">2 Years</option>
-                  <option value="3-years">3 Years</option>
-                  <option value="4-years">4 Years</option>
-                  <option value="5-years">5 Years</option>
-                  <option value="6-years">6 Years</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="currentYear">Current Year</Label>
-                <select
-                  id="currentYear"
-                  value={editForm.currentYear}
-                  onChange={(e) => setEditForm({ ...editForm, currentYear: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select year</option>
-                  <option value="1st-year">1st Year</option>
-                  <option value="2nd-year">2nd Year</option>
-                  <option value="3rd-year">3rd Year</option>
-                  <option value="4th-year">4th Year</option>
-                  <option value="final-year">Final Year</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="courseSpecialization">Course Specialization</Label>
-                <Input
-                  id="courseSpecialization"
-                  value={editForm.courseSpecialization}
-                  onChange={(e) => setEditForm({ ...editForm, courseSpecialization: e.target.value })}
-                  placeholder="e.g., Software Engineering, Data Science"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Institution Information */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="collegeName">College/University Name</Label>
-                <Input
-                  id="collegeName"
-                  value={editForm.collegeName}
-                  onChange={(e) => setEditForm({ ...editForm, collegeName: e.target.value })}
-                  placeholder="Enter your college/university name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={editForm.country}
-                  onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
-                  placeholder="Enter your country"
-                />
-              </div>
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={editForm.city}
-                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                  placeholder="Enter your city"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Professional Information */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="companyName">Company Name</Label>
-                <Input
-                  id="companyName"
-                  value={editForm.companyName}
-                  onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
-                  placeholder="Enter your company name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="jobTitle">Job Title</Label>
-                <Input
-                  id="jobTitle"
-                  value={editForm.jobTitle}
-                  onChange={(e) => setEditForm({ ...editForm, jobTitle: e.target.value })}
-                  placeholder="Enter your job title"
-                />
-              </div>
-              <div>
-                <Label htmlFor="yearsOfExperience">Years of Experience</Label>
-                <select
-                  id="yearsOfExperience"
-                  value={editForm.yearsOfExperience}
-                  onChange={(e) => setEditForm({ ...editForm, yearsOfExperience: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select experience</option>
-                  <option value="0-1">0-1 years</option>
-                  <option value="1-2">1-2 years</option>
-                  <option value="2-3">2-3 years</option>
-                  <option value="3-5">3-5 years</option>
-                  <option value="5-10">5-10 years</option>
-                  <option value="10+">10+ years</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Skills and Interests */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="skills">Skills (comma separated)</Label>
-                <Input
-                  id="skills"
-                  value={editForm.skills}
-                  onChange={(e) => setEditForm({ ...editForm, skills: e.target.value })}
-                  placeholder="e.g., JavaScript, Python, React"
-                />
-              </div>
-              <div>
-                <Label htmlFor="interests">Interests (comma separated)</Label>
-                <Input
-                  id="interests"
-                  value={editForm.interests}
-                  onChange={(e) => setEditForm({ ...editForm, interests: e.target.value })}
-                  placeholder="e.g., AI, Web Development, Blockchain"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Social Links */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="twitter">Twitter</Label>
-                <Input
-                  id="twitter"
-                  value={editForm.twitter}
-                  onChange={(e) => setEditForm({ ...editForm, twitter: e.target.value })}
-                  placeholder="https://twitter.com/username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="instagram">Instagram</Label>
-                <Input
-                  id="instagram"
-                  value={editForm.instagram}
-                  onChange={(e) => setEditForm({ ...editForm, instagram: e.target.value })}
-                  placeholder="https://instagram.com/username"
-                />
-              </div>
-              <div>
-                <Label htmlFor="portfolio">Portfolio</Label>
-                <Input
-                  id="portfolio"
-                  value={editForm.portfolio}
-                  onChange={(e) => setEditForm({ ...editForm, portfolio: e.target.value })}
-                  placeholder="https://your-portfolio.com"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Hackathon Preferences */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="teamSizePreference">Team Size Preference</Label>
-                <select
-                  id="teamSizePreference"
-                  value={editForm.teamSizePreference}
-                  onChange={(e) => setEditForm({ ...editForm, teamSizePreference: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="any">Any</option>
-                  <option value="solo">Solo</option>
-                  <option value="2-3">2-3</option>
-                  <option value="4-5">4-5</option>
-                  <option value="6+">6+</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="preferredHackathonTypes">Preferred Hackathon Types (comma separated)</Label>
-                <Input
-                  id="preferredHackathonTypes"
-                  value={editForm.preferredHackathonTypes}
-                  onChange={(e) => setEditForm({ ...editForm, preferredHackathonTypes: e.target.value })}
-                  placeholder="e.g., web-development, ai-ml, blockchain"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Save + Cancel Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-start">
@@ -2203,6 +2284,175 @@ export function ProfileSection() {
     await handleSaveChanges();
     setPendingSave(false);
     setShowConfirmDialog(false);
+  };
+
+  // Inline editing functions
+  const startInlineEdit = (section) => {
+    setInlineEditing(prev => ({ ...prev, [section]: true }));
+    // Initialize inline form with current user data
+    setInlineForm({
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      location: user?.location || "",
+      bio: user?.bio || "",
+      gender: user?.gender || "prefer-not-to-say",
+      userType: user?.userType || "",
+      domain: user?.domain || "",
+      course: user?.course || "",
+      courseDuration: user?.courseDuration || "",
+      collegeName: user?.collegeName || "",
+      country: user?.country || "",
+      city: user?.city || "",
+      courseSpecialization: user?.courseSpecialization || "",
+      companyName: user?.companyName || "",
+      jobTitle: user?.jobTitle || "",
+      yearsOfExperience: user?.yearsOfExperience || "",
+      currentYear: user?.currentYear || "",
+      skills: user?.skills ? user.skills.join(", ") : "",
+      interests: user?.interests ? user.interests.join(", ") : "",
+      twitter: user?.twitter || "",
+      instagram: user?.instagram || "",
+      portfolio: user?.portfolio || "",
+      preferredHackathonTypes: user?.preferredHackathonTypes ? user.preferredHackathonTypes.join(", ") : "",
+      teamSizePreference: user?.teamSizePreference || "any"
+    });
+  };
+
+  const cancelInlineEdit = (section) => {
+    setInlineEditing(prev => ({ ...prev, [section]: false }));
+  };
+
+  const saveInlineEdit = async (section) => {
+    if (!user?._id || !token) {
+      alert("User not logged in. Please log in again.");
+      return;
+    }
+
+    // Process array fields - convert comma-separated strings to arrays
+    const processArrayField = (field) => {
+      if (!field || typeof field !== 'string') return [];
+      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    };
+
+    // Determine which fields to update based on section
+    let updates = {};
+    
+    switch (section) {
+      case 'all':
+        updates = {
+          name: inlineForm.name,
+          email: inlineForm.email,
+          phone: inlineForm.phone,
+          location: inlineForm.location,
+          bio: inlineForm.bio,
+          gender: inlineForm.gender,
+          userType: inlineForm.userType,
+          domain: inlineForm.domain,
+          course: inlineForm.course,
+          courseDuration: inlineForm.courseDuration,
+          collegeName: inlineForm.collegeName,
+          country: inlineForm.country,
+          city: inlineForm.city,
+          courseSpecialization: inlineForm.courseSpecialization,
+          companyName: inlineForm.companyName,
+          jobTitle: inlineForm.jobTitle,
+          yearsOfExperience: inlineForm.yearsOfExperience,
+          currentYear: inlineForm.currentYear,
+          skills: processArrayField(inlineForm.skills),
+          interests: processArrayField(inlineForm.interests),
+          twitter: inlineForm.twitter,
+          instagram: inlineForm.instagram,
+          portfolio: inlineForm.portfolio,
+          preferredHackathonTypes: processArrayField(inlineForm.preferredHackathonTypes),
+          teamSizePreference: inlineForm.teamSizePreference
+        };
+        break;
+      case 'personal':
+        updates = {
+          name: inlineForm.name,
+          email: inlineForm.email,
+          phone: inlineForm.phone,
+          location: inlineForm.location,
+          bio: inlineForm.bio,
+          gender: inlineForm.gender,
+          userType: inlineForm.userType,
+          domain: inlineForm.domain
+        };
+        break;
+      case 'academic':
+        updates = {
+          course: inlineForm.course,
+          courseDuration: inlineForm.courseDuration,
+          currentYear: inlineForm.currentYear,
+          courseSpecialization: inlineForm.courseSpecialization
+        };
+        break;
+      case 'institution':
+        updates = {
+          collegeName: inlineForm.collegeName,
+          country: inlineForm.country,
+          city: inlineForm.city
+        };
+        break;
+      case 'professional':
+        updates = {
+          companyName: inlineForm.companyName,
+          jobTitle: inlineForm.jobTitle,
+          yearsOfExperience: inlineForm.yearsOfExperience
+        };
+        break;
+      case 'skills':
+        updates = {
+          skills: processArrayField(inlineForm.skills),
+          interests: processArrayField(inlineForm.interests)
+        };
+        break;
+      case 'preferences':
+        updates = {
+          preferredHackathonTypes: processArrayField(inlineForm.preferredHackathonTypes),
+          teamSizePreference: inlineForm.teamSizePreference
+        };
+        break;
+      case 'social':
+        updates = {
+          twitter: inlineForm.twitter,
+          instagram: inlineForm.instagram,
+          portfolio: inlineForm.portfolio
+        };
+        break;
+    }
+
+    try {
+      const res = await axios.put(
+        `http://localhost:3000/api/users/${user._id}`,
+        updates,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const updatedUser = res.data;
+
+      // 🔄 Sync context and localStorage
+      login(updatedUser, token);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      // Close inline editing
+      setInlineEditing(prev => ({ ...prev, [section]: false }));
+
+      // Show success message
+      alert("Profile updated successfully!");
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Failed to update profile");
+    }
+  };
+
+  const handleInlineChange = (field, value) => {
+    setInlineForm(prev => ({ ...prev, [field]: value }));
   };
 
   return (
