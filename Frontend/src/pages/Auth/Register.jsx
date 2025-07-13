@@ -44,8 +44,10 @@ function Register({ onClose, onSwitchToLogin }) {
       // Call onClose if provided
       if (onClose) onClose();
 
-      // Navigate to redirectTo if specified, otherwise to dashboard
-      if (redirectTo) {
+      // Redirect based on profile completion
+      if (!res.data.user.profileCompleted) {
+        navigate("/complete-profile");
+      } else if (redirectTo) {
         navigate(redirectTo);
       } else {
         navigate("/dashboard");

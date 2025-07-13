@@ -72,7 +72,8 @@ const registerUser = async (req, res) => {
             _id: existingUser._id,
             name: existingUser.name,
             email: existingUser.email,
-            role: existingUser.role
+            role: existingUser.role,
+            profileCompleted: existingUser.profileCompleted || false
           },
           token: generateToken(existingUser)
         });
@@ -90,7 +91,8 @@ const registerUser = async (req, res) => {
       passwordHash,
       authProvider: 'email',
       role: isAdminEmail ? 'admin' : undefined,
-      bannerImage: "/assets/default-banner.png"
+      bannerImage: "/assets/default-banner.png",
+      profileCompleted: false
     });
 
     res.status(201).json({
@@ -98,7 +100,8 @@ const registerUser = async (req, res) => {
         _id: newUser._id,
         name: newUser.name,
         email: newUser.email,
-        role: newUser.role
+        role: newUser.role,
+        profileCompleted: newUser.profileCompleted || false
       },
       token: generateToken(newUser)
     });
@@ -127,7 +130,8 @@ const loginUser = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        profileCompleted: user.profileCompleted || false
       },
       token: generateToken(user)
     });
@@ -216,7 +220,13 @@ const updateUser = async (req, res) => {
   try {
     const allowedFields = [
       "name", "phone", "location", "bio", "website", "github",
-      "githubUsername", "linkedin", "profileImage", "bannerImage"
+      "githubUsername", "linkedin", "profileImage", "bannerImage",
+      // New fields from CompleteProfile
+      "gender", "userType", "domain", "course", "courseDuration", 
+      "collegeName", "country", "city", "courseSpecialization",
+      "companyName", "jobTitle", "yearsOfExperience", "currentYear",
+      "skills", "interests", "twitter", "instagram", "portfolio",
+      "preferredHackathonTypes", "teamSizePreference"
     ];
 
     if (req.user.role === "admin") {
@@ -682,6 +692,41 @@ const getWeeklyEngagementStats = async (req, res) => {
   }
 };
 
+// Complete user profile after registration
+const completeProfile = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (!req.user || req.user._id.toString() !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+    const updateFields = { ...req.body, profileCompleted: true };
+    // Remove fields that should not be updated directly
+    delete updateFields._id;
+    delete updateFields.email; // Email should not be changed here
+    delete updateFields.passwordHash;
+    delete updateFields.authProvider;
+    delete updateFields.createdAt;
+    delete updateFields.role;
+    delete updateFields.twoFA;
+    delete updateFields.badges;
+    delete updateFields.hackathonsJoined;
+    delete updateFields.registeredHackathonIds;
+    delete updateFields.projects;
+    delete updateFields.organization;
+    delete updateFields.applicationStatus;
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateFields },
+      { new: true }
+    );
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
@@ -701,6 +746,7 @@ module.exports = {
   getUserRoleBreakdown,
   getJudgeStats,
   getWeeklyEngagementStats,
+  completeProfile,
 };
 
 

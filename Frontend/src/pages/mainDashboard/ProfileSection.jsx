@@ -311,6 +311,27 @@ export function ProfileSection() {
         linkedin: data.linkedin || "",
         profileImage: data.profileImage || "",
         bannerImage: data.bannerImage || "",
+        // New fields from CompleteProfile
+        gender: data.gender || "prefer-not-to-say",
+        userType: data.userType || "",
+        domain: data.domain || "",
+        course: data.course || "",
+        courseDuration: data.courseDuration || "",
+        collegeName: data.collegeName || "",
+        country: data.country || "",
+        city: data.city || "",
+        courseSpecialization: data.courseSpecialization || "",
+        companyName: data.companyName || "",
+        jobTitle: data.jobTitle || "",
+        yearsOfExperience: data.yearsOfExperience || "",
+        currentYear: data.currentYear || "",
+        skills: data.skills ? data.skills.join(", ") : "",
+        interests: data.interests ? data.interests.join(", ") : "",
+        twitter: data.twitter || "",
+        instagram: data.instagram || "",
+        portfolio: data.portfolio || "",
+        preferredHackathonTypes: data.preferredHackathonTypes ? data.preferredHackathonTypes.join(", ") : "",
+        teamSizePreference: data.teamSizePreference || "any"
       });
 
       // Optional: update local context
@@ -592,6 +613,212 @@ export function ProfileSection() {
           </div>
         </div>
       </Card>
+      
+      {/* Comprehensive Profile Information */}
+      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
+        <div className="space-y-6 p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
+              <UserCircle2 className="w-4 h-4 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800">Profile Information</h3>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Personal Information */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Gender</span>
+                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.gender?.replace(/-/g, " ") || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">User Type</span>
+                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.userType?.replace(/-/g, " ") || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Domain</span>
+                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.domain?.replace(/-/g, " ") || "Not specified"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Information */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Details</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Course</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.course || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Course Duration</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.courseDuration || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Current Year</span>
+                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.currentYear?.replace(/-/g, " ") || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Specialization</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.courseSpecialization || "Not specified"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Institution Information */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">College/University</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.collegeName || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Country</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.country || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">City</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.city || "Not specified"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Information */}
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Company</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.companyName || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Job Title</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.jobTitle || "Not specified"}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Experience</span>
+                  <span className="text-sm font-medium text-gray-800">{user?.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skills and Interests */}
+          {(user?.skills?.length > 0 || user?.interests?.length > 0) && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                {user?.skills?.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-600 mb-2">Skills</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {user.skills.map((skill, index) => (
+                        <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {user?.interests?.length > 0 && (
+                  <div>
+                    <h5 className="text-sm font-medium text-gray-600 mb-2">Interests</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {user.interests.map((interest, index) => (
+                        <span key={index} className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Hackathon Preferences */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm text-gray-600">Team Size Preference</span>
+                <span className="text-sm font-medium text-gray-800 capitalize">{user?.teamSizePreference || "Any"}</span>
+              </div>
+              {user?.preferredHackathonTypes?.length > 0 && (
+                <div>
+                  <h5 className="text-sm font-medium text-gray-600 mb-2">Preferred Hackathon Types</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {user.preferredHackathonTypes.map((type, index) => (
+                      <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                        {type.replace(/-/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Social Links */}
+          {(user?.twitter || user?.instagram || user?.portfolio) && (
+            <div className="space-y-4">
+              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
+              <div className="space-y-3">
+                {user?.twitter && (
+                  <a
+                    href={user.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">Twitter</span>
+                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                  </a>
+                )}
+                {user?.instagram && (
+                  <a
+                    href={user.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg hover:bg-pink-100 transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">Instagram</span>
+                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                  </a>
+                )}
+                {user?.portfolio && (
+                  <a
+                    href={user.portfolio}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-gray-500 rounded flex items-center justify-center">
+                      <Globe className="w-3 h-3 text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-gray-800">Portfolio</span>
+                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+      
       {/* Achievements Section */}
       <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
         <div className="space-y-6 p-8">
@@ -888,6 +1115,315 @@ export function ProfileSection() {
                 setEditForm({ ...editForm, linkedin: e.target.value })
               }
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Comprehensive Profile Information Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Profile Information</CardTitle>
+          <CardDescription>Update your comprehensive profile details</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          {/* Personal Details */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="gender">Gender</Label>
+                <select
+                  id="gender"
+                  value={editForm.gender}
+                  onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="userType">User Type</Label>
+                <select
+                  id="userType"
+                  value={editForm.userType}
+                  onChange={(e) => setEditForm({ ...editForm, userType: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select user type</option>
+                  <option value="school">School Student</option>
+                  <option value="college">College Student</option>
+                  <option value="fresher">Fresher</option>
+                  <option value="professional">Professional</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="domain">Domain</Label>
+                <select
+                  id="domain"
+                  value={editForm.domain}
+                  onChange={(e) => setEditForm({ ...editForm, domain: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select domain</option>
+                  <option value="engineering">Engineering</option>
+                  <option value="computer-science">Computer Science</option>
+                  <option value="information-technology">Information Technology</option>
+                  <option value="data-science">Data Science</option>
+                  <option value="artificial-intelligence">Artificial Intelligence</option>
+                  <option value="machine-learning">Machine Learning</option>
+                  <option value="cybersecurity">Cybersecurity</option>
+                  <option value="web-development">Web Development</option>
+                  <option value="mobile-development">Mobile Development</option>
+                  <option value="game-development">Game Development</option>
+                  <option value="design">Design</option>
+                  <option value="business">Business</option>
+                  <option value="management">Management</option>
+                  <option value="finance">Finance</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="law">Law</option>
+                  <option value="medicine">Medicine</option>
+                  <option value="pharmacy">Pharmacy</option>
+                  <option value="nursing">Nursing</option>
+                  <option value="architecture">Architecture</option>
+                  <option value="arts">Arts</option>
+                  <option value="humanities">Humanities</option>
+                  <option value="social-sciences">Social Sciences</option>
+                  <option value="education">Education</option>
+                  <option value="agriculture">Agriculture</option>
+                  <option value="environmental-science">Environmental Science</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Academic Information */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Information</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="course">Course</Label>
+                <Input
+                  id="course"
+                  value={editForm.course}
+                  onChange={(e) => setEditForm({ ...editForm, course: e.target.value })}
+                  placeholder="e.g., Computer Science, Engineering"
+                />
+              </div>
+              <div>
+                <Label htmlFor="courseDuration">Course Duration</Label>
+                <select
+                  id="courseDuration"
+                  value={editForm.courseDuration}
+                  onChange={(e) => setEditForm({ ...editForm, courseDuration: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select duration</option>
+                  <option value="1-year">1 Year</option>
+                  <option value="2-years">2 Years</option>
+                  <option value="3-years">3 Years</option>
+                  <option value="4-years">4 Years</option>
+                  <option value="5-years">5 Years</option>
+                  <option value="6-years">6 Years</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="currentYear">Current Year</Label>
+                <select
+                  id="currentYear"
+                  value={editForm.currentYear}
+                  onChange={(e) => setEditForm({ ...editForm, currentYear: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select year</option>
+                  <option value="1st-year">1st Year</option>
+                  <option value="2nd-year">2nd Year</option>
+                  <option value="3rd-year">3rd Year</option>
+                  <option value="4th-year">4th Year</option>
+                  <option value="final-year">Final Year</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="courseSpecialization">Course Specialization</Label>
+                <Input
+                  id="courseSpecialization"
+                  value={editForm.courseSpecialization}
+                  onChange={(e) => setEditForm({ ...editForm, courseSpecialization: e.target.value })}
+                  placeholder="e.g., Software Engineering, Data Science"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Institution Information */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="collegeName">College/University Name</Label>
+                <Input
+                  id="collegeName"
+                  value={editForm.collegeName}
+                  onChange={(e) => setEditForm({ ...editForm, collegeName: e.target.value })}
+                  placeholder="Enter your college/university name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="country">Country</Label>
+                <Input
+                  id="country"
+                  value={editForm.country}
+                  onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
+                  placeholder="Enter your country"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={editForm.city}
+                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                  placeholder="Enter your city"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Professional Information */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="companyName">Company Name</Label>
+                <Input
+                  id="companyName"
+                  value={editForm.companyName}
+                  onChange={(e) => setEditForm({ ...editForm, companyName: e.target.value })}
+                  placeholder="Enter your company name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="jobTitle">Job Title</Label>
+                <Input
+                  id="jobTitle"
+                  value={editForm.jobTitle}
+                  onChange={(e) => setEditForm({ ...editForm, jobTitle: e.target.value })}
+                  placeholder="Enter your job title"
+                />
+              </div>
+              <div>
+                <Label htmlFor="yearsOfExperience">Years of Experience</Label>
+                <select
+                  id="yearsOfExperience"
+                  value={editForm.yearsOfExperience}
+                  onChange={(e) => setEditForm({ ...editForm, yearsOfExperience: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select experience</option>
+                  <option value="0-1">0-1 years</option>
+                  <option value="1-2">1-2 years</option>
+                  <option value="2-3">2-3 years</option>
+                  <option value="3-5">3-5 years</option>
+                  <option value="5-10">5-10 years</option>
+                  <option value="10+">10+ years</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Skills and Interests */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="skills">Skills (comma separated)</Label>
+                <Input
+                  id="skills"
+                  value={editForm.skills}
+                  onChange={(e) => setEditForm({ ...editForm, skills: e.target.value })}
+                  placeholder="e.g., JavaScript, Python, React"
+                />
+              </div>
+              <div>
+                <Label htmlFor="interests">Interests (comma separated)</Label>
+                <Input
+                  id="interests"
+                  value={editForm.interests}
+                  onChange={(e) => setEditForm({ ...editForm, interests: e.target.value })}
+                  placeholder="e.g., AI, Web Development, Blockchain"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Social Links */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="twitter">Twitter</Label>
+                <Input
+                  id="twitter"
+                  value={editForm.twitter}
+                  onChange={(e) => setEditForm({ ...editForm, twitter: e.target.value })}
+                  placeholder="https://twitter.com/username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="instagram">Instagram</Label>
+                <Input
+                  id="instagram"
+                  value={editForm.instagram}
+                  onChange={(e) => setEditForm({ ...editForm, instagram: e.target.value })}
+                  placeholder="https://instagram.com/username"
+                />
+              </div>
+              <div>
+                <Label htmlFor="portfolio">Portfolio</Label>
+                <Input
+                  id="portfolio"
+                  value={editForm.portfolio}
+                  onChange={(e) => setEditForm({ ...editForm, portfolio: e.target.value })}
+                  placeholder="https://your-portfolio.com"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Hackathon Preferences */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="teamSizePreference">Team Size Preference</Label>
+                <select
+                  id="teamSizePreference"
+                  value={editForm.teamSizePreference}
+                  onChange={(e) => setEditForm({ ...editForm, teamSizePreference: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="any">Any</option>
+                  <option value="solo">Solo</option>
+                  <option value="2-3">2-3</option>
+                  <option value="4-5">4-5</option>
+                  <option value="6+">6+</option>
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="preferredHackathonTypes">Preferred Hackathon Types (comma separated)</Label>
+                <Input
+                  id="preferredHackathonTypes"
+                  value={editForm.preferredHackathonTypes}
+                  onChange={(e) => setEditForm({ ...editForm, preferredHackathonTypes: e.target.value })}
+                  placeholder="e.g., web-development, ai-ml, blockchain"
+                />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1358,6 +1894,12 @@ export function ProfileSection() {
       return;
     }
 
+    // Process array fields - convert comma-separated strings to arrays
+    const processArrayField = (field) => {
+      if (!field || typeof field !== 'string') return [];
+      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+    };
+
     const updates = {
       name: editForm.name,
       email: editForm.email,
@@ -1369,6 +1911,27 @@ export function ProfileSection() {
       linkedin: editForm.linkedin,
       profileImage: editForm.profileImage || selectedImage,
       bannerImage: editForm.bannerImage || selectedBanner,
+      // New fields from CompleteProfile
+      gender: editForm.gender,
+      userType: editForm.userType,
+      domain: editForm.domain,
+      course: editForm.course,
+      courseDuration: editForm.courseDuration,
+      collegeName: editForm.collegeName,
+      country: editForm.country,
+      city: editForm.city,
+      courseSpecialization: editForm.courseSpecialization,
+      companyName: editForm.companyName,
+      jobTitle: editForm.jobTitle,
+      yearsOfExperience: editForm.yearsOfExperience,
+      currentYear: editForm.currentYear,
+      skills: processArrayField(editForm.skills),
+      interests: processArrayField(editForm.interests),
+      twitter: editForm.twitter,
+      instagram: editForm.instagram,
+      portfolio: editForm.portfolio,
+      preferredHackathonTypes: processArrayField(editForm.preferredHackathonTypes),
+      teamSizePreference: editForm.teamSizePreference
     };
 
     try {

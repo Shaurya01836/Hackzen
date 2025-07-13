@@ -11,6 +11,7 @@ import NotFound from "./pages/Notfound";
 import Page from "./pages/AdminDashboard/AdminPanel";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
+import CompleteProfile from "./pages/Auth/CompleteProfile";
 import DashboardPage from "./pages/mainDashboard/Page";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Loader from "./pages/Loader";
@@ -37,6 +38,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
         <Route path="/oauth-success" element={<OAuthSuccess />} />
         <Route path="/about" element={<About />} />
         <Route path="/loader" element={<Loader />} />

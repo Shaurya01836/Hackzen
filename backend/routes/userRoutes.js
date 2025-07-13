@@ -44,7 +44,7 @@ router.get('/github/callback', passport.authenticate('github', {
     }
   }
   
-  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}`;
   const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
   
   res.redirect(redirectUrl);
@@ -68,7 +68,7 @@ router.get('/google/callback', passport.authenticate('google', {
     }
   }
   
-  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}`;
+  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}`;
   const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
   
   res.redirect(redirectUrl);
@@ -113,6 +113,9 @@ router.put('/:id', protect, userController.updateUser);
 router.delete('/:id', protect, isAdmin, userController.deleteUser);
 router.patch('/:id/role', protect, isOrganizerOrAdmin, userController.changeUserRole);
 router.put('/:id/password', protect, userController.changePassword);
+
+// Complete profile after registration
+router.put('/:id/complete-profile', protect, userController.completeProfile);
 
 // Test route removed for now to fix the server startup
 

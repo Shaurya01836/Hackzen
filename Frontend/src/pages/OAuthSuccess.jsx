@@ -13,14 +13,18 @@ function OAuthSuccess() {
     const name = searchParams.get("name");
     const email = searchParams.get("email");
     const _id = searchParams.get("_id");
+    const profileCompleted = searchParams.get("profileCompleted") === "true";
     const redirectTo = searchParams.get("redirectTo");
 
     if (token && name && email && _id) {
       // ✅ Save full user with _id to context/localStorage
-      login({ _id, name, email }, token);
+      const userData = { _id, name, email, profileCompleted };
+      login(userData, token);
       
-      // Redirect to redirectTo if specified, otherwise to dashboard
-      if (redirectTo) {
+      // Redirect based on profile completion
+      if (!profileCompleted) {
+        navigate("/complete-profile");
+      } else if (redirectTo) {
         navigate(redirectTo);
       } else {
         navigate("/dashboard");

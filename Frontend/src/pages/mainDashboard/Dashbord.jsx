@@ -273,6 +273,12 @@ export default function HackZenDashboard() {
     refreshUser();
   }, []); // Empty dependency array to run only once
 
+  useEffect(() => {
+    if (user && !user.profileCompleted) {
+      navigate("/complete-profile");
+    }
+  }, [user, navigate]);
+
   return (
     <SidebarProvider>
       <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
