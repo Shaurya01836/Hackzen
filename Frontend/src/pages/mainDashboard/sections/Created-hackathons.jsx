@@ -394,42 +394,42 @@ export function CreatedHackathons({ onCreateNew }) {
             </TabsList>
 
             <TabsContent value="all" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {hackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="live" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {liveHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="registration" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {registrationOpenHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="completed" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {completedHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="draft" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {draftHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="pending" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {pendingHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="approved" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {approvedHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>
             <TabsContent value="rejected" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {rejectedHackathons.map(renderHackathonCard)}
               </div>
             </TabsContent>

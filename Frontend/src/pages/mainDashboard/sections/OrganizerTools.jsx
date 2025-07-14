@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from "react";
 import {
   ArrowLeft,
@@ -10,19 +10,24 @@ import {
   MessageSquare,
   Award,
   FileText,
-  Calendar
-} from "lucide-react"
+  Calendar,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle
-} from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/CommonUI/tabs"
-import { Progress } from "../../../components/DashboardUI/progress"
+  CardTitle,
+} from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../components/CommonUI/badge";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../../components/CommonUI/tabs";
+import { Progress } from "../../../components/DashboardUI/progress";
 
 const recentActivity = [
   {
@@ -30,30 +35,30 @@ const recentActivity = [
     action: "New participant registered",
     event: "AI Innovation Challenge",
     time: "2 minutes ago",
-    type: "registration"
+    type: "registration",
   },
   {
     id: 2,
     action: "Project submitted",
     event: "Cybersecurity Challenge",
     time: "15 minutes ago",
-    type: "submission"
+    type: "submission",
   },
   {
     id: 3,
     action: "Judge assigned",
     event: "Web3 Builder Fest",
     time: "1 hour ago",
-    type: "judging"
+    type: "judging",
   },
   {
     id: 4,
     action: "Announcement sent",
     event: "All Events",
     time: "2 hours ago",
-    type: "communication"
-  }
-]
+    type: "communication",
+  },
+];
 
 const quickActions = [
   {
@@ -61,58 +66,37 @@ const quickActions = [
     description: "Download CSV of all participant information",
     icon: Download,
     action: "export-participants",
-    category: "Data Management"
+    category: "Data Management",
   },
   {
     title: "Generate Analytics Report",
     description: "Create comprehensive event performance report",
     icon: BarChart3,
     action: "analytics-report",
-    category: "Analytics"
+    category: "Analytics",
   },
   {
     title: "Bulk Send Certificates",
     description: "Send completion certificates to winners",
     icon: Award,
     action: "send-certificates",
-    category: "Awards"
+    category: "Awards",
   },
   {
     title: "Schedule Announcement",
     description: "Create and schedule future announcements",
     icon: MessageSquare,
     action: "schedule-announcement",
-    category: "Communication"
+    category: "Communication",
   },
   {
     title: "Manage Judges",
     description: "Add, remove, or assign judges to events",
     icon: Users,
     action: "manage-judges",
-    category: "Event Management"
+    category: "Event Management",
   },
-  {
-    title: "Prize Distribution",
-    description: "Manage and distribute prizes to winners",
-    icon: Trophy,
-    action: "prize-distribution",
-    category: "Awards"
-  },
-  {
-    title: "Event Templates",
-    description: "Create reusable templates for future events",
-    icon: FileText,
-    action: "event-templates",
-    category: "Templates"
-  },
-  {
-    title: "Calendar Integration",
-    description: "Sync events with external calendar systems",
-    icon: Calendar,
-    action: "calendar-sync",
-    category: "Integration"
-  }
-]
+];
 
 export function OrganizerTools() {
   const [analyticsData, setAnalyticsData] = useState({
@@ -123,34 +107,39 @@ export function OrganizerTools() {
     averageRating: 0,
     completionRate: 0,
     monthlyGrowth: 0,
-    topPerformingEvent: "-"
+    topPerformingEvent: "-",
   });
-  const [loading, setLoading] = useState(true);
+  const [_, setLoading] = useState(true); // loading state not used
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch("http://localhost:3000/api/hackathons/my", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         const hackathons = await res.json();
         // Calculate analytics
         const totalEvents = hackathons.length;
-        const totalParticipants = hackathons.reduce((sum, h) => sum + (h.participants?.length || 0), 0);
-        const totalSubmissions = hackathons.reduce((sum, h) => sum + (h.submissions?.length || 0), 0);
-        // You can add more analytics calculations here
+        const totalParticipants = hackathons.reduce(
+          (sum, h) => sum + (h.participants?.length || 0),
+          0
+        );
+        const totalSubmissions = hackathons.reduce(
+          (sum, h) => sum + (h.submissions?.length || 0),
+          0
+        );
         setAnalyticsData({
           totalEvents,
-          activeEvents: hackathons.filter(h => h.status === "ongoing").length,
+          activeEvents: hackathons.filter((h) => h.status === "ongoing").length,
           totalParticipants,
           totalSubmissions,
-          averageRating: 0, // Placeholder, unless you have ratings
+          averageRating: 0, // Placeholder
           completionRate: 0, // Placeholder
           monthlyGrowth: 0, // Placeholder
-          topPerformingEvent: hackathons[0]?.title || "-"
+          topPerformingEvent: hackathons[0]?.title || "-",
         });
-      } catch (err) {
+      } catch {
         setAnalyticsData({
           totalEvents: 0,
           activeEvents: 0,
@@ -159,7 +148,7 @@ export function OrganizerTools() {
           averageRating: 0,
           completionRate: 0,
           monthlyGrowth: 0,
-          topPerformingEvent: "-"
+          topPerformingEvent: "-",
         });
       } finally {
         setLoading(false);
@@ -168,84 +157,84 @@ export function OrganizerTools() {
     fetchAnalytics();
   }, []);
 
-  const getActivityIcon = type => {
+  const getActivityIcon = (type) => {
     switch (type) {
       case "registration":
-        return <Users className="w-4 h-4 text-blue-500" />
+        return <Users className="w-4 h-4 text-indigo-500" />;
       case "submission":
-        return <FileText className="w-4 h-4 text-green-500" />
+        return <FileText className="w-4 h-4 text-green-500" />;
       case "judging":
-        return <Award className="w-4 h-4 text-purple-500" />
+        return <Award className="w-4 h-4 text-indigo-400" />;
       case "communication":
-        return <MessageSquare className="w-4 h-4 text-orange-500" />
+        return <MessageSquare className="w-4 h-4 text-orange-500" />;
       default:
-        return <Settings className="w-4 h-4 text-gray-500" />
+        return <Settings className="w-4 h-4 text-gray-500" />;
     }
-  }
+  };
 
   const groupedActions = quickActions.reduce((acc, action) => {
     if (!acc[action.category]) {
-      acc[action.category] = []
+      acc[action.category] = [];
     }
-    acc[action.category].push(action)
-    return acc
-  }, {})
+    acc[action.category].push(action);
+    return acc;
+  }, {});
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <div className="flex items-center gap-4">
-    
+    <div className="flex-1 space-y-8 p-6 bg-gray-50 min-h-screen">
+      <div className="flex items-center gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Organizer Tools</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            Organizer Tools
+          </h1>
+          <p className="text-base text-gray-500 mt-1">
             Advanced tools and analytics for event management
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* Analytics Overview */}
-          <Card>
+          <Card className="shadow-sm border border-gray-200 bg-white">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-purple-600" />
+              <CardTitle className="flex items-center gap-2 text-indigo-700">
+                <BarChart3 className="w-5 h-5 text-indigo-500" />
                 Analytics Overview
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-500">
                 Key metrics across all your events
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                  <p className="text-3xl font-bold text-indigo-700">
                     {analyticsData.totalEvents}
                   </p>
                   <p className="text-sm text-gray-600">Total Events</p>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
-                  <p className="text-2xl font-bold text-green-600">
+                <div className="text-center p-4 bg-green-50 rounded-xl border border-green-100">
+                  <p className="text-3xl font-bold text-green-600">
                     {analyticsData.totalParticipants}
                   </p>
                   <p className="text-sm text-gray-600">Participants</p>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">
+                <div className="text-center p-4 bg-indigo-50 rounded-xl border border-indigo-100">
+                  <p className="text-3xl font-bold text-indigo-700">
                     {analyticsData.totalSubmissions}
                   </p>
                   <p className="text-sm text-gray-600">Submissions</p>
                 </div>
-                <div className="text-center p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg">
-                  <p className="text-2xl font-bold text-yellow-600">
+                <div className="text-center p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                  <p className="text-3xl font-bold text-yellow-600">
                     {analyticsData.averageRating}
                   </p>
                   <p className="text-sm text-gray-600">Avg Rating</p>
                 </div>
               </div>
-
-              <div className="mt-6 space-y-4">
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
                     <span>Completion Rate</span>
@@ -253,7 +242,8 @@ export function OrganizerTools() {
                   </div>
                   <Progress
                     value={analyticsData.completionRate}
-                    className="h-2"
+                    className="h-2 bg-indigo-100"
+                    indicatorClassName="bg-indigo-500"
                   />
                 </div>
                 <div>
@@ -263,7 +253,8 @@ export function OrganizerTools() {
                   </div>
                   <Progress
                     value={analyticsData.monthlyGrowth}
-                    className="h-2"
+                    className="h-2 bg-indigo-100"
+                    indicatorClassName="bg-indigo-500"
                   />
                 </div>
               </div>
@@ -271,157 +262,85 @@ export function OrganizerTools() {
           </Card>
 
           {/* Quick Actions by Category */}
-          <Tabs defaultValue="data" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="data">Data</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="awards">Awards</TabsTrigger>
-              <TabsTrigger value="management">Management</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="data" className="pt-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {groupedActions["Data Management"]?.map(action => (
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {Object.entries(groupedActions).map(([category, actions]) => {
+                const CategoryIcon = actions[0].icon;
+                return (
                   <Card
-                    key={action.action}
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    key={category}
+                    className="border border-gray-200 bg-white shadow-sm"
                   >
-                    <CardContent className="pt-4">
-                      <div className="flex items-start gap-3">
-                        <action.icon className="w-8 h-8 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <h3 className="font-medium">{action.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {action.description}
-                          </p>
-                          <Button
-                            size="sm"
-                            className="mt-3 bg-purple-500 hover:bg-purple-600"
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base font-semibold text-indigo-700 flex items-center gap-2">
+                        {CategoryIcon && (
+                          <CategoryIcon className="w-5 h-5 text-indigo-500" />
+                        )}{" "}
+                        {category}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-0">
+                      {actions.map((action) => {
+                        const ActionIcon = action.icon;
+                        return (
+                          <div
+                            key={action.action}
+                            className="flex items-start gap-3 border-b last:border-b-0 border-gray-100 pb-4 last:pb-0"
                           >
-                            Execute
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="analytics" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {groupedActions["Analytics"]?.map(action => (
-                  <Card
-                    key={action.action}
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                  >
-                    <CardContent className="pt-4">
-                      <div className="flex items-start gap-3">
-                        <action.icon className="w-8 h-8 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <h3 className="font-medium">{action.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {action.description}
-                          </p>
-                          <Button
-                            size="sm"
-                            className="mt-3 bg-purple-500 hover:bg-purple-600"
-                          >
-                            Execute
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="awards" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {groupedActions["Awards"]?.map(action => (
-                  <Card
-                    key={action.action}
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                  >
-                    <CardContent className="pt-4">
-                      <div className="flex items-start gap-3">
-                        <action.icon className="w-8 h-8 text-purple-600 mt-1" />
-                        <div className="flex-1">
-                          <h3 className="font-medium">{action.title}</h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {action.description}
-                          </p>
-                          <Button
-                            size="sm"
-                            className="mt-3 bg-purple-500 hover:bg-purple-600"
-                          >
-                            Execute
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="management" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(groupedActions["Event Management"] || [])
-                  .concat(groupedActions["Communication"] || [])
-                  .concat(groupedActions["Templates"] || [])
-                  .concat(groupedActions["Integration"] || [])
-                  .map(action => (
-                    <Card
-                      key={action.action}
-                      className="hover:shadow-lg transition-shadow cursor-pointer"
-                    >
-                      <CardContent className="pt-4">
-                        <div className="flex items-start gap-3">
-                          <action.icon className="w-8 h-8 text-purple-600 mt-1" />
-                          <div className="flex-1">
-                            <h3 className="font-medium">{action.title}</h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                              {action.description}
-                            </p>
-                            <Button
-                              size="sm"
-                              className="mt-3 bg-purple-500 hover:bg-purple-600"
-                            >
-                              Execute
-                            </Button>
+                            <ActionIcon className="w-8 h-8 text-indigo-500 mt-1" />
+                            <div className="flex-1">
+                              <h3 className="font-medium text-gray-900">
+                                {action.title}
+                              </h3>
+                              <p className="text-sm text-gray-500 mt-1">
+                                {action.description}
+                              </p>
+                              <Button
+                                size="sm"
+                                className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow"
+                              >
+                                Execute
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Recent Activity */}
-          <Card>
+          <Card className="border border-gray-200 bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Recent Activity</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Recent Activity
+              </CardTitle>
+              <CardDescription className="text-gray-500">
                 Latest events across your hackathons
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
-              {recentActivity.map(activity => (
+              {recentActivity.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                  className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100"
                 >
                   {getActivityIcon(activity.type)}
                   <div className="flex-1">
-                    <p className="text-sm font-medium">{activity.action}</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      {activity.action}
+                    </p>
                     <p className="text-xs text-gray-600">{activity.event}</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       {activity.time}
                     </p>
                   </div>
@@ -431,15 +350,19 @@ export function OrganizerTools() {
           </Card>
 
           {/* System Status */}
-          <Card>
+          <Card className="border border-gray-200 bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">System Status</CardTitle>
-              <CardDescription>Platform health and performance</CardDescription>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                System Status
+              </CardTitle>
+              <CardDescription className="text-gray-500">
+                Platform health and performance
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Platform Status</span>
-                <Badge className="bg-green-500">Operational</Badge>
+                <Badge className="bg-green-500 text-white">Operational</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm">API Response Time</span>
@@ -452,7 +375,11 @@ export function OrganizerTools() {
               <div className="flex items-center justify-between">
                 <span className="text-sm">Server Load</span>
                 <div className="flex items-center gap-2">
-                  <Progress value={35} className="w-16 h-2" />
+                  <Progress
+                    value={35}
+                    className="w-16 h-2 bg-indigo-100"
+                    indicatorClassName="bg-indigo-500"
+                  />
                   <span className="text-sm">35%</span>
                 </div>
               </div>
@@ -460,9 +387,11 @@ export function OrganizerTools() {
           </Card>
 
           {/* Quick Stats */}
-          <Card>
+          <Card className="border border-gray-200 bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">Today's Summary</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Today's Summary
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -486,5 +415,5 @@ export function OrganizerTools() {
         </div>
       </div>
     </div>
-  )
+  );
 }
