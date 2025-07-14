@@ -33,8 +33,8 @@ function Navbar() {
 
   // Check URL search parameters for modal state
   const searchParams = new URLSearchParams(location.search);
-  const showLogin = searchParams.get('modal') === 'login';
-  const showRegister = searchParams.get('modal') === 'register';
+  const showLogin = searchParams.get("modal") === "login";
+  const showRegister = searchParams.get("modal") === "register";
 
   const { handleMouseEnter: notifEnter, handleMouseLeave: notifLeave } =
     useDropdownTimeout(setShowNotificationDropdown);
@@ -323,7 +323,7 @@ function Navbar() {
                       </Link>
                     )}
                     <Link
-                      to="/dashboard/profile/account-settings"
+                      to="/dashboard/profile/privacy-security"
                       className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
                     >
                       Settings

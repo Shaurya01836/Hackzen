@@ -10,7 +10,6 @@ import {
   EyeOff,
   Lock,
   Mail,
-  MessageSquare,
   Trophy,
   Award,
   Star,
@@ -132,8 +131,7 @@ export function ProfileSection() {
     activityLog: [],
   });
 
-  const [notifications, setNotifications] = useState(true);
-  const [emailUpdates, setEmailUpdates] = useState(false);
+
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [twoFAError, setTwoFAError] = useState("");
@@ -433,18 +431,13 @@ export function ProfileSection() {
         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
           {currentView === "overview" && "Profile Settings"}
           {currentView === "edit-profile" && "Edit Profile"}
-          {currentView === "account-settings" && "Account Settings"}
           {currentView === "privacy-security" && "Privacy & Security"}
-          {currentView === "help-support" && "Help & Support"}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {currentView === "overview" && "Manage your account and preferences"}
           {currentView === "edit-profile" && "Update your personal information"}
-          {currentView === "account-settings" &&
-            "Configure your account preferences"}
           {currentView === "privacy-security" &&
             "Manage your privacy and security settings"}
-          {currentView === "help-support" && "Get help and support resources"}
         </p>
       </div>
     </div>
@@ -1943,85 +1936,6 @@ export function ProfileSection() {
     </div>
   );
 
-  const renderAccountSettings = () => (
-    <div className="w-full flex flex-col gap-6">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Notification Preferences</CardTitle>
-          <CardDescription>Choose how you want to be notified</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {[
-            {
-              label: "Email Notifications",
-              desc: "Receive notifications via email",
-              value: emailUpdates,
-              setter: setEmailUpdates,
-            },
-            {
-              label: "Push Notifications",
-              desc: "Receive push notifications in browser",
-              value: notifications,
-              setter: setNotifications,
-            },
-            {
-              label: "SMS Notifications",
-              desc: "Receive important updates via SMS",
-              value: false,
-              setter: () => {},
-            },
-          ].map(({ label, desc, value, setter }) => (
-            <div className="flex items-center justify-between" key={label}>
-              <div>
-                <span className="text-sm font-medium">{label}</span>
-                <p className="text-xs text-gray-500">{desc}</p>
-              </div>
-              <Switch checked={value} onCheckedChange={setter} />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Account Preferences</CardTitle>
-          <CardDescription>Customize your account experience</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium">Dark Mode</span>
-              <p className="text-xs text-gray-500">
-                Use dark theme across the platform
-              </p>
-            </div>
-            <Switch />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium">Auto-save Drafts</span>
-              <p className="text-xs text-gray-500">
-                Automatically save your work
-              </p>
-            </div>
-            <Switch defaultChecked />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button className="w-full sm:w-auto">Save Preferences</Button>
-        <Button
-          variant="outline"
-          className="w-full sm:w-auto"
-          onClick={() => setCurrentView("overview")}
-        >
-          Back to Overview
-        </Button>
-      </div>
-    </div>
-  );
-
   const renderPrivacySecurity = () => (
     <div className="w-full flex flex-col gap-6">
       {/* Password Section */}
@@ -2281,104 +2195,6 @@ export function ProfileSection() {
           Back to Overview
         </Button>
       </div>
-    </div>
-  );
-
-  const renderHelpSupport = () => (
-    <div className="w-full flex flex-col gap-6">
-      {/* FAQ */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Frequently Asked Questions</CardTitle>
-          <CardDescription>Find answers to common questions</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {[
-            [
-              "How do I join a hackathon?",
-              "Browse events, click one, and follow registration steps.",
-            ],
-            [
-              "How do I submit my project?",
-              "Go to My Submissions > Submit Project > fill GitHub, video, description.",
-            ],
-            [
-              "How do I organize a hackathon?",
-              "Switch to organizer view > Create Hackathon > fill and publish.",
-            ],
-          ].map(([q, a]) => (
-            <details key={q} className="group border rounded-md">
-              <summary className="flex justify-between items-center p-3 cursor-pointer bg-gray-50">
-                <span className="font-medium">{q}</span>
-                <span className="transition group-open:rotate-180">↓</span>
-              </summary>
-              <div className="p-3 text-sm text-gray-600">{a}</div>
-            </details>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Support Channels */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Contact Support</CardTitle>
-          <CardDescription>Reach out to us for help</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 border rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <Mail className="w-5 h-5 text-blue-500" />
-              <span className="font-medium">Email Support</span>
-            </div>
-            <p className="text-sm text-gray-600">Get a reply within 24 hours</p>
-            <Button variant="outline" size="sm">
-              support@hackzen.com
-            </Button>
-          </div>
-          <div className="flex-1 border rounded-lg p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-green-500" />
-              <span className="font-medium">Live Chat</span>
-            </div>
-            <p className="text-sm text-gray-600">Chat with us live</p>
-            <Button variant="outline" size="sm">
-              Start Chat
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Resources */}
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Resources</CardTitle>
-          <CardDescription>Helpful guides and docs</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            "📚 User Guide",
-            "🎥 Video Tutorials",
-            "💡 Best Practices",
-            "🔧 API Docs",
-          ].map((txt) => (
-            <Button
-              key={txt}
-              variant="outline"
-              className="justify-start w-full"
-            >
-              {txt}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Button
-        variant="default"
-        className="w-full sm:w-auto"
-        onClick={() => setCurrentView("overview")}
-      >
-        Back to Overview
-      </Button>
     </div>
   );
 
@@ -2911,25 +2727,11 @@ export function ProfileSection() {
             </Button>
             <Button
               variant={
-                currentView === "account-settings" ? "default" : "outline"
-              }
-              onClick={() => setCurrentView("account-settings")}
-            >
-              Account Settings
-            </Button>
-            <Button
-              variant={
                 currentView === "privacy-security" ? "default" : "outline"
               }
               onClick={() => setCurrentView("privacy-security")}
             >
               Privacy & Security
-            </Button>
-            <Button
-              variant={currentView === "help-support" ? "default" : "outline"}
-              onClick={() => setCurrentView("help-support")}
-            >
-              Help & Support
             </Button>
           </div>
 
@@ -2937,9 +2739,7 @@ export function ProfileSection() {
           <div className="flex-1 space-y-6">
             {currentView === "overview" && renderOverview()}
             {currentView === "edit-profile" && renderEditProfile()}
-            {currentView === "account-settings" && renderAccountSettings()}
             {currentView === "privacy-security" && renderPrivacySecurity()}
-            {currentView === "help-support" && renderHelpSupport()}
           </div>
         </div>
       </div>
