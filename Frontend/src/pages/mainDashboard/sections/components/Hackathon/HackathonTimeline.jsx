@@ -10,6 +10,7 @@ import { useEffect, useRef } from 'react';
 import PPTSubmissionModal from './PPTSubmissionModal';
 import ProjectSubmissionModal from './ProjectSubmissionModal';
 import axios from "axios";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../../../../../components/DashboardUI/alert-dialog";
 
 export default function HackathonTimeline({ hackathon, sectionRef, isRegistered, showProjectModal, setShowProjectModal, autoSelectProjectId }) {
   const rounds = Array.isArray(hackathon.rounds) ? hackathon.rounds : [];
@@ -24,6 +25,8 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
   const [projectSubmissions, setProjectSubmissions] = useState([]);
   const [editingSubmission, setEditingSubmission] = useState(null);
   const [projectModal, setProjectModal] = useState({ open: false, roundIdx: null });
+  // Add state for delete confirmation
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, submission: null });
 
   // Fetch user's PPT submissions for this hackathon
   useEffect(() => {
@@ -43,7 +46,9 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
           `http://localhost:3000/api/submission-form/submissions?hackathonId=${hackathon._id}&userId=${user._id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        setProjectSubmissions((res.data.submissions || []).filter(s => s.projectId));
+        const updatedSubs = (res.data.submissions || []).filter(s => s.projectId);
+        setProjectSubmissions(updatedSubs);
+        console.log("[useEffect] projectSubmissions:", updatedSubs); // Debug log
       } catch {
         setProjectSubmissions([]);
       }
@@ -93,17 +98,37 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
   };
 
   // Add handler for deleting a project submission
-  const handleDeleteProjectSubmission = async (submission) => {
-    if (!window.confirm('Are you sure you want to delete your project submission for this round?')) return;
+  const handleDeleteProjectSubmission = (submission) => {
+    setDeleteDialog({ open: true, submission });
+  };
+
+  // Actual delete logic after confirmation
+  const confirmDeleteProjectSubmission = async () => {
+    const submission = deleteDialog.submission;
+    setDeleteDialog({ open: false, submission: null });
+    if (!submission) return;
+    console.log("Deleting submission:", submission); // Debug log
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`http://localhost:3000/api/submission-form/submission/${submission._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast({ title: 'Project Deleted', description: 'Your project submission has been deleted.', variant: 'success' });
-      handleAfterAction();
+      toast({ title: 'Project Deleted', description: 'Your project submission has been deleted. You can now resubmit until the round ends.', variant: 'success' });
+      // Force fetch project submissions immediately
+      if (hackathon._id && user?._id) {
+        const res = await axios.get(
+          `http://localhost:3000/api/submission-form/submissions?hackathonId=${hackathon._id}&userId=${user._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const updatedSubs = (res.data.submissions || []).filter(s => s.projectId);
+        setProjectSubmissions(updatedSubs);
+        console.log("Updated projectSubmissions:", updatedSubs); // Debug log
+      }
+      handleAfterAction(); // still increment refreshKey for other effects
     } catch (err) {
-      toast({ title: 'Delete failed', description: err.message || 'Could not delete project submission', variant: 'destructive' });
+      // Show backend error if present
+      const errorMsg = err.response?.data?.error || err.message || 'Could not delete project submission';
+      toast({ title: 'Delete failed', description: errorMsg, variant: 'destructive' });
     }
   };
 
@@ -145,13 +170,6 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
   // Helper: can edit before deadline
   const canEdit = (end) => {
     return !end || now <= end;
-  };
-
-  // Handler for Edit button
-  const handleEditSubmission = (submission) => {
-    setEditingSubmission(submission);
-    setProjectModal({ open: true, roundIdx: submission.roundIndex });
-    console.log('Opening ProjectSubmissionModal in edit mode with:', submission);
   };
 
   // Handler for closing modal (reset editingSubmission)
@@ -223,12 +241,6 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
                       {isLive && canEdit(end) && (
                         <>
                           <button
-                            className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                            onClick={() => handleEditSubmission(projectSubmissionsForRound[0])}
-                          >
-                            Edit
-                          </button>
-                          <button
                             className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
                             onClick={() => handleDeleteProjectSubmission(projectSubmissionsForRound[0])}
                           >
@@ -260,12 +272,6 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
                     </div>
                     {isLive && canEdit(end) && (
                       <>
-                        <button
-                          className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                          onClick={() => handleEditSubmission(projectSubmissionsForRound[0])}
-                        >
-                          Edit
-                        </button>
                         <button
                           className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
                           onClick={() => handleDeleteProjectSubmission(projectSubmissionsForRound[0])}
@@ -302,12 +308,6 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
                               </div>
                               {isLive && canEdit(end) && (
                                 <>
-                                  <button
-                                    className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                                    onClick={() => handleEditSubmission(sub)}
-                                  >
-                                    Edit
-                                  </button>
                                   <button
                                     className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
                                     onClick={() => handleDeleteProjectSubmission(sub)}
@@ -347,12 +347,6 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
                             </div>
                             {isLive && canEdit(end) && (
                               <>
-                                <button
-                                  className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                                  onClick={() => handleEditSubmission(sub)}
-                                >
-                                  Edit
-                                </button>
                                 <button
                                   className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
                                   onClick={() => handleDeleteProjectSubmission(sub)}
@@ -491,6 +485,20 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
             onSubmitAnother={handleSubmitAnother}
             projectSubmissions={projectSubmissions}
           />
+          <AlertDialog open={deleteDialog.open} onOpenChange={open => setDeleteDialog({ open, submission: open ? deleteDialog.submission : null })}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Project Submission?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete your project submission? You can resubmit anytime until the round ends.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteDialog({ open: false, submission: null })}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmDeleteProjectSubmission}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
     </section>

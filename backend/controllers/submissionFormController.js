@@ -154,11 +154,6 @@ exports.deleteSubmissionById = async (req, res) => {
     if (submission.submittedBy.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'Not authorized to delete this submission' });
     }
-    // Check deadline
-    const deadline = submission.hackathonId.submissionDeadline;
-    if (deadline && new Date() > new Date(deadline)) {
-      return res.status(400).json({ error: 'Cannot delete after submission deadline' });
-    }
     await Submission.findByIdAndDelete(id);
     res.json({ success: true, message: 'Submission deleted' });
   } catch (err) {

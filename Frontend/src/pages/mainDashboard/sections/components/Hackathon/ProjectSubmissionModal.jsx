@@ -14,8 +14,9 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '../../../../../components/DashboardUI/alert-dialog';
+import ReactDOM from "react-dom";
 
-export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission, projectSubmissions = [] }) {
+export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission, projectSubmissions = [], setEditingSubmission }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState("");
@@ -275,10 +276,13 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     setEditingId(null);
     setSelectedProject(pendingProjectId);
     setPendingProjectId(null);
+    // If setEditingSubmission is available as a prop, call it to clear editingSubmission
+    if (typeof setEditingSubmission === 'function') setEditingSubmission(null);
     // Submit the new project automatically as a new submission (not edit mode)
     setTimeout(() => {
       setIsEditMode(false);
       setEditingId(null);
+      if (typeof setEditingSubmission === 'function') setEditingSubmission(null);
       handleSubmit();
     }, 0);
   };
@@ -430,20 +434,23 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
         }
       />
       {/* Confirmation Dialog for first submission (not edit mode) - outside BaseModal for z-index fix */}
-      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
-        <AlertDialogContent style={{ zIndex: 9999 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Once you submit, you can't edit or resubmit this project for this round. Are you sure you want to submit?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelSubmit}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmit}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {ReactDOM.createPortal(
+        <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+          <AlertDialogContent style={{ zIndex: 9999 }}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Once you submit, you can't edit or resubmit this project for this round. Are you sure you want to submit?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCancelSubmit}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmSubmit}>Continue</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>,
+        document.body
+      )}
     </>
   );
 } 
