@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef } from "react"
 import { useAuth } from "../../../context/AuthContext"
-import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle } from "lucide-react"
+import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle, Info } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { Button } from "../../../components/CommonUI/button"
 import { Input } from "../../../components/CommonUI/input"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/CommonUI/badge"
 import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/CommonUI/tooltip";
 
 export function CreateHackathon({ onBack }) {
   const { user, token } = useAuth() // Using AuthContext instead of localStorage
@@ -53,11 +54,14 @@ export function CreateHackathon({ onBack }) {
     rounds: [
       {
         name: "",
+        type: "project", // Default round type
         description: "",
         startDate: "",
         endDate: "",
       },
     ],
+    submissionType: "single-project", // new field
+    roundType: "single-round", // new field
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -68,6 +72,7 @@ export function CreateHackathon({ onBack }) {
     logo: { uploading: false, error: null },
     gallery: { uploading: false, error: null },
   })
+  const [invalidComboError, setInvalidComboError] = useState("");
 
   const formTopRef = useRef(null)
 
@@ -106,7 +111,6 @@ export function CreateHackathon({ onBack }) {
     // Step 0: Basic Info
     if (step === 0) {
       if (!formData.title.trim()) newErrors.title = "Title is required"
-      if (!formData.category) newErrors.category = "Category is required"
       if (!formData.teamSize.min || !formData.teamSize.max) {
         newErrors.teamSize = "Team size limits are required"
       } else if (formData.teamSize.min > formData.teamSize.max) {
@@ -252,6 +256,7 @@ export function CreateHackathon({ onBack }) {
           .filter((r) => r.name.trim())
           .map((r) => ({
             name: r.name,
+            type: r.type, // Include round type
             description: r.description,
             startDate: r.startDate ? new Date(r.startDate).toISOString() : null,
             endDate: r.endDate ? new Date(r.endDate).toISOString() : null,
@@ -411,6 +416,7 @@ export function CreateHackathon({ onBack }) {
         ...formData.rounds,
         {
           name: "",
+          type: "project", // Default round type
           description: "",
           startDate: "",
           endDate: "",
@@ -524,6 +530,28 @@ export function CreateHackathon({ onBack }) {
               >
                 <X className="w-3 h-3" />
               </Button>
+              {/* Edit button overlay */}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="absolute top-2 right-10 h-6 w-6 p-0"
+                onClick={() => document.getElementById(`edit-upload-${type}`).click()}
+                title="Edit image"
+              >
+                <Upload className="w-3 h-3" />
+              </Button>
+              <input
+                id={`edit-upload-${type}`}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) handleFileSelect(file, type);
+                }}
+                disabled={uploadStates[type]?.uploading}
+              />
               <div className="absolute bottom-2 left-2 bg-green-500 rounded-full p-1">
                 <Check className="w-3 h-3 text-white" />
               </div>
@@ -691,26 +719,7 @@ export function CreateHackathon({ onBack }) {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category">Category *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger className={errors.category ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.category && <p className="text-sm text-red-500 mt-1">{errors.category}</p>}
-                  </div>
-
+                  {/* Removed category selection */}
                   <div>
                     <Label htmlFor="difficultyLevel">Difficulty Level</Label>
                     <Select
@@ -865,6 +874,323 @@ export function CreateHackathon({ onBack }) {
                   </div>
                 </div>
                 {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
+
+                {/* 1. Move the Dates & Deadlines card (with startDate, endDate, registrationDeadline, submissionDeadline) to appear before the Submission Type and Hackathon Rounds sections. */}
+                {/* 2. The order should be: Basic Info -> Dates & Deadlines -> Submission Type -> Hackathon Rounds -> ... */}
+                {/* Dates and Deadlines */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-purple-600" />
+                      Dates & Deadlines
+                    </CardTitle>
+                    <CardDescription>Set important dates for your hackathon</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="startDate">
+                          Hackathon Start Date *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The date and time when the hackathon officially begins. Participants can start working on their projects from this moment.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="startDate"
+                          type="datetime-local"
+                          value={formData.startDate}
+                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          className={errors.startDate ? "border-red-500" : ""}
+                        />
+                        {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="endDate">
+                          Hackathon End Date *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The date and time when the hackathon ends. All activities, including submissions and judging, should be completed by this time.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="endDate"
+                          type="datetime-local"
+                          value={formData.endDate}
+                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          className={errors.endDate ? "border-red-500" : ""}
+                        />
+                        {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="registrationDeadline">
+                          Registration Deadline *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The last date and time for participants to register for the hackathon. Registrations will be closed after this deadline. (Can be after the hackathon starts if you allow late registrations.)
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="registrationDeadline"
+                          type="datetime-local"
+                          value={formData.registrationDeadline}
+                          onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
+                          className={errors.registrationDeadline ? "border-red-500" : ""}
+                        />
+                        {errors.registrationDeadline && (
+                          <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
+                        )}
+                      </div>
+                      {/* Only show Final Submission Deadline if not multi-round */}
+                      {formData.roundType !== "multi-round" && (
+                        <div>
+                          <Label htmlFor="submissionDeadline">
+                            Final Submission Deadline
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  The last date and time for submitting projects if there is only one round. If your hackathon has multiple rounds, use the round-specific deadlines below.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </Label>
+                          <Input
+                            id="submissionDeadline"
+                            type="datetime-local"
+                            value={formData.submissionDeadline}
+                            onChange={(e) => setFormData({ ...formData, submissionDeadline: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Submission Type *</Label>
+                    <Select
+                      value={formData.submissionType}
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({ ...prev, submissionType: value }));
+                        // Removed restriction: allow all combinations
+                        setInvalidComboError("");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single-project">Single Project</SelectItem>
+                        <SelectItem value="multi-project">Multiple Projects</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Round Type *</Label>
+                    <Select
+                      value={formData.roundType}
+                      onValueChange={(value) => {
+                        setFormData((prev) => ({ ...prev, roundType: value }));
+                        // Removed restriction: allow all combinations
+                        setInvalidComboError("");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single-round">Single Round</SelectItem>
+                        <SelectItem value="multi-round">Multi Round</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {invalidComboError && (
+                  <div className="text-red-600 text-sm font-medium mt-2">{invalidComboError}</div>
+                )}
+                {/* Show rounds section if roundType is 'single-round' or 'multi-round', regardless of submissionType */}
+                {(formData.roundType === "single-round" || formData.roundType === "multi-round") && (
+                  <div className="mt-4">
+                 
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Hackathon Rounds</CardTitle>
+                        <CardDescription>Define the round(s) of your hackathon</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {formData.roundType === "multi-round" && (
+                          <div className="mb-2 text-blue-700 text-sm flex items-center gap-2">
+                            <Info size={16} />
+                            Since your hackathon has multiple rounds, please specify the start/end/submission deadlines for each round below.
+                          </div>
+                        )}
+                        {(formData.roundType === "single-round"
+                          ? [formData.rounds[0] || { name: "", description: "", startDate: "", endDate: "" }]
+                          : formData.rounds
+                        ).map((round, index) => (
+                          <div key={index} className="p-4 border rounded-lg space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">Round {index + 1}</h4>
+                              {formData.roundType === "multi-round" && formData.rounds.length > 1 && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => removeRound(index)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`round-name-${index}`}>Round Name</Label>
+                                <Input
+                                  id={`round-name-${index}`}
+                                  value={round.name}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], name: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                  placeholder="e.g., Ideation Phase, Prototype Development..."
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`round-type-${index}`}>Round Type</Label>
+                                <Select
+                                  value={round.type || ""}
+                                  onValueChange={value => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], type: value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select round type" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                                    <SelectItem value="quiz">Quiz</SelectItem>
+                                    <SelectItem value="ppt">PPT Submission</SelectItem>
+                                    <SelectItem value="idea">Idea Submission</SelectItem>
+                                    <SelectItem value="pitch">Pitch</SelectItem>
+                                    <SelectItem value="project">Project Submission</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            <div className="md:col-span-2">
+                                <Label htmlFor={`round-description-${index}`}>Description</Label>
+                                <Textarea
+                                  id={`round-description-${index}`}
+                                  value={round.description}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], description: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                  placeholder="Describe what happens in this round..."
+                                  rows={2}
+                                />
+                              </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`round-start-${index}`}>
+                                  Round Start Date
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        When this round begins. Only participants who advance to this round can participate from this date.
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Label>
+                                <Input
+                                  id={`round-start-${index}`}
+                                  type="datetime-local"
+                                  value={round.startDate}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], startDate: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`round-end-${index}`}>
+                                  Round End Date
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        When this round ends. All submissions for this round must be completed by this date.
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Label>
+                                <Input
+                                  id={`round-end-${index}`}
+                                  type="datetime-local"
+                                  value={round.endDate}
+                                  onChange={e => {
+                                    const rounds = [...formData.rounds];
+                                    rounds[index] = { ...rounds[index], endDate: e.target.value };
+                                    setFormData({ ...formData, rounds });
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {formData.roundType === "multi-round" && (
+                          <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Round
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                    {/* Validation messages */}
+                    {formData.roundType === "single-round" && (!formData.rounds[0]?.name || !formData.rounds[0]?.description || !formData.rounds[0]?.startDate || !formData.rounds[0]?.endDate) && (
+                      <div className="text-red-600 text-xs mt-1">All round fields are required.</div>
+                    )}
+                    {formData.roundType === "multi-round" && formData.rounds.length === 0 && (
+                      <div className="text-red-600 text-xs mt-1">At least one round is required.</div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
@@ -895,89 +1221,11 @@ export function CreateHackathon({ onBack }) {
                     currentImage={formData.images.logo}
                   />
                 </div>
-                <ImageUploadCard
-                  title="Gallery Images"
-                  description="Additional showcase images"
-                  type="gallery"
-                  currentImage={null}
-                  multiple={true}
-                />
+                {/* Gallery image upload removed */}
               </CardContent>
             </Card>
 
-            {/* Dates and Deadlines */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  Dates & Deadlines
-                </CardTitle>
-                <CardDescription>Set important dates for your hackathon</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate">Start Date *</Label>
-                    <Input
-                      id="startDate"
-                      type="datetime-local"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className={errors.startDate ? "border-red-500" : ""}
-                    />
-                    {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="endDate">End Date *</Label>
-                    <Input
-                      id="endDate"
-                      type="datetime-local"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className={errors.endDate ? "border-red-500" : ""}
-                    />
-                    {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="registrationDeadline">Registration Deadline *</Label>
-                    <Input
-                      id="registrationDeadline"
-                      type="datetime-local"
-                      value={formData.registrationDeadline}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          registrationDeadline: e.target.value,
-                        })
-                      }
-                      className={errors.registrationDeadline ? "border-red-500" : ""}
-                    />
-                    {errors.registrationDeadline && (
-                      <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="submissionDeadline">Submission Deadline</Label>
-                    <Input
-                      id="submissionDeadline"
-                      type="datetime-local"
-                      value={formData.submissionDeadline}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          submissionDeadline: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
           </>
         )}
         {step === 2 && (
@@ -1114,80 +1362,7 @@ export function CreateHackathon({ onBack }) {
               </CardContent>
             </Card>
 
-            {/* Hackathon Rounds */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Hackathon Rounds</CardTitle>
-                <CardDescription>Define the different rounds of your hackathon</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {formData.rounds.map((round, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Round {index + 1}</h4>
-                      {formData.rounds.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeRound(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`round-name-${index}`}>Round Name</Label>
-                        <Input
-                          id={`round-name-${index}`}
-                          value={round.name}
-                          onChange={(e) => updateRound(index, "name", e.target.value)}
-                          placeholder="e.g., Ideation Phase, Prototype Development..."
-                        />
-                      </div>
-                      <div className="md:col-span-2">
-                        <Label htmlFor={`round-description-${index}`}>Description</Label>
-                        <Textarea
-                          id={`round-description-${index}`}
-                          value={round.description}
-                          onChange={(e) => updateRound(index, "description", e.target.value)}
-                          placeholder="Describe what happens in this round..."
-                          rows={2}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor={`round-start-${index}`}>Start Date (Optional)</Label>
-                        <Input
-                          id={`round-start-${index}`}
-                          type="datetime-local"
-                          value={round.startDate}
-                          onChange={(e) => updateRound(index, "startDate", e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`round-end-${index}`}>End Date (Optional)</Label>
-                        <Input
-                          id={`round-end-${index}`}
-                          type="datetime-local"
-                          value={round.endDate}
-                          onChange={(e) => updateRound(index, "endDate", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button type="button" variant="outline" onClick={addRound} className="w-full bg-transparent">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Round
-                </Button>
-              </CardContent>
-            </Card>
+            
           </>
         )}
         {step === 3 && (

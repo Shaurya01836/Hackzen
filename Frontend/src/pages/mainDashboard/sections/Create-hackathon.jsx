@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef } from "react"
 import { useAuth } from "../../../context/AuthContext"
-import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle } from "lucide-react"
+import { Plus, Trash2, Calendar, Users, FileText, Save, X, Upload, Loader2, Check, AlertCircle, Info } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { Button } from "../../../components/CommonUI/button"
 import { Input } from "../../../components/CommonUI/input"
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../../../components/CommonUI/badge"
 import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/CommonUI/tooltip";
 
 export function CreateHackathon({ onBack }) {
   const { user, token } = useAuth() // Using AuthContext instead of localStorage
@@ -45,7 +46,6 @@ export function CreateHackathon({ onBack }) {
     images: {
       banner: null,
       logo: null,
-      gallery: [],
     },
     judges: [""],
     mentors: [""],
@@ -69,7 +69,6 @@ export function CreateHackathon({ onBack }) {
   const [uploadStates, setUploadStates] = useState({
     banner: { uploading: false, error: null },
     logo: { uploading: false, error: null },
-    gallery: { uploading: false, error: null },
   })
   const [invalidComboError, setInvalidComboError] = useState("");
 
@@ -117,18 +116,45 @@ export function CreateHackathon({ onBack }) {
       } else if (formData.teamSize.min < 1 || formData.teamSize.max > 10) {
         newErrors.teamSize = "Team size must be between 1 and 10 members"
       }
+      if (!formData.startDate) newErrors.startDate = "Start date is required"
+      if (!formData.endDate) newErrors.endDate = "End date is required"
+      if (!formData.registrationDeadline) newErrors.registrationDeadline = "Registration deadline is required"
+      if (!formData.submissionType) newErrors.submissionType = "Submission type is required"
+      if (!formData.roundType) newErrors.roundType = "Round type is required"
+      if (!formData.rounds || formData.rounds.length === 0) {
+        newErrors.rounds = "At least one round is required"
+      } else {
+        formData.rounds.forEach((round, idx) => {
+          if (!round.name || !round.name.trim() || !round.type || !round.type.trim() || !round.description || !round.description.trim() || !round.startDate || !round.endDate) {
+            newErrors[`round_${idx}`] = `All fields are required for round ${idx + 1}`
+          }
+        })
+      }
     }
 
     // Step 1: Dates & Media
     if (step === 1) {
+      if (!formData.images.banner) newErrors.banner = "Banner image is required"
+      if (!formData.images.logo) newErrors.logo = "Logo image is required"
       if (!formData.startDate) newErrors.startDate = "Start date is required"
       if (!formData.endDate) newErrors.endDate = "End date is required"
       if (!formData.registrationDeadline) newErrors.registrationDeadline = "Registration deadline is required"
+      if (!formData.submissionType) newErrors.submissionType = "Submission type is required"
+      if (!formData.roundType) newErrors.roundType = "Round type is required"
+      // Hackathon Rounds validation
+      if (!formData.rounds || formData.rounds.length === 0) {
+        newErrors.rounds = "At least one round is required"
+      } else {
+        formData.rounds.forEach((round, idx) => {
+          if (!round.name || !round.name.trim() || !round.type || !round.type.trim() || !round.description || !round.description.trim() || !round.startDate || !round.endDate) {
+            newErrors[`round_${idx}`] = `All fields are required for round ${idx + 1}`
+          }
+        })
+      }
     }
 
     // Step 2: Details
     if (step === 2) {
-      // At least one problem statement with both fields filled
       if (
         !formData.problemStatements.length ||
         formData.problemStatements.some((ps) => !ps.statement.trim() || !ps.type.trim())
@@ -139,7 +165,6 @@ export function CreateHackathon({ onBack }) {
 
     // Step 3: Requirements & Perks
     if (step === 3) {
-      // At least one requirement and one perk
       if (!formData.requirements.length || formData.requirements.some((r) => !r.trim())) {
         newErrors.requirements = "At least one requirement is required"
       }
@@ -201,24 +226,14 @@ export function CreateHackathon({ onBack }) {
     }
   }
 
-  const removeImage = (type, index = null) => {
-    if (type === "gallery" && index !== null) {
-      setFormData((prev) => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          gallery: prev.images.gallery.filter((_, i) => i !== index),
-        },
-      }))
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        images: {
-          ...prev.images,
-          [type]: null,
-        },
-      }))
-    }
+  const removeImage = (type) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: {
+        ...prev.images,
+        [type]: null,
+      },
+    }))
   }
 
   // Updated submit function with proper backend integration
@@ -526,38 +541,39 @@ export function CreateHackathon({ onBack }) {
                 variant="destructive"
                 className="absolute top-2 right-2 h-6 w-6 p-0"
                 onClick={() => removeImage(type)}
+                title="Remove image"
               >
                 <X className="w-3 h-3" />
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="absolute top-2 right-10 h-6 w-6 p-0"
+                onClick={() => document.getElementById(`edit-upload-${type}`).click()}
+                title="Edit image"
+              >
+                <Upload className="w-3 h-3" />
+              </Button>
+              <input
+                id={`edit-upload-${type}`}
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) handleFileSelect(file, type);
+                }}
+                disabled={uploadStates[type]?.uploading}
+              />
               <div className="absolute bottom-2 left-2 bg-green-500 rounded-full p-1">
                 <Check className="w-3 h-3 text-white" />
               </div>
             </div>
           )}
 
-          {/* Gallery Images Display */}
-          {type === "gallery" && formData.images.gallery.length > 0 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {formData.images.gallery.map((image, index) => (
-                <div key={index} className="relative">
-                  <img
-                    src={image.url || "/placeholder.svg"}
-                    alt={`Gallery ${index + 1}`}
-                    className="w-full h-20 object-cover rounded border"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="destructive"
-                    className="absolute top-1 right-1 h-5 w-5 p-0"
-                    onClick={() => removeImage("gallery", index)}
-                  >
-                    <X className="w-2 h-2" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+        
+         
         </div>
       </CardContent>
     </Card>
@@ -852,6 +868,122 @@ export function CreateHackathon({ onBack }) {
                 </div>
                 {errors.teamSize && <p className="text-sm text-red-500 mt-1">{errors.teamSize}</p>}
 
+                {/* 1. Move the Dates & Deadlines card (with startDate, endDate, registrationDeadline, submissionDeadline) to appear before the Submission Type and Hackathon Rounds sections. */}
+                {/* 2. The order should be: Basic Info -> Dates & Deadlines -> Submission Type -> Hackathon Rounds -> ... */}
+                {/* Dates and Deadlines */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-purple-600" />
+                      Dates & Deadlines
+                    </CardTitle>
+                    <CardDescription>Set important dates for your hackathon</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="startDate">
+                          Hackathon Start Date *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The date and time when the hackathon officially begins. Participants can start working on their projects from this moment.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="startDate"
+                          type="datetime-local"
+                          value={formData.startDate}
+                          onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                          className={errors.startDate ? "border-red-500" : ""}
+                        />
+                        {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="endDate">
+                          Hackathon End Date *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The date and time when the hackathon ends. All activities, including submissions and judging, should be completed by this time.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="endDate"
+                          type="datetime-local"
+                          value={formData.endDate}
+                          onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                          className={errors.endDate ? "border-red-500" : ""}
+                        />
+                        {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="registrationDeadline">
+                          Registration Deadline *
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                The last date and time for participants to register for the hackathon. Registrations will be closed after this deadline. (Can be after the hackathon starts if you allow late registrations.)
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </Label>
+                        <Input
+                          id="registrationDeadline"
+                          type="datetime-local"
+                          value={formData.registrationDeadline}
+                          onChange={(e) => setFormData({ ...formData, registrationDeadline: e.target.value })}
+                          className={errors.registrationDeadline ? "border-red-500" : ""}
+                        />
+                        {errors.registrationDeadline && (
+                          <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
+                        )}
+                      </div>
+                      {/* Only show Final Submission Deadline if not multi-round */}
+                      {formData.roundType !== "multi-round" && (
+                        <div>
+                          <Label htmlFor="submissionDeadline">
+                            Final Submission Deadline
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  The last date and time for submitting projects if there is only one round. If your hackathon has multiple rounds, use the round-specific deadlines below.
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </Label>
+                          <Input
+                            id="submissionDeadline"
+                            type="datetime-local"
+                            value={formData.submissionDeadline}
+                            onChange={(e) => setFormData({ ...formData, submissionDeadline: e.target.value })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Submission Type *</Label>
@@ -859,12 +991,8 @@ export function CreateHackathon({ onBack }) {
                       value={formData.submissionType}
                       onValueChange={(value) => {
                         setFormData((prev) => ({ ...prev, submissionType: value }));
-                        // Check for invalid combination
-                        if (value === "multi-project" && formData.roundType === "multi-round") {
-                          setInvalidComboError("Multi Project + Multi Round is not allowed.");
-                        } else {
-                          setInvalidComboError("");
-                        }
+                        // Removed restriction: allow all combinations
+                        setInvalidComboError("");
                       }}
                     >
                       <SelectTrigger>
@@ -882,12 +1010,8 @@ export function CreateHackathon({ onBack }) {
                       value={formData.roundType}
                       onValueChange={(value) => {
                         setFormData((prev) => ({ ...prev, roundType: value }));
-                        // Check for invalid combination
-                        if (formData.submissionType === "multi-project" && value === "multi-round") {
-                          setInvalidComboError("Multi Project + Multi Round is not allowed.");
-                        } else {
-                          setInvalidComboError("");
-                        }
+                        // Removed restriction: allow all combinations
+                        setInvalidComboError("");
                       }}
                     >
                       <SelectTrigger>
@@ -903,16 +1027,22 @@ export function CreateHackathon({ onBack }) {
                 {invalidComboError && (
                   <div className="text-red-600 text-sm font-medium mt-2">{invalidComboError}</div>
                 )}
-                {/* Show rounds section only if multi-round is selected and valid combination */}
-                {(formData.roundType === "single-round" || (formData.roundType === "multi-round" && formData.submissionType === "single-project")) && !invalidComboError && (
+                {/* Show rounds section if roundType is 'single-round' or 'multi-round', regardless of submissionType */}
+                {(formData.roundType === "single-round" || formData.roundType === "multi-round") && (
                   <div className="mt-4">
-                    <Label>Rounds *</Label>
+                 
                     <Card>
                       <CardHeader>
                         <CardTitle>Hackathon Rounds</CardTitle>
                         <CardDescription>Define the round(s) of your hackathon</CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-6">
+                        {formData.roundType === "multi-round" && (
+                          <div className="mb-2 text-blue-700 text-sm flex items-center gap-2">
+                            <Info size={16} />
+                            Since your hackathon has multiple rounds, please specify the start/end/submission deadlines for each round below.
+                          </div>
+                        )}
                         {(formData.roundType === "single-round"
                           ? [formData.rounds[0] || { name: "", description: "", startDate: "", endDate: "" }]
                           : formData.rounds
@@ -985,7 +1115,19 @@ export function CreateHackathon({ onBack }) {
                               </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
-                                <Label htmlFor={`round-start-${index}`}>Start Date </Label>
+                                <Label htmlFor={`round-start-${index}`}>
+                                  Round Start Date
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        When this round begins. Only participants who advance to this round can participate from this date.
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Label>
                                 <Input
                                   id={`round-start-${index}`}
                                   type="datetime-local"
@@ -998,7 +1140,19 @@ export function CreateHackathon({ onBack }) {
                                 />
                               </div>
                               <div>
-                                <Label htmlFor={`round-end-${index}`}>End Date</Label>
+                                <Label htmlFor={`round-end-${index}`}>
+                                  Round End Date
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        When this round ends. All submissions for this round must be completed by this date.
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </Label>
                                 <Input
                                   id={`round-end-${index}`}
                                   type="datetime-local"
@@ -1053,96 +1207,30 @@ export function CreateHackathon({ onBack }) {
                     type="banner"
                     currentImage={formData.images.banner}
                   />
+                  {errors.banner && <p className="text-sm text-red-500 mt-1">{errors.banner}</p>}
                   <ImageUploadCard
                     title="Logo"
                     description="Hackathon logo (400x400px recommended)"
                     type="logo"
                     currentImage={formData.images.logo}
                   />
+                  {errors.logo && <p className="text-sm text-red-500 mt-1">{errors.logo}</p>}
                 </div>
-                <ImageUploadCard
-                  title="Gallery Images"
-                  description="Additional showcase images"
-                  type="gallery"
-                  currentImage={null}
-                  multiple={true}
-                />
+                {/* Dates & Deadlines errors */}
+                {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
+                {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
+                {errors.registrationDeadline && <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>}
+                {/* Submission Type and Round Type errors */}
+                {errors.submissionType && <p className="text-sm text-red-500 mt-1">{errors.submissionType}</p>}
+                {errors.roundType && <p className="text-sm text-red-500 mt-1">{errors.roundType}</p>}
+                {/* Hackathon Rounds errors */}
+                {errors.rounds && <p className="text-sm text-red-500 mt-1">{errors.rounds}</p>}
+                {formData.rounds && formData.rounds.map((_, idx) => errors[`round_${idx}`] && <p key={idx} className="text-sm text-red-500 mt-1">{errors[`round_${idx}`]}</p>)}
+                {/* Gallery image upload removed */}
               </CardContent>
             </Card>
 
-            {/* Dates and Deadlines */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-purple-600" />
-                  Dates & Deadlines
-                </CardTitle>
-                <CardDescription>Set important dates for your hackathon</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startDate">Start Date *</Label>
-                    <Input
-                      id="startDate"
-                      type="datetime-local"
-                      value={formData.startDate}
-                      onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                      className={errors.startDate ? "border-red-500" : ""}
-                    />
-                    {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="endDate">End Date *</Label>
-                    <Input
-                      id="endDate"
-                      type="datetime-local"
-                      value={formData.endDate}
-                      onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                      className={errors.endDate ? "border-red-500" : ""}
-                    />
-                    {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="registrationDeadline">Registration Deadline *</Label>
-                    <Input
-                      id="registrationDeadline"
-                      type="datetime-local"
-                      value={formData.registrationDeadline}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          registrationDeadline: e.target.value,
-                        })
-                      }
-                      className={errors.registrationDeadline ? "border-red-500" : ""}
-                    />
-                    {errors.registrationDeadline && (
-                      <p className="text-sm text-red-500 mt-1">{errors.registrationDeadline}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="submissionDeadline">Submission Deadline</Label>
-                    <Input
-                      id="submissionDeadline"
-                      type="datetime-local"
-                      value={formData.submissionDeadline}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          submissionDeadline: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            
           </>
         )}
         {step === 2 && (
@@ -1150,7 +1238,7 @@ export function CreateHackathon({ onBack }) {
             {/* Problem Statements - Combined */}
             <Card>
               <CardHeader>
-                <CardTitle>Problem Statements</CardTitle>
+                <CardTitle>Problem Statements <span className="text-red-500">*</span></CardTitle>
                 <CardDescription>Define the challenges participants will work on and their types</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1172,7 +1260,7 @@ export function CreateHackathon({ onBack }) {
                     </div>
 
                     <div>
-                      <Label htmlFor={`statement-${index}`}>Statement</Label>
+                      <Label htmlFor={`statement-${index}`}>Statement <span className="text-red-500">*</span></Label>
                       <Textarea
                         id={`statement-${index}`}
                         value={ps.statement}
@@ -1183,7 +1271,7 @@ export function CreateHackathon({ onBack }) {
                     </div>
 
                     <div>
-                      <Label htmlFor={`type-${index}`}>Type</Label>
+                      <Label htmlFor={`type-${index}`}>Type <span className="text-red-500">*</span></Label>
                       <Select value={ps.type} onValueChange={(value) => updateProblemStatement(index, "type", value)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select problem statement type" />
@@ -1394,7 +1482,34 @@ export function CreateHackathon({ onBack }) {
           <Button onClick={prevStep} disabled={step === 0} variant="outline">
             Previous
           </Button>
-          {step < steps.length - 1 ? <Button onClick={nextStep}>Next</Button> : null}
+          {step < steps.length - 1 ? (
+            <Button
+              onClick={nextStep}
+              disabled={
+                (step === 0 && (
+                  !formData.title.trim() ||
+                  !formData.teamSize.min ||
+                  !formData.teamSize.max ||
+                  formData.teamSize.min > formData.teamSize.max ||
+                  formData.teamSize.min < 1 ||
+                  formData.teamSize.max > 10 ||
+                  !formData.startDate ||
+                  !formData.endDate ||
+                  !formData.registrationDeadline ||
+                  !formData.submissionType ||
+                  !formData.roundType ||
+                  !formData.rounds ||
+                  formData.rounds.length === 0 ||
+                  !formData.rounds.every(round => round.name && round.name.trim() && round.type && round.type.trim() && round.description && round.description.trim() && round.startDate && round.endDate)
+                )) ||
+                (step === 1 && (!formData.images.banner || !formData.images.logo)) ||
+                (step === 2 && (!formData.problemStatements || formData.problemStatements.length === 0 || !formData.problemStatements.every(ps => ps.statement.trim() && ps.type.trim()))) ||
+                (step === 3 && (!formData.requirements.length || formData.requirements.some((r) => !r.trim()) || !formData.perks.length || formData.perks.some((p) => !p.trim())))
+              }
+            >
+              Next
+            </Button>
+          ) : null}
         </div>
       </div>
       {/* Sidebar */}
