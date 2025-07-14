@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { useToast } from '../../../../../hooks/use-toast';
 import { useNavigate, useLocation } from "react-router-dom";
 
-export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess }) {
+export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedProject, setSelectedProject] = useState("");
@@ -15,6 +15,9 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
   const navigate = useNavigate();
   const location = useLocation();
   const [showDebug, setShowDebug] = useState(false);
+  // Add state for editing mode
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingId, setEditingId] = useState(null);
 
   // Helper to fetch projects
   const fetchProjects = async (autoSelectLatest = false) => {
@@ -25,7 +28,11 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
       });
       const data = await res.json();
       setProjects(data || []);
-      if (autoSelectLatest && data && data.length > 0) {
+      const params = new URLSearchParams(location.search);
+      const newProjectId = params.get("newProjectId");
+      if (newProjectId && data.some(p => p._id === newProjectId)) {
+        setSelectedProject(newProjectId);
+      } else if (autoSelectLatest && data && data.length > 0) {
         const sorted = [...data].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setSelectedProject(sorted[0]._id);
       }
@@ -60,12 +67,35 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     // eslint-disable-next-line
   }, [open, location.search]);
 
+  useEffect(() => {
+    if (open && autoSelectProjectId) {
+      setSelectedProject(autoSelectProjectId);
+    }
+  }, [open, autoSelectProjectId]);
+
+  // Pre-fill form if editing
+  useEffect(() => {
+    if (editingSubmission && open) {
+      setIsEditMode(true);
+      setEditingId(editingSubmission._id);
+      setSelectedProject(editingSubmission.projectId?._id || editingSubmission.projectId);
+      setSelectedProblem(editingSubmission.problemStatement || "");
+    } else if (open) {
+      setIsEditMode(false);
+      setEditingId(null);
+      setSelectedProject("");
+      setSelectedProblem("");
+    }
+  }, [editingSubmission, open]);
+
   const handleRefresh = () => {
     fetchProjects();
   };
 
   const handleCreateNew = () => {
-    navigate(`/dashboard/my-hackathons?createProject=1&returnTo=hackathon-timeline`);
+    const hackathonId = hackathon?._id || hackathon?.id;
+    const returnUrl = encodeURIComponent(`/dashboard/hackathons/${hackathonId}?returnTo=hackathon-timeline`);
+    navigate(`/dashboard/my-hackathons?createProject=1&hackathonId=${hackathonId}&returnUrl=${returnUrl}`);
     if (onOpenChange) onOpenChange(false); // Close modal
   };
 
@@ -75,26 +105,65 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     setSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/submission-form/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          hackathonId: hackathon._id,
-          roundIndex,
-          projectId: selectedProject,
-          problemStatement: selectedProblem,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Submission failed");
-      toast({ title: "Project Submitted!", description: "Your project has been submitted successfully.", variant: "success" });
-      if (onOpenChange) onOpenChange(false);
-      if (onSuccess) onSuccess();
+      if (isEditMode && editingId) {
+        // Edit existing submission
+        const res = await fetch(`http://localhost:3000/api/submission-form/submission/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            projectId: selectedProject,
+            problemStatement: selectedProblem,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Update failed");
+        toast({ title: "Submission Updated!", description: "Your project submission has been updated.", variant: "success" });
+        if (onOpenChange) onOpenChange(false);
+        if (onSuccess) onSuccess();
+      } else {
+        // Create new submission (existing logic)
+        // Find the selected project
+        const project = projects.find(p => p._id === selectedProject);
+        // If the project is not linked to this hackathon, update it first
+        if (!project.hackathon || (project.hackathon._id !== hackathon._id && project.hackathon !== hackathon._id)) {
+          const updateRes = await fetch(`http://localhost:3000/api/projects/${selectedProject}/assign-hackathon`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ hackathonId: hackathon._id }),
+          });
+          if (!updateRes.ok) {
+            const errData = await updateRes.json();
+            throw new Error(errData.message || "Failed to link project to hackathon");
+          }
+        }
+        // Now submit the project
+        const res = await fetch("http://localhost:3000/api/submission-form/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            hackathonId: hackathon._id,
+            roundIndex,
+            projectId: selectedProject,
+            problemStatement: selectedProblem,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Submission failed");
+        toast({ title: "Project Submitted!", description: "Your project has been submitted successfully.", variant: "success" });
+        if (onOpenChange) onOpenChange(false);
+        if (onSuccess) onSuccess();
+      }
     } catch (err) {
-      toast({ title: "Submission failed", description: err.message || "Could not submit project", variant: "destructive" });
+      toast({ title: isEditMode ? "Update failed" : "Submission failed", description: err.message || "Could not submit project", variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
@@ -125,10 +194,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
           ) : projects.length === 0 ? (
             <>
               <div className="text-gray-600 text-center">No previous projects.</div>
-              <Button onClick={handleCreateNew} className="w-full bg-blue-600 text-white mt-2">Create New Project</Button>
-              <Button variant="outline" className="w-full mt-2" onClick={() => setShowDebug(d => !d)}>
-                {showDebug ? "Hide" : "Show"} Debug Project JSON
-              </Button>
+             
               {showDebug && (
                 <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-40">{JSON.stringify(projects, null, 2)}</pre>
               )}
@@ -136,6 +202,22 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
           ) : (
             <>
               <div className="text-sm text-gray-700">{projects.length} project(s) found.</div>
+              {/* Fallback: Native select for debugging */}
+              <label className="block text-sm font-medium text-gray-700 mt-2">Select a project</label>
+              <select
+                value={selectedProject}
+                onChange={e => setSelectedProject(e.target.value)}
+                disabled={submitting}
+                className="w-full p-2 border rounded"
+              >
+                <option value="">Select a project</option>
+                {projects.map(project => (
+                  <option key={project._id} value={project._id}>
+                    {project.title || project.name}
+                  </option>
+                ))}
+              </select>
+              {/*
               <Select value={selectedProject} onValueChange={setSelectedProject} disabled={submitting}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a project" />
@@ -146,6 +228,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
                   ))}
                 </SelectContent>
               </Select>
+              */}
               <Button onClick={handleCreateNew} className="w-full bg-blue-600 text-white mt-2">Create New Project</Button>
               <Button variant="outline" className="w-full mt-2" onClick={() => setShowDebug(d => !d)}>
                 {showDebug ? "Hide" : "Show"} Debug Project JSON
@@ -154,18 +237,36 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
                 <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-40">{JSON.stringify(projects, null, 2)}</pre>
               )}
               {showProblemDropdown && (
-                <Select value={selectedProblem} onValueChange={setSelectedProblem} disabled={submitting}>
-                  <SelectTrigger className="w-full mt-2">
-                    <SelectValue placeholder="Select a problem statement" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <>
+                  <label className="block text-sm font-medium text-gray-700 mt-2">Select a problem statement</label>
+                  <select
+                    value={selectedProblem}
+                    onChange={e => setSelectedProblem(e.target.value)}
+                    disabled={submitting}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="">Select a problem statement</option>
                     {hackathon.problemStatements.map((ps, idx) => (
-                      <SelectItem key={idx} value={typeof ps === 'object' && ps !== null ? ps.statement : ps}>
+                      <option key={idx} value={typeof ps === 'object' && ps !== null ? ps.statement : ps}>
                         {typeof ps === 'object' && ps !== null ? ps.statement : ps}
-                      </SelectItem>
+                      </option>
                     ))}
-                  </SelectContent>
-                </Select>
+                  </select>
+                  {/*
+                  <Select value={selectedProblem} onValueChange={setSelectedProblem} disabled={submitting}>
+                    <SelectTrigger className="w-full mt-2">
+                      <SelectValue placeholder="Select a problem statement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hackathon.problemStatements.map((ps, idx) => (
+                        <SelectItem key={idx} value={typeof ps === 'object' && ps !== null ? ps.statement : ps}>
+                          {typeof ps === 'object' && ps !== null ? ps.statement : ps}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  */}
+                </>
               )}
             </>
           )}
@@ -174,7 +275,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
             onClick={handleSubmit}
             disabled={submitting || !canSubmit}
           >
-            {submitting ? "Submitting..." : "Submit Project"}
+            {submitting ? (isEditMode ? "Saving..." : "Submitting...") : (isEditMode ? "Save Changes" : "Submit Project")}
           </Button>
         </div>
       }
