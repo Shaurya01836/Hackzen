@@ -259,23 +259,41 @@ const deleteUser = async (req, res) => {
 // ✅ Change user role
 const changeUserRole = async (req, res) => {
   try {
+    console.log("PATCH /users/:id/role called");
+    console.log("Request params:", req.params);
+    console.log("Request body:", req.body);
+
     const { newRole } = req.body;
     const validRoles = ['participant', 'organizer', 'mentor', 'judge', 'admin'];
-    if (!validRoles.includes(newRole)) {
-      return res.status(400).json({ message: 'Invalid role specified' });
+    if (!newRole) {
+      console.log("Missing newRole in request body");
+      return res.status(400).json({ message: "Missing newRole in request body" });
     }
-    
+    if (!validRoles.includes(newRole)) {
+      console.log("Invalid role:", newRole);
+      return res.status(400).json({ message: "Invalid role" });
+    }
     const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) {
+      console.log("User not found:", req.params.id);
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.role = newRole;
 
-    // Reset user data for new role
-    await exports.resetUserDataForRole(user._id, newRole);
+    // Clear fields that are not valid for the new role
+    if (newRole === "mentor" || newRole === "organizer" || newRole === "admin" || newRole === "judge") {
+      user.currentYear = undefined;
+      user.yearsOfExperience = undefined;
+      user.preferredHackathonTypes = undefined;
+    }
+    // You can add more logic for other roles if needed
 
-    // Fetch updated user
-    const updatedUser = await User.findById(user._id);
-    res.json({ message: `User role updated to ${newRole} and data reset`, user: updatedUser });
+    await user.save();
+    console.log("Role updated successfully for user:", user._id);
+    res.json({ message: "Role updated", user });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error in changeUserRole:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

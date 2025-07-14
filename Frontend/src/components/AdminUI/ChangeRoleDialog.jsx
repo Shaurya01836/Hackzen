@@ -26,44 +26,40 @@ const roleDetails = {
 export default function ChangeRoleDialog({ userId, currentRole, onRoleUpdate }) {
   const [selectedRole, setSelectedRole] = useState(currentRole);
   const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false); // <-- NEW
+  const [open, setOpen] = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const apiUrl = buildApiUrl(`/users/${userId}/role`);
       const headers = getAuthHeaders();
-      
+
       console.log("Making API call to:", apiUrl);
       console.log("Headers:", headers);
       console.log("Request body:", { newRole: selectedRole });
-      
+
+      // The PATCH body must be { newRole: ... }
       const response = await axios.patch(
         apiUrl,
         { newRole: selectedRole },
-        {
-          headers: headers,
-        }
+        { headers }
       );
-      
+
       console.log("Role update successful:", response.data);
       onRoleUpdate(selectedRole);
       setOpen(false);
     } catch (err) {
       console.error("Failed to update role:", err);
-      
+
       let errorMessage = "Failed to update role.";
       if (err.response) {
-        // Server responded with error status
         errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
       } else if (err.request) {
-        // Network error
         errorMessage = "Network error: Unable to connect to server. Please check your connection.";
       } else {
-        // Other error
         errorMessage = err.message || "An unexpected error occurred.";
       }
-      
+
       alert(errorMessage);
     } finally {
       setLoading(false);

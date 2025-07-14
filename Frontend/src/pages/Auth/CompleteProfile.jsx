@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../../context/AuthContext";
@@ -23,6 +23,23 @@ const teamSizes = ["solo", "2-3", "4-5", "6+", "any"];
 export default function CompleteProfile() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  
+  // Debug: Check what's in localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    console.log("🔍 Debug - Stored user from localStorage:", storedUser);
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log("🔍 Debug - Parsed user:", parsedUser);
+        console.log("🔍 Debug - Parsed user._id:", parsedUser._id);
+      } catch (err) {
+        console.error("❌ Error parsing stored user:", err);
+      }
+    }
+    console.log("🔍 Debug - User from AuthContext:", user);
+  }, [user]);
+  
   const [form, setForm] = useState({
     phone: "",
     gender: "prefer-not-to-say",
@@ -63,6 +80,22 @@ export default function CompleteProfile() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
+      console.log("🔍 Debug - Token from localStorage:", token);
+      console.log("🔍 Debug - Token type:", typeof token);
+      console.log("🔍 Debug - Token length:", token ? token.length : 0);
+      console.log("🔍 Debug - Token starts with 'eyJ':", token ? token.startsWith('eyJ') : false);
+      console.log("🔍 Debug - Token contains dots:", token ? (token.split('.').length - 1) : 0);
+      
+      console.log("🔍 Debug - User object:", user);
+      console.log("🔍 Debug - User._id:", user?._id);
+      console.log("🔍 Debug - User.id:", user?.id);
+      
+      if (!user?._id) {
+        console.error("❌ User._id is undefined!");
+        setError("User ID not found. Please try logging in again.");
+        return;
+      }
+      
       const res = await axios.put(
         `http://localhost:3000/api/users/${user._id}/complete-profile`,
         { ...form, profileCompleted: true },
@@ -71,6 +104,7 @@ export default function CompleteProfile() {
       login(res.data, token);
       navigate("/dashboard");
     } catch (err) {
+      console.error("❌ CompleteProfile error:", err);
       setError(err.response?.data?.message || "Failed to save profile");
     } finally {
       setLoading(false);

@@ -9,8 +9,14 @@ export const AuthProvider = ({ children }) => {
   const location = useLocation();
 
   const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem("user");
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error("❌ Error parsing stored user:", error);
+      localStorage.removeItem("user"); // Clear corrupted data
+      return null;
+    }
   });
 
   const [token, setToken] = useState(() => localStorage.getItem("token"));
@@ -37,6 +43,7 @@ export const AuthProvider = ({ children }) => {
       lastBadgeCheckRef.current = now;
       
       const token = localStorage.getItem('token');
+      console.log('🔍 Badge check - token:', token);
       if (!token) return;
       
       await axios.post(
@@ -48,7 +55,13 @@ export const AuthProvider = ({ children }) => {
       );
       console.log('[Auth] ✅ Badge check completed after login');
     } catch (err) {
-      console.error('Failed to check badges after login:', err);
+      if (err.response && err.response.status === 401) {
+        alert('Session expired. Please log in again.');
+        localStorage.clear();
+        window.location.href = '/?modal=login';
+      } else {
+        console.error('Failed to check badges after login:', err);
+      }
     } finally {
       isCheckingBadgesRef.current = false;
     }
@@ -56,6 +69,15 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ Login helper
   const login = async (userData, authToken) => {
+    console.log("🔍 Debug - Login called with userData:", userData);
+    console.log("🔍 Debug - Login called with token:", authToken);
+    console.log("🔍 Debug - Token type:", typeof authToken);
+    console.log("🔍 Debug - Token length:", authToken ? authToken.length : 0);
+    console.log("🔍 Debug - Token starts with 'eyJ':", authToken ? authToken.startsWith('eyJ') : false);
+    console.log("🔍 Debug - Token contains dots:", authToken ? (authToken.split('.').length - 1) : 0);
+    console.log("🔍 Debug - UserData._id:", userData?._id);
+    console.log("🔍 Debug - UserData.id:", userData?.id);
+    
     setUser(userData);
     setToken(authToken);
     localStorage.setItem("user", JSON.stringify(userData));
@@ -104,10 +126,16 @@ export const AuthProvider = ({ children }) => {
   // ✅ 2. Sync user/token from localStorage across tabs
   useEffect(() => {
     const sync = () => {
-      const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
-      setUser(storedUser ? JSON.parse(storedUser) : null);
-      setToken(storedToken || null);
+      try {
+        const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("token");
+        setUser(storedUser ? JSON.parse(storedUser) : null);
+        setToken(storedToken || null);
+      } catch (error) {
+        console.error("❌ Error syncing user from storage:", error);
+        localStorage.removeItem("user"); // Clear corrupted data
+        setUser(null);
+      }
     };
 
     window.addEventListener("storage", sync);

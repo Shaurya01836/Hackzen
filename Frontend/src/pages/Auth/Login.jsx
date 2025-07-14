@@ -44,6 +44,13 @@ function Login({ onClose, onSwitchToRegister }) {
         return;
       }
 
+      console.log("🔍 Debug - Login API response:", res.data);
+      console.log("🔍 Debug - Token from API:", res.data.token);
+      console.log("🔍 Debug - Token type:", typeof res.data.token);
+      console.log("🔍 Debug - Token length:", res.data.token ? res.data.token.length : 0);
+      console.log("🔍 Debug - Token starts with 'eyJ':", res.data.token ? res.data.token.startsWith('eyJ') : false);
+      console.log("🔍 Debug - Token contains dots:", res.data.token ? (res.data.token.split('.').length - 1) : 0);
+
       // Save using context
       login(res.data.user, res.data.token);
 

@@ -219,6 +219,8 @@ export function ProfileSection() {
   const fetch2FAStatus = async () => {
     try {
       console.log("Fetching 2FA status...");
+      const token = localStorage.getItem("token");
+      console.log('🔍 2FA status fetch - token:', token);
       const response = await axios.get(
         "http://localhost:3000/api/users/2fa/status",
         {
@@ -228,8 +230,14 @@ export function ProfileSection() {
       console.log("2FA status response:", response.data);
       setTwoFactorEnabled(response.data.enabled);
     } catch (err) {
-      console.error("Error fetching 2FA status:", err);
-      setTwoFAError("Failed to load 2FA status");
+      if (err.response && err.response.status === 401) {
+        alert('Session expired. Please log in again.');
+        localStorage.clear();
+        window.location.href = '/?modal=login';
+      } else {
+        console.error("Error fetching 2FA status:", err);
+        setTwoFAError("Failed to load 2FA status");
+      }
     }
   };
 
@@ -323,7 +331,7 @@ export function ProfileSection() {
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
       const token = localStorage.getItem("token");
-
+      console.log('🔍 Streak fetch - token:', token);
       if (!storedUser?._id || !token) return;
 
       const res = await axios.get(
@@ -338,7 +346,13 @@ export function ProfileSection() {
         activityLog: res.data.streaks,
       });
     } catch (err) {
-      console.error("Failed to fetch streaks:", err.message);
+      if (err.response && err.response.status === 401) {
+        alert('Session expired. Please log in again.');
+        localStorage.clear();
+        window.location.href = '/?modal=login';
+      } else {
+        console.error("Failed to fetch streaks:", err.message);
+      }
     }
   };
 
