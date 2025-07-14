@@ -68,27 +68,34 @@ const FIELD_LIMITS = {
   logoFile: 2 * 1024 * 1024, // 2MB
 };
 
-export default function ProjectSubmission({ onBack, onSave, mode = "create", initialData = {}, projectId }) {
-const [formData, setFormData] = useState({
-  title: initialData.title || "",
-  oneLineIntro: initialData.oneLineIntro || "",
-  description: initialData.description || "",
-  teamIntro: initialData.teamIntro || "",
-  skills: initialData.skills || [],
-  logo: initialData.logo || null,
-  githubLink: initialData.repoLink || "",
-  websiteLink: initialData.websiteLink || "",
-  demoVideoType: initialData.videoLink ? "link" : "upload",
-  demoVideoFile: null,
-  demoVideoLink: initialData.videoLink || "",
-  socialLinks: initialData.socialLinks || [""],
-  category: initialData.category || "",
-  customCategory: initialData.customCategory || "",
-  status: initialData.status || "draft",
-});
+export default function ProjectSubmission({
+  onBack,
+  onSave,
+  mode = "create",
+  initialData = {},
+  projectId,
+}) {
+  const [formData, setFormData] = useState({
+    title: initialData.title || "",
+    oneLineIntro: initialData.oneLineIntro || "",
+    description: initialData.description || "",
+    teamIntro: initialData.teamIntro || "",
+    skills: initialData.skills || [],
+    logo: initialData.logo || null,
+    githubLink: initialData.repoLink || "",
+    websiteLink: initialData.websiteLink || "",
+    demoVideoType: initialData.videoLink ? "link" : "upload",
+    demoVideoFile: null,
+    demoVideoLink: initialData.videoLink || "",
+    socialLinks: initialData.socialLinks || [""],
+    category: initialData.category || "",
+    customCategory: initialData.customCategory || "",
+    status: initialData.status || "draft",
+  });
 
-
-const [logoPreview, setLogoPreview] = useState(initialData?.logo?.url || null);
+  const [logoPreview, setLogoPreview] = useState(
+    initialData?.logo?.url || null
+  );
   const [currentSkill, setCurrentSkill] = useState("");
 
   const handleInputChange = (field, value) => {
@@ -157,9 +164,9 @@ const [logoPreview, setLogoPreview] = useState(initialData?.logo?.url || null);
   };
 
   const isIncomplete =
-    !formData.title || 
-    !formData.oneLineIntro || 
-    !formData.description || 
+    !formData.title ||
+    !formData.oneLineIntro ||
+    !formData.description ||
     !formData.category ||
     formData.skills.length === 0;
 
@@ -184,7 +191,7 @@ const [logoPreview, setLogoPreview] = useState(initialData?.logo?.url || null);
       const token = localStorage.getItem("token");
       if (!token) return alert("You must be logged in.");
 
-let logoData = initialData?.logo || null; // fallback to original if no new upload
+      let logoData = initialData?.logo || null; // fallback to original if no new upload
       let videoLink = "";
 
       // Upload Logo if it's a File
@@ -252,21 +259,21 @@ let logoData = initialData?.logo || null; // fallback to original if no new uplo
         customCategory: formData.customCategory,
         status: "draft",
       };
-const url = mode === "edit"
-  ? `http://localhost:3000/api/projects/${projectId}`
-  : "http://localhost:3000/api/projects";
+      const url =
+        mode === "edit"
+          ? `http://localhost:3000/api/projects/${projectId}`
+          : "http://localhost:3000/api/projects";
 
-const method = mode === "edit" ? "PUT" : "POST";
+      const method = mode === "edit" ? "PUT" : "POST";
 
-    const response = await fetch(url, {
-  method,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify(payload),
-});
-
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
       const created = await response.json();
       if (!response.ok)
@@ -278,9 +285,11 @@ const method = mode === "edit" ? "PUT" : "POST";
       const params = new URLSearchParams(location.search);
       const returnUrl = params.get("returnUrl");
       if (returnUrl && created && created.project && created.project._id) {
-        navigate(`${decodeURIComponent(returnUrl)}&newProjectId=${created.project._id}`);
+        navigate(
+          `${decodeURIComponent(returnUrl)}&newProjectId=${created.project._id}`
+        );
       } else {
-        window.location.href = '/dashboard/my-hackathons';
+        window.location.href = "/dashboard/my-hackathons";
       }
     } catch (error) {
       alert("❌ Error: " + error.message);
@@ -289,12 +298,12 @@ const method = mode === "edit" ? "PUT" : "POST";
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-10">
           <Card className="border-gray-200 shadow-lg rounded-2xl">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-6">
+            <CardContent className="pt-8 pb-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 md:gap-0">
                 <Button
                   variant="ghost"
                   onClick={onBack}
@@ -310,17 +319,15 @@ const method = mode === "edit" ? "PUT" : "POST";
                   )}
                 </div>
               </div>
-              
-
+              <hr className="my-4 border-gray-200" />
               {/* Project Title and One-Line Intro - Full Width */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
                   <Label
                     htmlFor="title"
                     className="text-sm font-medium text-gray-700"
                   >
-                    Project Title * ({formData.title.length}/
-                    {FIELD_LIMITS.title})
+                    Project Title * <span className="text-xs text-gray-400">({formData.title.length}/{FIELD_LIMITS.title})</span>
                   </Label>
                   <Input
                     id="title"
@@ -334,14 +341,14 @@ const method = mode === "edit" ? "PUT" : "POST";
                     className="mt-1"
                     maxLength={FIELD_LIMITS.title}
                   />
+                  <p className="text-xs text-gray-400 mt-1">A concise, descriptive project name.</p>
                 </div>
                 <div>
                   <Label
                     htmlFor="oneLineIntro"
                     className="text-sm font-medium text-gray-700"
                   >
-                    One-Line Intro * ({formData.oneLineIntro.length}/
-                    {FIELD_LIMITS.oneLineIntro})
+                    One-Line Intro * <span className="text-xs text-gray-400">({formData.oneLineIntro.length}/{FIELD_LIMITS.oneLineIntro})</span>
                   </Label>
                   <Input
                     id="oneLineIntro"
@@ -355,6 +362,7 @@ const method = mode === "edit" ? "PUT" : "POST";
                     className="mt-1"
                     maxLength={FIELD_LIMITS.oneLineIntro}
                   />
+                  <p className="text-xs text-gray-400 mt-1">Summarize your project in a single sentence.</p>
                 </div>
                 <div>
                   <Label
@@ -373,6 +381,7 @@ const method = mode === "edit" ? "PUT" : "POST";
                       maxLength={FIELD_LIMITS.description}
                     />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Explain the purpose, goals, and impact of your project.</p>
                 </div>
               </div>
             </CardContent>
@@ -380,15 +389,15 @@ const method = mode === "edit" ? "PUT" : "POST";
         </div>
 
         {/* Main Content - Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Left Column */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Skills */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Tag className="w-5 h-5" />
-                  Skills *
+                  Tech Stack *
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -414,7 +423,7 @@ const method = mode === "edit" ? "PUT" : "POST";
                     </Button>
                   </div>
                   {formData.skills.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {formData.skills.map((skill, index) => (
                         <Badge
                           key={index}
@@ -430,48 +439,13 @@ const method = mode === "edit" ? "PUT" : "POST";
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-gray-500">
-                    Press Enter or click + to add skills
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Team Introduction */}
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Team Introduction
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label
-                    htmlFor="teamIntro"
-                    className="text-sm font-medium text-gray-700"
-                  >
-                    Tell us about your team ({formData.teamIntro.length}/
-                    {FIELD_LIMITS.teamIntro})
-                  </Label>
-                  <Textarea
-                    id="teamIntro"
-                    placeholder="Introduce your team members, their roles, and what makes your team unique..."
-                    value={formData.teamIntro}
-                    onChange={(e) => {
-                      if (e.target.value.length <= FIELD_LIMITS.teamIntro) {
-                        handleInputChange("teamIntro", e.target.value);
-                      }
-                    }}
-                    className="mt-1 min-h-[120px]"
-                    maxLength={FIELD_LIMITS.teamIntro}
-                  />
+                  <p className="text-xs text-gray-400">Press Enter or click + to add skills</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Project Logo */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Project Logo
@@ -504,12 +478,11 @@ const method = mode === "edit" ? "PUT" : "POST";
                       onChange={handleLogoUpload}
                       className="hidden"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       PNG, JPG up to 2MB
                     </p>
                   </div>
                 </div>
-
                 {/* Preview */}
                 {logoPreview && (
                   <div className="mt-4">
@@ -527,7 +500,7 @@ const method = mode === "edit" ? "PUT" : "POST";
             </Card>
 
             {/* Category */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Category *
@@ -570,9 +543,9 @@ const method = mode === "edit" ? "PUT" : "POST";
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Links */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Project Links
@@ -601,6 +574,7 @@ const method = mode === "edit" ? "PUT" : "POST";
                       maxLength={FIELD_LIMITS.githubLink}
                     />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Link to your public code repository.</p>
                 </div>
                 <div>
                   <Label
@@ -624,12 +598,13 @@ const method = mode === "edit" ? "PUT" : "POST";
                       maxLength={FIELD_LIMITS.websiteLink}
                     />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Project website or live demo (if available).</p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Demo Video */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Demo Video
@@ -653,7 +628,7 @@ const method = mode === "edit" ? "PUT" : "POST";
                         <div className="text-sm text-gray-600">
                           Click to upload or drag and drop
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-gray-400 mt-1">
                           MP4, MOV up to 100MB
                         </div>
                       </Label>
@@ -696,7 +671,7 @@ const method = mode === "edit" ? "PUT" : "POST";
             </Card>
 
             {/* Social Links */}
-            <Card className="border-gray-200 shadow-sm">
+            <Card className="border-gray-200 shadow-sm rounded-xl">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Social Links
@@ -741,7 +716,7 @@ const method = mode === "edit" ? "PUT" : "POST";
         </div>
 
         {/* Bottom Save Button */}
-        <div className="mt-8 flex items-center justify-between">
+        <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-6">
           <div className="flex items-center gap-3">
             {getStatusBadge()}
             <span className="text-sm text-gray-500">
@@ -753,20 +728,26 @@ const method = mode === "edit" ? "PUT" : "POST";
               <Button
                 variant="destructive"
                 onClick={async () => {
-                  const confirmed = confirm("Are you sure you want to delete this project?");
+                  const confirmed = confirm(
+                    "Are you sure you want to delete this project?"
+                  );
                   if (!confirmed) return;
 
                   try {
                     const token = localStorage.getItem("token");
-                    const res = await fetch(`http://localhost:3000/api/projects/${projectId}`, {
-                      method: "DELETE",
-                      headers: {
-                        Authorization: `Bearer ${token}`,
-                      },
-                    });
+                    const res = await fetch(
+                      `http://localhost:3000/api/projects/${projectId}`,
+                      {
+                        method: "DELETE",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
 
                     const result = await res.json();
-                    if (!res.ok) throw new Error(result.message || "Failed to delete");
+                    if (!res.ok)
+                      throw new Error(result.message || "Failed to delete");
 
                     alert("Project deleted successfully");
                     onBack?.(); // Redirect user after deletion
@@ -788,9 +769,7 @@ const method = mode === "edit" ? "PUT" : "POST";
             </Button>
           </div>
         </div>
-
-        </div>
       </div>
-
-            );
-          }
+    </div>
+  );
+}

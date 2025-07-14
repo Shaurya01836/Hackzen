@@ -25,6 +25,10 @@ import {
   Shield,
   Check,
   X,
+  Copy,
+  Twitter,
+  Instagram,
+  LinkIcon,
 } from "lucide-react";
 import {
   Card,
@@ -61,23 +65,23 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../../components/DashboardUI/alert-dialog";
+import PublicProfileView from "./PublicProfileView";
 
-export function ProfileSection() {
+// Add this utility function at the top
+function getCurrentViewFromPath(pathname) {
+  if (pathname.includes("/dashboard/profile/edit")) return "edit-profile";
+  if (pathname.includes("/dashboard/profile/account-settings")) return "account-settings";
+  if (pathname.includes("/dashboard/profile/privacy-security")) return "privacy-security";
+  if (pathname.includes("/dashboard/profile/help-support")) return "help-support";
+  return "overview";
+}
+
+export function ProfileSection({ viewUserId }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, token, login } = useAuth();
 
-  // Get current view from URL path
-  const getCurrentViewFromPath = () => {
-    const path = location.pathname;
-    if (path.includes("/dashboard/profile/edit")) return "edit-profile";
-    if (path.includes("/dashboard/profile/account-settings"))
-      return "account-settings";
-    if (path.includes("/dashboard/profile/privacy-security"))
-      return "privacy-security";
-    if (path.includes("/dashboard/profile/help-support")) return "help-support";
-    return "overview";
-  };
-
+  // All hooks must be called at the top level
   const [selectedImage, setSelectedImage] = useState(null);
   const [selectedBanner, setSelectedBanner] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -90,56 +94,17 @@ export function ProfileSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [currentView, setCurrentViewState] = useState(getCurrentViewFromPath());
-
-  // Updated setCurrentView function to handle URL navigation
-  const setCurrentView = (view) => {
-    setCurrentViewState(view);
-
-    // Navigate to appropriate URL
-    switch (view) {
-      case "overview":
-        navigate("/dashboard/profile");
-        break;
-      case "edit-profile":
-        navigate("/dashboard/profile/edit");
-        break;
-      case "account-settings":
-        navigate("/dashboard/profile/account-settings");
-        break;
-      case "privacy-security":
-        navigate("/dashboard/profile/privacy-security");
-        break;
-      case "help-support":
-        navigate("/dashboard/profile/help-support");
-        break;
-      default:
-        navigate("/dashboard/profile");
-    }
-  };
-
-  // Listen to URL changes and update current view
-  useEffect(() => {
-    const newView = getCurrentViewFromPath();
-    setCurrentViewState(newView);
-  }, [location.pathname]);
-
+  const [currentView, setCurrentViewState] = useState(() => getCurrentViewFromPath(location.pathname));
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
     maxStreak: 0,
     activityLog: [],
   });
-
-
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [show2FASetup, setShow2FASetup] = useState(false);
   const [twoFAError, setTwoFAError] = useState("");
   const [twoFALoading, setTwoFALoading] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-
-  const { user, token, login } = useAuth();
-
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
@@ -172,8 +137,6 @@ export function ProfileSection() {
     preferredHackathonTypes: "",
     teamSizePreference: "any",
   });
-
-  // Inline editing state
   const [inlineEditing, setInlineEditing] = useState({
     personal: false,
     academic: false,
@@ -184,7 +147,6 @@ export function ProfileSection() {
     social: false,
     all: false,
   });
-
   const [inlineForm, setInlineForm] = useState({
     name: "",
     email: "",
@@ -210,8 +172,66 @@ export function ProfileSection() {
     instagram: "",
     portfolio: "",
     preferredHackathonTypes: "",
-    teamSizePreference: "",
+    teamSizePreference: "any",
   });
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
+
+  // All useEffect hooks must be called at the top level
+  useEffect(() => {
+    const newView = getCurrentViewFromPath(location.pathname);
+    setCurrentViewState(newView);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        await fetchUserProfile();
+        // Only fetch streak data once on mount, don't ping repeatedly
+        await fetchStreakData();
+        await fetch2FAStatus(); // Fetch 2FA status
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // Show loading if user context is not ready
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  // If viewing someone else's profile, show public view immediately
+  if (viewUserId && user && viewUserId !== user._id) {
+    return <PublicProfileView userId={viewUserId} />;
+  }
+
+  // Updated setCurrentView function to handle URL navigation
+  const setCurrentView = (view) => {
+    setCurrentViewState(view);
+
+    // Navigate to appropriate URL
+    switch (view) {
+      case "overview":
+        navigate("/dashboard/profile");
+        break;
+      case "edit-profile":
+        navigate("/dashboard/profile/edit");
+        break;
+      case "account-settings":
+        navigate("/dashboard/profile/account-settings");
+        break;
+      case "privacy-security":
+        navigate("/dashboard/profile/privacy-security");
+        break;
+      case "help-support":
+        navigate("/dashboard/profile/help-support");
+        break;
+      default:
+        navigate("/dashboard/profile");
+    }
+  };
 
   // Fetch 2FA status from backend
   const fetch2FAStatus = async () => {
@@ -309,21 +329,6 @@ export function ProfileSection() {
     console.log("2FA setup cancelled");
     setShow2FASetup(false);
   };
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        await fetchUserProfile();
-        // Only fetch streak data once on mount, don't ping repeatedly
-        await fetchStreakData();
-        await fetch2FAStatus(); // Fetch 2FA status
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
 
   const fetchStreakData = async () => {
     try {
@@ -426,19 +431,22 @@ export function ProfileSection() {
     .substring(0, 2);
 
   const renderHeader = () => (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-800 tracking-tight">
-          {currentView === "overview" && "Profile Settings"}
-          {currentView === "edit-profile" && "Edit Profile"}
-          {currentView === "privacy-security" && "Privacy & Security"}
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {currentView === "overview" && "Manage your account and preferences"}
-          {currentView === "edit-profile" && "Update your personal information"}
-          {currentView === "privacy-security" &&
-            "Manage your privacy and security settings"}
-        </p>
+    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div className="flex gap-2 mt-4 md:mt-0">
+        {/* Share Profile Button */}
+        <Button
+          variant="outline"
+          className="flex items-center gap-2"
+          onClick={async () => {
+            const url = `${window.location.origin}/dashboard/profile/${user?._id}`;
+            await navigator.clipboard.writeText(url);
+            alert("Public profile link copied to clipboard!");
+          }}
+        >
+          <Copy className="w-4 h-4" />
+          Share Profile
+        </Button>
+        {/* Existing edit button, etc. can go here */}
       </div>
     </div>
   );
@@ -2408,7 +2416,7 @@ export function ProfileSection() {
     }
 
     try {
-      const res = await axios.put(
+      await axios.put(
         `http://localhost:3000/api/users/${userData._id}/password`,
         {
           currentPassword, // Optional if OAuth
@@ -2511,10 +2519,6 @@ export function ProfileSection() {
       alert("Failed to remove profile image");
     }
   };
-
-  // Add state for dialog
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingSave, setPendingSave] = useState(false);
 
   const handleSaveClick = () => {
     setShowConfirmDialog(true);

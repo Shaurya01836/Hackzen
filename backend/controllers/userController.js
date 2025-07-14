@@ -745,6 +745,49 @@ const completeProfile = async (req, res) => {
   }
 };
 
+// ✅ Public Profile (only non-sensitive fields)
+const getPublicProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id)
+      .populate('badges.badge projects')
+      .select('name profileImage bannerImage bio website github githubUsername linkedin twitter instagram portfolio skills interests badges projects');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Optionally, add a socialLinks array for frontend convenience
+    const socialLinks = [
+      user.website,
+      user.githubProfile || user.github,
+      user.linkedin,
+      user.twitter,
+      user.instagram,
+      user.portfolio
+    ].filter(Boolean);
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      profileImage: user.profileImage,
+      bannerImage: user.bannerImage,
+      bio: user.bio,
+      website: user.website,
+      github: user.github,
+      githubUsername: user.githubUsername,
+      linkedin: user.linkedin,
+      twitter: user.twitter,
+      instagram: user.instagram,
+      portfolio: user.portfolio,
+      skills: user.skills,
+      interests: user.interests,
+      badges: user.badges,
+      projects: user.projects,
+      socialLinks
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
@@ -766,5 +809,7 @@ module.exports = {
   getWeeklyEngagementStats,
   completeProfile,
 };
+
+module.exports.getPublicProfile = getPublicProfile;
 
 

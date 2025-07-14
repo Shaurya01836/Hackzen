@@ -93,6 +93,7 @@ function App() {
 
         {/* Profile */}
         <Route path="/dashboard/profile" element={<DashboardPage />} />
+        <Route path="/dashboard/profile/:id" element={<DashboardPage />} />
         <Route path="/dashboard/profile/edit" element={<DashboardPage />} />
         <Route
           path="/dashboard/profile/account-settings"

@@ -210,6 +210,7 @@ export default function HackZenDashboard() {
       case "profile":
         return (
           <ProfileSection
+            viewUserId={params.id}
             userName="John Doe"
             userEmail="john@example.com"
             userAvatar="/placeholder.svg?height=96&width=96"
@@ -259,6 +260,7 @@ export default function HackZenDashboard() {
       default:
         return (
           <ProfileSection
+            viewUserId={params.id}
             userName="John Doe"
             userEmail="john@example.com"
             userAvatar="/placeholder.svg?height=96&width=96"
