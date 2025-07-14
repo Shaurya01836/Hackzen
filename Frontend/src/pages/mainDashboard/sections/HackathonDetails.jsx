@@ -189,7 +189,7 @@ const sections = [
             <HackathonProblems hackathon={hackathon} />
           )}
           {activeTab === "timeline" && (
-            <HackathonTimeline hackathon={hackathon} />
+            <HackathonTimeline hackathon={hackathon} isRegistered={isRegistered} />
           )}
           {activeTab === "community" && <HackathonCommunity />}
           {activeTab === "projects" && (

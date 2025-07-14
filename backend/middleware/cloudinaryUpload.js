@@ -14,12 +14,19 @@ const storage = new CloudinaryStorage({
 
 const pptStorage = new CloudinaryStorage({
   cloudinary,
-  params: (req, file) => ({
-    folder: "hackzen/ppt",
-    allowedFormats: ["pptx"],
-    resource_type: "raw",
-    public_id: file.originalname.replace(/\.[^/.]+$/, "")
-  })
+  params: (req, file) => {
+    // Always ensure .pptx extension at the end of public_id
+    let baseName = file.originalname.replace(/\.[^/.]+$/, "");
+    if (!baseName.toLowerCase().endsWith('.pptx')) {
+      baseName = baseName + '.pptx';
+    }
+    return {
+      folder: "hackzen/ppt",
+      allowedFormats: ["pptx"],
+      resource_type: "raw",
+      public_id: baseName
+    };
+  }
 });
 
 const upload = multer({ storage });

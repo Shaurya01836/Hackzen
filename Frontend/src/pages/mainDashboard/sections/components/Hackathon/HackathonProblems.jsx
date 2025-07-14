@@ -27,7 +27,7 @@ export default function HackathonProblems({ hackathon, sectionRef }) {
             problems.map((problem, index) => (
               <div key={index} className="p-4 border rounded-lg">
                 <h3 className="font-semibold mb-2">Problem {index + 1}</h3>
-                <p className="text-gray-700">{problem}</p>
+                <p className="text-gray-700">{typeof problem === 'object' && problem !== null ? problem.statement : problem}</p>
               </div>
             ))
           )}

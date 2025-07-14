@@ -8,8 +8,9 @@ import { useToast } from '../../../../../hooks/use-toast';
 import { useAuth } from '../../../../../context/AuthContext';
 import { useEffect, useRef } from 'react';
 import PPTSubmissionModal from './PPTSubmissionModal';
+import ProjectSubmissionModal from './ProjectSubmissionModal';
 
-export default function HackathonTimeline({ hackathon, sectionRef }) {
+export default function HackathonTimeline({ hackathon, sectionRef, isRegistered }) {
   const rounds = Array.isArray(hackathon.rounds) ? hackathon.rounds : [];
   const [refreshKey, setRefreshKey] = useState(0); // force refresh
   const now = new Date();
@@ -19,6 +20,7 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
   const [pptSubmissions, setPptSubmissions] = useState([]);
   const [pptModal, setPptModal] = useState({ open: false, roundIdx: null });
   const pptModalRef = useRef();
+  const [projectModal, setProjectModal] = useState({ open: false, roundIdx: null });
 
   // Fetch user's PPT submissions for this hackathon
   useEffect(() => {
@@ -77,12 +79,26 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
     return found;
   };
 
-  // Helper to get download link with correct filename
-  const getPPTDownloadLink = (pptFile, originalName) => {
+  // Helper to get download link with correct filename and extension
+  const getPPTDownloadLink = (pptFile, originalName, fallbackName = "presentation") => {
     if (!pptFile) return '#';
-    // Remove extension from originalName if present
-    const baseName = originalName ? originalName.replace(/\.[^/.]+$/, "") : "presentation";
-    return `${pptFile}?fl_attachment=${baseName}.pptx`;
+    // Remove duplicate /raw/raw/ if present
+    let url = pptFile.replace('/raw/raw/', '/raw/');
+    // Extract publicId
+    const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)$/);
+    let publicId = matches ? matches[1] : '';
+    // Remove .pptx if already present
+    publicId = publicId.replace(/\.pptx$/, '');
+    // Use originalName (without extension) or fallback
+    let baseName = fallbackName;
+    if (originalName) {
+      baseName = originalName.replace(/\.[^/.]+$/, '');
+    } else if (publicId) {
+      baseName = publicId.split('/').pop() || fallbackName;
+    }
+    // Compose the download URL
+    const baseUrl = url.split('/upload/')[0];
+    return `${baseUrl}/raw/upload/fl_attachment:${baseName}.pptx/${publicId}.pptx`;
   };
 
   return (
@@ -101,6 +117,7 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
             const end = round.endDate ? new Date(round.endDate) : null;
             const isLive = start && end && now >= start && now <= end;
             const isSubmission = round.type && round.type.toLowerCase().includes("ppt");
+            const isProjectSubmission = round.type && round.type.toLowerCase().includes("project");
             const startStr = start ? start.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "N/A";
             const endStr = end ? end.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "N/A";
             const dayNum = start ? start.getDate() : idx + 1;
@@ -135,14 +152,17 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
                           {isSubmission && (
                             submission ? (
                               <div className="flex gap-2 items-center">
-                                <a
-                                  href={getPPTDownloadLink(submission.pptFile, submission.publicId || submission.originalName || 'presentation')}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-center"
-                                >
-                                  PPT Submitted
-                                </a>
+                                {
+                                  submission.originalName ? (
+                                    <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                      {submission.originalName}
+                                    </div>
+                                  ) : (
+                                    <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                      PPT Submitted
+                                    </div>
+                                  )
+                                }
                                 {isLive && (
                                   <>
                                     <button
@@ -163,9 +183,10 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
                             ) : (
                               isLive && (
                                 <button
-                                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                                  onClick={() => setPptModal({ open: true, roundIdx: idx })}
-                                  disabled={uploadingIdx === idx}
+                                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                  onClick={() => isRegistered && setPptModal({ open: true, roundIdx: idx })}
+                                  disabled={uploadingIdx === idx || !isRegistered}
+                                  title={isRegistered ? "Submit your PPT" : "Register for the hackathon to submit"}
                                 >
                                   Submit PPT
                                 </button>
@@ -174,6 +195,16 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
                           )}
                           {round.resultsAvailable && (
                             <button className="px-4 py-2 border border-blue-500 text-blue-600 rounded hover:bg-blue-50 transition">Results</button>
+                          )}
+                          {isProjectSubmission && isLive && (
+                            <button
+                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                              onClick={() => isRegistered && setProjectModal({ open: true, roundIdx: idx })}
+                              disabled={!isRegistered}
+                              title={isRegistered ? "Submit your project" : "Register for the hackathon to submit"}
+                            >
+                              Submit Project
+                            </button>
                           )}
                         </div>
                       </div>
@@ -192,6 +223,17 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
             }}
             hackathonId={hackathon._id}
             roundIndex={pptModal.roundIdx}
+            onSuccess={handleAfterAction}
+          />
+          {/* Project Submission Modal */}
+          <ProjectSubmissionModal
+            open={projectModal.open}
+            onOpenChange={open => {
+              setProjectModal({ open, roundIdx: open ? projectModal.roundIdx : null });
+              if (!open) handleAfterAction();
+            }}
+            hackathon={hackathon}
+            roundIndex={projectModal.roundIdx}
             onSuccess={handleAfterAction}
           />
         </div>

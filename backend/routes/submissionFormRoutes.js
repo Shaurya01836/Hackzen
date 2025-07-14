@@ -54,13 +54,17 @@ router.get("/submissions", async (req, res) => {
       const userProjects = await Project.find({ 
         submittedBy: userObjectId
       }).select('_id');
-
       const projectIds = userProjects.map(project => project._id);
 
       // Find submissions for user's projects in this hackathon
+      // Also include PPT-only submissions (no projectId)
       const submissions = await Submission.find({ 
-        projectId: { $in: projectIds },
-        hackathonId: hackathonObjectId 
+        hackathonId: hackathonObjectId, 
+        submittedBy: userObjectId,
+        $or: [
+          { projectId: { $in: projectIds } },
+          { pptFile: { $exists: true, $ne: "" } }
+        ]
       })
         .populate('projectId', 'title description logo links attachments')
         .populate('hackathonId', 'title name')
