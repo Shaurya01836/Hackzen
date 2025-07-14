@@ -3,14 +3,28 @@ import { useState } from "react";
 import { CalendarDays, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/CommonUI/card";
 // import { format } from "date-fns"; // Uncomment if date-fns is available
-import { uploadPPTFile } from '../../../../../lib/api';
+import { uploadPPTFile, savePPTSubmission, fetchUserPPTSubmissions } from '../../../../../lib/api';
 import { useToast } from '../../../../../hooks/use-toast';
+import { useAuth } from '../../../../../context/AuthContext';
+import { useEffect } from 'react';
+import PPTSubmissionModal from './PPTSubmissionModal';
 
 export default function HackathonTimeline({ hackathon, sectionRef }) {
   const rounds = Array.isArray(hackathon.rounds) ? hackathon.rounds : [];
   const now = new Date();
   const { toast } = useToast ? useToast() : { toast: () => {} };
+  const { user } = useAuth ? useAuth() : { user: null };
   const [uploadingIdx, setUploadingIdx] = useState(null);
+  const [pptSubmissions, setPptSubmissions] = useState([]);
+  const [pptModal, setPptModal] = useState({ open: false, roundIdx: null });
+
+  // Fetch user's PPT submissions for this hackathon
+  useEffect(() => {
+    if (!hackathon._id || !user?._id) return;
+    fetchUserPPTSubmissions(hackathon._id, user._id)
+      .then(setPptSubmissions)
+      .catch(() => setPptSubmissions([]));
+  }, [hackathon._id, user?._id]);
 
   const handlePPTUpload = async (e, roundIdx) => {
     const file = e.target.files[0];
@@ -22,14 +36,21 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
     setUploadingIdx(roundIdx);
     try {
       const result = await uploadPPTFile(file);
+      // Save submission to backend
+      await savePPTSubmission({ hackathonId: hackathon._id, roundIndex: roundIdx, pptFile: result.url });
       toast({ title: 'PPT Uploaded!', description: 'Your PPT has been uploaded successfully.', variant: 'success' });
-      // Optionally: Save result.url to backend for this user/round
+      // Refresh submissions
+      const updated = await fetchUserPPTSubmissions(hackathon._id, user._id);
+      setPptSubmissions(updated);
     } catch (err) {
       toast({ title: 'Upload failed', description: err.message || 'Could not upload PPT', variant: 'destructive' });
     } finally {
       setUploadingIdx(null);
     }
   };
+
+  // Helper: check if user has submitted for this round
+  const getSubmissionForRound = (roundIdx) => pptSubmissions.find(s => s.roundIndex === roundIdx);
 
   return (
     <section ref={sectionRef} className="space-y-8">
@@ -47,13 +68,11 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
             const end = round.endDate ? new Date(round.endDate) : null;
             const isLive = start && end && now >= start && now <= end;
             const isSubmission = round.type && round.type.toLowerCase().includes("ppt");
-            // const startStr = start ? format(start, "dd MMM yy, hh:mm a") : "N/A";
-            // const endStr = end ? format(end, "dd MMM yy, hh:mm a") : "N/A";
             const startStr = start ? start.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "N/A";
             const endStr = end ? end.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: true, timeZoneName: "short" }) : "N/A";
-            // For timeline dot
             const dayNum = start ? start.getDate() : idx + 1;
             const monthStr = start ? start.toLocaleString("en-US", { month: "short" }) : "";
+            const submission = getSubmissionForRound(idx);
             return (
               <div key={idx} className="flex items-start gap-4 relative group">
                 {/* Timeline vertical line */}
@@ -81,18 +100,24 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
                         </div>
                         <div className="flex flex-col gap-2 items-end mt-4 md:mt-0">
                           {isSubmission && isLive && (
-                            <>
-                              <label className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition cursor-pointer">
-                                {uploadingIdx === idx ? 'Uploading...' : 'Submit PPT'}
-                                <input
-                                  type="file"
-                                  accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                                  style={{ display: 'none' }}
-                                  disabled={uploadingIdx === idx}
-                                  onChange={e => handlePPTUpload(e, idx)}
-                                />
-                              </label>
-                            </>
+                            submission ? (
+                              <a
+                                href={submission.pptFile}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-center"
+                              >
+                                PPT Submitted
+                              </a>
+                            ) : (
+                              <button
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                                onClick={() => setPptModal({ open: true, roundIdx: idx })}
+                                disabled={uploadingIdx === idx}
+                              >
+                                Submit PPT
+                              </button>
+                            )
                           )}
                           {round.resultsAvailable && (
                             <button className="px-4 py-2 border border-blue-500 text-blue-600 rounded hover:bg-blue-50 transition">Results</button>
@@ -105,6 +130,19 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
               </div>
             );
           })}
+          {/* PPT Submission Modal */}
+          <PPTSubmissionModal
+            open={pptModal.open}
+            onOpenChange={open => setPptModal({ open, roundIdx: open ? pptModal.roundIdx : null })}
+            hackathonId={hackathon._id}
+            roundIndex={pptModal.roundIdx}
+            onSuccess={async () => {
+              if (hackathon._id && user?._id) {
+                const updated = await fetchUserPPTSubmissions(hackathon._id, user._id);
+                setPptSubmissions(updated);
+              }
+            }}
+          />
         </div>
       )}
     </section>

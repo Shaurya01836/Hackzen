@@ -6,6 +6,7 @@ const {
   saveHackathonForm,
   submitProjectWithAnswers,
   getSubmissionById,
+  submitPPTForRound,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -17,6 +18,9 @@ router.put("/hackathon/:hackathonId", protect, saveHackathonForm);
 
 // Participant: Submit project with answers
 router.post("/submit", protect, submitProjectWithAnswers);
+
+// New: Submit PPT for a round (no project required)
+router.post("/ppt", protect, submitPPTForRound);
 
 router.get("/submissions", async (req, res) => {
   try {

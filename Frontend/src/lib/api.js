@@ -42,3 +42,32 @@ export async function uploadPPTFile(file) {
   }
   return response.json();
 } 
+
+// Save PPT submission for a round
+export async function savePPTSubmission({ hackathonId, roundIndex, pptFile }) {
+  const url = buildApiUrl("/submission-form/ppt");
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ hackathonId, roundIndex, pptFile }),
+  });
+  if (!response.ok) {
+    throw new Error((await response.json()).error || 'Failed to save PPT submission');
+  }
+  return response.json();
+}
+
+// Fetch user's PPT submissions for a hackathon
+export async function fetchUserPPTSubmissions(hackathonId, userId) {
+  const url = buildApiUrl(`/submission-form/submissions?hackathonId=${hackathonId}&userId=${userId}`);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Failed to fetch submissions');
+  const data = await response.json();
+  // Only return submissions with pptFile and roundIndex
+  return (data.submissions || []).filter(s => s.pptFile && typeof s.roundIndex === 'number');
+} 

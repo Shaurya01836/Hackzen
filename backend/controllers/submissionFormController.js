@@ -85,6 +85,40 @@ exports.submitProjectWithAnswers = async (req, res) => {
   }
 };
 
+// New: Submit PPT for a round (no project required)
+exports.submitPPTForRound = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex, pptFile } = req.body;
+    const userId = req.user._id;
+    if (!hackathonId || typeof roundIndex !== 'number' || !pptFile) {
+      return res.status(400).json({ error: 'hackathonId, roundIndex, and pptFile are required' });
+    }
+    // Check registration
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(400).json({ error: 'You must be registered for this hackathon to submit a PPT.' });
+    }
+    // Prevent duplicate submission for this user/round/hackathon
+    const existing = await Submission.findOne({ hackathonId, roundIndex, submittedBy: userId });
+    if (existing) {
+      return res.status(400).json({ error: 'You have already submitted a PPT for this round.' });
+    }
+    const submission = await Submission.create({
+      hackathonId,
+      roundIndex,
+      pptFile,
+      submittedBy: userId,
+      status: 'submitted',
+      submittedAt: new Date(),
+    });
+    res.status(200).json({ success: true, submission });
+  } catch (err) {
+    console.error('❌ Error in submitPPTForRound:', err, req.body);
+    res.status(500).json({ error: 'Server error during PPT submission', details: err.message });
+  }
+};
+
 exports.deleteSubmissionById = async (req, res) => {
   try {
     const { id } = req.params;
