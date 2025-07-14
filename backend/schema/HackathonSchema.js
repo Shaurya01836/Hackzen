@@ -37,7 +37,12 @@ const HackathonSchema = new Schema({
 
   maxParticipants: { type: Number, default: 100 },
 
-  problemStatements: [String],
+  problemStatements: [
+    {
+      statement: { type: String, required: true },
+      type: { type: String, required: true }
+    }
+  ],
   problemStatementTypes: [String], // <-- NEW FIELD
 
     // ✅ New field for teamSize

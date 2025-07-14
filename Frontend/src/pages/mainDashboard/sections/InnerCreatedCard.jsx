@@ -49,6 +49,7 @@ import {
   Users2,
   Zap,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
@@ -69,7 +70,7 @@ export default function HackathonDetailsPage({
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const hackathonToDelete = useRef(null);
-  const [showEditModal, setShowEditModal] = useState(false);
+  const navigate = useNavigate();
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -510,7 +511,7 @@ export default function HackathonDetailsPage({
                       <Button
                         variant="outline"
                         className="w-full justify-start gap-2 text-left bg-transparent"
-                        onClick={() => setShowEditModal(true)}
+                        onClick={() => navigate(`/dashboard/edit-hackathon/${hackathon._id}`)}
                       >
                         <Edit3 className="h-4 w-4" />
                         Edit Hackathon
@@ -587,7 +588,7 @@ export default function HackathonDetailsPage({
                 size="sm"
                 variant="outline"
                 className="flex-shrink-0 bg-transparent"
-                onClick={() => setShowEditModal(true)}
+                onClick={() => navigate(`/dashboard/edit-hackathon/${hackathon._id}`)}
               >
                 <Edit3 className="h-4 w-4 mr-1" />
                 Edit
@@ -619,16 +620,6 @@ export default function HackathonDetailsPage({
             </div>
           </div>
         </div>
-      )}
-      {showEditModal && (
-        <HackathonEditModal
-          hackathon={hackathon}
-          onClose={() => setShowEditModal(false)}
-          onUpdated={() => {
-            setShowEditModal(false);
-            window.location.reload(); // or re-fetch if you prefer
-          }}
-        />
       )}
       {showDeleteDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">

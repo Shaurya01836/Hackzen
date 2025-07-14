@@ -24,3 +24,21 @@ export const getAuthHeaders = () => {
 export const buildApiUrl = (endpoint) => {
   return `${API_BASE_URL}/api${endpoint}`;
 }; 
+
+// Upload PPTX file to backend (Cloudinary)
+export async function uploadPPTFile(file) {
+  const url = buildApiUrl("/uploads/ppt");
+  const formData = new FormData();
+  formData.append("ppt", file);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, {
+    method: "POST",
+    body: formData,
+    headers,
+  });
+  if (!response.ok) {
+    throw new Error("Failed to upload PPT file");
+  }
+  return response.json();
+} 

@@ -13,54 +13,122 @@ import { Separator } from "../../../components/CommonUI/separator"
 import { Alert, AlertDescription } from "../../../components/DashboardUI/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../../../components/CommonUI/tooltip";
 
-export function CreateHackathon({ onBack }) {
+// Helper to convert ISO string to 'yyyy-MM-ddThh:mm' for datetime-local
+function toDatetimeLocal(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n) => n.toString().padStart(2, "0");
+  return (
+    d.getFullYear() +
+    "-" + pad(d.getMonth() + 1) +
+    "-" + pad(d.getDate()) +
+    "T" + pad(d.getHours()) +
+    ":" + pad(d.getMinutes())
+  );
+}
+
+export default function CreateHackathon({ onBack, initialData = null, onSubmit = null }) {
   const { user, token } = useAuth() // Using AuthContext instead of localStorage
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    teamSize: {
-      min: 1,
-      max: 1,
-      allowSolo: true,
-    }, // Replace the simple teamSize field with this structure
-    problemStatements: [{ statement: "", type: "" }], // Combined structure
-    status: "upcoming",
-    maxParticipants: 100,
-    registrationDeadline: "",
-    submissionDeadline: "",
-    category: "",
-    difficultyLevel: "Beginner", // Match schema field name
-    location: "",
-    mode: "online",
-    prizePool: {
-      amount: "",
-      currency: "USD",
-      breakdown: "",
-    },
-    requirements: [""],
-    perks: [""],
-    tags: [],
-    images: {
-      banner: null,
-      logo: null,
-    },
-    judges: [""],
-    mentors: [""],
-    participants: [],
-    rounds: [
-      {
-        name: "",
-        type: "project", // Default round type
+  // If initialData is provided, use it to prefill the form
+  const [formData, setFormData] = useState(() => {
+    if (!initialData) {
+      return {
+        title: "",
         description: "",
         startDate: "",
         endDate: "",
-      },
-    ],
-    submissionType: "single-project", // new field
-    roundType: "single-round", // new field
+        teamSize: {
+          min: 1,
+          max: 1,
+          allowSolo: true,
+        }, // Replace the simple teamSize field with this structure
+        problemStatements: [{ statement: "", type: "" }], // Combined structure
+        status: "upcoming",
+        maxParticipants: 100,
+        registrationDeadline: "",
+        submissionDeadline: "",
+        category: "",
+        difficultyLevel: "Beginner", // Match schema field name
+        location: "",
+        mode: "online",
+        prizePool: {
+          amount: "",
+          currency: "USD",
+          breakdown: "",
+        },
+        requirements: [""],
+        perks: [""],
+        tags: [],
+        images: {
+          banner: null,
+          logo: null,
+        },
+        judges: [""],
+        mentors: [""],
+        participants: [],
+        rounds: [
+          {
+            name: "",
+            type: "project", // Default round type
+            description: "",
+            startDate: "",
+            endDate: "",
+          },
+        ],
+        submissionType: "single-project", // new field
+        roundType: "single-round", // new field
+      }
+    }
+    // Patch all date fields for edit mode and ensure all fields are present
+    let patchedProblemStatements = [{ statement: "", type: "" }];
+    if (Array.isArray(initialData.problemStatements) && initialData.problemStatements.length > 0) {
+      if (typeof initialData.problemStatements[0] === "object") {
+        patchedProblemStatements = initialData.problemStatements;
+      } else {
+        // Map from strings + types to objects
+        patchedProblemStatements = initialData.problemStatements.map((s, i) => ({
+          statement: s || "",
+          type: (initialData.problemStatementTypes && initialData.problemStatementTypes[i]) || ""
+        }));
+      }
+    }
+    return {
+      title: initialData.title || "",
+      description: initialData.description || "",
+      category: initialData.category || "",
+      difficultyLevel: initialData.difficultyLevel || "Beginner",
+      location: initialData.location || "",
+      mode: initialData.mode || "online",
+      prizePool: initialData.prizePool || { amount: "", currency: "USD", breakdown: "" },
+      teamSize: initialData.teamSize || { min: 1, max: 1, allowSolo: true },
+      images: initialData.images || { banner: null, logo: null },
+      status: initialData.status || "upcoming",
+      maxParticipants: initialData.maxParticipants || 100,
+      problemStatements: patchedProblemStatements,
+      requirements: initialData.requirements && initialData.requirements.length > 0 ? initialData.requirements : [""],
+      perks: initialData.perks && initialData.perks.length > 0 ? initialData.perks : [""],
+      tags: initialData.tags || [],
+      judges: initialData.judges || [""],
+      mentors: initialData.mentors || [""],
+      participants: initialData.participants || [],
+      rounds: (initialData.rounds && initialData.rounds.length > 0
+        ? initialData.rounds.map(r => ({
+            ...r,
+            name: r.name || "",
+            type: r.type || "project",
+            description: r.description || "",
+            startDate: toDatetimeLocal(r.startDate),
+            endDate: toDatetimeLocal(r.endDate),
+          }))
+        : [{ name: "", type: "project", description: "", startDate: "", endDate: "" }]),
+      submissionType: initialData.submissionType || "single-project",
+      roundType: initialData.roundType || (initialData.rounds && initialData.rounds.length > 1 ? "multi-round" : "single-round"),
+      registrationDeadline: toDatetimeLocal(initialData.registrationDeadline),
+      submissionDeadline: toDatetimeLocal(initialData.submissionDeadline),
+      startDate: toDatetimeLocal(initialData.startDate),
+      endDate: toDatetimeLocal(initialData.endDate),
+    }
   })
 
   const [currentTag, setCurrentTag] = useState("")
@@ -165,10 +233,10 @@ export function CreateHackathon({ onBack }) {
 
     // Step 3: Requirements & Perks
     if (step === 3) {
-      if (!formData.requirements.length || formData.requirements.some((r) => !r.trim())) {
+      if (!formData.requirements.length || formData.requirements.some((r) => typeof r !== 'string' || !r.trim())) {
         newErrors.requirements = "At least one requirement is required"
       }
-      if (!formData.perks.length || formData.perks.some((p) => !p.trim())) {
+      if (!formData.perks.length || formData.perks.some((p) => typeof p !== 'string' || !p.trim())) {
         newErrors.perks = "At least one perk is required"
       }
     }
@@ -236,8 +304,12 @@ export function CreateHackathon({ onBack }) {
     }))
   }
 
-  // Updated submit function with proper backend integration
+  // On submit, if onSubmit prop is provided, call it with formData
   const handleSubmit = async (isDraft = false) => {
+    if (onSubmit) {
+      onSubmit(formData)
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -632,6 +704,9 @@ export function CreateHackathon({ onBack }) {
     })
   }
 
+  // Add edit mode detection
+  const isEdit = Boolean(initialData)
+
   return (
     <div
       ref={formTopRef}
@@ -640,18 +715,19 @@ export function CreateHackathon({ onBack }) {
       {/* Stepper Header */}
       <div className="flex items-center gap-4 mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Create New Hackathon</h1>
-          <p className="text-sm text-gray-500">Set up your hackathon event with all the necessary details</p>
+          <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Your Hackathon" : "Create New Hackathon"}</h1>
+          <p className="text-sm text-gray-500">{isEdit ? "Update your hackathon details and save changes" : "Set up your hackathon event with all the necessary details"}</p>
         </div>
       </div>
-      
       {/* Admin Approval Notice */}
-      <Alert className="border-yellow-200 bg-yellow-50">
-        <AlertCircle className="h-4 w-4 text-yellow-600" />
-        <AlertDescription className="text-yellow-800">
-          <strong>Admin Review Required:</strong> Your hackathon will be reviewed by admin before appearing in the explore section. You'll receive a notification once it's approved or rejected.
-        </AlertDescription>
-      </Alert>
+      {!isEdit && (
+        <Alert className="border-yellow-200 bg-yellow-50">
+          <AlertCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <strong>Admin Review Required:</strong> Your hackathon will be reviewed by admin before appearing in the explore section. You'll receive a notification once it's approved or rejected.
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Stepper Tabs */}
       <div className="flex gap-2 mb-6">
         {steps.map((label, idx) => (
@@ -1500,11 +1576,26 @@ export function CreateHackathon({ onBack }) {
                   !formData.roundType ||
                   !formData.rounds ||
                   formData.rounds.length === 0 ||
-                  !formData.rounds.every(round => round.name && round.name.trim() && round.type && round.type.trim() && round.description && round.description.trim() && round.startDate && round.endDate)
+                  !formData.rounds.every(round =>
+                    typeof round.name === 'string' && round.name.trim() &&
+                    typeof round.type === 'string' && round.type.trim() &&
+                    typeof round.description === 'string' && round.description.trim() &&
+                    round.startDate && round.endDate
+                  )
                 )) ||
                 (step === 1 && (!formData.images.banner || !formData.images.logo)) ||
-                (step === 2 && (!formData.problemStatements || formData.problemStatements.length === 0 || !formData.problemStatements.every(ps => ps.statement.trim() && ps.type.trim()))) ||
-                (step === 3 && (!formData.requirements.length || formData.requirements.some((r) => !r.trim()) || !formData.perks.length || formData.perks.some((p) => !p.trim())))
+                (step === 2 && (
+                  !formData.problemStatements ||
+                  formData.problemStatements.length === 0 ||
+                  !formData.problemStatements.every(ps =>
+                    typeof ps.statement === 'string' && ps.statement.trim() &&
+                    typeof ps.type === 'string' && ps.type.trim()
+                  )
+                )) ||
+                (step === 3 && (
+                  !formData.requirements.length || formData.requirements.some((r) => typeof r !== 'string' || !r.trim()) ||
+                  !formData.perks.length || formData.perks.some((p) => typeof p !== 'string' || !p.trim())
+                ))
               }
             >
               Next
@@ -1593,7 +1684,7 @@ export function CreateHackathon({ onBack }) {
                   className="w-full bg-purple-500 hover:bg-purple-600"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {isSubmitting ? "Creating..." : "Create Hackathon"}
+                  {isSubmitting ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Hackathon" : "Create Hackathon")}
                 </Button>
                 <Button onClick={() => handleSubmit(true)} disabled={isSubmitting} variant="outline" className="w-full">
                   <FileText className="w-4 h-4 mr-2" />

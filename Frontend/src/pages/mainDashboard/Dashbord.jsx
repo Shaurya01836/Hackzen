@@ -49,7 +49,7 @@ import { CreatedHackathons } from "./sections/Created-hackathons";
 import { Announcements } from "./sections/Announcements";
 import { OrganizerTools } from "./sections/OrganizerTools";
 import { ExploreHackathons } from "./sections/ExploreHackathon";
-import { CreateHackathon } from "./sections/Create-hackathon";
+import CreateHackathon from "./sections/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";

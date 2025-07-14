@@ -12,6 +12,17 @@ const storage = new CloudinaryStorage({
   }
 });
 
+const pptStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "hackzen/ppt",
+    allowed_formats: ["pptx"],
+    resource_type: "raw"
+  }
+});
+
 const upload = multer({ storage });
+const uploadPPT = multer({ storage: pptStorage });
 
 module.exports = upload;
+module.exports.uploadPPT = uploadPPT;

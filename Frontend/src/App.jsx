@@ -28,6 +28,7 @@ import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetail
 import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 import CreatedHackathons from "./pages/mainDashboard/sections/Created-hackathons";
+import EditHackathonPage from "./pages/mainDashboard/sections/EditHackathonPage";
 
 function App() {
   return (
@@ -82,6 +83,9 @@ function App() {
         {/* Created Hackathons */}
         <Route path="/dashboard/created-hackathons" element={<DashboardPage />} />
         <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
+
+        {/* Edit Hackathon Full Page */}
+        <Route path="/dashboard/edit-hackathon/:id" element={<EditHackathonPage />} />
 
         {/* Explore */}
         <Route path="/explore" element={<ExploreHackathons />} />
