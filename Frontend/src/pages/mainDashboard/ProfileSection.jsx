@@ -25,7 +25,7 @@ import {
   Info,
   Shield,
   Check,
-  X
+  X,
 } from "lucide-react";
 import {
   Card,
@@ -172,7 +172,7 @@ export function ProfileSection() {
     instagram: "",
     portfolio: "",
     preferredHackathonTypes: "",
-    teamSizePreference: "any"
+    teamSizePreference: "any",
   });
 
   // Inline editing state
@@ -184,7 +184,7 @@ export function ProfileSection() {
     skills: false,
     preferences: false,
     social: false,
-    all: false
+    all: false,
   });
 
   const [inlineForm, setInlineForm] = useState({
@@ -212,7 +212,7 @@ export function ProfileSection() {
     instagram: "",
     portfolio: "",
     preferredHackathonTypes: "",
-    teamSizePreference: ""
+    teamSizePreference: "",
   });
 
   // Fetch 2FA status from backend
@@ -220,7 +220,7 @@ export function ProfileSection() {
     try {
       console.log("Fetching 2FA status...");
       const token = localStorage.getItem("token");
-      console.log('🔍 2FA status fetch - token:', token);
+      console.log("🔍 2FA status fetch - token:", token);
       const response = await axios.get(
         "http://localhost:3000/api/users/2fa/status",
         {
@@ -231,9 +231,9 @@ export function ProfileSection() {
       setTwoFactorEnabled(response.data.enabled);
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        alert('Session expired. Please log in again.');
+        alert("Session expired. Please log in again.");
         localStorage.clear();
-        window.location.href = '/?modal=login';
+        window.location.href = "/?modal=login";
       } else {
         console.error("Error fetching 2FA status:", err);
         setTwoFAError("Failed to load 2FA status");
@@ -331,7 +331,7 @@ export function ProfileSection() {
     try {
       const storedUser = JSON.parse(localStorage.getItem("user"));
       const token = localStorage.getItem("token");
-      console.log('🔍 Streak fetch - token:', token);
+      console.log("🔍 Streak fetch - token:", token);
       if (!storedUser?._id || !token) return;
 
       const res = await axios.get(
@@ -347,9 +347,9 @@ export function ProfileSection() {
       });
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        alert('Session expired. Please log in again.');
+        alert("Session expired. Please log in again.");
         localStorage.clear();
-        window.location.href = '/?modal=login';
+        window.location.href = "/?modal=login";
       } else {
         console.error("Failed to fetch streaks:", err.message);
       }
@@ -405,8 +405,10 @@ export function ProfileSection() {
         twitter: data.twitter || "",
         instagram: data.instagram || "",
         portfolio: data.portfolio || "",
-        preferredHackathonTypes: data.preferredHackathonTypes ? data.preferredHackathonTypes.join(", ") : "",
-        teamSizePreference: data.teamSizePreference || "any"
+        preferredHackathonTypes: data.preferredHackathonTypes
+          ? data.preferredHackathonTypes.join(", ")
+          : "",
+        teamSizePreference: data.teamSizePreference || "any",
       });
 
       // Optional: update local context
@@ -476,7 +478,9 @@ export function ProfileSection() {
                   d="M4 12a8 8 0 018-8v8z"
                 ></path>
               </svg>
-              <span className="text-sm text-purple-600 font-medium">Uploading...</span>
+              <span className="text-sm text-purple-600 font-medium">
+                Uploading...
+              </span>
             </div>
           </div>
         )}
@@ -491,7 +495,7 @@ export function ProfileSection() {
         {/* Profile Info Section */}
         <div className="relative px-8 pb-8">
           {/* Avatar */}
-          <div className="flex justify-center -mt-20 mb-6">
+          <div className="flex justify-start -mt-20 mb-6">
             <div className="relative group">
               <Avatar className="w-28 h-28 border-2">
                 <AvatarImage src={user?.profileImage || "/placeholder.svg"} />
@@ -502,11 +506,11 @@ export function ProfileSection() {
             </div>
           </div>
           {/* User Info */}
-          <div className="text-center mb-8">
+          <div className="text-start mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               {user?.name}
             </h2>
-            <div className="flex gap-2 justify-center mb-4">
+            <div className="flex gap-2 mb-4">
               <Badge
                 variant="outline"
                 className="bg-purple-100 text-purple-800 border-purple-300 px-3 py-1 text-sm font-medium"
@@ -516,7 +520,7 @@ export function ProfileSection() {
             </div>
             {/* Bio */}
             {user?.bio && (
-              <p className="text-gray-600 max-w-2xl mx-auto leading-relaxed">
+              <p className="text-gray-600  mx-auto leading-relaxed">
                 {user.bio}
               </p>
             )}
@@ -548,7 +552,9 @@ export function ProfileSection() {
                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Star className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">{user?.badges?.length || 0}</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  {user?.badges?.length || 0}
+                </p>
                 <p className="text-sm text-gray-500 font-medium">Badges</p>
               </div>
             </div>
@@ -557,7 +563,9 @@ export function ProfileSection() {
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-3">
                   <Save className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-2xl font-bold text-gray-800">{user?.projects?.length || 0}</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  {user?.projects?.length || 0}
+                </p>
                 <p className="text-sm text-gray-500 font-medium">Projects</p>
               </div>
             </div>
@@ -572,8 +580,12 @@ export function ProfileSection() {
                     <UserCircle2 className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Contact Information</h3>
-                    <p className="text-sm text-gray-500">Your personal details</p>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Contact Information
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Your personal details
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -583,7 +595,9 @@ export function ProfileSection() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-500 font-medium">Email</p>
-                      <p className="text-gray-700 font-medium">{user?.email || "Not provided"}</p>
+                      <p className="text-gray-700 font-medium">
+                        {user?.email || "Not provided"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
@@ -592,7 +606,9 @@ export function ProfileSection() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-500 font-medium">Phone</p>
-                      <p className="text-gray-700 font-medium">{user?.phone || "Not provided"}</p>
+                      <p className="text-gray-700 font-medium">
+                        {user?.phone || "Not provided"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
@@ -600,8 +616,12 @@ export function ProfileSection() {
                       <MapPin className="w-4 h-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-500 font-medium">Location</p>
-                      <p className="text-gray-700 font-medium">{user?.location || "Not provided"}</p>
+                      <p className="text-xs text-gray-500 font-medium">
+                        Location
+                      </p>
+                      <p className="text-gray-700 font-medium">
+                        {user?.location || "Not provided"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -615,8 +635,12 @@ export function ProfileSection() {
                     <Globe className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Social Links</h3>
-                    <p className="text-sm text-gray-500">Connect with me online</p>
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Social Links
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Connect with me online
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -631,8 +655,12 @@ export function ProfileSection() {
                         <Globe className="w-4 h-4 text-orange-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">Website</p>
-                        <p className="text-gray-700 font-medium group-hover:text-orange-700 transition-colors">Visit my website</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          Website
+                        </p>
+                        <p className="text-gray-700 font-medium group-hover:text-orange-700 transition-colors">
+                          Visit my website
+                        </p>
                       </div>
                       <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors" />
                     </a>
@@ -648,8 +676,12 @@ export function ProfileSection() {
                         <Github className="w-4 h-4 text-gray-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">GitHub</p>
-                        <p className="text-gray-700 font-medium group-hover:text-gray-800 transition-colors">View my projects</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          GitHub
+                        </p>
+                        <p className="text-gray-700 font-medium group-hover:text-gray-800 transition-colors">
+                          View my projects
+                        </p>
                       </div>
                       <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                     </a>
@@ -665,8 +697,12 @@ export function ProfileSection() {
                         <Linkedin className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">LinkedIn</p>
-                        <p className="text-gray-700 font-medium group-hover:text-blue-700 transition-colors">Connect professionally</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          LinkedIn
+                        </p>
+                        <p className="text-gray-700 font-medium group-hover:text-blue-700 transition-colors">
+                          Connect professionally
+                        </p>
                       </div>
                       <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
                     </a>
@@ -677,8 +713,12 @@ export function ProfileSection() {
                         <Info className="w-4 h-4 text-gray-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500 font-medium">No social links</p>
-                        <p className="text-gray-500 text-sm">Add your social profiles in edit mode</p>
+                        <p className="text-xs text-gray-500 font-medium">
+                          No social links
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Add your social profiles in edit mode
+                        </p>
                       </div>
                     </div>
                   )}
@@ -688,51 +728,61 @@ export function ProfileSection() {
           </div>
         </div>
       </Card>
-      
-      {/* Comprehensive Profile Information */}
-      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
-        <div className="space-y-6 p-8">
+
+      {/* Professional Profile Information */}
+      <Card className="bg-white/90 rounded-3xl border border-gray-100 p-0 ">
+        <div className="space-y-8 p-10">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
-                <UserCircle2 className="w-4 h-4 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800">Profile Information</h3>
-            </div>
+            <div className="flex items-center gap-4"></div>
             <button
-              onClick={() => startInlineEdit('all')}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => startInlineEdit("all")}
+              className="p-3 hover:bg-gray-100 rounded-xl transition-all duration-300 "
               title="Edit All Profile Details"
             >
-              <SquarePen className="w-4 h-4 text-gray-600" />
+              <SquarePen className="w-5 h-5 text-gray-600" />
             </button>
           </div>
-          
+
           {inlineEditing.all ? (
-            <div className="space-y-6 bg-blue-50 p-6 rounded-lg border border-blue-200">
+            <div className="space-y-8 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-200 ">
               {/* Personal Details */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-blue-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <UserCircle2 className="w-4 h-4 text-white" />
+                  </div>
+                  Personal Details
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-600">Gender</Label>
+                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
+                      Gender
+                    </Label>
                     <select
                       value={inlineForm.gender}
-                      onChange={(e) => handleInlineChange('gender', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) =>
+                        handleInlineChange("gender", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                     >
-                      <option value="prefer-not-to-say">Prefer not to say</option>
+                      <option value="prefer-not-to-say">
+                        Prefer not to say
+                      </option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">User Type</Label>
+                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
+                      User Type
+                    </Label>
                     <select
                       value={inlineForm.userType}
-                      onChange={(e) => handleInlineChange('userType', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) =>
+                        handleInlineChange("userType", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white "
                     >
                       <option value="">Select user type</option>
                       <option value="school">School Student</option>
@@ -742,22 +792,32 @@ export function ProfileSection() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Domain</Label>
+                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
+                      Domain
+                    </Label>
                     <select
                       value={inlineForm.domain}
-                      onChange={(e) => handleInlineChange('domain', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onChange={(e) =>
+                        handleInlineChange("domain", e.target.value)
+                      }
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white "
                     >
                       <option value="">Select domain</option>
                       <option value="engineering">Engineering</option>
                       <option value="computer-science">Computer Science</option>
-                      <option value="information-technology">Information Technology</option>
+                      <option value="information-technology">
+                        Information Technology
+                      </option>
                       <option value="data-science">Data Science</option>
-                      <option value="artificial-intelligence">Artificial Intelligence</option>
+                      <option value="artificial-intelligence">
+                        Artificial Intelligence
+                      </option>
                       <option value="machine-learning">Machine Learning</option>
                       <option value="cybersecurity">Cybersecurity</option>
                       <option value="web-development">Web Development</option>
-                      <option value="mobile-development">Mobile Development</option>
+                      <option value="mobile-development">
+                        Mobile Development
+                      </option>
                       <option value="game-development">Game Development</option>
                       <option value="design">Design</option>
                       <option value="business">Business</option>
@@ -774,7 +834,9 @@ export function ProfileSection() {
                       <option value="social-sciences">Social Sciences</option>
                       <option value="education">Education</option>
                       <option value="agriculture">Agriculture</option>
-                      <option value="environmental-science">Environmental Science</option>
+                      <option value="environmental-science">
+                        Environmental Science
+                      </option>
                       <option value="other">Other</option>
                     </select>
                   </div>
@@ -783,22 +845,30 @@ export function ProfileSection() {
 
               {/* Academic Information */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Information</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Academic Information
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-gray-600">Course</Label>
                     <Input
                       value={inlineForm.course}
-                      onChange={(e) => handleInlineChange('course', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("course", e.target.value)
+                      }
                       placeholder="e.g., Computer Science"
                       className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Course Duration</Label>
+                    <Label className="text-xs text-gray-600">
+                      Course Duration
+                    </Label>
                     <select
                       value={inlineForm.courseDuration}
-                      onChange={(e) => handleInlineChange('courseDuration', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("courseDuration", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select duration</option>
@@ -812,10 +882,14 @@ export function ProfileSection() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Current Year</Label>
+                    <Label className="text-xs text-gray-600">
+                      Current Year
+                    </Label>
                     <select
                       value={inlineForm.currentYear}
-                      onChange={(e) => handleInlineChange('currentYear', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("currentYear", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select year</option>
@@ -828,10 +902,17 @@ export function ProfileSection() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Specialization</Label>
+                    <Label className="text-xs text-gray-600">
+                      Specialization
+                    </Label>
                     <Input
                       value={inlineForm.courseSpecialization}
-                      onChange={(e) => handleInlineChange('courseSpecialization', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange(
+                          "courseSpecialization",
+                          e.target.value
+                        )
+                      }
                       placeholder="e.g., Software Engineering"
                       className="text-sm"
                     />
@@ -841,13 +922,19 @@ export function ProfileSection() {
 
               {/* Institution Information */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Institution
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-600">College/University Name</Label>
+                    <Label className="text-xs text-gray-600">
+                      College/University Name
+                    </Label>
                     <Input
                       value={inlineForm.collegeName}
-                      onChange={(e) => handleInlineChange('collegeName', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("collegeName", e.target.value)
+                      }
                       placeholder="Enter your college/university name"
                       className="text-sm"
                     />
@@ -856,7 +943,9 @@ export function ProfileSection() {
                     <Label className="text-xs text-gray-600">Country</Label>
                     <Input
                       value={inlineForm.country}
-                      onChange={(e) => handleInlineChange('country', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("country", e.target.value)
+                      }
                       placeholder="Enter your country"
                       className="text-sm"
                     />
@@ -865,7 +954,9 @@ export function ProfileSection() {
                     <Label className="text-xs text-gray-600">City</Label>
                     <Input
                       value={inlineForm.city}
-                      onChange={(e) => handleInlineChange('city', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("city", e.target.value)
+                      }
                       placeholder="Enter your city"
                       className="text-sm"
                     />
@@ -875,13 +966,19 @@ export function ProfileSection() {
 
               {/* Professional Information */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Professional Details
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-600">Company Name</Label>
+                    <Label className="text-xs text-gray-600">
+                      Company Name
+                    </Label>
                     <Input
                       value={inlineForm.companyName}
-                      onChange={(e) => handleInlineChange('companyName', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("companyName", e.target.value)
+                      }
                       placeholder="Enter your company name"
                       className="text-sm"
                     />
@@ -890,16 +987,22 @@ export function ProfileSection() {
                     <Label className="text-xs text-gray-600">Job Title</Label>
                     <Input
                       value={inlineForm.jobTitle}
-                      onChange={(e) => handleInlineChange('jobTitle', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("jobTitle", e.target.value)
+                      }
                       placeholder="Enter your job title"
                       className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Years of Experience</Label>
+                    <Label className="text-xs text-gray-600">
+                      Years of Experience
+                    </Label>
                     <select
                       value={inlineForm.yearsOfExperience}
-                      onChange={(e) => handleInlineChange('yearsOfExperience', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("yearsOfExperience", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Select experience</option>
@@ -916,22 +1019,32 @@ export function ProfileSection() {
 
               {/* Skills and Interests */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Skills & Interests
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-600">Skills (comma separated)</Label>
+                    <Label className="text-xs text-gray-600">
+                      Skills (comma separated)
+                    </Label>
                     <Input
                       value={inlineForm.skills}
-                      onChange={(e) => handleInlineChange('skills', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("skills", e.target.value)
+                      }
                       placeholder="e.g., JavaScript, Python, React"
                       className="text-sm"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Interests (comma separated)</Label>
+                    <Label className="text-xs text-gray-600">
+                      Interests (comma separated)
+                    </Label>
                     <Input
                       value={inlineForm.interests}
-                      onChange={(e) => handleInlineChange('interests', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("interests", e.target.value)
+                      }
                       placeholder="e.g., AI, Web Development, Blockchain"
                       className="text-sm"
                     />
@@ -941,13 +1054,19 @@ export function ProfileSection() {
 
               {/* Hackathon Preferences */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Hackathon Preferences
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-600">Team Size Preference</Label>
+                    <Label className="text-xs text-gray-600">
+                      Team Size Preference
+                    </Label>
                     <select
                       value={inlineForm.teamSizePreference}
-                      onChange={(e) => handleInlineChange('teamSizePreference', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("teamSizePreference", e.target.value)
+                      }
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="any">Any</option>
@@ -958,10 +1077,17 @@ export function ProfileSection() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-600">Preferred Hackathon Types (comma separated)</Label>
+                    <Label className="text-xs text-gray-600">
+                      Preferred Hackathon Types (comma separated)
+                    </Label>
                     <Input
                       value={inlineForm.preferredHackathonTypes}
-                      onChange={(e) => handleInlineChange('preferredHackathonTypes', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange(
+                          "preferredHackathonTypes",
+                          e.target.value
+                        )
+                      }
                       placeholder="e.g., web-development, ai-ml, blockchain"
                       className="text-sm"
                     />
@@ -971,13 +1097,17 @@ export function ProfileSection() {
 
               {/* Additional Social Links */}
               <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
+                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
+                  Additional Social Links
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-gray-600">Twitter</Label>
                     <Input
                       value={inlineForm.twitter}
-                      onChange={(e) => handleInlineChange('twitter', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("twitter", e.target.value)
+                      }
                       placeholder="https://twitter.com/username"
                       className="text-sm"
                     />
@@ -986,7 +1116,9 @@ export function ProfileSection() {
                     <Label className="text-xs text-gray-600">Instagram</Label>
                     <Input
                       value={inlineForm.instagram}
-                      onChange={(e) => handleInlineChange('instagram', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("instagram", e.target.value)
+                      }
                       placeholder="https://instagram.com/username"
                       className="text-sm"
                     />
@@ -995,7 +1127,9 @@ export function ProfileSection() {
                     <Label className="text-xs text-gray-600">Portfolio</Label>
                     <Input
                       value={inlineForm.portfolio}
-                      onChange={(e) => handleInlineChange('portfolio', e.target.value)}
+                      onChange={(e) =>
+                        handleInlineChange("portfolio", e.target.value)
+                      }
                       placeholder="https://your-portfolio.com"
                       className="text-sm"
                     />
@@ -1006,7 +1140,7 @@ export function ProfileSection() {
               {/* Save/Cancel Buttons */}
               <div className="flex gap-3 pt-4 border-t border-blue-200">
                 <Button
-                  onClick={() => saveInlineEdit('all')}
+                  onClick={() => saveInlineEdit("all")}
                   className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                 >
                   <Check className="w-4 h-4" />
@@ -1014,7 +1148,7 @@ export function ProfileSection() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => cancelInlineEdit('all')}
+                  onClick={() => cancelInlineEdit("all")}
                   className="flex items-center gap-2"
                 >
                   <X className="w-4 h-4" />
@@ -1023,83 +1157,193 @@ export function ProfileSection() {
               </div>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 gap-8">
               {/* Personal Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Gender</span>
-                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.gender?.replace(/-/g, " ") || "Not specified"}</span>
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <UserCircle2 className="w-4 h-4 text-white" />
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">User Type</span>
-                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.userType?.replace(/-/g, " ") || "Not specified"}</span>
+                  Personal Details
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Gender
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800 capitalize">
+                      {user?.gender?.replace(/-/g, " ") || "Not specified"}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Domain</span>
-                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.domain?.replace(/-/g, " ") || "Not specified"}</span>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      User Type
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800 capitalize">
+                      {user?.userType?.replace(/-/g, " ") || "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Domain
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800 capitalize">
+                      {user?.domain?.replace(/-/g, " ") || "Not specified"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Academic Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Academic Details</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Course</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.course || "Not specified"}</span>
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Course Duration</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.courseDuration || "Not specified"}</span>
+                  Academic Details
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Course
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.course || "Not specified"}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Current Year</span>
-                    <span className="text-sm font-medium text-gray-800 capitalize">{user?.currentYear?.replace(/-/g, " ") || "Not specified"}</span>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Course Duration
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.courseDuration || "Not specified"}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Specialization</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.courseSpecialization || "Not specified"}</span>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Current Year
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800 capitalize">
+                      {user?.currentYear?.replace(/-/g, " ") || "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Specialization
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.courseSpecialization || "Not specified"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Institution Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Institution</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">College/University</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.collegeName || "Not specified"}</span>
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                      />
+                    </svg>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Country</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.country || "Not specified"}</span>
+                  Institution
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                    <span className="text-sm text-gray-600 font-medium">
+                      College/University
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.collegeName || "Not specified"}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">City</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.city || "Not specified"}</span>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Country
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.country || "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      City
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.city || "Not specified"}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* Professional Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional Details</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Company</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.companyName || "Not specified"}</span>
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
+                      />
+                    </svg>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Job Title</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.jobTitle || "Not specified"}</span>
+                  Professional Details
+                </h4>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Company
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.companyName || "Not specified"}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                    <span className="text-sm text-gray-600">Experience</span>
-                    <span className="text-sm font-medium text-gray-800">{user?.yearsOfExperience ? `${user.yearsOfExperience} years` : "Not specified"}</span>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Job Title
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.jobTitle || "Not specified"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
+                    <span className="text-sm text-gray-600 font-medium">
+                      Experience
+                    </span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {user?.yearsOfExperience
+                        ? `${user.yearsOfExperience} years`
+                        : "Not specified"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1107,53 +1351,131 @@ export function ProfileSection() {
           )}
 
           {/* Skills and Interests Display */}
-          {(user?.skills?.length > 0 || user?.interests?.length > 0) && !inlineEditing.all && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Skills & Interests</h4>
-              <div className="grid md:grid-cols-2 gap-4">
-                {user?.skills?.length > 0 && (
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-600 mb-2">Skills</h5>
-                    <div className="flex flex-wrap gap-2">
-                      {user.skills.map((skill, index) => (
-                        <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+          {(user?.skills?.length > 0 || user?.interests?.length > 0) &&
+            !inlineEditing.all && (
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                      />
+                    </svg>
                   </div>
-                )}
-                {user?.interests?.length > 0 && (
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-600 mb-2">Interests</h5>
-                    <div className="flex flex-wrap gap-2">
-                      {user.interests.map((interest, index) => (
-                        <span key={index} className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">
-                          {interest}
-                        </span>
-                      ))}
+                  Skills & Interests
+                </h4>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {user?.skills?.length > 0 && (
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
+                      <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                            />
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          </svg>
+                        </div>
+                        Skills
+                      </h5>
+                      <div className="flex flex-wrap gap-3">
+                        {user.skills.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-full transition-all duration-200"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {user?.interests?.length > 0 && (
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100">
+                      <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
+                          <svg
+                            className="w-3 h-3 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                            />
+                          </svg>
+                        </div>
+                        Interests
+                      </h5>
+                      <div className="flex flex-wrap gap-3">
+                        {user.interests.map((interest, index) => (
+                          <span
+                            key={index}
+                            className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-full"
+                          >
+                            {interest}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Hackathon Preferences Display */}
           {!inlineEditing.all && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Hackathon Preferences</h4>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600">Team Size Preference</span>
-                  <span className="text-sm font-medium text-gray-800 capitalize">{user?.teamSizePreference || "Any"}</span>
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                  <Trophy className="w-4 h-4 text-white" />
+                </div>
+                Hackathon Preferences
+              </h4>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Team Size Preference
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 capitalize">
+                    {user?.teamSizePreference || "Any"}
+                  </span>
                 </div>
                 {user?.preferredHackathonTypes?.length > 0 && (
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-600 mb-2">Preferred Hackathon Types</h5>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100">
+                    <h5 className="text-base font-semibold text-gray-700 mb-4">
+                      Preferred Hackathon Types
+                    </h5>
+                    <div className="flex flex-wrap gap-3">
                       {user.preferredHackathonTypes.map((type, index) => (
-                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">
+                        <span
+                          key={index}
+                          className="px-4 py-2 bg-purple-100 text-purple-800 text-sm font-medium rounded-full "
+                        >
                           {type.replace(/-/g, " ")}
                         </span>
                       ))}
@@ -1165,70 +1487,119 @@ export function ProfileSection() {
           )}
 
           {/* Additional Social Links Display */}
-          {(user?.twitter || user?.instagram || user?.portfolio) && !inlineEditing.all && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">Additional Social Links</h4>
-              <div className="space-y-3">
-                {user?.twitter && (
-                  <a
-                    href={user.twitter}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
-                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-gray-800">Twitter</span>
-                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
-                  </a>
-                )}
-                {user?.instagram && (
-                  <a
-                    href={user.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg hover:bg-pink-100 transition-colors"
-                  >
-                    <div className="w-6 h-6 bg-pink-500 rounded flex items-center justify-center">
-                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                      </svg>
-                    </div>
-                    <span className="text-sm font-medium text-gray-800">Instagram</span>
-                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
-                  </a>
-                )}
-                {user?.portfolio && (
-                  <a
-                    href={user.portfolio}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="w-6 h-6 bg-gray-500 rounded flex items-center justify-center">
-                      <Globe className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="text-sm font-medium text-gray-800">Portfolio</span>
-                    <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
-                  </a>
-                )}
+          {(user?.twitter || user?.instagram || user?.portfolio) &&
+            !inlineEditing.all && (
+              <div className="space-y-6">
+                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"
+                      />
+                    </svg>
+                  </div>
+                  Additional Social Links
+                </h4>
+                <div className="space-y-4">
+                  {user?.twitter && (
+                    <a
+                      href={user.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100  transition-all duration-300 group"
+                    >
+                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center ">
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-semibold mb-1">
+                          Twitter
+                        </p>
+                        <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
+                          Follow me on Twitter
+                        </p>
+                      </div>
+                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                    </a>
+                  )}
+                  {user?.instagram && (
+                    <a
+                      href={user.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-100 hover:from-pink-100 hover:to-rose-100 transition-all duration-300 group"
+                    >
+                      <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center ">
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-semibold mb-1">
+                          Instagram
+                        </p>
+                        <p className="text-gray-800 font-semibold text-base group-hover:text-pink-700 transition-colors">
+                          Follow me on Instagram
+                        </p>
+                      </div>
+                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-pink-500 transition-colors" />
+                    </a>
+                  )}
+                  {user?.portfolio && (
+                    <a
+                      href={user.portfolio}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100 hover:from-gray-100 hover:to-slate-100  transition-all duration-300 group"
+                    >
+                      <div className="w-10 h-10 bg-gray-500 rounded-xl flex items-center justify-center">
+                        <Globe className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-semibold mb-1">
+                          Portfolio
+                        </p>
+                        <p className="text-gray-800 font-semibold text-base group-hover:text-gray-700 transition-colors">
+                          View my portfolio
+                        </p>
+                      </div>
+                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       </Card>
-      
+
       {/* Achievements Section */}
-      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0 shadow-none hover:shadow-md transition-shadow">
+      <Card className="bg-white/70 rounded-3xl border border-gray-100 p-0">
         <div className="space-y-6 p-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
               <Star className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">Achievements & Badges</h3>
+            <h3 className="text-xl font-semibold text-gray-800">
+              Achievements & Badges
+            </h3>
           </div>
           <AchievementsSection
             user={user}
@@ -1246,7 +1617,9 @@ export function ProfileSection() {
             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-800">Activity Streak</h3>
+            <h3 className="text-xl font-semibold text-gray-800">
+              Activity Streak
+            </h3>
           </div>
           <div className="">
             <StreakGraphic
@@ -1521,8 +1894,6 @@ export function ProfileSection() {
         </CardContent>
       </Card>
 
-
-
       {/* Save + Cancel Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-start">
         <AlertDialog
@@ -1676,7 +2047,7 @@ export function ProfileSection() {
                 type="button"
                 tabIndex={-1}
                 className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
-                style={{ top: '32px' }}
+                style={{ top: "32px" }}
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
               >
                 {showCurrentPassword ? (
@@ -1703,7 +2074,7 @@ export function ProfileSection() {
               type="button"
               tabIndex={-1}
               className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
-              style={{ top: '32px' }}
+              style={{ top: "32px" }}
               onClick={() => setShowNewPassword(!showNewPassword)}
             >
               {showNewPassword ? (
@@ -1729,7 +2100,7 @@ export function ProfileSection() {
               type="button"
               tabIndex={-1}
               className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700 focus:outline-none"
-              style={{ top: '32px' }}
+              style={{ top: "32px" }}
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             >
               {showConfirmPassword ? (
@@ -1743,15 +2114,43 @@ export function ProfileSection() {
           {/* Error and Success Messages */}
           {passwordError && (
             <div className="p-4 bg-red-100 border-2 border-red-500 rounded-lg flex items-center gap-2 mt-2">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z" /></svg>
-              <span className="text-red-700 font-bold text-base">{passwordError}</span>
+              <svg
+                className="w-6 h-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01M21 12A9 9 0 1 1 3 12a9 9 0 0 1 18 0Z"
+                />
+              </svg>
+              <span className="text-red-700 font-bold text-base">
+                {passwordError}
+              </span>
             </div>
           )}
-          
+
           {passwordMessage && (
             <div className="p-4 bg-green-100 border-2 border-green-500 rounded-lg flex items-center gap-2 mt-2">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-              <span className="text-green-700 font-bold text-base">{passwordMessage}</span>
+              <svg
+                className="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span className="text-green-700 font-bold text-base">
+                {passwordMessage}
+              </span>
             </div>
           )}
 
@@ -1991,8 +2390,11 @@ export function ProfileSection() {
 
     // Process array fields - convert comma-separated strings to arrays
     const processArrayField = (field) => {
-      if (!field || typeof field !== 'string') return [];
-      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+      if (!field || typeof field !== "string") return [];
+      return field
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
     };
 
     const updates = {
@@ -2025,8 +2427,10 @@ export function ProfileSection() {
       twitter: editForm.twitter,
       instagram: editForm.instagram,
       portfolio: editForm.portfolio,
-      preferredHackathonTypes: processArrayField(editForm.preferredHackathonTypes),
-      teamSizePreference: editForm.teamSizePreference
+      preferredHackathonTypes: processArrayField(
+        editForm.preferredHackathonTypes
+      ),
+      teamSizePreference: editForm.teamSizePreference,
     };
 
     try {
@@ -2177,7 +2581,12 @@ export function ProfileSection() {
     }
 
     // New: Check if current and new password are the same
-    if (user?.authProvider === "email" && currentPassword && newPassword && currentPassword === newPassword) {
+    if (
+      user?.authProvider === "email" &&
+      currentPassword &&
+      newPassword &&
+      currentPassword === newPassword
+    ) {
       setPasswordError("Your current and new password are the same");
       return;
     }
@@ -2203,11 +2612,13 @@ export function ProfileSection() {
       setShowCurrentPassword(false);
       setShowNewPassword(false);
       setShowConfirmPassword(false);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => setPasswordMessage(""), 3000);
     } catch (err) {
-      setPasswordError(err.response?.data?.message || "Error updating password");
+      setPasswordError(
+        err.response?.data?.message || "Error updating password"
+      );
     }
   };
 
@@ -2302,7 +2713,7 @@ export function ProfileSection() {
 
   // Inline editing functions
   const startInlineEdit = (section) => {
-    setInlineEditing(prev => ({ ...prev, [section]: true }));
+    setInlineEditing((prev) => ({ ...prev, [section]: true }));
     // Initialize inline form with current user data
     setInlineForm({
       name: user?.name || "",
@@ -2328,13 +2739,15 @@ export function ProfileSection() {
       twitter: user?.twitter || "",
       instagram: user?.instagram || "",
       portfolio: user?.portfolio || "",
-      preferredHackathonTypes: user?.preferredHackathonTypes ? user.preferredHackathonTypes.join(", ") : "",
-      teamSizePreference: user?.teamSizePreference || "any"
+      preferredHackathonTypes: user?.preferredHackathonTypes
+        ? user.preferredHackathonTypes.join(", ")
+        : "",
+      teamSizePreference: user?.teamSizePreference || "any",
     });
   };
 
   const cancelInlineEdit = (section) => {
-    setInlineEditing(prev => ({ ...prev, [section]: false }));
+    setInlineEditing((prev) => ({ ...prev, [section]: false }));
   };
 
   const saveInlineEdit = async (section) => {
@@ -2345,15 +2758,18 @@ export function ProfileSection() {
 
     // Process array fields - convert comma-separated strings to arrays
     const processArrayField = (field) => {
-      if (!field || typeof field !== 'string') return [];
-      return field.split(',').map(item => item.trim()).filter(item => item.length > 0);
+      if (!field || typeof field !== "string") return [];
+      return field
+        .split(",")
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
     };
 
     // Determine which fields to update based on section
     let updates = {};
-    
+
     switch (section) {
-      case 'all':
+      case "all":
         updates = {
           name: inlineForm.name,
           email: inlineForm.email,
@@ -2378,11 +2794,13 @@ export function ProfileSection() {
           twitter: inlineForm.twitter,
           instagram: inlineForm.instagram,
           portfolio: inlineForm.portfolio,
-          preferredHackathonTypes: processArrayField(inlineForm.preferredHackathonTypes),
-          teamSizePreference: inlineForm.teamSizePreference
+          preferredHackathonTypes: processArrayField(
+            inlineForm.preferredHackathonTypes
+          ),
+          teamSizePreference: inlineForm.teamSizePreference,
         };
         break;
-      case 'personal':
+      case "personal":
         updates = {
           name: inlineForm.name,
           email: inlineForm.email,
@@ -2391,48 +2809,50 @@ export function ProfileSection() {
           bio: inlineForm.bio,
           gender: inlineForm.gender,
           userType: inlineForm.userType,
-          domain: inlineForm.domain
+          domain: inlineForm.domain,
         };
         break;
-      case 'academic':
+      case "academic":
         updates = {
           course: inlineForm.course,
           courseDuration: inlineForm.courseDuration,
           currentYear: inlineForm.currentYear,
-          courseSpecialization: inlineForm.courseSpecialization
+          courseSpecialization: inlineForm.courseSpecialization,
         };
         break;
-      case 'institution':
+      case "institution":
         updates = {
           collegeName: inlineForm.collegeName,
           country: inlineForm.country,
-          city: inlineForm.city
+          city: inlineForm.city,
         };
         break;
-      case 'professional':
+      case "professional":
         updates = {
           companyName: inlineForm.companyName,
           jobTitle: inlineForm.jobTitle,
-          yearsOfExperience: inlineForm.yearsOfExperience
+          yearsOfExperience: inlineForm.yearsOfExperience,
         };
         break;
-      case 'skills':
+      case "skills":
         updates = {
           skills: processArrayField(inlineForm.skills),
-          interests: processArrayField(inlineForm.interests)
+          interests: processArrayField(inlineForm.interests),
         };
         break;
-      case 'preferences':
+      case "preferences":
         updates = {
-          preferredHackathonTypes: processArrayField(inlineForm.preferredHackathonTypes),
-          teamSizePreference: inlineForm.teamSizePreference
+          preferredHackathonTypes: processArrayField(
+            inlineForm.preferredHackathonTypes
+          ),
+          teamSizePreference: inlineForm.teamSizePreference,
         };
         break;
-      case 'social':
+      case "social":
         updates = {
           twitter: inlineForm.twitter,
           instagram: inlineForm.instagram,
-          portfolio: inlineForm.portfolio
+          portfolio: inlineForm.portfolio,
         };
         break;
     }
@@ -2455,7 +2875,7 @@ export function ProfileSection() {
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       // Close inline editing
-      setInlineEditing(prev => ({ ...prev, [section]: false }));
+      setInlineEditing((prev) => ({ ...prev, [section]: false }));
 
       // Show success message
       alert("Profile updated successfully!");
@@ -2466,7 +2886,7 @@ export function ProfileSection() {
   };
 
   const handleInlineChange = (field, value) => {
-    setInlineForm(prev => ({ ...prev, [field]: value }));
+    setInlineForm((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
