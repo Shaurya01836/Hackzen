@@ -92,6 +92,21 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
     setRefreshKey(k => k + 1);
   };
 
+  // Add handler for deleting a project submission
+  const handleDeleteProjectSubmission = async (submission) => {
+    if (!window.confirm('Are you sure you want to delete your project submission for this round?')) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/api/submission-form/submission/${submission._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: 'Project Deleted', description: 'Your project submission has been deleted.', variant: 'success' });
+      handleAfterAction();
+    } catch (err) {
+      toast({ title: 'Delete failed', description: err.message || 'Could not delete project submission', variant: 'destructive' });
+    }
+  };
+
   // Helper: check if user has submitted for this round
   console.log('pptSubmissions:', pptSubmissions);
   const getSubmissionForRound = (roundIdx) => {
@@ -136,6 +151,15 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
   const handleEditSubmission = (submission) => {
     setEditingSubmission(submission);
     setProjectModal({ open: true, roundIdx: submission.roundIndex });
+    console.log('Opening ProjectSubmissionModal in edit mode with:', submission);
+  };
+
+  // Handler for closing modal (reset editingSubmission)
+  const handleProjectModalOpenChange = (open) => {
+    setProjectModal(prev => ({ ...prev, open }));
+    if (!open) setEditingSubmission(null);
+    if (!open && typeof setShowProjectModal === 'function') setShowProjectModal(false);
+    if (!open) handleAfterAction();
   };
 
   // Handler for Submit Another Project
@@ -177,6 +201,185 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
             const monthStr = start ? start.toLocaleString('en-US', { month: 'short' }) : '';
             // Fix: define submission for PPT logic
             const submission = getSubmissionForRound(idx);
+
+            // --- Submission logic based on hackathon type ---
+            const submissionType = hackathon.submissionType || "single-project";
+            const roundType = hackathon.roundType || "single-round";
+            // For single-round, only consider the first project round
+            const isFirstProjectRound = rounds.filter(r => r.type && r.type.toLowerCase().includes("project")).findIndex(r => r === round) === 0;
+            // For multi-round, allow per round
+
+            // --- UI rendering for project submission ---
+            let projectSubmissionUI = null;
+            if (isProjectSubmission) {
+              // 1. Single Project, Single Round
+              if (submissionType === "single-project" && roundType === "single-round") {
+                if (isFirstProjectRound) {
+                  projectSubmissionUI = projectSubmissionsForRound.length > 0 ? (
+                    <div className="flex gap-2 items-center">
+                      <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                        Project Submitted
+                      </div>
+                      {isLive && canEdit(end) && (
+                        <>
+                          <button
+                            className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
+                            onClick={() => handleEditSubmission(projectSubmissionsForRound[0])}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                            onClick={() => handleDeleteProjectSubmission(projectSubmissionsForRound[0])}
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    isLive && (
+                      <button
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        onClick={() => isRegistered && handleOpenNewSubmission(idx)}
+                        disabled={!isRegistered}
+                        title={isRegistered ? "Submit your project" : "Register for the hackathon to submit"}
+                      >
+                        Submit Project
+                      </button>
+                    )
+                  );
+                }
+              }
+              // 2. Single Project, Multi Round
+              else if (submissionType === "single-project" && roundType === "multi-round") {
+                projectSubmissionUI = projectSubmissionsForRound.length > 0 ? (
+                  <div className="flex gap-2 items-center">
+                    <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                      Project Submitted
+                    </div>
+                    {isLive && canEdit(end) && (
+                      <>
+                        <button
+                          className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
+                          onClick={() => handleEditSubmission(projectSubmissionsForRound[0])}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                          onClick={() => handleDeleteProjectSubmission(projectSubmissionsForRound[0])}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  isLive && (
+                    <button
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      onClick={() => isRegistered && handleOpenNewSubmission(idx)}
+                      disabled={!isRegistered}
+                      title={isRegistered ? "Submit your project" : "Register for the hackathon to submit"}
+                    >
+                      Submit Project
+                    </button>
+                  )
+                );
+              }
+              // 3. Multiple Project, Single Round
+              else if (submissionType === "multi-project" && roundType === "single-round") {
+                if (isFirstProjectRound) {
+                  projectSubmissionUI = (
+                    <>
+                      {projectSubmissionsForRound.length > 0 && (
+                        <div className="flex flex-col gap-2 mb-2">
+                          {projectSubmissionsForRound.map((sub, i) => (
+                            <div key={sub._id} className="flex gap-2 items-center">
+                              <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                Submitted Project {i + 1}
+                              </div>
+                              {isLive && canEdit(end) && (
+                                <>
+                                  <button
+                                    className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
+                                    onClick={() => handleEditSubmission(sub)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                    onClick={() => handleDeleteProjectSubmission(sub)}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {isLive && canEdit(end) && (projectSubmissionsForRound.length < maxProjects || maxProjects === null) && (
+                        <button
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                          onClick={() => isRegistered && handleSubmitAnother(idx)}
+                          disabled={!isRegistered}
+                          title={isRegistered ? "Submit another project" : "Register for the hackathon to submit"}
+                        >
+                          Submit Another Project
+                        </button>
+                      )}
+                    </>
+                  );
+                }
+              }
+              // 4. Multiple Project, Multi Round
+              else if (submissionType === "multi-project" && roundType === "multi-round") {
+                projectSubmissionUI = (
+                  <>
+                    {projectSubmissionsForRound.length > 0 && (
+                      <div className="flex flex-col gap-2 mb-2">
+                        {projectSubmissionsForRound.map((sub, i) => (
+                          <div key={sub._id} className="flex gap-2 items-center">
+                            <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                              Submitted Project {i + 1}
+                            </div>
+                            {isLive && canEdit(end) && (
+                              <>
+                                <button
+                                  className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
+                                  onClick={() => handleEditSubmission(sub)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                  onClick={() => handleDeleteProjectSubmission(sub)}
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {isLive && canEdit(end) && (projectSubmissionsForRound.length < maxProjects || maxProjects === null) && (
+                      <button
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        onClick={() => isRegistered && handleSubmitAnother(idx)}
+                        disabled={!isRegistered}
+                        title={isRegistered ? "Submit another project" : "Register for the hackathon to submit"}
+                      >
+                        Submit Another Project
+                      </button>
+                    )}
+                  </>
+                );
+              }
+            }
+            // --- End submission logic ---
             return (
               <div key={idx} className="flex items-start gap-4 relative group">
                 {/* Timeline vertical line */}
@@ -204,72 +407,7 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
                         </div>
                         <div className="flex flex-col gap-2 items-end mt-4 md:mt-0">
                           {/* --- Project Submission Logic --- */}
-                          {isProjectSubmission && (
-                            <>
-                              {/* Single project allowed */}
-                              {maxProjects === 1 ? (
-                                projectSubmissionsForRound.length > 0 ? (
-                                  <div className="flex gap-2 items-center">
-                                    <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                      Project Submitted
-                                    </div>
-                                    {isLive && canEdit(end) && (
-                                      <button
-                                        className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                                        onClick={() => handleEditSubmission(projectSubmissionsForRound[0])}
-                                      >
-                                        Edit
-                                      </button>
-                                    )}
-                                  </div>
-                                ) : (
-                                  isLive && (
-                                    <button
-                                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                      onClick={() => isRegistered && handleOpenNewSubmission(idx)}
-                                      disabled={!isRegistered}
-                                      title={isRegistered ? "Submit your project" : "Register for the hackathon to submit"}
-                                    >
-                                      Submit Project
-                                    </button>
-                                  )
-                                )
-                              ) : (
-                                // Multiple projects allowed
-                                <>
-                                  {projectSubmissionsForRound.length > 0 && (
-                                    <div className="flex flex-col gap-2 mb-2">
-                                      {projectSubmissionsForRound.map((sub, i) => (
-                                        <div key={sub._id} className="flex gap-2 items-center">
-                                          <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                            Submitted Project {i + 1}
-                                          </div>
-                                          {isLive && canEdit(end) && (
-                                            <button
-                                              className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                                              onClick={() => handleEditSubmission(sub)}
-                                            >
-                                              Edit
-                                            </button>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                  {isLive && canEdit(end) && (projectSubmissionsForRound.length < maxProjects || maxProjects === null) && (
-                                    <button
-                                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                      onClick={() => isRegistered && handleSubmitAnother(idx)}
-                                      disabled={!isRegistered}
-                                      title={isRegistered ? "Submit another project" : "Register for the hackathon to submit"}
-                                    >
-                                      Submit Another Project
-                                    </button>
-                                  )}
-                                </>
-                              )}
-                            </>
-                          )}
+                          {projectSubmissionUI}
                           {/* --- End Project Submission Logic --- */}
                           {/* Existing PPT and Results logic ... */}
                           {isSubmission && (
@@ -337,15 +475,13 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
             hackathonId={hackathon._id}
             roundIndex={pptModal.roundIdx}
             onSuccess={handleAfterAction}
+            hackathon={hackathon}
+            editingSubmission={pptModal.open && pptModal.roundIdx !== null ? getSubmissionForRound(pptModal.roundIdx) : null}
           />
           {/* Project Submission Modal */}
           <ProjectSubmissionModal
             open={showProjectModal !== undefined ? showProjectModal : projectModal.open}
-            onOpenChange={open => {
-              if (setShowProjectModal) setShowProjectModal(open);
-              setProjectModal({ open, roundIdx: open ? projectModal.roundIdx : null });
-              if (!open) handleAfterAction();
-            }}
+            onOpenChange={handleProjectModalOpenChange}
             hackathon={hackathon}
             roundIndex={projectModal.roundIdx}
             onSuccess={handleAfterAction}
@@ -353,6 +489,7 @@ export default function HackathonTimeline({ hackathon, sectionRef, isRegistered,
             editingSubmission={editingSubmission}
             onEditSuccess={handleAfterAction}
             onSubmitAnother={handleSubmitAnother}
+            projectSubmissions={projectSubmissions}
           />
         </div>
       )}
