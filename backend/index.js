@@ -12,6 +12,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const MongoStore = require("connect-mongo");
 const socketHandler = require("./config/socket");
+const util = require('util');
 
 // Passport strategies
 require("./config/passport");
@@ -75,6 +76,13 @@ app.use("/api/users", require("./routes/userRoutes"));
 
 //certificatePage
 app.use("/api/certificate-pages", require("./routes/certificatePageRoutes"));
+
+// Add this at the end, after all routes:
+app.use((err, req, res, next) => {
+  const errorString = typeof err === 'object' ? util.inspect(err, { depth: 5 }) : String(err);
+  console.error('GLOBAL ERROR:', errorString);
+  res.status(500).json({ message: 'Internal server error', error: errorString });
+});
 
 // ✅ Server + Socket.IO setup
 const server = http.createServer(app);

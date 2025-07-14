@@ -71,3 +71,20 @@ export async function fetchUserPPTSubmissions(hackathonId, userId) {
   // Only return submissions with pptFile and roundIndex
   return (data.submissions || []).filter(s => s.pptFile && typeof s.roundIndex === 'number');
 } 
+
+// Delete PPT submission for a round
+export async function deletePPTSubmission({ hackathonId, roundIndex }) {
+  const url = buildApiUrl("/submission-form/ppt/delete");
+  const token = localStorage.getItem('token');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ hackathonId, roundIndex }),
+  });
+  if (!response.ok) {
+    throw new Error((await response.json()).error || 'Failed to delete PPT submission');
+  }
+  return response.json();
+} 

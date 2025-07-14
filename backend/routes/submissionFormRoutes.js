@@ -7,6 +7,7 @@ const {
   submitProjectWithAnswers,
   getSubmissionById,
   submitPPTForRound,
+  deletePPTSubmission,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -21,6 +22,9 @@ router.post("/submit", protect, submitProjectWithAnswers);
 
 // New: Submit PPT for a round (no project required)
 router.post("/ppt", protect, submitPPTForRound);
+
+// New: Delete PPT submission for a round
+router.post("/ppt/delete", protect, deletePPTSubmission);
 
 router.get("/submissions", async (req, res) => {
   try {

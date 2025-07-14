@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/cloudinaryUpload");
 const { uploadPPT } = require("../middleware/cloudinaryUpload");
+const util = require('util');
 
 // POST /api/uploads/image
 router.post("/image", upload.single("image"), (req, res) => {
@@ -29,6 +30,7 @@ router.post("/image", upload.single("image"), (req, res) => {
 // POST /api/uploads/ppt
 router.post("/ppt", uploadPPT.single("ppt"), (req, res) => {
   try {
+    console.log('Received PPT upload:', { file: req.file, body: req.body });
     const file = req.file;
     if (!file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -40,8 +42,12 @@ router.post("/ppt", uploadPPT.single("ppt"), (req, res) => {
       size: file.bytes
     });
   } catch (err) {
-    console.error("Cloudinary PPT upload error:", err);
-    res.status(500).json({ message: "Server error uploading ppt" });
+    const errorString = typeof err === 'object' ? util.inspect(err, { depth: 5 }) : String(err);
+    console.error("Cloudinary PPT upload error:", errorString);
+    res.status(500).json({ 
+      message: "Server error uploading ppt",
+      error: err && err.message ? err.message : errorString 
+    });
   }
 });
 

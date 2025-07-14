@@ -3,20 +3,22 @@ import { useState } from "react";
 import { CalendarDays, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/CommonUI/card";
 // import { format } from "date-fns"; // Uncomment if date-fns is available
-import { uploadPPTFile, savePPTSubmission, fetchUserPPTSubmissions } from '../../../../../lib/api';
+import { uploadPPTFile, savePPTSubmission, fetchUserPPTSubmissions, deletePPTSubmission } from '../../../../../lib/api';
 import { useToast } from '../../../../../hooks/use-toast';
 import { useAuth } from '../../../../../context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import PPTSubmissionModal from './PPTSubmissionModal';
 
 export default function HackathonTimeline({ hackathon, sectionRef }) {
   const rounds = Array.isArray(hackathon.rounds) ? hackathon.rounds : [];
+  const [refreshKey, setRefreshKey] = useState(0); // force refresh
   const now = new Date();
   const { toast } = useToast ? useToast() : { toast: () => {} };
   const { user } = useAuth ? useAuth() : { user: null };
   const [uploadingIdx, setUploadingIdx] = useState(null);
   const [pptSubmissions, setPptSubmissions] = useState([]);
   const [pptModal, setPptModal] = useState({ open: false, roundIdx: null });
+  const pptModalRef = useRef();
 
   // Fetch user's PPT submissions for this hackathon
   useEffect(() => {
@@ -24,7 +26,7 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
     fetchUserPPTSubmissions(hackathon._id, user._id)
       .then(setPptSubmissions)
       .catch(() => setPptSubmissions([]));
-  }, [hackathon._id, user?._id]);
+  }, [hackathon._id, user?._id, refreshKey]);
 
   const handlePPTUpload = async (e, roundIdx) => {
     const file = e.target.files[0];
@@ -49,8 +51,39 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
     }
   };
 
+  const handleDeletePPT = async (roundIdx) => {
+    if (!window.confirm('Are you sure you want to delete your PPT submission for this round?')) return;
+    try {
+      await deletePPTSubmission({ hackathonId: hackathon._id, roundIndex: roundIdx });
+      toast({ title: 'PPT Deleted', description: 'Your PPT submission has been deleted.', variant: 'success' });
+      if (hackathon._id && user?._id) {
+        const updated = await fetchUserPPTSubmissions(hackathon._id, user._id);
+        setPptSubmissions(updated);
+      }
+    } catch (err) {
+      toast({ title: 'Delete failed', description: err.message || 'Could not delete PPT', variant: 'destructive' });
+    }
+  };
+
+  const handleAfterAction = () => {
+    setRefreshKey(k => k + 1);
+  };
+
   // Helper: check if user has submitted for this round
-  const getSubmissionForRound = (roundIdx) => pptSubmissions.find(s => s.roundIndex === roundIdx);
+  console.log('pptSubmissions:', pptSubmissions);
+  const getSubmissionForRound = (roundIdx) => {
+    const found = pptSubmissions.find(s => String(s.roundIndex) === String(roundIdx));
+    console.log('Checking roundIdx', roundIdx, 'found submission:', found);
+    return found;
+  };
+
+  // Helper to get download link with correct filename
+  const getPPTDownloadLink = (pptFile, originalName) => {
+    if (!pptFile) return '#';
+    // Remove extension from originalName if present
+    const baseName = originalName ? originalName.replace(/\.[^/.]+$/, "") : "presentation";
+    return `${pptFile}?fl_attachment=${baseName}.pptx`;
+  };
 
   return (
     <section ref={sectionRef} className="space-y-8">
@@ -99,24 +132,44 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 items-end mt-4 md:mt-0">
-                          {isSubmission && isLive && (
+                          {isSubmission && (
                             submission ? (
-                              <a
-                                href={submission.pptFile}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-center"
-                              >
-                                PPT Submitted
-                              </a>
+                              <div className="flex gap-2 items-center">
+                                <a
+                                  href={getPPTDownloadLink(submission.pptFile, submission.publicId || submission.originalName || 'presentation')}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-center"
+                                >
+                                  PPT Submitted
+                                </a>
+                                {isLive && (
+                                  <>
+                                    <button
+                                      className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
+                                      onClick={() => setPptModal({ open: true, roundIdx: idx })}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                      onClick={() => handleDeletePPT(idx)}
+                                    >
+                                      Delete
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             ) : (
-                              <button
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-                                onClick={() => setPptModal({ open: true, roundIdx: idx })}
-                                disabled={uploadingIdx === idx}
-                              >
-                                Submit PPT
-                              </button>
+                              isLive && (
+                                <button
+                                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                                  onClick={() => setPptModal({ open: true, roundIdx: idx })}
+                                  disabled={uploadingIdx === idx}
+                                >
+                                  Submit PPT
+                                </button>
+                              )
                             )
                           )}
                           {round.resultsAvailable && (
@@ -133,15 +186,13 @@ export default function HackathonTimeline({ hackathon, sectionRef }) {
           {/* PPT Submission Modal */}
           <PPTSubmissionModal
             open={pptModal.open}
-            onOpenChange={open => setPptModal({ open, roundIdx: open ? pptModal.roundIdx : null })}
+            onOpenChange={open => {
+              setPptModal({ open, roundIdx: open ? pptModal.roundIdx : null });
+              if (!open) handleAfterAction(); // always refresh after modal closes
+            }}
             hackathonId={hackathon._id}
             roundIndex={pptModal.roundIdx}
-            onSuccess={async () => {
-              if (hackathon._id && user?._id) {
-                const updated = await fetchUserPPTSubmissions(hackathon._id, user._id);
-                setPptSubmissions(updated);
-              }
-            }}
+            onSuccess={handleAfterAction}
           />
         </div>
       )}

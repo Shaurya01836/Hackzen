@@ -14,11 +14,12 @@ const storage = new CloudinaryStorage({
 
 const pptStorage = new CloudinaryStorage({
   cloudinary,
-  params: {
+  params: (req, file) => ({
     folder: "hackzen/ppt",
-    allowed_formats: ["pptx"],
-    resource_type: "raw"
-  }
+    allowedFormats: ["pptx"],
+    resource_type: "raw",
+    public_id: file.originalname.replace(/\.[^/.]+$/, "")
+  })
 });
 
 const upload = multer({ storage });
