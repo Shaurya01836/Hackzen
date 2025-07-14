@@ -19,7 +19,41 @@ import {
   Twitter,
   Instagram,
   Link as LinkIcon,
+  Mail,
+  Trophy,
+  Award,
+  Star,
+  Save,
+  UserCircle2,
 } from "lucide-react";
+import AchievementsSection from "../../components/DashboardUI/AchievementsSection";
+import AchievementBadge from "../../components/DashboardUI/AchievementBadge";
+
+function PublicAchievementsSection({ user }) {
+  // Gather unlocked badges only
+  const unlockedBadges = (user?.badges || [])
+    .filter(b => b.isUnlocked || b.badge?.isUnlocked)
+    .map(b => b.badge || b); // Support both {badge: {...}} and {...}
+
+  if (!unlockedBadges.length) {
+    return (
+      <div className="text-gray-500 text-center py-8">No badges unlocked yet.</div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      {unlockedBadges.map(badge => (
+        <AchievementBadge
+          key={badge._id || badge.name}
+          badge={badge}
+          isUnlocked={true}
+          showDetails={true}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function PublicProfileView({ userId }) {
   const [publicProfile, setPublicProfile] = useState(null);
@@ -66,10 +100,10 @@ export default function PublicProfileView({ userId }) {
     .substring(0, 2);
 
   return (
-    <div className="flex flex-col gap-8 w-full p-20">
+    <div className="flex flex-col gap-8 w-full p-8 md:p-20">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/dashboard/profile')}
+        onClick={() => navigate("/dashboard/profile")}
         className="self-start mb-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium hover:bg-indigo-200 transition flex items-center gap-2 shadow"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
@@ -106,6 +140,14 @@ export default function PublicProfileView({ userId }) {
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               {publicProfile.name}
             </h2>
+            <div className="flex gap-2 mb-4">
+              <Badge
+                variant="outline"
+                className="bg-purple-100 text-purple-800 border-purple-300 px-3 py-1 text-sm font-medium"
+              >
+                {publicProfile.role || "User"}
+              </Badge>
+            </div>
             {/* Bio */}
             {publicProfile.bio && (
               <p className="text-gray-600 mx-auto leading-relaxed">
@@ -113,14 +155,55 @@ export default function PublicProfileView({ userId }) {
               </p>
             )}
           </div>
-          {/* Social Links */}
-          {(publicProfile.website ||
-            publicProfile.github ||
-            publicProfile.linkedin ||
-            publicProfile.twitter ||
-            publicProfile.instagram ||
-            publicProfile.portfolio) && (
-            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0 mb-8">
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Trophy className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {publicProfile.registeredHackathonIds?.length || 0}
+                </p>
+                <p className="text-sm text-gray-500 font-medium">Hackathons</p>
+              </div>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Award className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">0</p>
+                <p className="text-sm text-gray-500 font-medium">Wins</p>
+              </div>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {publicProfile.badges?.length || 0}
+                </p>
+                <p className="text-sm text-gray-500 font-medium">Badges</p>
+              </div>
+            </div>
+            <div className="bg-white/50 rounded-2xl p-0 border border-gray-100">
+              <div className="p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Save className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-2xl font-bold text-gray-800">
+                  {publicProfile.projects?.length || 0}
+                </p>
+                <p className="text-sm text-gray-500 font-medium">Projects</p>
+              </div>
+            </div>
+          </div>
+          {/* Social & Skills Grid */}
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Social Links */}
+            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0">
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
@@ -135,7 +218,7 @@ export default function PublicProfileView({ userId }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-4">
+                <div className="space-y-3">
                   {publicProfile.website && (
                     <a
                       href={publicProfile.website}
@@ -199,68 +282,47 @@ export default function PublicProfileView({ userId }) {
                 </div>
               </div>
             </div>
-          )}
-          {/* Skills */}
-          {publicProfile.skills?.length > 0 && (
-            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0 mb-8">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">S</span>
-                  </span>
-                  Skills
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {publicProfile.skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
-                    >
-                      {skill}
+            {/* Skills & Interests */}
+            {(publicProfile.skills?.length > 0 || publicProfile.interests?.length > 0) && (
+              <div className="bg-white/50 rounded-2xl border border-gray-100 p-0">
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <span className="w-5 h-5 bg-blue-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">S</span>
                     </span>
-                  ))}
+                    Skills & Interests
+                  </h3>
+                  <div className="flex flex-wrap gap-3 mb-2">
+                    {publicProfile.skills?.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {publicProfile.interests?.map((interest, idx) => (
+                      <span
+                        key={idx}
+                        className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-full"
+                      >
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          {/* Badges */}
-          {publicProfile.badges?.length > 0 && (
-            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0 mb-8">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 bg-yellow-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">B</span>
-                  </span>
-                  Badges
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {publicProfile.badges.map((b, idx) => (
-                    <Badge key={idx} variant="outline">
-                      {b.badge?.name || "Badge"}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Projects */}
-          {publicProfile.projects?.length > 0 && (
-            <div className="bg-white/50 rounded-2xl border border-gray-100 p-0 mb-8">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <span className="w-5 h-5 bg-green-500 rounded-lg flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">P</span>
-                  </span>
-                  Projects
-                </h3>
-                <ul className="list-disc list-inside text-gray-700">
-                  {publicProfile.projects.map((p, idx) => (
-                    <li key={idx}>{p.title || "Untitled Project"}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
+          {/* Achievements & Badges */}
+          <div className="mt-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
+              <Star className="w-6 h-6 text-yellow-500" /> Achievements & Badges
+            </h3>
+            <PublicAchievementsSection user={publicProfile} />
+          </div>
         </div>
       </Card>
     </div>
