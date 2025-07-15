@@ -45,6 +45,7 @@ import CustomSubmissionForm from "./CustomSubmissionForm";
 import InnerCreatedCard from "./InnerCreatedCard"; // Adjust path
 import { cn } from "../../../lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
+// import { Modal } from '../../../components/CommonUI/modal'; // If you have a modal component, else use a div
 
 export function CreatedHackathons({ onCreateNew }) {
   const [hackathons, setHackathons] = useState([]);
@@ -58,6 +59,12 @@ export function CreatedHackathons({ onCreateNew }) {
   const hackathonToDelete = useRef(null);
   const navigate = useNavigate();
   const { hackathonId } = useParams();
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [sponsorProposals, setSponsorProposals] = useState([]);
+  const [selectedHackathonId, setSelectedHackathonId] = useState(null);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  // NEW: Track pending sponsor proposal counts for each hackathon
+  const [pendingSponsorCounts, setPendingSponsorCounts] = useState({});
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -77,6 +84,29 @@ export function CreatedHackathons({ onCreateNew }) {
 
     fetchHackathons();
   }, []);
+
+  // NEW: Fetch pending sponsor proposal counts for all hackathons
+  useEffect(() => {
+    if (hackathons.length === 0) return;
+    let ignore = false;
+    const fetchCounts = async () => {
+      const counts = {};
+      await Promise.all(
+        hackathons.map(async (h) => {
+          try {
+            const res = await fetch(`http://localhost:3000/api/sponsor-proposals/${h._id}`);
+            const data = await res.json();
+            counts[h._id] = Array.isArray(data) ? data.filter(p => p.status === 'pending').length : 0;
+          } catch {
+            counts[h._id] = 0;
+          }
+        })
+      );
+      if (!ignore) setPendingSponsorCounts(counts);
+    };
+    fetchCounts();
+    return () => { ignore = true; };
+  }, [hackathons]);
 
   useEffect(() => {
     if (hackathonId && hackathons.length > 0) {
@@ -191,7 +221,36 @@ export function CreatedHackathons({ onCreateNew }) {
     e.stopPropagation();
   };
 
-  const renderHackathonCard = (hackathon, featured = false) => {
+  // Fetch proposals for a hackathon
+  const fetchSponsorProposals = async (hackathonId) => {
+    setLoadingProposals(true);
+    setSelectedHackathonId(hackathonId);
+    try {
+      const res = await fetch(`http://localhost:3000/api/sponsor-proposals/${hackathonId}`);
+      const data = await res.json();
+      setSponsorProposals(data);
+      setShowSponsorModal(true);
+    } catch (err) {
+      setSponsorProposals([]);
+      setShowSponsorModal(true);
+    } finally {
+      setLoadingProposals(false);
+    }
+  };
+
+  // Approve/Reject proposal
+  const updateProposalStatus = async (proposalId, status) => {
+    await fetch(`http://localhost:3000/api/sponsor-proposals/${proposalId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    // Refresh proposals
+    fetchSponsorProposals(selectedHackathonId);
+  };
+
+  // Update renderHackathonCard to accept pendingCount as a prop
+  const renderHackathonCard = (hackathon, featured = false, pendingCount = 0) => {
     const registrationDeadline = new Date(hackathon.registrationDeadline);
     const today = new Date();
     const daysLeft = Math.ceil(
@@ -278,7 +337,14 @@ export function CreatedHackathons({ onCreateNew }) {
           </div>
 
           {/* Action Buttons */}
-          {/* Removed Edit and Manage buttons as per new requirements */}
+          <div className="flex gap-2 mt-2">
+            {/* Removed Edit and Manage buttons as per new requirements */}
+            {pendingCount > 0 && (
+              <Button size="sm" variant="outline" className="border-yellow-500 text-yellow-700" onClick={e => { e.stopPropagation(); fetchSponsorProposals(hackathon._id); }}>
+                Sponsored PS Pending ({pendingCount})
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
     );
@@ -395,42 +461,42 @@ export function CreatedHackathons({ onCreateNew }) {
 
             <TabsContent value="all" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {hackathons.map(renderHackathonCard)}
+                {hackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="live" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {liveHackathons.map(renderHackathonCard)}
+                {liveHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="registration" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {registrationOpenHackathons.map(renderHackathonCard)}
+                {registrationOpenHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="completed" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {completedHackathons.map(renderHackathonCard)}
+                {completedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="draft" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {draftHackathons.map(renderHackathonCard)}
+                {draftHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="pending" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {pendingHackathons.map(renderHackathonCard)}
+                {pendingHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="approved" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {approvedHackathons.map(renderHackathonCard)}
+                {approvedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="rejected" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {rejectedHackathons.map(renderHackathonCard)}
+                {rejectedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
           </Tabs>
@@ -473,6 +539,48 @@ export function CreatedHackathons({ onCreateNew }) {
                     Cancel
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sponsor Proposals Modal */}
+          {showSponsorModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative overflow-y-auto max-h-[90vh]">
+                <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => setShowSponsorModal(false)}>&times;</button>
+                <h2 className="text-xl font-bold mb-4">Sponsored Problem Statement Proposals</h2>
+                {loadingProposals ? (
+                  <div>Loading...</div>
+                ) : sponsorProposals.length === 0 ? (
+                  <div className="text-gray-500">No proposals found.</div>
+                ) : (
+                  <div className="space-y-6">
+                    {sponsorProposals.map((p) => (
+                      <div key={p._id} className="border rounded-lg p-4 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="font-semibold text-lg">{p.title}</div>
+                          <span className={p.status === 'pending' ? 'text-yellow-600' : p.status === 'approved' ? 'text-green-600' : 'text-red-600'}>{p.status}</span>
+                        </div>
+                        <div className="text-sm text-gray-700 mb-1"><b>By:</b> {p.name} ({p.email}) | {p.organization}</div>
+                        <div className="text-xs text-gray-500 mb-2">Submitted: {new Date(p.createdAt).toLocaleString()}</div>
+                        <div className="mb-2"><b>Description:</b> {p.description}</div>
+                        <div className="mb-2"><b>Deliverables:</b> {p.deliverables}</div>
+                        <div className="mb-2"><b>Tech Stack:</b> {p.techStack}</div>
+                        <div className="mb-2"><b>Target Audience:</b> {p.targetAudience}</div>
+                        <div className="mb-2"><b>Prize:</b> {p.prizeAmount} - {p.prizeDescription}</div>
+                        <div className="mb-2"><b>Judging:</b> {p.provideJudges === 'yes' ? `Sponsor Provided (${p.judgeName}, ${p.judgeEmail}, ${p.judgeRole})` : 'Organizer Assigned'}</div>
+                        <div className="mb-2"><b>Timeline:</b> {p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : 'N/A'} - {p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : 'N/A'}</div>
+                        <div className="mb-2"><b>Notes:</b> {p.notes || 'None'}</div>
+                        {p.status === 'pending' && (
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => updateProposalStatus(p._id, 'approved')}>Approve</Button>
+                            <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => updateProposalStatus(p._id, 'rejected')}>Reject</Button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

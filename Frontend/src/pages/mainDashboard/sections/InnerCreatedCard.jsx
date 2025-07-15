@@ -71,6 +71,10 @@ export default function HackathonDetailsPage({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const hackathonToDelete = useRef(null);
   const navigate = useNavigate();
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+  const [sponsorProposals, setSponsorProposals] = useState([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const [reviewModal, setReviewModal] = useState({ open: false, proposalId: null, action: '', loading: false, message: '' });
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -192,6 +196,40 @@ export default function HackathonDetailsPage({
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
+  };
+
+  // Fetch sponsor proposals for this hackathon
+  const fetchSponsorProposals = async () => {
+    setLoadingProposals(true);
+    try {
+      const res = await fetch(`http://localhost:3000/api/sponsor-proposals/${hackathon._id}`);
+      const data = await res.json();
+      setSponsorProposals(Array.isArray(data) ? data : []);
+      setShowSponsorModal(true);
+    } catch (err) {
+      setSponsorProposals([]);
+      setShowSponsorModal(true);
+    } finally {
+      setLoadingProposals(false);
+    }
+  };
+
+  // Approve/Reject proposal with message
+  const handleReviewProposal = (proposalId, action) => {
+    console.log('DEBUG: handleReviewProposal called', { proposalId, action });
+    setReviewModal({ open: true, proposalId, action, loading: false, message: '' });
+  };
+
+  const submitReview = async () => {
+    if (!reviewModal.message.trim()) return;
+    setReviewModal((prev) => ({ ...prev, loading: true }));
+    await fetch(`http://localhost:3000/api/sponsor-proposals/${reviewModal.proposalId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: reviewModal.action, reviewMessage: reviewModal.message }),
+    });
+    setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '' });
+    fetchSponsorProposals();
   };
 
   // Add back button if onBack function is provided
@@ -562,6 +600,13 @@ export default function HackathonDetailsPage({
                         <Megaphone className="h-4 w-4" />
                         Send Announcements
                       </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start gap-2 text-left bg-transparent border-yellow-500 text-yellow-700"
+                        onClick={fetchSponsorProposals}
+                      >
+                        Review Sponsored PS
+                      </Button>
                       <Separator />
                       <Button
                         variant="outline"
@@ -647,6 +692,76 @@ export default function HackathonDetailsPage({
                 Cancel
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Sponsor Proposals Modal */}
+      {showSponsorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative overflow-y-auto max-h-[90vh]">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => setShowSponsorModal(false)}>&times;</button>
+            <h2 className="text-xl font-bold mb-4">Sponsored Problem Statement Proposals</h2>
+            {loadingProposals ? (
+              <div>Loading...</div>
+            ) : sponsorProposals.length === 0 ? (
+              <div className="text-gray-500">No proposals found.</div>
+            ) : (
+              <div className="space-y-6">
+                {sponsorProposals.map((p) => (
+                  <div key={p._id} className="border rounded-lg p-4 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-semibold text-lg">{p.title}</div>
+                      <span className={p.status === 'pending' ? 'text-yellow-600' : p.status === 'approved' ? 'text-green-600' : 'text-red-600'}>{p.status}</span>
+                    </div>
+                    <div className="text-sm text-gray-700 mb-1"><b>By:</b> {p.name} ({p.email}) | {p.organization}</div>
+                    <div className="text-xs text-gray-500 mb-2">Submitted: {new Date(p.createdAt).toLocaleString()}</div>
+                    <div className="mb-2"><b>Description:</b> {p.description}</div>
+                    <div className="mb-2"><b>Deliverables:</b> {p.deliverables}</div>
+                    <div className="mb-2"><b>Tech Stack:</b> {p.techStack}</div>
+                    <div className="mb-2"><b>Target Audience:</b> {p.targetAudience}</div>
+                    <div className="mb-2"><b>Prize:</b> {p.prizeAmount} - {p.prizeDescription}</div>
+                    <div className="mb-2"><b>Judging:</b> {p.provideJudges === 'yes' ? `Sponsor Provided (${p.judgeName}, ${p.judgeEmail}, ${p.judgeRole})` : 'Organizer Assigned'}</div>
+                    <div className="mb-2"><b>Timeline:</b> {p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : 'N/A'} - {p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : 'N/A'}</div>
+                    <div className="mb-2"><b>Notes:</b> {p.notes || 'None'}</div>
+                    {p.status === 'pending' && (
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleReviewProposal(p._id, 'approved')}>Approve</Button>
+                        <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => handleReviewProposal(p._id, 'rejected')}>Reject</Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Review Modal for Approve/Reject with message */}
+      {reviewModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-indigo-400">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => { console.log('DEBUG: Closing review modal'); setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '' }); }}>&times;</button>
+            <h2 className="text-xl font-bold mb-4 text-indigo-700">{reviewModal.action === 'approved' ? 'Accept Proposal & Provide Contact Instructions' : 'Reject Proposal'}</h2>
+            <label className="block text-sm font-semibold mb-2">
+              {reviewModal.action === 'approved'
+                ? 'Contact Instructions / Next Steps for Sponsor (required)'
+                : 'Reason for Rejection (required)'}
+            </label>
+            <textarea
+              className="w-full border-2 border-indigo-300 rounded p-2 mb-4 focus:outline-indigo-500"
+              rows={4}
+              placeholder={reviewModal.action === 'approved' ? 'E.g., We will contact you at your email. Please join our Slack: ... or Next steps for collaboration...' : 'Please specify the reason for rejection.'}
+              value={reviewModal.message}
+              onChange={e => setReviewModal(prev => ({ ...prev, message: e.target.value }))}
+              disabled={reviewModal.loading}
+            />
+            <Button
+              className={reviewModal.action === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
+              onClick={() => { console.log('DEBUG: Submitting review', reviewModal); submitReview(); }}
+              disabled={reviewModal.loading || !reviewModal.message.trim()}
+            >
+              {reviewModal.loading ? 'Submitting...' : reviewModal.action === 'approved' ? 'Accept & Send' : 'Reject & Send'}
+            </Button>
           </div>
         </div>
       )}

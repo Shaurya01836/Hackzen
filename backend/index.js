@@ -20,6 +20,7 @@ require("./config/passport");
 // Routes
 const cloudinaryUploadRoutes = require("./routes/cloudinaryUploadRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
+const sponsorProposalRoutes = require('./routes/sponsorProposalRoutes');
 
 const app = express();
 
@@ -69,6 +70,7 @@ app.use("/api/organizations", require("./routes/organizationRoutes"));
 app.use("/api/articles", require("./routes/articleRoutes")); // ✅ includes like route
 app.use("/api/newsletter", newsletterRoutes);
 app.use('/api/submission-form',require("./routes/submissionFormRoutes"));
+app.use('/api/sponsor-proposals', sponsorProposalRoutes);
 
 // ✅ User routes (including 2FA) - mount 2FA first to avoid conflicts
 app.use('/api/users/2fa', require('./routes/2fa'));
