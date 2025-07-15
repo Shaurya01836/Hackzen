@@ -246,6 +246,20 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     hackathon.roundType === 'single-round' &&
     isEditMode;
 
+  // Helper: filter out already submitted projects for multi-project modes
+  let availableProjects = projects;
+  if (hackathon.submissionType === 'multi-project') {
+    if (hackathon.roundType === 'single-round') {
+      // Exclude projects already submitted to this hackathon (any round)
+      const submittedIds = (projectSubmissions || []).map(s => s.projectId && (s.projectId._id || s.projectId));
+      availableProjects = projects.filter(p => !submittedIds.includes(p._id));
+    } else if (hackathon.roundType === 'multi-round') {
+      // Exclude projects already submitted to this hackathon/round
+      const submittedIds = (projectSubmissions || []).filter(s => s.roundIndex === roundIndex).map(s => s.projectId && (s.projectId._id || s.projectId));
+      availableProjects = projects.filter(p => !submittedIds.includes(p._id));
+    }
+  }
+
   // Handler for selecting a new project in edit mode (single project/single round)
   const handleProjectChange = (projectId) => {
     if (isSingleProjectSingleRound && selectedProject !== projectId) {
@@ -326,6 +340,25 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
         description="Choose a project to submit for this round. You can select an existing project or create a new one."
         content={
           <div className="flex flex-col gap-4 mt-2">
+            {/* Submission count info for multi-project, single-round */}
+            {hackathon.submissionType === 'multi-project' && hackathon.roundType === 'single-round' && (
+              (() => {
+                const submittedCount = projectSubmissions ? projectSubmissions.length : 0;
+                const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
+                const canSubmitMore = submittedCount < maxAllowed;
+                const remaining = maxAllowed - submittedCount;
+                return (
+                  <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">
+                    {`You have submitted ${submittedCount} out of ${maxAllowed} allowed projects. ${canSubmitMore ? `You can submit ${remaining} more.` : 'You cannot submit more projects.'}`}
+                    {!canSubmitMore && (
+                      <div className="mt-2 text-red-600 font-semibold">
+                        You have submitted all allowed projects. To submit a new one, delete an existing submission.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            )}
             <Button variant="outline" className="w-full" onClick={handleRefresh}>
               Refresh Projects
             </Button>
@@ -344,7 +377,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
               </>
             ) : (
               <>
-                <div className="text-sm text-gray-700">{projects.length} project(s) found.</div>
+                
                 {/* Fallback: Native select for debugging */}
                 <label className="block text-sm font-medium text-gray-700 mt-2">Select a project</label>
                 <select
@@ -354,7 +387,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
                   className="w-full p-2 border rounded"
                 >
                   <option value="">Select a project</option>
-                  {projects.map(project => (
+                  {availableProjects.map(project => (
                     <option key={project._id} value={project._id}>
                       {project.title || project.name}
                     </option>

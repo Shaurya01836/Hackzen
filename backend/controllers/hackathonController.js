@@ -37,6 +37,8 @@ exports.createHackathon = async (req, res) => {
       teamSize
     } = req.body;
     const maxSubmissionsPerParticipant = req.body.maxSubmissionsPerParticipant || 1;
+    const submissionType = req.body.submissionType || 'single-project';
+    const roundType = req.body.roundType || 'single-round';
 
      const newHackathon = await Hackathon.create({
       title,
@@ -69,6 +71,8 @@ exports.createHackathon = async (req, res) => {
       participants,
       teamSize: teamSize || { min: 1, max: 4, allowSolo: true },
       maxSubmissionsPerParticipant,
+      submissionType,
+      roundType,
       approvalStatus: 'pending' // Always set to pending for now, admin can approve later
     });
 
@@ -225,6 +229,9 @@ exports.updateHackathon = async (req, res) => {
       hackathon.maxSubmissionsPerParticipant = maxSubmissionsPerParticipant;
     }
 
+    const submissionType = req.body.submissionType;
+    const roundType = req.body.roundType;
+
 
     console.log("Judges from request:", judges);
     console.log("Mentors from request:", mentors);
@@ -376,7 +383,10 @@ exports.updateHackathon = async (req, res) => {
         amount: prizePool?.amount || 0,
         currency: prizePool?.currency || 'USD',
         breakdown: prizePool?.breakdown || ''
-      }
+      },
+      submissionType,
+      roundType,
+      maxSubmissionsPerParticipant // <-- ensure this is always included
     };
     
 

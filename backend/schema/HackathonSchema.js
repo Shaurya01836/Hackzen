@@ -37,6 +37,9 @@ const HackathonSchema = new Schema({
 
   maxParticipants: { type: Number, default: 100 },
 
+  submissionType: { type: String, enum: ['single-project', 'multi-project'], default: 'single-project' },
+  roundType: { type: String, enum: ['single-round', 'multi-round'], default: 'single-round' },
+
   problemStatements: [
     {
       statement: { type: String, required: true },
