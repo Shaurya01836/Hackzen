@@ -520,19 +520,7 @@ exports.updateHackathon = async (req, res) => {
 
     console.log("Hackathon updated successfully:", updated.title);
     
-    // Test email sending if there are new judges or mentors
-    const hasNewJudges = judges && Array.isArray(judges) && judges.length > 0;
-    const hasNewMentors = mentors && Array.isArray(mentors) && mentors.length > 0;
-    
-    if (hasNewJudges || hasNewMentors) {
-      console.log("Testing email sending functionality...");
-      try {
-        await sendInviteEmail("test@example.com", "judge", "test-token", updated);
-        console.log("Test email sent successfully");
-      } catch (testError) {
-        console.error("Test email failed:", testError);
-      }
-    }
+    // Removed test email sending block to prevent sending to test@example.com or test@gmail.com
     
     // Send a proper JSON response with success message and updated hackathon
     res.json({
