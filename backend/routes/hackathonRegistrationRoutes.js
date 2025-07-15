@@ -4,7 +4,8 @@ const {
   getMyRegistrations, // ✅ Make sure this exists
   getHackathonParticipants,
   unregisterFromHackathon,
-  getLastRegistrationData
+  getLastRegistrationData,
+  updateRegistration
 } = require("../controllers/hackathonRegistrationController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -23,5 +24,8 @@ router.get("/hackathon/:hackathonId/participants", protect, getHackathonParticip
 
 // Add unregister route
 router.delete('/:hackathonId', protect, unregisterFromHackathon);
+
+// Add update registration route
+router.put('/:hackathonId/update', protect, updateRegistration);
 
 module.exports = router;

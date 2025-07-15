@@ -306,10 +306,81 @@ const unregisterFromHackathon = async (req, res) => {
   }
 };
 
+// Update registration details
+const updateRegistration = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { formData } = req.body;
+    const userId = req.user._id.toString();
+
+    // Validate hackathon ID
+    if (!mongoose.Types.ObjectId.isValid(hackathonId)) {
+      return res.status(400).json({ message: "Invalid hackathon ID." });
+    }
+
+    // Check if user is registered for this hackathon
+    const existingRegistration = await Registration.findOne({ hackathonId, userId });
+    if (!existingRegistration) {
+      return res.status(404).json({ message: "Registration not found." });
+    }
+
+    // Check if hackathon exists and registration is still open
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found." });
+    }
+
+    if (new Date() > new Date(hackathon.registrationDeadline)) {
+      return res.status(400).json({ message: "Registration deadline has passed." });
+    }
+
+    // Validate required fields
+    if (!formData.teamName || !formData.teamName.trim()) {
+      return res.status(400).json({ message: "Team name is required." });
+    }
+
+    // Update the registration
+    const updatedRegistration = await Registration.findByIdAndUpdate(
+      existingRegistration._id,
+      {
+        formData: {
+          ...existingRegistration.formData,
+          ...formData
+        },
+        acceptedTerms: formData.acceptedTerms
+      },
+      { new: true }
+    );
+
+    // Update team information if team name changed
+    const team = await Team.findOne({ 
+      hackathon: hackathonId, 
+      leader: userId,
+      status: 'active'
+    });
+
+    if (team && team.name !== formData.teamName.trim()) {
+      team.name = formData.teamName.trim();
+      team.description = formData.teamDescription || team.description;
+      await team.save();
+    }
+
+    res.json({ 
+      success: true, 
+      message: "Registration updated successfully",
+      registration: updatedRegistration
+    });
+  } catch (err) {
+    console.error('Error updating registration:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   registerForHackathon,
   getMyRegistrations,
   getHackathonParticipants,
   unregisterFromHackathon,
   getLastRegistrationData,
+  updateRegistration,
 };

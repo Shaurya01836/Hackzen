@@ -47,6 +47,8 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const [activeTab, setActiveTab] = useState(defaultTab || "overview");
   const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [editRegistration, setEditRegistration] = useState(false);
+  const [registrationData, setRegistrationData] = useState(null);
 
 const sections = [
   { id: "overview", label: "Overview & Requirements" },
@@ -133,6 +135,39 @@ const sections = [
     refreshRegistrationStatus();
   }, [hackathon && hackathon._id]);
 
+  // Fetch user's registration for this hackathon if needed
+  const fetchRegistrationData = async () => {
+    if (!hackathon || !hackathon._id) return;
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    try {
+      const res = await axios.get("http://localhost:3000/api/registration/my", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const reg = res.data.find(
+        (r) => r.hackathonId === hackathon._id || r.hackathonId?._id === hackathon._id
+      );
+      if (reg) setRegistrationData(reg.formData);
+    } catch (err) {
+      setRegistrationData(null);
+    }
+  };
+
+  // Pass setShowRegistration to HeaderSection, but wrap to support edit mode
+  const handleShowRegistration = async (edit = false) => {
+    if (edit) {
+      // View Details - edit mode, start at case 3
+      setEditRegistration(true);
+      await fetchRegistrationData(); // Wait for data to be set
+      setShowRegistration(true);
+    } else {
+      // Register - new registration, start at case 1
+      setEditRegistration(false);
+      setRegistrationData(null); // Clear any previous data
+      setShowRegistration(true);
+    }
+  };
+
   // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -147,6 +182,9 @@ const sections = [
           refreshRegistrationStatus();
           setShowRegistration(false);
         }}
+        editMode={editRegistration}
+        startStep={editRegistration ? 3 : 1}
+        initialData={editRegistration ? registrationData : undefined}
       />
     );
   }
@@ -161,7 +199,7 @@ const sections = [
         }
         isSaved={isSaved}
         isRegistered={isRegistered}
-        setShowRegistration={setShowRegistration}
+        setShowRegistration={(edit) => handleShowRegistration(edit)}
         showHeader={showHeader}
         refreshRegistrationStatus={refreshRegistrationStatus}
         setIsSaved={setIsSaved}

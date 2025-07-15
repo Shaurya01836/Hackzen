@@ -50,108 +50,107 @@ function generateTeamCode(length = 8) {
   return code;
 }
 
-export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
+export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode = false, startStep = 1, initialData }) {
   const { user } = useAuth()
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(editMode ? startStep : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    age: "",
-    gender: "",
-    collegeOrCompany: "",
-    degreeOrRole: "",
-    yearOfStudyOrExperience: "",
-    teamName: "",
-    teamDescription: "",
-    teamCode: generateTeamCode(),
-    projectIdea: "",
-    github: "",
-    linkedin: "",
-    resumeURL: "",
-    heardFrom: "",
-    acceptedTerms: false
-  })
+  const [formData, setFormData] = useState(() => {
+    if (editMode && initialData) {
+      return {
+        ...initialData,
+        teamCode: initialData.teamCode || generateTeamCode(),
+      };
+    }
+    return {
+      fullName: "",
+      email: "",
+      phone: "",
+      age: "",
+      gender: "",
+      collegeOrCompany: "",
+      degreeOrRole: "",
+      yearOfStudyOrExperience: "",
+      teamName: "",
+      teamDescription: "",
+      teamCode: generateTeamCode(),
+      projectIdea: "",
+      github: "",
+      linkedin: "",
+      resumeURL: "",
+      heardFrom: "",
+      acceptedTerms: false
+    };
+  });
 
   const [errors, setErrors] = useState({})
   const [hasAutoFilled, setHasAutoFilled] = useState(false)
   const { toast } = useToast()
 
-  // Auto-fill form with user data and previous registration data when component loads
+  // Auto-fill form with user profile data when not in edit mode
   useEffect(() => {
+    if (editMode && initialData) return; // In edit mode, skip auto-fill effect
     const fetchAndAutoFill = async () => {
       if (user) {
-        // First, auto-fill with basic user data
-        let autoFillData = {
-          fullName: user.name || "",
-          email: user.email || "",
-          phone: user.phone || "",
-          collegeOrCompany: user.collegeOrCompany || "",
-          degreeOrRole: user.degreeOrRole || "",
-          yearOfStudyOrExperience: user.yearOfStudyOrExperience || "",
-          github: user.github || "",
-          linkedin: user.linkedin || ""
-        };
-
-        let hasPreviousData = false;
-
-        // Then, try to fetch previous registration data
         try {
           const token = localStorage.getItem("token");
-          const response = await fetch("http://localhost:3000/api/registration/last-registration", {
+          // Fetch complete user profile data
+          const profileResponse = await fetch("http://localhost:3000/api/users/me", {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.hasPreviousRegistration && data.formData) {
-              hasPreviousData = true;
-              // Merge previous registration data with user data
-              // Prefer user data for basic fields, but use previous registration data for additional fields
-              autoFillData = {
-                ...autoFillData,
-                age: data.formData.age || "",
-                gender: data.formData.gender || "",
-                resumeURL: data.formData.resumeURL || "",
-                heardFrom: data.formData.heardFrom || "",
-                // Keep user's basic info but use previous registration data for other fields
-                fullName: user.name || data.formData.fullName || "",
-                email: user.email || data.formData.email || "",
-                phone: user.phone || data.formData.phone || "",
-                collegeOrCompany: user.collegeOrCompany || data.formData.collegeOrCompany || "",
-                degreeOrRole: user.degreeOrRole || data.formData.degreeOrRole || "",
-                yearOfStudyOrExperience: user.yearOfStudyOrExperience || data.formData.yearOfStudyOrExperience || "",
-                github: user.github || data.formData.github || "",
-                linkedin: user.linkedin || data.formData.linkedin || ""
-              };
-            }
+          let profileData = {};
+          if (profileResponse.ok) {
+            profileData = await profileResponse.json();
+          }
+          // Start with user profile data as primary source
+          let autoFillData = {
+            fullName: profileData.name || user.name || "",
+            email: profileData.email || user.email || "",
+            phone: profileData.phone || "",
+            age: "", // Age not stored in profile
+            gender: profileData.gender || "",
+            collegeOrCompany: profileData.collegeName || profileData.companyName || "",
+            degreeOrRole: profileData.course || profileData.jobTitle || "",
+            yearOfStudyOrExperience: profileData.currentYear || profileData.yearsOfExperience || "",
+            github: profileData.github || "",
+            linkedin: profileData.linkedin || "",
+            teamName: "",
+            teamDescription: "",
+            projectIdea: "",
+            resumeURL: "",
+            heardFrom: ""
+          };
+          setFormData(prev => ({
+            ...prev,
+            ...autoFillData
+          }));
+          if (profileData.profileCompleted) {
+            setHasAutoFilled(true);
+            toast({
+              title: "Profile Data Applied",
+              description: "Your profile information has been auto-filled. You can modify any field if needed.",
+              duration: 3000
+            });
           }
         } catch (error) {
-          console.log("Could not fetch previous registration data:", error);
-        }
-
-        setFormData(prev => ({
-          ...prev,
-          ...autoFillData
-        }));
-
-        // Set flag to show auto-fill message
-        if (hasPreviousData) {
-          setHasAutoFilled(true);
-          toast({
-            title: "Auto-fill Applied",
-            description: "Your previous registration details have been auto-filled. You can modify any field if needed.",
-            duration: 3000
-          });
+          console.log("Could not fetch profile data:", error);
         }
       }
     };
-
     fetchAndAutoFill();
-  }, [user])
+  }, [user, editMode, initialData]);
+
+  // If editMode or initialData changes, update formData and currentStep
+  useEffect(() => {
+    if (editMode && initialData) {
+      setFormData({
+        ...initialData,
+        teamCode: initialData.teamCode || generateTeamCode(),
+      });
+      setCurrentStep(startStep || 3);
+    }
+  }, [editMode, initialData, startStep]);
 
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
@@ -219,20 +218,26 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
     setIsSubmitting(true);
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      const token = localStorage.getItem("token"); // assuming you store JWT here
+      const token = localStorage.getItem("token");
 
       if (!user || !token) {
         console.error("You must be logged in to register.");
         return;
       }
 
-      console.log("Submitting registration with data:", {
+      const endpoint = editMode 
+        ? `http://localhost:3000/api/registration/${hackathon._id}/update`
+        : "http://localhost:3000/api/registration";
+      
+      const method = editMode ? "PUT" : "POST";
+
+      console.log(`${editMode ? "Updating" : "Submitting"} registration with data:`, {
         hackathonId: hackathon._id,
         formData: formData
       });
 
-      const response = await fetch("http://localhost:3000/api/registration", {
-        method: "POST",
+      const response = await fetch(endpoint, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -247,36 +252,44 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
       console.log("Registration response:", data);
 
       if (!response.ok) {
-        if (data.message && data.message.includes("Already registered")) {
+        if (!editMode && data.message && data.message.includes("Already registered")) {
           console.log("Already registered, treating as success");
-          onSuccess(); // treat as success
+          onSuccess();
           return;
         }
-        throw new Error(data.message || "Failed to register");
+        throw new Error(data.message || `Failed to ${editMode ? 'update' : 'register'}`);
       }
 
-      // Show success message with team information
-      if (data.team) {
-        console.log("Team created successfully:", data.team);
+      // Show success message
+      if (editMode) {
         toast({
-          title: "Registration Successful!",
-          description: `Your team \"${data.team.name}\" has been created. Team code: ${data.team.teamCode}`,
+          title: "Changes Saved!",
+          description: "Your registration details have been updated successfully!",
           duration: 3000
         });
       } else {
-        console.log("No team data in response");
-        toast({
-          title: "Registration Successful!",
-          description: "You have successfully registered in the hackathon!",
-          duration: 3000
-        });
+        if (data.team) {
+          console.log("Team created successfully:", data.team);
+          toast({
+            title: "Registration Successful!",
+            description: `Your team \"${data.team.name}\" has been created. Team code: ${data.team.teamCode}`,
+            duration: 3000
+          });
+        } else {
+          console.log("No team data in response");
+          toast({
+            title: "Registration Successful!",
+            description: "You have successfully registered in the hackathon!",
+            duration: 3000
+          });
+        }
       }
 
-      onSuccess(); // success handler
+      onSuccess();
     } catch (error) {
-      console.error("Registration failed:", error);
+      console.error(`${editMode ? 'Update' : 'Registration'} failed:`, error);
       toast({
-        title: "Registration Failed",
+        title: editMode ? "Update Failed" : "Registration Failed",
         description: error.message,
         duration: 3000
       });
@@ -298,6 +311,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 Personal Information
               </h2>
               <p className="text-gray-600 text-lg">Let's start with your basic details</p>
+              {hasAutoFilled && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700 flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Your profile information has been pre-filled. You can edit any field as needed.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -311,7 +332,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.fullName}
                   onChange={e => handleInputChange("fullName", e.target.value)}
                   placeholder="Enter your full name"
-                  className={`h-12 text-base ${errors.fullName ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.fullName ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.fullName ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.fullName ? "border-green-300 bg-green-50" : ""}`}
                 />
                 {errors.fullName && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -332,7 +353,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.email}
                   onChange={e => handleInputChange("email", e.target.value)}
                   placeholder="Enter your email"
-                  className={`h-12 text-base ${errors.email ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.email ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.email ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.email ? "border-green-300 bg-green-50" : ""}`}
                 />
                 {errors.email && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -352,7 +373,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.phone}
                   onChange={e => handleInputChange("phone", e.target.value)}
                   placeholder="Enter your phone number"
-                  className={`h-12 text-base ${hasAutoFilled && formData.phone ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.phone ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
 
@@ -367,7 +388,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.age}
                   onChange={e => handleInputChange("age", e.target.value)}
                   placeholder="Enter your age"
-                  className={`h-12 text-base ${hasAutoFilled && formData.age ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.age ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
 
@@ -379,7 +400,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.gender}
                   onValueChange={value => handleInputChange("gender", value)}
                 >
-                  <SelectTrigger className={`h-12 text-base ${hasAutoFilled && formData.gender ? "border-blue-300 bg-blue-50" : ""}`}>
+                  <SelectTrigger className={`h-12 text-base ${hasAutoFilled && formData.gender ? "border-green-300 bg-green-50" : ""}`}>
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                   <SelectContent>
@@ -400,7 +421,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.collegeOrCompany}
                   onChange={e => handleInputChange("collegeOrCompany", e.target.value)}
                   placeholder="Enter your college or company"
-                  className={`h-12 text-base ${errors.collegeOrCompany ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.collegeOrCompany ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${errors.collegeOrCompany ? "border-red-500 focus:border-red-500" : ""} ${hasAutoFilled && formData.collegeOrCompany ? "border-green-300 bg-green-50" : ""}`}
                 />
                 {errors.collegeOrCompany && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -424,6 +445,14 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 Academic & Professional Background
               </h2>
               <p className="text-gray-600 text-lg">Help us understand your experience level</p>
+              {hasAutoFilled && (
+                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-700 flex items-center justify-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Your profile information has been pre-filled. You can edit any field as needed.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -437,7 +466,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.degreeOrRole}
                   onChange={e => handleInputChange("degreeOrRole", e.target.value)}
                   placeholder="e.g., Computer Science, Software Engineer"
-                  className={`h-12 text-base ${hasAutoFilled && formData.degreeOrRole ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.degreeOrRole ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
 
@@ -451,7 +480,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.yearOfStudyOrExperience}
                   onChange={e => handleInputChange("yearOfStudyOrExperience", e.target.value)}
                   placeholder="e.g., 2 (years)"
-                  className={`h-12 text-base ${hasAutoFilled && formData.yearOfStudyOrExperience ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.yearOfStudyOrExperience ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
 
@@ -465,7 +494,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.github}
                   onChange={e => handleInputChange("github", e.target.value)}
                   placeholder="https://github.com/username"
-                  className={`h-12 text-base ${hasAutoFilled && formData.github ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.github ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
 
@@ -479,7 +508,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                   value={formData.linkedin}
                   onChange={e => handleInputChange("linkedin", e.target.value)}
                   placeholder="https://linkedin.com/in/username"
-                  className={`h-12 text-base ${hasAutoFilled && formData.linkedin ? "border-blue-300 bg-blue-50" : ""}`}
+                  className={`h-12 text-base ${hasAutoFilled && formData.linkedin ? "border-green-300 bg-green-50" : ""}`}
                 />
               </div>
             </div>
@@ -810,10 +839,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 </Button>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">
-                    Register for {hackathon.name}
+                    {editMode ? "Edit Registration" : "Register"} for {hackathon.name}
                   </h1>
                   <p className="text-xs text-gray-500">
-                    Step {currentStep} of {totalSteps}
+                    {editMode ? "Update your registration details" : `Step ${currentStep} of ${totalSteps}`}
                   </p>
                 </div>
               </div>
@@ -871,12 +900,12 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess }) {
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Submitting...
+                    {editMode ? "Saving..." : "Submitting..."}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4" />
-                    Submit Registration
+                    {editMode ? "Save Changes" : "Submit Registration"}
                   </>
                 )}
               </Button>

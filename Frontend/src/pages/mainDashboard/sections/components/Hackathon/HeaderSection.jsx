@@ -98,6 +98,13 @@ export default function HeaderSection({
 
           {isRegistered ? (
             <>
+              <Button
+                size="sm"
+                onClick={() => setShowRegistration(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                View Details
+              </Button>
               <button
                 onClick={() => setShowUnregisterDialog(true)}
                 className="cursor-pointer"
@@ -114,7 +121,7 @@ export default function HeaderSection({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Unregister from Hackathon?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to unregister? You’ll lose your spot.
+                      Are you sure you want to unregister? You'll lose your spot.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -129,7 +136,7 @@ export default function HeaderSection({
           ) : (
             <Button
               size="sm"
-              onClick={() => setShowRegistration(true)}
+              onClick={() => setShowRegistration(false)}
               className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Register

@@ -466,7 +466,7 @@ export default function MyHackathons() {
                             hackathon.id
                           }&title=${encodeURIComponent(
                             hackathon.name || hackathon.title
-                          )}&source=my-hackathons`
+                          )}&source=my-hackathons&view=registration`
                         )
                       }
                     >
@@ -502,30 +502,7 @@ export default function MyHackathons() {
                           </span>
                         </div>
                         <div className="flex gap-2 mt-2">
-                          {/* Only keep Submit button if not submitted */}
-                          {!hackathon.submitted && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                setSelectedHackathon(hackathon);
-                                setShowSubmissionForm(true);
-                                // Fetch the full hackathon object from the backend
-                                try {
-                                  const res = await fetch(`http://localhost:3000/api/hackathons/${hackathon.id}`);
-                                  const fullHackathon = await res.json();
-                                  setSelectedHackathon(fullHackathon);
-                                  setShowSubmissionForm(true);
-                                } catch (err) {
-                                  alert('Failed to load hackathon details.');
-                                }
-                              }}
-                            >
-                              Submit
-                            </Button>
-                          )}
+                          {/* Removed submit button - clicking on card opens registration page */}
                         </div>
                       </CardContent>
                     </Card>
