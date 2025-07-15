@@ -43,10 +43,10 @@ exports.createHackathon = async (req, res) => {
      const newHackathon = await Hackathon.create({
       title,
       description,
-      startDate,
-      endDate,
-      registrationDeadline,
-      submissionDeadline,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : undefined,
+      submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : undefined,
       maxParticipants,
       status,
       difficultyLevel: difficultyLevel || 'Beginner',
@@ -358,10 +358,10 @@ exports.updateHackathon = async (req, res) => {
     const updateFields = {
       title,
       description,
-      startDate,
-      endDate,
-      registrationDeadline,
-      submissionDeadline,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : undefined,
+      submissionDeadline: submissionDeadline ? new Date(submissionDeadline) : undefined,
       maxParticipants,
       status,
       difficultyLevel,
@@ -386,7 +386,9 @@ exports.updateHackathon = async (req, res) => {
       },
       submissionType,
       roundType,
-      maxSubmissionsPerParticipant // <-- ensure this is always included
+      maxSubmissionsPerParticipant, // <-- ensure this is always included
+      wantsSponsoredProblems: req.body.wantsSponsoredProblems, // <-- add this
+      sponsoredPSConfig: req.body.sponsoredPSConfig // <-- add this
     };
     
 

@@ -160,11 +160,10 @@ export function ExploreHackathons() {
           : hackathon.status === "ongoing"
           ? "Ongoing"
           : "Ended",
-      startDate: new Date(hackathon.startDate).toLocaleDateString(),
-      endDate: new Date(hackathon.endDate).toLocaleDateString(),
-      registrationDeadline: new Date(
-        hackathon.registrationDeadline
-      ).toLocaleDateString(),
+      // Keep date fields as ISO strings for logic
+      startDate: hackathon.startDate,
+      endDate: hackathon.endDate,
+      registrationDeadline: hackathon.registrationDeadline,
       organizer: hackathon.organizer?.name || "Unknown Organizer",
       organizerLogo: hackathon.organizer?.logo || null,
       featured: hackathon.tags?.includes("featured") || false,

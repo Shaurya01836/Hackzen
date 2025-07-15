@@ -30,6 +30,13 @@ export default function EditHackathonPage() {
   }, [id]);
 
   const handleUpdate = async (formData) => {
+    // Ensure wantsSponsoredProblems and sponsoredPSConfig are always present
+    const dataToSend = {
+      ...formData,
+      wantsSponsoredProblems: formData.wantsSponsoredProblems !== undefined ? formData.wantsSponsoredProblems : false,
+      sponsoredPSConfig: formData.sponsoredPSConfig || undefined,
+    };
+    console.log('Updating hackathon with data:', dataToSend); // Debug
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`http://localhost:3000/api/hackathons/${id}`, {
@@ -38,7 +45,7 @@ export default function EditHackathonPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dataToSend),
       });
       if (res.ok) {
         alert("Hackathon updated successfully!");

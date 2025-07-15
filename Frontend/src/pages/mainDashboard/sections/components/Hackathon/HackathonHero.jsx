@@ -9,6 +9,7 @@ import {
 import { Progress } from "../../../../../components/DashboardUI/progress";
 import { Calendar, Star, Trophy, Users } from "lucide-react";
 import { Button } from "../../../../../components/CommonUI/button";
+import { useState } from "react";
 
 export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
   const {
@@ -54,6 +55,14 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
         );
     }
   };
+
+  const [showSponsorModal, setShowSponsorModal] = useState(false);
+
+  // Add logic to check if hackathon has started
+  const now = new Date();
+  const hackathonStart = hackathon.startDate ? new Date(hackathon.startDate) : null;
+  console.log('Sponsor Button Debug:', { now: now.toISOString(), hackathonStart: hackathonStart ? hackathonStart.toISOString() : null, rawStart: hackathon.startDate });
+  const canSponsor = hackathon.wantsSponsoredProblems && hackathonStart && now < hackathonStart;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -146,18 +155,179 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
           </CardContent>
         </Card>
 
-        {/* CTA for submission */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3"
-              size="lg"
-            >
-              Submit Your Project
-            </Button>
-          </CardContent>
-        </Card>
+        {/* CTA for submission or sponsor */}
+        {canSponsor ? (
+          <Card>
+            <CardContent className="pt-6">
+              <Button
+                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold py-3"
+                size="lg"
+                onClick={() => setShowSponsorModal(true)}
+              >
+                Sponsor a Problem Statement
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+        {/* Show warning if start date is missing or invalid */}
+        {hackathon.wantsSponsoredProblems && !hackathonStart && (
+          <div className="text-xs text-red-600 font-semibold mt-2">Warning: Hackathon start date is missing or invalid. Sponsor button logic may not work as expected.</div>
+        )}
+        {/* Sponsor Modal Placeholder */}
+        {showSponsorModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 animate-fade-in">
+            <div className="bg-white rounded-xl shadow-2xl p-0 max-w-2xl w-full relative overflow-hidden animate-slide-up">
+              {/* Sticky header with close */}
+              <div className="sticky top-0 z-10 bg-white border-b flex items-center justify-between px-8 py-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <span role='img' aria-label='sponsor'>🤝</span> Sponsor a Problem Statement
+                </h2>
+                <button className="text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => setShowSponsorModal(false)}>&times;</button>
+              </div>
+              <form onSubmit={e => { e.preventDefault(); /* handle sponsor submit here */ }} className="space-y-8 px-8 py-6 overflow-y-auto max-h-[80vh]">
+                {/* ✅ Basic Info */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                   Basic Info
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Your Name *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Your Name" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Your Email *</label>
+                      <input type="email" className="w-full border rounded p-2" placeholder="Your Email" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Organization / Company Name *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Organization / Company Name" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Website / LinkedIn</label>
+                      <input type="url" className="w-full border rounded p-2" placeholder="Website / LinkedIn (optional)" />
+                    </div>
+                  </div>
+                </div>
+                {/* 📄 Proposal Details */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                     Proposal Details
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Proposal Title *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Proposal Title / Problem Statement Title" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Preferred Tech Stack or Domain *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="e.g., Web3, AI/ML, IoT" required />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-1">Full Description / Problem Context *</label>
+                    <textarea className="w-full border rounded p-2" placeholder="Explain the challenge, background, and what you're looking for." rows={3} required />
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium mb-1">Expected Deliverables *</label>
+                    <textarea className="w-full border rounded p-2" placeholder="e.g., Demo, GitHub repo, PPT, Research Paper" rows={2} required />
+                  </div>
+                </div>
+                {/* 🎯 Target Audience */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                  Target Audience
+                  </div>
+                  <select className="w-full border rounded p-2" required>
+                    <option value="">Who should attempt this problem?</option>
+                    <option value="anyone">Anyone</option>
+                    <option value="final-year">Final-year students</option>
+                    <option value="ai-experience">Teams with AI experience</option>
+                    <option value="other">Other (specify in notes)</option>
+                  </select>
+                </div>
+                {/* 🏆 Proposed Prize / Incentive */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                   Proposed Prize / Incentive
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Prize Amount *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Prize Amount (e.g., ₹5000 / $100)" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Prize Description *</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Prize Description (Merch, internships, cash, etc.)" required />
+                    </div>
+                  </div>
+                </div>
+                {/* 👩‍⚖️ Judging Preferences */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                   Judging Preferences
+                  </div>
+                  <div className="flex items-center gap-4 mb-2">
+                    <label className="flex items-center gap-1">
+                      <input type="radio" name="provideJudges" value="yes" required /> Yes
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input type="radio" name="provideJudges" value="no" required /> No
+                    </label>
+                  </div>
+                  {/* If Yes, show judge fields (for now, always show one set) */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-2 mt-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Judge Name</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Judge Name (if providing)" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Judge Email</label>
+                      <input type="email" className="w-full border rounded p-2" placeholder="Judge Email (if providing)" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Judge Role</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Judge Role (if providing)" />
+                    </div>
+                  </div>
+                </div>
+                {/* 📅 Preferred Timeline (Optional) */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+                 Preferred Timeline (Optional)
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Start Date</label>
+                      <input type="date" className="border rounded p-2 w-full" placeholder="Start Date" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Deadline</label>
+                      <input type="date" className="border rounded p-2 w-full" placeholder="Deadline" />
+                    </div>
+                  </div>
+                </div>
+                {/* 💬 Any Additional Notes / Requirements? */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2 text-lg font-semibold">
+               Any Additional Notes / Requirements?
+                  </div>
+                  <textarea className="w-full border rounded p-2" placeholder="Add any extra information here..." rows={2} />
+                </div>
+                <Button type="submit" className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold mt-2">Submit Sponsorship Proposal</Button>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+/* Add animation classes */
+<style jsx>{`
+  .animate-fade-in { animation: fadeIn 0.2s ease; }
+  .animate-slide-up { animation: slideUp 0.3s cubic-bezier(.4,2,.6,1); }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+`}</style>

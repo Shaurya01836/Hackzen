@@ -41,6 +41,14 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
     return <div className="p-10 text-center text-red-600 font-bold">Hackathon not found.</div>;
   }
 
+   // Debug: log the raw date fields
+  console.log('HackathonDetails - Raw Dates:', {
+    startDate: hackathon.startDate,
+    endDate: hackathon.endDate,
+    registrationDeadline: hackathon.registrationDeadline,
+    submissionDeadline: hackathon.submissionDeadline,
+  });
+  
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);

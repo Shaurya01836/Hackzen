@@ -132,7 +132,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
       submissionDeadline: toDatetimeLocal(initialData.submissionDeadline),
       startDate: toDatetimeLocal(initialData.startDate),
       endDate: toDatetimeLocal(initialData.endDate),
-      wantsSponsoredProblems: initialData.wantsSponsoredProblems || false, // <-- add this
+      wantsSponsoredProblems: initialData.wantsSponsoredProblems !== undefined ? initialData.wantsSponsoredProblems : false, // <-- fix here
       sponsoredPSConfig: initialData.sponsoredPSConfig || undefined, // <-- add this
     }
   })
@@ -796,25 +796,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Removed category selection */}
-                  <div>
-                    <Label htmlFor="difficultyLevel">Difficulty Level</Label>
-                    <Select
-                      value={formData.difficultyLevel}
-                      onValueChange={(value) => setFormData({ ...formData, difficultyLevel: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-                        <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1623,111 +1605,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                     No
                   </Button>
                 </div>
-                {formData.wantsSponsoredProblems && (
-                  <div className="space-y-4">
-                    {/* Type of Sponsored Statement */}
-                    <div>
-                      <Label className="font-medium">Type of Sponsored Problem Statement</Label>
-                      <select
-                        className="mt-1 block w-full border rounded p-2"
-                        value={formData.sponsoredPSConfig?.type || ""}
-                        onChange={e => setFormData({
-                          ...formData,
-                          sponsoredPSConfig: {
-                            ...formData.sponsoredPSConfig,
-                            type: e.target.value,
-                            customDescription: e.target.value === 'other' ? (formData.sponsoredPSConfig?.customDescription || '') : undefined
-                          }
-                        })}
-                      >
-                        <option value="">Select type</option>
-                        <option value="open-innovation">Open Innovation</option>
-                        <option value="other">Other (custom)</option>
-                      </select>
-                      {formData.sponsoredPSConfig?.type === "open-innovation" && (
-                        <div className="text-xs text-gray-700 mt-1">Anyone can submit a proposal for a sponsored problem statement.</div>
-                      )}
-                      {formData.sponsoredPSConfig?.type === "other" && (
-                        <div className="mt-2">
-                          <Label className="font-medium">Custom Description</Label>
-                          <Textarea
-                            placeholder="Describe the custom sponsored problem statement type..."
-                            value={formData.sponsoredPSConfig?.customDescription || ''}
-                            onChange={e => setFormData({
-                              ...formData,
-                              sponsoredPSConfig: {
-                                ...formData.sponsoredPSConfig,
-                                customDescription: e.target.value
-                              }
-                            })}
-                            rows={3}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    {/* Judges Assignment */}
-                    <div>
-                      <Label className="font-medium">Who will judge the sponsored problem statements?</Label>
-                      <select
-                        className="mt-1 block w-full border rounded p-2"
-                        value={formData.sponsoredPSConfig?.judges || ""}
-                        onChange={e => setFormData({
-                          ...formData,
-                          sponsoredPSConfig: {
-                            ...formData.sponsoredPSConfig,
-                            judges: e.target.value
-                          }
-                        })}
-                        disabled={!formData.sponsoredPSConfig?.type}
-                      >
-                        <option value="">Select type</option>
-                        {formData.sponsoredPSConfig?.type === "open-innovation" && (
-                          <>
-                            <option value="organizer">Organizer will assign judges</option>
-                            <option value="sponsor">Sponsors provide their own judges</option>
-                          </>
-                        )}
-                        {formData.sponsoredPSConfig?.type === "other" && (
-                          <option value="organizer">Organizer will assign judges</option>
-                        )}
-                      </select>
-                    </div>
-                    {/* Prize for Sponsored PS */}
-                    <div>
-                      <Label className="font-medium">Prize for Sponsored Problem Statement</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          placeholder="Amount"
-                          value={formData.sponsoredPSConfig?.prizeAmount || ""}
-                          onChange={e => setFormData({
-                            ...formData,
-                            sponsoredPSConfig: {
-                              ...formData.sponsoredPSConfig,
-                              prizeAmount: e.target.value
-                            }
-                          })}
-                          className="w-32"
-                          disabled={!formData.sponsoredPSConfig?.type}
-                        />
-                        <Input
-                          type="text"
-                          placeholder="Prize Description (e.g. Amazon Gift Card)"
-                          value={formData.sponsoredPSConfig?.prizeDescription || ""}
-                          onChange={e => setFormData({
-                            ...formData,
-                            sponsoredPSConfig: {
-                              ...formData.sponsoredPSConfig,
-                              prizeDescription: e.target.value
-                            }
-                          })}
-                          disabled={!formData.sponsoredPSConfig?.type}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+                
               </CardContent>
             </Card>
 
