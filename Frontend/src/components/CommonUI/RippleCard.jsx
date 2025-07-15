@@ -4,6 +4,8 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 const RCard = React.forwardRef(({ className, ...props }, ref) => {
   const [isHovered, setIsHovered] = React.useState(false);
   const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
+  const [showRipple, setShowRipple] = React.useState(false);
+  const rippleTimeout = React.useRef();
 
   const handleMouseMove = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -12,10 +14,18 @@ const RCard = React.forwardRef(({ className, ...props }, ref) => {
     setMousePosition({ x, y });
   };
 
-  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseEnter = (e) => {
+    setIsHovered(true);
+    handleMouseMove(e);
+    setShowRipple(true);
+    if (rippleTimeout.current) clearTimeout(rippleTimeout.current);
+    rippleTimeout.current = setTimeout(() => setShowRipple(false), 600); // match animate-ping duration
+  };
   const handleMouseLeave = () => {
     setIsHovered(false);
     setMousePosition({ x: 0, y: 0 });
+    setShowRipple(false);
+    if (rippleTimeout.current) clearTimeout(rippleTimeout.current);
   };
 
   const getRotation = () => {
@@ -75,7 +85,7 @@ const RCard = React.forwardRef(({ className, ...props }, ref) => {
       {...props}
     >
       {/* Ripple effect */}
-      {isHovered && (
+      {showRipple && (
         <div 
           className="absolute pointer-events-none"
           style={{
