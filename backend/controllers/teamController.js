@@ -4,6 +4,7 @@ const User = require('../model/UserModel');
 const Hackathon = require('../model/HackathonModel');
 const Submission = require('../model/SubmissionModel'); // ✅ Added for cleaning up submissions
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 const createTeam = async (req, res) => {
   try {
@@ -35,15 +36,15 @@ const createTeam = async (req, res) => {
     // Check if creating for hackathon or project
     if (hackathonId) {
       // Validate hackathon exists
-      const hackathon = await require('../model/HackathonModel').findById(hackathonId);
+      const hackathon = await require('../model/HackathonModel').findById(new mongoose.Types.ObjectId(hackathonId));
       if (!hackathon) {
         return res.status(404).json({ error: 'Hackathon not found' });
       }
 
       // Check if user is already a member of any team for this hackathon
       const existingTeam = await Team.findOne({ 
-        hackathon: hackathonId, 
-        members: userId,
+        hackathon: new mongoose.Types.ObjectId(hackathonId), 
+        members: new mongoose.Types.ObjectId(userId),
         status: 'active'
       });
 
@@ -63,9 +64,9 @@ const createTeam = async (req, res) => {
         description,
         teamCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
         maxMembers: finalMaxMembers,
-        hackathon: hackathonId,
-        members: [userId],
-        leader: userId,
+        hackathon: new mongoose.Types.ObjectId(hackathonId),
+        members: [new mongoose.Types.ObjectId(userId)],
+        leader: new mongoose.Types.ObjectId(userId),
       });
 
       const populatedTeam = await Team.findById(newTeam._id)
@@ -86,15 +87,15 @@ const createTeam = async (req, res) => {
     } else if (projectId) {
       // Validate project exists
       const Project = require('../model/ProjectModel');
-      const project = await Project.findById(projectId);
+      const project = await Project.findById(new mongoose.Types.ObjectId(projectId));
       if (!project) {
         return res.status(404).json({ error: 'Project not found' });
       }
 
       // Check if user is already a member of any team for this project
       const existingTeam = await Team.findOne({ 
-        project: projectId, 
-        members: userId,
+        project: new mongoose.Types.ObjectId(projectId), 
+        members: new mongoose.Types.ObjectId(userId),
         status: 'active'
       });
 
@@ -110,9 +111,9 @@ const createTeam = async (req, res) => {
         description,
         teamCode: crypto.randomBytes(4).toString('hex').toUpperCase(),
         maxMembers: maxMembers || 4,
-        project: projectId,
-        members: [userId],
-        leader: userId,
+        project: new mongoose.Types.ObjectId(projectId),
+        members: [new mongoose.Types.ObjectId(userId)],
+        leader: new mongoose.Types.ObjectId(userId),
       });
 
       const populatedTeam = await Team.findById(newTeam._id)
@@ -142,12 +143,12 @@ const createTeam = async (req, res) => {
 // PUT /api/teams/:id/add-member
 const addMember = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id);
+    const team = await Team.findById(new mongoose.Types.ObjectId(req.params.id));
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
     const userId = req.user._id;
 
-    if (team.members.includes(userId)) {
+    if (team.members.includes(new mongoose.Types.ObjectId(userId))) {
       return res.status(400).json({ error: 'User already in team' });
     }
 
@@ -155,7 +156,7 @@ const addMember = async (req, res) => {
       return res.status(400).json({ error: 'Team is full' });
     }
 
-    team.members.push(userId);
+    team.members.push(new mongoose.Types.ObjectId(userId));
     await team.save();
 
     const populatedTeam = await Team.findById(team._id)
@@ -195,8 +196,8 @@ const getTeamsByHackathon = async (req, res) => {
 
     // Get teams where the user is a member
     const userTeams = await Team.find({ 
-      hackathon: hackathonId,
-      members: userId,
+      hackathon: new mongoose.Types.ObjectId(hackathonId),
+      members: new mongoose.Types.ObjectId(userId),
       status: 'active'
     })
     .populate('members', 'name email avatar')
@@ -238,8 +239,8 @@ const getTeamsByProject = async (req, res) => {
 
     // Get teams where the user is a member for this project
     const userTeams = await Team.find({ 
-      project: projectId,
-      members: userId,
+      project: new mongoose.Types.ObjectId(projectId),
+      members: new mongoose.Types.ObjectId(userId),
       status: 'active'
     })
     .populate('members', 'name email avatar')
@@ -259,7 +260,7 @@ const getTeamsByProject = async (req, res) => {
 // GET /api/teams/:id
 const getTeamById = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id)
+    const team = await Team.findById(new mongoose.Types.ObjectId(req.params.id))
       .populate('members', 'name email avatar')
       .populate('leader', 'name email')
       .populate('hackathon', 'title');
@@ -289,7 +290,7 @@ const joinTeamByCode = async (req, res) => {
       return res.status(404).json({ error: 'Team not found or inactive' });
     }
 
-    if (team.members.includes(userId)) {
+    if (team.members.includes(new mongoose.Types.ObjectId(userId))) {
       return res.status(400).json({ error: 'You are already a member of this team' });
     }
 
@@ -298,7 +299,7 @@ const joinTeamByCode = async (req, res) => {
     }
 
     // Add user to team
-    team.members.push(userId);
+    team.members.push(new mongoose.Types.ObjectId(userId));
     await team.save();
 
     let registrationStatus = 'not_applicable';
@@ -306,14 +307,14 @@ const joinTeamByCode = async (req, res) => {
 
     // Handle hackathon registration if applicable
     if (team.hackathon) {
-      const existingReg = await HackathonRegistration.findOne({ hackathonId: team.hackathon, userId });
+      const existingReg = await HackathonRegistration.findOne({ hackathonId: new mongoose.Types.ObjectId(team.hackathon), userId });
       registrationStatus = 'already_registered';
       
       if (!existingReg) {
         try {
           // Get user info for autofill
           const user = await User.findById(userId);
-          const hackathon = await Hackathon.findById(team.hackathon);
+          const hackathon = await Hackathon.findById(new mongoose.Types.ObjectId(team.hackathon));
           
           if (!hackathon) {
             throw new Error('Hackathon not found');
@@ -321,7 +322,7 @@ const joinTeamByCode = async (req, res) => {
           
           // Create registration
           await HackathonRegistration.create({
-            hackathonId: team.hackathon,
+            hackathonId: new mongoose.Types.ObjectId(team.hackathon),
             userId,
             formData: {
               fullName: user.name,
@@ -335,14 +336,14 @@ const joinTeamByCode = async (req, res) => {
           });
           
           // Update Hackathon participants
-          if (!hackathon.participants.includes(userId)) {
-            hackathon.participants.push(userId);
+          if (!hackathon.participants.includes(new mongoose.Types.ObjectId(userId))) {
+            hackathon.participants.push(new mongoose.Types.ObjectId(userId));
             await hackathon.save();
           }
           
           // Update User's registeredHackathonIds
           await User.findByIdAndUpdate(userId, {
-            $addToSet: { registeredHackathonIds: team.hackathon },
+            $addToSet: { registeredHackathonIds: new mongoose.Types.ObjectId(team.hackathon) },
           });
           
           registrationStatus = 'registered';
@@ -378,7 +379,7 @@ const joinTeamByCode = async (req, res) => {
 // DELETE /api/teams/:id
 const deleteTeam = async (req, res) => {
   try {
-    const team = await Team.findById(req.params.id);
+    const team = await Team.findById(new mongoose.Types.ObjectId(req.params.id));
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
     // Only the leader can delete the team
@@ -391,16 +392,16 @@ const deleteTeam = async (req, res) => {
     const hackathonId = team.hackathon;
     for (const memberId of team.members) {
       // Remove registration
-      await HackathonRegistration.deleteOne({ hackathonId, userId: memberId });
+      await HackathonRegistration.deleteOne({ hackathonId: new mongoose.Types.ObjectId(hackathonId), userId: new mongoose.Types.ObjectId(memberId) });
       // Remove from hackathon participants
-      await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+      await Hackathon.findByIdAndUpdate(new mongoose.Types.ObjectId(hackathonId), { $pull: { participants: new mongoose.Types.ObjectId(memberId) } });
       // Remove from user's registeredHackathonIds
-      await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+      await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: new mongoose.Types.ObjectId(hackathonId) } });
       // ✅ Clean up submissions for this user and hackathon
-      await Submission.deleteMany({ hackathonId, submittedBy: memberId });
+      await Submission.deleteMany({ hackathonId: new mongoose.Types.ObjectId(hackathonId), submittedBy: new mongoose.Types.ObjectId(memberId) });
     }
 
-    await Team.findByIdAndDelete(req.params.id);
+    await Team.findByIdAndDelete(new mongoose.Types.ObjectId(req.params.id));
     res.json({ message: 'Team deleted successfully' });
   } catch (err) {
     console.error('Error deleting team:', err);
@@ -412,7 +413,7 @@ const deleteTeam = async (req, res) => {
 const removeMember = async (req, res) => {
   try {
     const { teamId, memberId } = req.params;
-    const team = await Team.findById(teamId);
+    const team = await Team.findById(new mongoose.Types.ObjectId(teamId));
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
     // Only leader can remove members
@@ -426,7 +427,7 @@ const removeMember = async (req, res) => {
     }
 
     // Check if member exists in team
-    if (!team.members.includes(memberId)) {
+    if (!team.members.includes(new mongoose.Types.ObjectId(memberId))) {
       return res.status(400).json({ error: 'Member is not in this team' });
     }
 
@@ -438,16 +439,16 @@ const removeMember = async (req, res) => {
     const hackathonId = team.hackathon;
     
     // Remove registration
-    await HackathonRegistration.deleteOne({ hackathonId, userId: memberId });
+    await HackathonRegistration.deleteOne({ hackathonId: new mongoose.Types.ObjectId(hackathonId), userId: new mongoose.Types.ObjectId(memberId) });
     
     // Remove from hackathon participants
-    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+    await Hackathon.findByIdAndUpdate(new mongoose.Types.ObjectId(hackathonId), { $pull: { participants: new mongoose.Types.ObjectId(memberId) } });
     
     // Remove from user's registeredHackathonIds
-    await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+    await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: new mongoose.Types.ObjectId(hackathonId) } });
 
     // ✅ Clean up submissions for this user and hackathon
-    await Submission.deleteMany({ hackathonId, submittedBy: memberId });
+    await Submission.deleteMany({ hackathonId: new mongoose.Types.ObjectId(hackathonId), submittedBy: new mongoose.Types.ObjectId(memberId) });
 
     const populatedTeam = await Team.findById(team._id)
       .populate('members', 'name email avatar')
@@ -474,7 +475,7 @@ const updateTeamDescription = async (req, res) => {
       return res.status(400).json({ error: 'Description is required' });
     }
 
-    const team = await Team.findById(teamId);
+    const team = await Team.findById(new mongoose.Types.ObjectId(teamId));
     if (!team) return res.status(404).json({ error: 'Team not found' });
 
     // Only the leader can update team description
@@ -505,9 +506,9 @@ const leaveTeam = async (req, res) => {
   try {
     const { teamId } = req.params;
     const userId = req.user._id;
-    const team = await Team.findById(teamId);
+    const team = await Team.findById(new mongoose.Types.ObjectId(teamId));
     if (!team) return res.status(404).json({ error: 'Team not found' });
-    if (!team.members.includes(userId)) {
+    if (!team.members.includes(new mongoose.Types.ObjectId(userId))) {
       return res.status(403).json({ error: 'You are not a member of this team' });
     }
     // Remove member from team
@@ -517,14 +518,14 @@ const leaveTeam = async (req, res) => {
     // Unregister user from hackathon if they leave the team
     const hackathonId = team.hackathon;
     // Remove registration
-    await HackathonRegistration.deleteOne({ hackathonId, userId });
+    await HackathonRegistration.deleteOne({ hackathonId: new mongoose.Types.ObjectId(hackathonId), userId: new mongoose.Types.ObjectId(userId) });
     // Remove from hackathon participants
-    await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+    await Hackathon.findByIdAndUpdate(new mongoose.Types.ObjectId(hackathonId), { $pull: { participants: new mongoose.Types.ObjectId(userId) } });
     // Remove from user's registeredHackathonIds
-    await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+    await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: new mongoose.Types.ObjectId(hackathonId) } });
 
     // ✅ Clean up submissions for this user and hackathon
-    await Submission.deleteMany({ hackathonId, submittedBy: userId });
+    await Submission.deleteMany({ hackathonId: new mongoose.Types.ObjectId(hackathonId), submittedBy: new mongoose.Types.ObjectId(userId) });
 
     res.json({ message: 'You have left the team and have been unregistered from the hackathon.' });
   } catch (err) {

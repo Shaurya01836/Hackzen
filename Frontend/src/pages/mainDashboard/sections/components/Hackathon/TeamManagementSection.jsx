@@ -24,7 +24,6 @@ import UnregisterDialog from "./TeamModals/UnregisterDialog";
 import RevokeInviteDialog from "./TeamModals/RevokeInviteDialog";
 
 export default function TeamManagementSection({
-  project,
   hackathon,
   isRegistered,
   setIsRegistered,
@@ -34,6 +33,14 @@ export default function TeamManagementSection({
   toast,
   setShowRegistration,
 }) {
+  if (!isRegistered) {
+    return (
+      <div className="p-8 text-center text-gray-500">
+        Register for the hackathon to create or join a team.
+      </div>
+    );
+  }
+
   const [userTeams, setUserTeams] = useState([]);
   const [teamInvites, setTeamInvites] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -43,6 +50,7 @@ export default function TeamManagementSection({
   const [editingTeam, setEditingTeam] = useState(null);
   const [showUnregisterDialog, setShowUnregisterDialog] = useState(false);
   const [revokeInviteData, setRevokeInviteData] = useState(null);
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
 
   const handleJoinTeam = async (teamCode) => {
     try {
@@ -51,7 +59,7 @@ export default function TeamManagementSection({
         `http://localhost:3000/api/teams/join/${teamCode}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-          params: { projectId: project._id },
+          params: { projectId: hackathon._id },
         }
       );
       toast({
@@ -123,12 +131,17 @@ export default function TeamManagementSection({
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://localhost:3000/api/teams/project/${project._id}`,
+        `http://localhost:3000/api/teams/hackathon/${hackathon._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log("Fetched teams:", res.data);
       setUserTeams(res.data);
     } catch (err) {
-      console.error("Error fetching teams", err);
+      if (err.response && err.response.status === 401) {
+        toast({ title: "Session expired", description: "Please log in again." });
+      } else {
+        console.error("Error fetching teams", err);
+      }
     }
   };
 
@@ -136,7 +149,7 @@ export default function TeamManagementSection({
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get(
-        `http://localhost:3000/api/team-invites/project/${project._id}`,
+        `http://localhost:3000/api/team-invites/hackathon/${hackathon._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setTeamInvites(res.data);
@@ -146,11 +159,13 @@ export default function TeamManagementSection({
   };
 
   useEffect(() => {
-    if (project) {
+    if (hackathon && hackathon._id) {
       fetchUserTeams();
       fetchTeamInvites();
     }
-  }, [project._id]);
+  }, [hackathon && hackathon._id]);
+
+  const myTeam = userTeams[0];
 
   return (
     <section ref={sectionRef} className="space-y-8">
@@ -167,18 +182,32 @@ export default function TeamManagementSection({
                 My Teams
               </span>
               {userTeams.length === 0 && (
-                <Button
-                  onClick={() => setShowJoinTeam(true)}
-                  variant="outline"
-                  size="sm"
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Join Team
-                </Button>
+                <div className="flex justify-center gap-4 mb-4">
+                  <Button
+                    onClick={() => setShowCreateTeam(true)}
+                    variant="primary"
+                    size="sm"
+                  >
+                    Create Team
+                  </Button>
+                  <Button
+                    onClick={() => setShowJoinTeam(true)}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Join Team
+                  </Button>
+                </div>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {userTeams.length > 0 && (
+              <div className="mb-4 text-green-700 text-center font-medium">
+                You already have a team for this hackathon. Manage your team below.
+              </div>
+            )}
             {userTeams.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 You are not part of any team yet.
@@ -262,7 +291,7 @@ export default function TeamManagementSection({
                       Copy Code
                     </Button>
 
-                    {team.leader._id === user?._id ? (
+                    {team.leader._id?.toString() === user?._id?.toString() ? (
                       <>
                         <Button
                           size="sm"
@@ -356,7 +385,7 @@ export default function TeamManagementSection({
         show={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         team={selectedTeam}
-        project={project}
+        hackathon={hackathon}
         onInviteSent={fetchTeamInvites}
       />
 
@@ -379,6 +408,10 @@ export default function TeamManagementSection({
         onClose={() => setRevokeInviteData(null)}
         onRevoked={fetchTeamInvites}
       />
+
+      <Button onClick={fetchUserTeams} variant="outline" size="sm">
+        Refresh Teams
+      </Button>
     </section>
   );
 }

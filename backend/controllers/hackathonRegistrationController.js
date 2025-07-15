@@ -238,8 +238,8 @@ const unregisterFromHackathon = async (req, res) => {
 
     // Check if user is a team leader for this hackathon
     const team = await Team.findOne({ 
-      hackathon: hackathonId, 
-      leader: userId,
+      hackathon: new mongoose.Types.ObjectId(hackathonId), 
+      leader: new mongoose.Types.ObjectId(userId),
       status: 'active'
     });
 
@@ -250,13 +250,13 @@ const unregisterFromHackathon = async (req, res) => {
       // Unregister all team members from the hackathon
       for (const memberId of team.members) {
         // Remove registration
-        await Registration.deleteOne({ hackathonId, userId: memberId });
+        await Registration.deleteOne({ hackathonId: new mongoose.Types.ObjectId(hackathonId), userId: new mongoose.Types.ObjectId(memberId) });
         // Remove from hackathon participants
-        await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: memberId } });
+        await Hackathon.findByIdAndUpdate(new mongoose.Types.ObjectId(hackathonId), { $pull: { participants: new mongoose.Types.ObjectId(memberId) } });
         // Remove from user's registeredHackathonIds
-        await User.findByIdAndUpdate(memberId, { $pull: { registeredHackathonIds: hackathonId } });
+        await User.findByIdAndUpdate(new mongoose.Types.ObjectId(memberId), { $pull: { registeredHackathonIds: new mongoose.Types.ObjectId(hackathonId) } });
         // ✅ Clean up submissions for this user and hackathon
-        await Submission.deleteMany({ hackathonId, submittedBy: memberId });
+        await Submission.deleteMany({ hackathonId: new mongoose.Types.ObjectId(hackathonId), submittedBy: new mongoose.Types.ObjectId(memberId) });
       }
 
       // Delete the team
@@ -272,8 +272,8 @@ const unregisterFromHackathon = async (req, res) => {
       
       // Check if user is a member of any team for this hackathon
       const memberTeam = await Team.findOne({ 
-        hackathon: hackathonId, 
-        members: userId,
+        hackathon: new mongoose.Types.ObjectId(hackathonId), 
+        members: new mongoose.Types.ObjectId(userId),
         status: 'active'
       });
 
@@ -284,16 +284,16 @@ const unregisterFromHackathon = async (req, res) => {
       }
 
       // Remove registration
-      await Registration.deleteOne({ hackathonId, userId });
+      await Registration.deleteOne({ hackathonId: new mongoose.Types.ObjectId(hackathonId), userId: new mongoose.Types.ObjectId(userId) });
 
       // Remove from hackathon participants
-      await Hackathon.findByIdAndUpdate(hackathonId, { $pull: { participants: userId } });
+      await Hackathon.findByIdAndUpdate(new mongoose.Types.ObjectId(hackathonId), { $pull: { participants: new mongoose.Types.ObjectId(userId) } });
 
       // Remove from user's registeredHackathonIds
-      await User.findByIdAndUpdate(userId, { $pull: { registeredHackathonIds: hackathonId } });
+      await User.findByIdAndUpdate(new mongoose.Types.ObjectId(userId), { $pull: { registeredHackathonIds: new mongoose.Types.ObjectId(hackathonId) } });
 
       // ✅ Clean up submissions for this user and hackathon
-      await Submission.deleteMany({ hackathonId, submittedBy: userId });
+      await Submission.deleteMany({ hackathonId: new mongoose.Types.ObjectId(hackathonId), submittedBy: new mongoose.Types.ObjectId(userId) });
 
       res.json({ 
         message: 'You have been unregistered from the hackathon.',
@@ -354,8 +354,8 @@ const updateRegistration = async (req, res) => {
 
     // Update team information if team name changed
     const team = await Team.findOne({ 
-      hackathon: hackathonId, 
-      leader: userId,
+      hackathon: new mongoose.Types.ObjectId(hackathonId), 
+      leader: new mongoose.Types.ObjectId(userId),
       status: 'active'
     });
 

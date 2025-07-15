@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const TeamInvite = require('../model/TeamInviteModel');
 const Team = require('../model/TeamModel');
 const User = require('../model/UserModel');
@@ -223,8 +224,8 @@ const getHackathonInvites = async (req, res) => {
 
     // Get all teams for this hackathon where user is a member
     const userTeams = await Team.find({
-      hackathon: hackathonId,
-      members: userId
+      hackathon: new mongoose.Types.ObjectId(hackathonId),
+      members: new mongoose.Types.ObjectId(userId)
     });
 
     const teamIds = userTeams.map(team => team._id);
@@ -257,8 +258,8 @@ const getProjectInvites = async (req, res) => {
 
     // Get all teams for this project where user is a member
     const userTeams = await Team.find({
-      project: projectId,
-      members: userId
+      project: new mongoose.Types.ObjectId(projectId),
+      members: new mongoose.Types.ObjectId(userId)
     });
 
     const teamIds = userTeams.map(team => team._id);
