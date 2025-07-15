@@ -127,6 +127,18 @@ submittedProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
     default: 'upcoming'
   },
 
+  // Sponsored Problem Statement fields
+  wantsSponsoredProblems: { type: Boolean, default: false },
+  sponsoredPSConfig: {
+    type: {
+      type: String // 'open-innovation' or 'other'
+    },
+    customDescription: String,
+    judges: String, // 'organizer' or 'sponsor'
+    prizeAmount: Number,
+    prizeDescription: String
+  },
+
   createdAt: { type: Date, default: Date.now }
 });
 

@@ -79,6 +79,8 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
         submissionType: "single-project", // new field
         roundType: "single-round", // new field
         maxSubmissionsPerParticipant: 1, // new field
+        wantsSponsoredProblems: false, // NEW FIELD
+        sponsoredPSConfig: undefined, // NEW FIELD
       }
     }
     // Patch all date fields for edit mode and ensure all fields are present
@@ -130,6 +132,8 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
       submissionDeadline: toDatetimeLocal(initialData.submissionDeadline),
       startDate: toDatetimeLocal(initialData.startDate),
       endDate: toDatetimeLocal(initialData.endDate),
+      wantsSponsoredProblems: initialData.wantsSponsoredProblems || false, // <-- add this
+      sponsoredPSConfig: initialData.sponsoredPSConfig || undefined, // <-- add this
     }
   })
 
@@ -363,6 +367,8 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
         mentors: formData.mentors, // ✅ Include this
         participants: [],
         maxSubmissionsPerParticipant: formData.maxSubmissionsPerParticipant,
+        wantsSponsoredProblems: formData.wantsSponsoredProblems, // <-- add this
+        sponsoredPSConfig: formData.sponsoredPSConfig, // <-- add this
       }
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
@@ -571,7 +577,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
           >
             <div className="flex flex-col items-center justify-center pt-5 pb-6">
               {uploadStates[type]?.uploading ? (
-                <Loader2 className="w-8 h-8 mb-2 text-purple-400 animate-spin" />
+                <Loader2 className="w-8 h-8 mb-2 text-indigo-400 animate-spin" />
               ) : (
                 <Upload className="w-8 h-8 mb-2 text-gray-400" />
               )}
@@ -741,8 +747,8 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
             className={`flex-1 text-center py-2 rounded transition-all duration-150 font-medium border
               ${
                 step === idx
-                  ? "bg-purple-600 text-white border-purple-600 shadow"
-                  : "bg-white text-purple-700 border-purple-200 hover:bg-purple-50"
+                  ? "bg-indigo-600 text-white border-indigo-600 shadow"
+                  : "bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50"
               }
               ${idx > step ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
             `}
@@ -761,7 +767,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-purple-600" />
+                  <FileText className="w-5 h-5 text-indigo-600" />
                   Basic Information
                 </CardTitle>
                 <CardDescription>Essential details about your hackathon</CardDescription>
@@ -934,7 +940,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                   <div className="flex flex-col justify-end">
                     <div className="p-3 bg-gray-50 rounded-lg border">
                       <p className="text-sm font-medium text-gray-700">Team Size Range</p>
-                      <p className="text-lg font-bold text-purple-600">
+                      <p className="text-lg font-bold text-indigo-600">
                         {formData.teamSize.min === formData.teamSize.max
                           ? `${formData.teamSize.min} ${formData.teamSize.min === 1 ? "member" : "members"}`
                           : `${formData.teamSize.min} - ${formData.teamSize.max} members`}
@@ -953,7 +959,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-purple-600" />
+                      <Calendar className="w-5 h-5 text-indigo-600" />
                       Dates & Deadlines
                     </CardTitle>
                     <CardDescription>Set important dates for your hackathon</CardDescription>
@@ -966,10 +972,17 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                               <span className="ml-1 align-middle inline-flex">
+                                  <Info
+                                    size={16}
+                                    className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                  />
+                                </span>
                               </TooltipTrigger>
-                              <TooltipContent>
-                                The date and time when the hackathon officially begins. Participants can start working on their projects from this moment.
+                              <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
+                                The date and time when the hackathon officially
+                                begins. Participants can start working on their
+                                projects from this moment.
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -990,9 +1003,14 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                               <span className="ml-1 align-middle inline-flex">
+                                  <Info
+                                    size={16}
+                                    className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                  />
+                                </span>
                               </TooltipTrigger>
-                              <TooltipContent>
+                              <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
                                 The date and time when the hackathon ends. All activities, including submissions and judging, should be completed by this time.
                               </TooltipContent>
                             </Tooltip>
@@ -1016,11 +1034,20 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                               <span className="ml-1 align-middle inline-flex">
+                                  <Info
+                                    size={16}
+                                    className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                  />
+                                </span>
                               </TooltipTrigger>
-                              <TooltipContent>
-                                The last date and time for participants to register for the hackathon. Registrations will be closed after this deadline. (Can be after the hackathon starts if you allow late registrations.)
-                              </TooltipContent>
+                              <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
+                                The last date and time for participants to
+                                register for the hackathon. Registrations will
+                                be closed after this deadline. (Can be after the
+                                hackathon starts if you allow late
+                                registrations.)
+                                 </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </Label>
@@ -1043,10 +1070,18 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                             <TooltipProvider>
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                <span className="ml-1 align-middle inline-flex">
+                                    <Info
+                                      size={16}
+                                      className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                    />
+                                  </span>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  The last date and time for submitting projects if there is only one round. If your hackathon has multiple rounds, use the round-specific deadlines below.
+                                 <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
+                                  The last date and time for submitting projects
+                                  if there is only one round. If your hackathon
+                                  has multiple rounds, use the round-specific
+                                  deadlines below.
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -1231,10 +1266,17 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                         <span className="ml-1 align-middle inline-flex">
+                                          <Info
+                                            size={16}
+                                            className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                          />
+                                        </span>
                                       </TooltipTrigger>
-                                      <TooltipContent>
-                                        When this round begins. Only participants who advance to this round can participate from this date.
+                                       <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
+                                        When this round begins. Only
+                                        participants who advance to this round
+                                        can participate from this date.
                                       </TooltipContent>
                                     </Tooltip>
                                   </TooltipProvider>
@@ -1256,9 +1298,14 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <span className="ml-1 cursor-pointer"><Info size={16} /></span>
+                                     <span className="ml-1 align-middle inline-flex">
+                                    <Info
+                                      size={16}
+                                      className="text-indigo-500 hover:text-indigo-700 cursor-pointer"
+                                    />
+                                  </span>
                                       </TooltipTrigger>
-                                      <TooltipContent>
+                                      <TooltipContent side="top" align="center" className="rounded-lg shadow-lg p-3 bg-white text-gray-800 border border-indigo-100 max-w-xs mb-2">
                                         When this round ends. All submissions for this round must be completed by this date.
                                       </TooltipContent>
                                     </Tooltip>
@@ -1305,7 +1352,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5 text-purple-600" />
+                  <Upload className="w-5 h-5 text-indigo-600" />
                   Images & Media
                 </CardTitle>
                 <CardDescription>Upload images to make your hackathon more attractive</CardDescription>
@@ -1553,6 +1600,137 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
               </CardContent>
             </Card>
 
+            {/* Sponsored Problem Statement Block */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Sponsored Problem Statements</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Label className="font-semibold">Do you want to allow sponsored problem statements?</Label>
+                <div className="flex gap-4 mt-2">
+                  <Button
+                    type="button"
+                    variant={formData.wantsSponsoredProblems ? "default" : "outline"}
+                    onClick={() => setFormData({ ...formData, wantsSponsoredProblems: true })}
+                  >
+                    Yes
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={!formData.wantsSponsoredProblems ? "default" : "outline"}
+                    onClick={() => setFormData({ ...formData, wantsSponsoredProblems: false, sponsoredPSConfig: undefined })}
+                  >
+                    No
+                  </Button>
+                </div>
+                {formData.wantsSponsoredProblems && (
+                  <div className="space-y-4">
+                    {/* Type of Sponsored Statement */}
+                    <div>
+                      <Label className="font-medium">Type of Sponsored Problem Statement</Label>
+                      <select
+                        className="mt-1 block w-full border rounded p-2"
+                        value={formData.sponsoredPSConfig?.type || ""}
+                        onChange={e => setFormData({
+                          ...formData,
+                          sponsoredPSConfig: {
+                            ...formData.sponsoredPSConfig,
+                            type: e.target.value,
+                            customDescription: e.target.value === 'other' ? (formData.sponsoredPSConfig?.customDescription || '') : undefined
+                          }
+                        })}
+                      >
+                        <option value="">Select type</option>
+                        <option value="open-innovation">Open Innovation</option>
+                        <option value="other">Other (custom)</option>
+                      </select>
+                      {formData.sponsoredPSConfig?.type === "open-innovation" && (
+                        <div className="text-xs text-gray-700 mt-1">Anyone can submit a proposal for a sponsored problem statement.</div>
+                      )}
+                      {formData.sponsoredPSConfig?.type === "other" && (
+                        <div className="mt-2">
+                          <Label className="font-medium">Custom Description</Label>
+                          <Textarea
+                            placeholder="Describe the custom sponsored problem statement type..."
+                            value={formData.sponsoredPSConfig?.customDescription || ''}
+                            onChange={e => setFormData({
+                              ...formData,
+                              sponsoredPSConfig: {
+                                ...formData.sponsoredPSConfig,
+                                customDescription: e.target.value
+                              }
+                            })}
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {/* Judges Assignment */}
+                    <div>
+                      <Label className="font-medium">Who will judge the sponsored problem statements?</Label>
+                      <select
+                        className="mt-1 block w-full border rounded p-2"
+                        value={formData.sponsoredPSConfig?.judges || ""}
+                        onChange={e => setFormData({
+                          ...formData,
+                          sponsoredPSConfig: {
+                            ...formData.sponsoredPSConfig,
+                            judges: e.target.value
+                          }
+                        })}
+                        disabled={!formData.sponsoredPSConfig?.type}
+                      >
+                        <option value="">Select type</option>
+                        {formData.sponsoredPSConfig?.type === "open-innovation" && (
+                          <>
+                            <option value="organizer">Organizer will assign judges</option>
+                            <option value="sponsor">Sponsors provide their own judges</option>
+                          </>
+                        )}
+                        {formData.sponsoredPSConfig?.type === "other" && (
+                          <option value="organizer">Organizer will assign judges</option>
+                        )}
+                      </select>
+                    </div>
+                    {/* Prize for Sponsored PS */}
+                    <div>
+                      <Label className="font-medium">Prize for Sponsored Problem Statement</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="Amount"
+                          value={formData.sponsoredPSConfig?.prizeAmount || ""}
+                          onChange={e => setFormData({
+                            ...formData,
+                            sponsoredPSConfig: {
+                              ...formData.sponsoredPSConfig,
+                              prizeAmount: e.target.value
+                            }
+                          })}
+                          className="w-32"
+                          disabled={!formData.sponsoredPSConfig?.type}
+                        />
+                        <Input
+                          type="text"
+                          placeholder="Prize Description (e.g. Amazon Gift Card)"
+                          value={formData.sponsoredPSConfig?.prizeDescription || ""}
+                          onChange={e => setFormData({
+                            ...formData,
+                            sponsoredPSConfig: {
+                              ...formData.sponsoredPSConfig,
+                              prizeDescription: e.target.value
+                            }
+                          })}
+                          disabled={!formData.sponsoredPSConfig?.type}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Tags */}
             <Card>
               <CardHeader>
@@ -1647,7 +1825,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-purple-600" />
+                  <Users className="w-5 h-5 text-indigo-600" />
                   Settings
                 </CardTitle>
               </CardHeader>
@@ -1716,7 +1894,7 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                 <Button
                   onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
-                  className="w-full bg-purple-500 hover:bg-purple-600"
+                  className="w-full bg-indigo-500 hover:bg-indigo-600"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {isSubmitting ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Hackathon" : "Create Hackathon")}

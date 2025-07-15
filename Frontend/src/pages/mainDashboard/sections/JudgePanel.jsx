@@ -222,8 +222,8 @@ export default function JudgePanel() {
               hackathon={hackathon}
               onClick={() =>
                 navigate(
-                  `/dashboard/explore-hackathons?hackathon=${hackathon._id}&title=${encodeURIComponent(hackathon.name || hackathon.title)}&source=judge`,
-                  { state: { defaultTab: 'projects' } }
+                  `/judge/hackathon/${hackathon._id}/gallery`,
+                  { state: { hackathon } }
                 )
               }
             />

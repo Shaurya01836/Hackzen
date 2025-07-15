@@ -6,7 +6,7 @@ import { Card, CardContent } from "../../../../../components/CommonUI/card";
 import { Skeleton } from "../../../../../components/DashboardUI/skeleton";
 import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
 
-export default function HackathonProjectsGallery({ hackathonId }) {
+export default function HackathonProjectsGallery({ hackathonId, onProjectClick }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -85,6 +85,7 @@ export default function HackathonProjectsGallery({ hackathonId }) {
           project={project}
           user={user}
           judgeScores={judgeScores}
+          onClick={onProjectClick ? onProjectClick : (p) => navigate(`/dashboard/project-archive/${p._id}`)}
         />
       ))}
     </div>
