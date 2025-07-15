@@ -126,7 +126,7 @@ function Navbar() {
                 alt="HackZen Logo"
                 className="w-10 h-10 object-contain border rounded-full"
               />
-              <h1 className="text-2xl font-bold font-heading1 text-[#1b0c3f]">
+              <h1 className="text-2xl font-bold font-heading1 text-indigo-800">
                 HackZen
               </h1>
             </Link>
