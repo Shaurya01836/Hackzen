@@ -14,6 +14,7 @@ import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
 import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
+import TeamManagementSection from "./components/Hackathon/TeamManagementSection";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();
@@ -56,6 +57,7 @@ const sections = [
   { id: "timeline", label: "Timeline" },
   { id: "community", label: "Community" },
   { id: "projects", label: "Project Gallery" },
+  { id: "team", label: "Team Management" },
 ];
 
 
@@ -231,9 +233,18 @@ const sections = [
           )}
           {activeTab === "community" && <HackathonCommunity />}
           {activeTab === "projects" && (
-  <HackathonProjectsGallery hackathonId={hackathon._id} />
-)}
-
+            <HackathonProjectsGallery hackathonId={hackathon._id} />
+          )}
+          {activeTab === "team" && (
+            <TeamManagementSection
+              hackathon={hackathon}
+              user={user}
+              isRegistered={isRegistered}
+              setIsRegistered={setIsRegistered}
+              refreshRegistrationStatus={refreshRegistrationStatus}
+              toast={toast}
+            />
+          )}
         </div>
       </main>
     </div>
