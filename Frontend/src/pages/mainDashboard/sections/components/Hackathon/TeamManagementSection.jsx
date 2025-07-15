@@ -167,6 +167,14 @@ export default function TeamManagementSection({
 
   const myTeam = userTeams[0];
 
+  const handleShowInviteModal = (team) => {
+    if (team.leader._id?.toString() !== user?._id?.toString()) return;
+    setSelectedTeam(team);
+    setShowInviteModal(true);
+  };
+
+  const pendingInvites = teamInvites.filter(invite => invite.status === "pending");
+
   return (
     <section ref={sectionRef} className="space-y-8">
       <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
@@ -261,14 +269,12 @@ export default function TeamManagementSection({
                   )}
 
                   <div className="flex gap-2 mt-3 flex-wrap">
-                    {team.members.length < team.maxMembers && (
+                    {team.members.length < team.maxMembers &&
+                      team.leader._id?.toString() === user?._id?.toString() && (
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          setSelectedTeam(team);
-                          setShowInviteModal(true);
-                        }}
+                        onClick={() => handleShowInviteModal(team)}
                       >
                         <UserPlus className="w-4 h-4 mr-2" />
                         Invite
@@ -328,13 +334,13 @@ export default function TeamManagementSection({
         </Card>
 
         {/* Pending Invites */}
-        {teamInvites.length > 0 && (
+        {pendingInvites.length > 0 && myTeam && myTeam.leader._id?.toString() === user?._id?.toString() && (
           <Card>
             <CardHeader>
               <CardTitle>Pending Invites</CardTitle>
             </CardHeader>
             <CardContent>
-              {teamInvites.map((invite) => (
+              {pendingInvites.map((invite) => (
                 <div
                   key={invite._id}
                   className="flex justify-between items-center border p-3 rounded-lg mb-2"
@@ -360,7 +366,7 @@ export default function TeamManagementSection({
                     </div>
                   </div>
 
-                  {invite.status === "pending" ? (
+                  {invite.status === "pending" && invite.team.leader?._id?.toString() === user?._id?.toString() ? (
                     <Button
                       size="sm"
                       variant="destructive"
