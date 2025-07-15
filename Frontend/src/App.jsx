@@ -29,6 +29,7 @@ import JudgePanel from "./pages/mainDashboard/sections/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 import CreatedHackathons from "./pages/mainDashboard/sections/Created-hackathons";
 import EditHackathonPage from "./pages/mainDashboard/sections/EditHackathonPage";
+import JudgeProjectGallery from "./pages/mainDashboard/sections/JudgeProjectGallery";
 
 function App() {
   return (
@@ -112,8 +113,8 @@ function App() {
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
-
         <Route path="/judge" element={<JudgePanel />} />
+        <Route path="/judge/hackathon/:hackathonId/gallery" element={<JudgeProjectGallery />} />
       </Routes>
     </>
   );
