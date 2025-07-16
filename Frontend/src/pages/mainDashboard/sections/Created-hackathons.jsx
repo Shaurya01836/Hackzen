@@ -137,9 +137,8 @@ export function CreatedHackathons({ onCreateNew }) {
     (h) => new Date(h.registrationDeadline) > new Date()
   );
 
-  const handleDelete = (hackathon) => {
-    hackathonToDelete.current = hackathon;
-    setShowDeleteDialog(true);
+  const handleCardClick = (hackathon) => {
+    navigate(`/dashboard/created-hackathons/${hackathon._id}`);
   };
 
   const confirmDelete = async () => {
@@ -159,7 +158,7 @@ export function CreatedHackathons({ onCreateNew }) {
       setHackathons((prev) => prev.filter((h) => h._id !== hackathon._id));
       setShowDeleteDialog(false);
       hackathonToDelete.current = null;
-    } catch (err) {
+    } catch {
       alert("Error deleting hackathon");
     } finally {
       setDeletingId(null);
@@ -171,57 +170,6 @@ export function CreatedHackathons({ onCreateNew }) {
     hackathonToDelete.current = null;
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "ongoing":
-        return "bg-green-500";
-      case "ended":
-        return "bg-gray-500";
-      case "draft":
-        return "bg-yellow-500";
-      case "upcoming":
-        return "bg-blue-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
-  const getApprovalStatusColor = (approvalStatus) => {
-    switch (approvalStatus) {
-      case "approved":
-        return "bg-green-900 text-white";
-      case "pending":
-        return "bg-yellow-500 text-white";
-      case "rejected":
-        return "bg-red-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
-
-  const getApprovalStatusText = (approvalStatus) => {
-    switch (approvalStatus) {
-      case "approved":
-        return "✅ Approved - Visible to participants";
-      case "pending":
-        return "⏳ Pending - Awaiting admin approval";
-      case "rejected":
-        return "❌ Rejected - Please review and resubmit";
-      default:
-        return "⏳ Pending - Awaiting admin approval";
-    }
-  };
-
-  const handleCardClick = (hackathon) => {
-    navigate(`/dashboard/created-hackathons/${hackathon._id}`);
-  };
-
-  // Prevent card click when clicking on action buttons
-  const stopPropagation = (e) => {
-    e.stopPropagation();
-  };
-
-  // Fetch proposals for a hackathon
   const fetchSponsorProposals = async (hackathonId) => {
     setLoadingProposals(true);
     setSelectedHackathonId(hackathonId);
@@ -230,7 +178,7 @@ export function CreatedHackathons({ onCreateNew }) {
       const data = await res.json();
       setSponsorProposals(data);
       setShowSponsorModal(true);
-    } catch (err) {
+    } catch {
       setSponsorProposals([]);
       setShowSponsorModal(true);
     } finally {
@@ -272,7 +220,7 @@ export function CreatedHackathons({ onCreateNew }) {
         )}
         onClick={() => handleCardClick(hackathon)}
       >
-        {/* Thumbnail with prize badge */}
+        {/* Thumbnail with status badge */}
         <div className="relative h-40 w-full">
           <img
             src={
@@ -284,14 +232,29 @@ export function CreatedHackathons({ onCreateNew }) {
             className="w-full h-full object-cover transition-transform duration-300"
           />
 
-          {/* Prize Pool Badge */}
+          {/* Status Badge */}
           <div className="absolute top-2 right-2">
-            <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
-              <Trophy className="w-3 h-3 mr-1" />
-              {hackathon.prizePool?.amount
-                ? `$${hackathon.prizePool.amount.toLocaleString()}`
-                : "TBA"}
-            </Badge>
+            {hackathon.approvalStatus === "approved" && (
+              <Badge className="bg-green-500 text-white font-semibold shadow-md">
+                Approved
+              </Badge>
+            )}
+            {hackathon.approvalStatus === "pending" && (
+              <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
+                Pending
+              </Badge>
+            )}
+            {hackathon.approvalStatus === "rejected" && (
+              <Badge className="bg-red-500 text-white font-semibold shadow-md">
+                Rejected
+              </Badge>
+            )}
+            {/* If draft, show Draft badge */}
+            {hackathon.status === "draft" && (
+              <Badge className="bg-gray-400 text-white font-semibold shadow-md">
+                Draft
+              </Badge>
+            )}
           </div>
         </div>
 
