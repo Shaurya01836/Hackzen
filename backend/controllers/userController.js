@@ -226,7 +226,8 @@ const updateUser = async (req, res) => {
       "collegeName", "country", "city", "courseSpecialization",
       "companyName", "jobTitle", "yearsOfExperience", "currentYear",
       "skills", "interests", "twitter", "instagram", "portfolio",
-      "preferredHackathonTypes", "teamSizePreference"
+      "preferredHackathonTypes", "teamSizePreference",
+      "telegram" // <-- Add Telegram here
     ];
 
     if (req.user.role === "admin") {

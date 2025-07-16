@@ -34,7 +34,8 @@ exports.createHackathon = async (req, res) => {
       judges, 
       mentors, 
       participants,
-      teamSize
+      teamSize,
+      organizerTelegram
     } = req.body;
     const maxSubmissionsPerParticipant = req.body.maxSubmissionsPerParticipant || 1;
     const submissionType = req.body.submissionType || 'single-project';
@@ -52,6 +53,7 @@ exports.createHackathon = async (req, res) => {
       difficultyLevel: difficultyLevel || 'Beginner',
       location,
       organizer: req.user.id,
+      organizerTelegram: organizerTelegram,
       prizePool: {
         amount: prizePool?.amount || 0,
         currency: prizePool?.currency || 'USD',
@@ -221,7 +223,8 @@ exports.updateHackathon = async (req, res) => {
       judges,
       mentors,
       participants,
-      teamSize
+      teamSize,
+      organizerTelegram
     } = req.body;
 
     const maxSubmissionsPerParticipant = req.body.maxSubmissionsPerParticipant;
@@ -388,7 +391,8 @@ exports.updateHackathon = async (req, res) => {
       roundType,
       maxSubmissionsPerParticipant, // <-- ensure this is always included
       wantsSponsoredProblems: req.body.wantsSponsoredProblems, // <-- add this
-      sponsoredPSConfig: req.body.sponsoredPSConfig // <-- add this
+      sponsoredPSConfig: req.body.sponsoredPSConfig, // <-- add this
+      organizerTelegram: organizerTelegram // <-- add this
     };
     
 

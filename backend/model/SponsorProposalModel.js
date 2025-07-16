@@ -34,6 +34,7 @@ const SponsorProposalSchema = new Schema({
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   reviewMessage: { type: String },
   messageToSponsor: { type: String }, // Message from organizer to sponsor
+  messageToOrganizer: { type: String }, // Message from sponsor to organizer
   createdAt: { type: Date, default: Date.now }
 });
 

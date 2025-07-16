@@ -37,17 +37,48 @@ export default function SponsoredPS() {
   const [showOrgMsgModal, setShowOrgMsgModal] = useState(false);
   const [orgMsgProposalIdx, setOrgMsgProposalIdx] = useState(null);
   const [seenMessages, setSeenMessages] = useState({}); // { proposalId: true }
+  const [organizerTelegrams, setOrganizerTelegrams] = useState({}); // { hackathonId: telegram }
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    async function fetchProposals() {
+    async function fetchProposalsAndTelegrams() {
       setLoading(true);
       const res = await fetch(`/api/sponsor-proposals/user/${user?.email}`);
       const data = await res.json();
-      setProposals(Array.isArray(data) ? data.filter(p => p.status === 'approved') : []);
+      const approvedProposals = Array.isArray(data) ? data.filter(p => p.status === 'approved') : [];
+      setProposals(approvedProposals);
+      // Fetch organizer Telegrams for each proposal
+      const telegrams = {};
+      await Promise.all(approvedProposals.map(async (proposal) => {
+        if (proposal.hackathon) {
+          // Fetch hackathon to get organizer
+          const hackathonRes = await fetch(`/api/hackathons/${proposal.hackathon}`);
+          if (hackathonRes.ok) {
+            const hackathon = await hackathonRes.json();
+            let organizerId = null;
+            if (hackathon.organizer) {
+              // Handle both populated object and plain ID
+              if (typeof hackathon.organizer === 'object' && hackathon.organizer._id) {
+                organizerId = hackathon.organizer._id;
+              } else if (typeof hackathon.organizer === 'string') {
+                organizerId = hackathon.organizer;
+              }
+            }
+            if (organizerId) {
+              // Fetch organizer user profile
+              const organizerRes = await fetch(`/api/users/${organizerId}`);
+              if (organizerRes.ok) {
+                const organizer = await organizerRes.json();
+                telegrams[proposal.hackathon] = organizer.telegram || null;
+              }
+            }
+          }
+        }
+      }));
+      setOrganizerTelegrams(telegrams);
       setLoading(false);
     }
-    if (user?.email) fetchProposals();
+    if (user?.email) fetchProposalsAndTelegrams();
   }, [user?.email]);
 
   function startEdit(idx) {
@@ -129,6 +160,7 @@ export default function SponsoredPS() {
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><span role="img" aria-label="sponsor">🤝</span> Sponsored Problem Statements</h1>
       {proposals.map((p, idx) => {
         const hasNewMsg = !!p.messageToSponsor && !seenMessages[p._id];
+        const organizerTelegram = organizerTelegrams[p.hackathon];
         return (
           <div key={p._id} className="border rounded-lg p-6 mb-6 shadow-sm bg-white">
             <div className="flex justify-between items-center mb-2">
@@ -180,7 +212,18 @@ export default function SponsoredPS() {
             )}
             <div className="border-t pt-4 mt-4">
               <div className="mb-2 flex items-center gap-2">
-                <b>Organizer Telegram:</b> {p.organizerTelegram ? <><a href={p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram}`} target="_blank" rel="noopener noreferrer">{p.organizerTelegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram.replace('@','')}`, '_blank')}><Send className="w-4 h-4" /></Button></> : <span className="text-gray-400">Not provided</span>}
+                <b>Organizer Telegram:</b> {organizerTelegram ? (
+                  <>
+                    <a href={organizerTelegram.startsWith('http') ? organizerTelegram : `https://t.me/${organizerTelegram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                      {/* Telegram SVG icon */}
+                      <svg className="w-4 h-4 text-blue-500 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>
+                      {organizerTelegram.startsWith('@') ? organizerTelegram : `@${organizerTelegram}`}
+                    </a>
+                    <Button size="icon" variant="ghost" onClick={() => window.open(organizerTelegram.startsWith('http') ? organizerTelegram : `https://t.me/${organizerTelegram.replace(/^@/, '')}`, '_blank')}><Send className="w-4 h-4" /></Button>
+                  </>
+                ) : (
+                  <span className="text-gray-400 flex items-center gap-1"><svg className="w-4 h-4 text-blue-300 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>Organizer has not provided a Telegram handle yet.</span>
+                )}
               </div>
               <div className="mb-2 flex items-center gap-2">
                 <b>Message from Organizer:</b>

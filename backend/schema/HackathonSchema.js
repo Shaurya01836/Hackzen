@@ -20,6 +20,7 @@ const HackathonSchema = new Schema({
   },
 
   organizer: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  organizerTelegram: { type: String }, // Organizer's Telegram handle
 
   difficultyLevel: {
     type: String,

@@ -65,7 +65,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../../components/DashboardUI/alert-dialog";
-import PublicProfileView from "./PublicProfileView";
+
 
 // Add this utility function at the top
 function getCurrentViewFromPath(pathname) {
@@ -136,6 +136,7 @@ export function ProfileSection({ viewUserId }) {
     portfolio: "",
     preferredHackathonTypes: "",
     teamSizePreference: "any",
+    telegram: "",
   });
   const [inlineEditing, setInlineEditing] = useState({
     personal: false,
@@ -173,6 +174,7 @@ export function ProfileSection({ viewUserId }) {
     portfolio: "",
     preferredHackathonTypes: "",
     teamSizePreference: "any",
+    telegram: "",
   });
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
@@ -412,6 +414,7 @@ export function ProfileSection({ viewUserId }) {
           ? data.preferredHackathonTypes.join(", ")
           : "",
         teamSizePreference: data.teamSizePreference || "any",
+        telegram: data.telegram || "",
       });
 
       // Optional: update local context
@@ -723,6 +726,8 @@ export function ProfileSection({ viewUserId }) {
                       </div>
                     </div>
                   )}
+                  
+                  
                 </div>
               </div>
             </div>
@@ -1135,6 +1140,15 @@ export function ProfileSection({ viewUserId }) {
                       className="text-sm"
                     />
                   </div>
+                  <div>
+                    <Label className="text-xs text-gray-600">Telegram</Label>
+                    <Input
+                      value={inlineForm.telegram || ''}
+                      onChange={e => handleInlineChange('telegram', e.target.value)}
+                      placeholder="Enter your Telegram username or link"
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -1488,23 +1502,14 @@ export function ProfileSection({ viewUserId }) {
           )}
 
           {/* Additional Social Links Display */}
-          {(user?.twitter || user?.instagram || user?.portfolio) &&
+          {(user?.twitter || user?.instagram || user?.portfolio || user?.telegram) &&
             !inlineEditing.all && (
               <div className="space-y-6">
                 <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
                   <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"
-                      />
+                    {/* SVG icon for social */}
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
                     </svg>
                   </div>
                   Additional Social Links
@@ -1583,6 +1588,26 @@ export function ProfileSection({ viewUserId }) {
                         </p>
                       </div>
                       <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    </a>
+                  )}
+                  {user?.telegram && (
+                    <a
+                      href={`https://t.me/${user.telegram.replace(/^@/, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100 transition-all group"
+                    >
+                      <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center">
+                        {/* Telegram SVG icon */}
+                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-500 font-semibold mb-1">Telegram</p>
+                        <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
+                          {user.telegram.startsWith('@') ? user.telegram : `@${user.telegram}`}
+                        </p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                     </a>
                   )}
                 </div>
@@ -2255,6 +2280,7 @@ export function ProfileSection({ viewUserId }) {
         editForm.preferredHackathonTypes
       ),
       teamSizePreference: editForm.teamSizePreference,
+      telegram: editForm.telegram,
     };
 
     try {
@@ -2563,6 +2589,7 @@ export function ProfileSection({ viewUserId }) {
         ? user.preferredHackathonTypes.join(", ")
         : "",
       teamSizePreference: user?.teamSizePreference || "any",
+      telegram: user?.telegram || "",
     });
   };
 
@@ -2618,6 +2645,7 @@ export function ProfileSection({ viewUserId }) {
             inlineForm.preferredHackathonTypes
           ),
           teamSizePreference: inlineForm.teamSizePreference,
+          telegram: inlineForm.telegram,
         };
         break;
       case "personal":
@@ -2673,6 +2701,7 @@ export function ProfileSection({ viewUserId }) {
           twitter: inlineForm.twitter,
           instagram: inlineForm.instagram,
           portfolio: inlineForm.portfolio,
+          telegram: inlineForm.telegram,
         };
         break;
     }

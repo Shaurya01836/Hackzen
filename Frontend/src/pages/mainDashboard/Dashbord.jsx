@@ -74,12 +74,28 @@ export default function HackZenDashboard() {
   };
 
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
+  const [hasApprovedSponsoredPS, setHasApprovedSponsoredPS] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  const { user, refreshUser } = useAuth();
+  useEffect(() => {
+    async function checkSponsoredPS() {
+      if (!user?.email) return;
+      try {
+        const res = await fetch(`/api/sponsor-proposals/user/${user.email}`);
+        const data = await res.json();
+        setHasApprovedSponsoredPS(Array.isArray(data) && data.length > 0);
+      } catch {
+        setHasApprovedSponsoredPS(false);
+      }
+    }
+    checkSponsoredPS();
+  }, [user?.email]);
+
+  const { user: authUser, refreshUser } = useAuth();
 
   // Debug: Log user role for troubleshooting
-  console.log("Dashboard - Current user:", user);
-  console.log("Dashboard - User role:", user?.role);
+  console.log("Dashboard - Current user:", authUser);
+  console.log("Dashboard - User role:", authUser?.role);
 
   // Function to handle section changes with nested URLs
   const changeView = (viewKey) => {
@@ -154,12 +170,13 @@ export default function HackZenDashboard() {
       key: "organization-hub",
       onClick: () => changeView("organization-hub"),
     },
-    {
+    // Conditionally add Sponsored PS
+    ...(hasApprovedSponsoredPS ? [{
       title: "Sponsored PS",
       icon: Handshake,
       key: "sponsored-ps",
       onClick: () => changeView("sponsored-ps"),
-    },
+    }] : []),
   ];
 
   const organizerMenuItems = [
@@ -286,10 +303,10 @@ export default function HackZenDashboard() {
   }, []); // Empty dependency array to run only once
 
   useEffect(() => {
-    if (user && !user.profileCompleted) {
+    if (authUser && !authUser.profileCompleted) {
       navigate("/complete-profile");
     }
-  }, [user, navigate]);
+  }, [authUser, navigate]);
 
   return (
     <SidebarProvider>
@@ -346,7 +363,7 @@ export default function HackZenDashboard() {
 
 
           {/* Organizer Menu - Only show to organizers, NOT to judges */}
-          {user?.role === "organizer" && user?.role !== "judge" && (
+          {authUser?.role === "organizer" && authUser?.role !== "judge" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-purple-600">
                 <Wrench className="w-4 h-4" />
@@ -385,7 +402,7 @@ export default function HackZenDashboard() {
           )}
 
           {/* Judge Menu - Show to judges */}
-          {user?.role === "judge" && (
+          {authUser?.role === "judge" && (
             <SidebarGroup>
               <SidebarGroupLabel className="flex items-center gap-2 text-orange-600">
                 <Gavel className="w-4 h-4" />

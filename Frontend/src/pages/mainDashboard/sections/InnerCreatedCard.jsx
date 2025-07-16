@@ -809,6 +809,11 @@ export default function HackathonDetailsPage({
               onChange={e => setReviewModal(prev => ({ ...prev, message: e.target.value }))}
               disabled={reviewModal.loading}
             />
+            {user && !user.telegram && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 mb-4 rounded">
+                <b>Reminder:</b> Please provide your Telegram handle in your profile so sponsors can contact you.
+              </div>
+            )}
             <Button
               className={reviewModal.action === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
               onClick={() => submitReview()}

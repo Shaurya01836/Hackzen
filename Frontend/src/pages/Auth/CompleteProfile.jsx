@@ -62,6 +62,7 @@ export default function CompleteProfile() {
     twitter: "",
     instagram: "",
     portfolio: "",
+    telegram: "", // <-- Add Telegram field
     preferredHackathonTypes: "",
     teamSizePreference: "any",
     bio: ""
@@ -357,37 +358,52 @@ export default function CompleteProfile() {
             />
           </div>
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
-            <input 
-              name="twitter" 
-              value={form.twitter} 
-              onChange={handleChange} 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://twitter.com/username"
-            />
+          <div className="md:col-span-2 mt-8">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">Additional Social Links</h3>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
-            <input 
-              name="instagram" 
-              value={form.instagram} 
-              onChange={handleChange} 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://instagram.com/username"
-            />
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Twitter</label>
+              <input 
+                name="twitter" 
+                value={form.twitter} 
+                onChange={handleChange} 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://twitter.com/username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+              <input 
+                name="instagram" 
+                value={form.instagram} 
+                onChange={handleChange} 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://instagram.com/username"
+              />
+            </div>
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio</label>
-            <input 
-              name="portfolio" 
-              value={form.portfolio} 
-              onChange={handleChange} 
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://your-portfolio.com"
-            />
+          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Portfolio</label>
+              <input 
+                name="portfolio" 
+                value={form.portfolio} 
+                onChange={handleChange} 
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="https://your-portfolio.com"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Telegram</label>
+              <input
+                name="telegram"
+                value={form.telegram}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your Telegram username or link"
+              />
+            </div>
           </div>
           
           <div>

@@ -13,7 +13,8 @@ exports.createProposal = async (req, res) => {
 // GET /api/sponsor-proposals/:hackathonId
 exports.getProposalsForHackathon = async (req, res) => {
   try {
-    const proposals = await SponsorProposal.find({ hackathon: req.params.hackathonId });
+    // Only return approved proposals
+    const proposals = await SponsorProposal.find({ hackathon: req.params.hackathonId, status: 'approved' });
     res.json(proposals);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch proposals', error: err.message });
@@ -25,7 +26,7 @@ exports.editProposal = async (req, res) => {
   try {
     const proposal = await SponsorProposal.findById(req.params.proposalId);
     if (!proposal) return res.status(404).json({ message: 'Proposal not found' });
-    if (proposal.status !== 'pending') return res.status(403).json({ message: 'Cannot edit after review' });
+    // Remove status check so editing is always allowed
     // Only allow editing certain fields
     const editableFields = [
       'title', 'description', 'deliverables', 'techStack', 'targetAudience',
@@ -64,7 +65,8 @@ exports.updateProposalStatus = async (req, res) => {
 // GET /api/sponsor-proposals/user/:userId
 exports.getProposalsForUser = async (req, res) => {
   try {
-    const proposals = await SponsorProposal.find({ email: req.params.userId });
+    // Only return approved proposals for this user
+    const proposals = await SponsorProposal.find({ email: req.params.userId, status: 'approved' });
     res.json(proposals);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch proposals', error: err.message });
