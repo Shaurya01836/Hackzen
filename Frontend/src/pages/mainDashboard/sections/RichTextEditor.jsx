@@ -1,478 +1,260 @@
-"use client"
-import { useState, useRef, useCallback, useEffect } from "react"
-import {
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Code,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-  List,
-  ListOrdered,
-  Indent,
-  Outdent,
-  Link,
-  MoreHorizontal,
-  Undo,
-  Redo,
-  Palette,
-  Highlighter,
-  Type,
-  ChevronDown
-} from "lucide-react"
-import { Button } from "../../../components/CommonUI/button"
-import { Separator } from "../../../components/CommonUI/separator"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "../../../components/AdminUI/dropdown-menu"
+"use client";
+import React, { useMemo, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from '@tiptap/extension-underline';
+import Strike from '@tiptap/extension-strike';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
+import Heading from '@tiptap/extension-heading';
+import Color from '@tiptap/extension-color';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Highlight from '@tiptap/extension-highlight';
+import HardBreak from '@tiptap/extension-hard-break';
+import Image from '@tiptap/extension-image';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 
-export function RichTextEditor({
-  value,
-  onChange,
-  placeholder = "Description",
-  maxLength = 5000
-}) {
-  const editorRef = useRef(null)
-  const [activeFormats, setActiveFormats] = useState(new Set())
-  const [wordCount, setWordCount] = useState(0)
+import FontFamily from '@tiptap/extension-font-family';
+import FontSize from '@tiptap/extension-font-size';
+import DOMPurify from 'dompurify';
 
-  // Initialize editor content
-  useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || `<p><br></p>`
-    }
-  }, [value])
+const TOOLBAR_BUTTONS = [
+  { cmd: 'toggleHeading', level: 1, label: 'H1' },
+  { cmd: 'toggleHeading', level: 2, label: 'H2' },
+  { cmd: 'toggleHeading', level: 3, label: 'H3' },
+  { cmd: 'toggleBold', label: 'B' },
+  { cmd: 'toggleItalic', label: 'I' },
+  { cmd: 'toggleUnderline', label: 'U' },
+  { cmd: 'toggleStrike', label: 'S' },
+  { cmd: 'toggleBulletList', label: '• List' },
+  { cmd: 'toggleOrderedList', label: '1. List' },
+  { cmd: 'toggleBlockquote', label: '❝' },
+  { cmd: 'toggleCodeBlock', label: '</>' },
+  { cmd: 'setLink', label: '🔗' },
+  { cmd: 'unsetLink', label: '⨉Link' },
+  { cmd: 'insertBreak', label: '↵' },
+  { cmd: 'setHighlight', label: 'BG' },
+  { cmd: 'unsetHighlight', label: '⨉BG' },
+  { cmd: 'setImage', label: '🖼️' },
+  { cmd: 'insertTable', label: 'Table' },
+  { cmd: 'deleteTable', label: 'DelTbl' },
+  { cmd: 'clearFormatting', label: 'Clear' },
+  { cmd: 'undo', label: '↺' },
+  { cmd: 'redo', label: '↻' },
+];
 
-  // Update active formats based on current selection
-  const updateActiveFormats = useCallback(() => {
-    const formats = new Set()
+const COLORS = [
+  "#000000", "#e60000", "#ff9900", "#ffff00", "#008a00", "#0066cc", "#9933ff",
+  "#ffffff", "#facccc", "#ffebcc", "#ffffcc", "#cce8cc", "#cce0f5", "#ebd6ff"
+];
+const BG_COLORS = [
+  "#ffff00", "#ffeb3b", "#ffe082", "#b2ff59", "#b3e5fc", "#d1c4e9", "#ffcdd2", "#fff"
+];
+const FONT_FAMILIES = [
+  'Arial', 'Georgia', 'Impact', 'Tahoma', 'Times New Roman', 'Verdana', 'Courier New', 'monospace'
+];
+const FONT_SIZES = [
+  '12px', '14px', '16px', '18px', '24px', '32px', '48px'
+];
 
-    try {
-      if (document.queryCommandState("bold")) formats.add("bold")
-      if (document.queryCommandState("italic")) formats.add("italic")
-      if (document.queryCommandState("underline")) formats.add("underline")
-      if (document.queryCommandState("strikeThrough"))
-        formats.add("strikethrough")
-      if (document.queryCommandState("insertOrderedList"))
-        formats.add("ordered-list")
-      if (document.queryCommandState("insertUnorderedList"))
-        formats.add("bullet-list")
-      if (document.queryCommandState("justifyLeft")) formats.add("align-left")
-      if (document.queryCommandState("justifyCenter"))
-        formats.add("align-center")
-      if (document.queryCommandState("justifyRight")) formats.add("align-right")
-      if (document.queryCommandState("justifyFull"))
-        formats.add("align-justify")
-    } catch (e) {
-      console.log(e);
-    }
+export default function RichTextEditor({ value = "", onChange, placeholder = "Description", maxLength = 5000, editable = true }) {
+  const [isMobile, setIsMobile] = useState(false);
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-    setActiveFormats(formats)
-  }, [])
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Heading.configure({ levels: [1, 2, 3] }),
+      Underline,
+      Strike,
+      Link.configure({ openOnClick: false }),
+      Placeholder.configure({ placeholder }),
+      TextStyle,
+      Color,
+      Highlight,
+      HardBreak,
+      Image,
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
 
-  // Handle content changes
-  const handleContentChange = useCallback(() => {
-    if (!editorRef.current) return
-
-    const content = editorRef.current.innerHTML
-    const textContent = editorRef.current.textContent || ""
-
-    // Check length limit
-    if (maxLength && textContent.length > maxLength) {
-      return
-    }
-
-    setWordCount(textContent.length)
-    onChange(content)
-    updateActiveFormats()
-  }, [onChange, maxLength, updateActiveFormats])
-
-  // Execute formatting commands
-  const executeCommand = useCallback(
-    (command, value) => {
-      try {
-        document.execCommand(command, false, value)
-        editorRef.current?.focus()
-        handleContentChange()
-      } catch (e) {
-        console.warn("Command execution failed:", command , e)
-      }
+      FontFamily,
+      FontSize,
+    ],
+    content: value,
+    editable,
+    onUpdate: ({ editor }) => {
+      let html = editor.getHTML();
+      if (maxLength && editor.getText().length > maxLength) return;
+      // Sanitize output
+      html = DOMPurify.sanitize(html);
+      onChange(html);
     },
-    [handleContentChange]
-  )
+    editorProps: {
+      attributes: {
+        spellCheck: 'true',
+        'aria-label': 'Rich text editor',
+      },
+    },
+  });
 
-  // Handle key events
-  const handleKeyDown = useCallback(
-    e => {
-      // Handle Ctrl+Z (Undo) and Ctrl+Y (Redo)
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "z" && !e.shiftKey) {
-          e.preventDefault()
-          executeCommand("undo")
-        } else if ((e.key === "z" && e.shiftKey) || e.key === "y") {
-          e.preventDefault()
-          executeCommand("redo")
-        } else if (e.key === "b") {
-          e.preventDefault()
-          executeCommand("bold")
-        } else if (e.key === "i") {
-          e.preventDefault()
-          executeCommand("italic")
-        } else if (e.key === "u") {
-          e.preventDefault()
-          executeCommand("underline")
+  const charCount = editor ? editor.getText().length : 0;
+
+  const handleToolbar = (btn) => {
+    if (!editor) return;
+    if (btn.cmd === 'toggleHeading') {
+      editor.chain().focus().toggleHeading({ level: btn.level }).run();
+    } else if (btn.cmd === 'toggleBold') {
+      editor.chain().focus().toggleBold().run();
+    } else if (btn.cmd === 'toggleItalic') {
+      editor.chain().focus().toggleItalic().run();
+    } else if (btn.cmd === 'toggleUnderline') {
+      editor.chain().focus().toggleUnderline().run();
+    } else if (btn.cmd === 'toggleStrike') {
+      editor.chain().focus().toggleStrike().run();
+    } else if (btn.cmd === 'toggleBulletList') {
+      editor.chain().focus().toggleBulletList().run();
+    } else if (btn.cmd === 'toggleOrderedList') {
+      editor.chain().focus().toggleOrderedList().run();
+    } else if (btn.cmd === 'toggleBlockquote') {
+      editor.chain().focus().toggleBlockquote().run();
+    } else if (btn.cmd === 'toggleCodeBlock') {
+      editor.chain().focus().toggleCodeBlock().run();
+    } else if (btn.cmd === 'setLink') {
+      const url = window.prompt('Enter URL');
+      if (url) editor.chain().focus().setLink({ href: url }).run();
+    } else if (btn.cmd === 'unsetLink') {
+      editor.chain().focus().unsetLink().run();
+    } else if (btn.cmd === 'insertBreak') {
+      editor.chain().focus().setHardBreak().run();
+    } else if (btn.cmd === 'setHighlight') {
+      const color = window.prompt('Enter background color (hex or name):', '#ffff00');
+      if (color) editor.chain().focus().setHighlight({ color }).run();
+    } else if (btn.cmd === 'unsetHighlight') {
+      editor.chain().focus().unsetHighlight().run();
+    } else if (btn.cmd === 'setImage') {
+      const url = window.prompt('Enter image URL');
+      if (url) editor.chain().focus().setImage({ src: url }).run();
+    } else if (btn.cmd === 'insertTable') {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    } else if (btn.cmd === 'deleteTable') {
+      editor.chain().focus().deleteTable().run();
+    } else if (btn.cmd === 'clearFormatting') {
+      editor.chain().focus().unsetAllMarks().clearNodes().run();
+    } else if (btn.cmd === 'undo') {
+      editor.chain().focus().undo().run();
+    } else if (btn.cmd === 'redo') {
+      editor.chain().focus().redo().run();
+    }
+  };
+
+  // Responsive toolbar: show dropdown on mobile
+  const renderToolbar = () => (
+    <nav className={`flex flex-wrap gap-1 mb-2 ${isMobile ? 'overflow-x-auto' : ''}`} aria-label="Editor toolbar">
+      {TOOLBAR_BUTTONS.map((btn, i) => {
+        let isActive = false;
+        if (editor) {
+          if (btn.cmd === 'toggleHeading') {
+            isActive = editor.isActive('heading', { level: btn.level });
+          } else if (btn.cmd === 'toggleBold') {
+            isActive = editor.isActive('bold');
+          } else if (btn.cmd === 'toggleItalic') {
+            isActive = editor.isActive('italic');
+          }
         }
-      }
-    },
-    [executeCommand]
-  )
-
-  // Handle paste events to clean up formatting
-  const handlePaste = useCallback(
-    e => {
-      e.preventDefault()
-      const text = e.clipboardData.getData("text/plain")
-      executeCommand("insertText", text)
-    },
-    [executeCommand]
-  )
-
-  const ToolbarButton = ({
-    icon: Icon,
-    format,
-    command,
-    value,
-    onClick,
-    tooltip
-  }) => (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      title={tooltip}
-      className={`h-9 w-9 p-0 rounded-md hover:bg-gray-100 transition-colors ${
-        format && activeFormats.has(format)
-          ? "bg-blue-50 text-blue-600 border border-blue-200"
-          : "text-gray-600 hover:text-gray-900"
-      }`}
-      onClick={() => {
-        if (onClick) {
-          onClick()
-        } else if (command) {
-          executeCommand(command, value)
-        }
-      }}
-    >
-      <Icon className="h-4 w-4" />
-    </Button>
-  )
+        return (
+          <button
+            key={i}
+            type="button"
+            className={`px-2 py-1 rounded border text-xs font-semibold bg-white hover:bg-gray-100 ${isActive ? 'bg-blue-100 border-blue-400' : ''}`}
+            onClick={() => handleToolbar(btn)}
+            aria-label={btn.label}
+            tabIndex={0}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleToolbar(btn); }}
+          >
+            {btn.label}
+          </button>
+        );
+      })}
+      {/* Font family picker */}
+      <select
+        onChange={e => editor.chain().focus().setFontFamily(e.target.value).run()}
+        value={editor.getAttributes('fontFamily').fontFamily || ''}
+        className="border rounded px-1"
+        aria-label="Font family"
+      >
+        <option value="">Font</option>
+        {FONT_FAMILIES.map(f => <option key={f} value={f}>{f}</option>)}
+      </select>
+      {/* Font size picker */}
+      <select
+        onChange={e => editor.chain().focus().setFontSize(e.target.value).run()}
+        value={editor.getAttributes('fontSize').fontSize || ''}
+        className="border rounded px-1"
+        aria-label="Font size"
+      >
+        <option value="">Size</option>
+        {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+      </select>
+      {/* Text color picker */}
+      <select
+        onChange={e => editor.chain().focus().setColor(e.target.value).run()}
+        value={editor.getAttributes('textStyle').color || ''}
+        className="border rounded px-1"
+        aria-label="Text color"
+      >
+        <option value="">A</option>
+        {COLORS.map(color => (
+          <option key={color} value={color} style={{ color, background: color }}>{color}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="px-2 py-1 rounded border text-xs font-semibold bg-white hover:bg-gray-100"
+        onClick={() => editor.chain().focus().unsetColor().run()}
+        aria-label="Reset text color"
+      >
+        Reset Color
+      </button>
+      {/* Background color picker */}
+      <select
+        onChange={e => editor.chain().focus().setHighlight({ color: e.target.value }).run()}
+        value={editor.getAttributes('highlight').color || ''}
+        className="border rounded px-1"
+        aria-label="Background color"
+      >
+        <option value="">BG</option>
+        {BG_COLORS.map(color => (
+          <option key={color} value={color} style={{ background: color }}>{color}</option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className="px-2 py-1 rounded border text-xs font-semibold bg-white hover:bg-gray-100"
+        onClick={() => editor.chain().focus().unsetHighlight().run()}
+        aria-label="Reset background color"
+      >
+        Reset BG
+      </button>
+    </nav>
+  );
 
   return (
-    <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
-      {/* Toolbar */}
-      <div className="border-b border-gray-100 p-3 bg-gray-50/50">
-        <div className="flex items-center gap-1 flex-wrap">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1">
-            <ToolbarButton icon={Undo} command="undo" tooltip="Undo (Ctrl+Z)" />
-            <ToolbarButton icon={Redo} command="redo" tooltip="Redo (Ctrl+Y)" />
-          </div>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Font Style */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-              >
-                <Type className="h-4 w-4 mr-2" />
-                <span className="text-sm">Normal</span>
-                <ChevronDown className="h-3 w-3 ml-1" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40">
-              <DropdownMenuItem
-                onClick={() => executeCommand("formatBlock", "p")}
-              >
-                <span className="text-sm">Normal</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => executeCommand("formatBlock", "h1")}
-              >
-                <span className="text-lg font-bold">Heading 1</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => executeCommand("formatBlock", "h2")}
-              >
-                <span className="text-base font-bold">Heading 2</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => executeCommand("formatBlock", "h3")}
-              >
-                <span className="text-sm font-bold">Heading 3</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Text Formatting */}
-          <div className="flex items-center gap-1">
-            <ToolbarButton
-              icon={Bold}
-              format="bold"
-              command="bold"
-              tooltip="Bold (Ctrl+B)"
-            />
-            <ToolbarButton
-              icon={Italic}
-              format="italic"
-              command="italic"
-              tooltip="Italic (Ctrl+I)"
-            />
-            <ToolbarButton
-              icon={Underline}
-              format="underline"
-              command="underline"
-              tooltip="Underline (Ctrl+U)"
-            />
-            <ToolbarButton
-              icon={Strikethrough}
-              format="strikethrough"
-              command="strikeThrough"
-              tooltip="Strikethrough"
-            />
-            <ToolbarButton
-              icon={Code}
-              onClick={() => executeCommand("formatBlock", "pre")}
-              tooltip="Code Block"
-            />
-          </div>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Text Color */}
-          <div className="flex items-center gap-1">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                  title="Text Color"
-                >
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="p-3">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-700">
-                    Text Color
-                  </p>
-                  <div className="grid grid-cols-8 gap-1">
-                    {[
-                      { color: "#000000", name: "Black" },
-                      { color: "#374151", name: "Gray" },
-                      { color: "#dc2626", name: "Red" },
-                      { color: "#ea580c", name: "Orange" },
-                      { color: "#ca8a04", name: "Yellow" },
-                      { color: "#16a34a", name: "Green" },
-                      { color: "#2563eb", name: "Blue" },
-                      { color: "#9333ea", name: "Purple" }
-                    ].map(({ color, name }) => (
-                      <div
-                        key={color}
-                        className="w-6 h-6 rounded cursor-pointer border-2 border-gray-200 hover:border-gray-400 transition-all hover:scale-110"
-                        style={{ backgroundColor: color }}
-                        title={name}
-                        onClick={() => executeCommand("foreColor", color)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                  title="Highlight Color"
-                >
-                  <Highlighter className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="p-3">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-700">
-                    Highlight Color
-                  </p>
-                  <div className="grid grid-cols-6 gap-1">
-                    {[
-                      { color: "transparent", name: "None" },
-                      { color: "#fef08a", name: "Yellow" },
-                      { color: "#bbf7d0", name: "Green" },
-                      { color: "#bfdbfe", name: "Blue" },
-                      { color: "#f3e8ff", name: "Purple" },
-                      { color: "#fed7aa", name: "Orange" }
-                    ].map(({ color, name }) => (
-                      <div
-                        key={color}
-                        className="w-6 h-6 rounded cursor-pointer border-2 border-gray-200 hover:border-gray-400 transition-all hover:scale-110"
-                        style={{ backgroundColor: color }}
-                        title={name}
-                        onClick={() => executeCommand("backColor", color)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Alignment */}
-          <div className="flex items-center gap-1">
-            <ToolbarButton
-              icon={AlignLeft}
-              format="align-left"
-              command="justifyLeft"
-              tooltip="Align Left"
-            />
-            <ToolbarButton
-              icon={AlignCenter}
-              format="align-center"
-              command="justifyCenter"
-              tooltip="Align Center"
-            />
-            <ToolbarButton
-              icon={AlignRight}
-              format="align-right"
-              command="justifyRight"
-              tooltip="Align Right"
-            />
-            <ToolbarButton
-              icon={AlignJustify}
-              format="align-justify"
-              command="justifyFull"
-              tooltip="Justify"
-            />
-          </div>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Lists */}
-          <div className="flex items-center gap-1">
-            <ToolbarButton
-              icon={List}
-              format="bullet-list"
-              command="insertUnorderedList"
-              tooltip="Bullet List"
-            />
-            <ToolbarButton
-              icon={ListOrdered}
-              format="ordered-list"
-              command="insertOrderedList"
-              tooltip="Numbered List"
-            />
-            <ToolbarButton
-              icon={Indent}
-              command="indent"
-              tooltip="Increase Indent"
-            />
-            <ToolbarButton
-              icon={Outdent}
-              command="outdent"
-              tooltip="Decrease Indent"
-            />
-          </div>
-
-          <Separator orientation="vertical" className="h-6 mx-2" />
-
-          {/* Insert */}
-          <div className="flex items-center gap-1">
-            <ToolbarButton
-              icon={Link}
-              onClick={() => {
-                const url = prompt("Enter URL:")
-                if (url) executeCommand("createLink", url)
-              }}
-              tooltip="Insert Link"
-            />
-
-            {/* More */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                  title="More Options"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => executeCommand("insertHorizontalRule")}
-                >
-                  Insert Divider
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => executeCommand("formatBlock", "blockquote")}
-                >
-                  Insert Quote
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => executeCommand("removeFormat")}
-                >
-                  Clear Formatting
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </div>
-
-      {/* Editor Content */}
-      <div className="relative bg-white">
-        <div
-          ref={editorRef}
-          contentEditable
-          className="w-full min-h-[300px] p-4 border-0 resize-none focus:outline-none text-gray-800 leading-relaxed"
-          style={{
-            fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
-            fontSize: "14px",
-            lineHeight: "1.6"
-          }}
-          onInput={handleContentChange}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          onMouseUp={updateActiveFormats}
-          onKeyUp={updateActiveFormats}
-          suppressContentEditableWarning={true}
-          placeholder={placeholder}
-        />
-
-        {/* Character Count */}
-        {maxLength && (
-          <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md shadow-sm border border-gray-100">
-            {wordCount}/{maxLength}
-          </div>
-        )}
+    <div className="border rounded-md p-2 bg-white">
+      {renderToolbar()}
+      <EditorContent editor={editor} className="min-h-[180px] ProseMirror" spellCheck={true} aria-label="Rich text editor content" />
+      <div className="text-right text-xs text-gray-400 mt-1">
+        {charCount}/{maxLength}
       </div>
     </div>
-  )
+  );
 }
