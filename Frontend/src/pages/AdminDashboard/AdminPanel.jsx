@@ -140,7 +140,7 @@ export default function AdminPanel() {
       onClick: () => setActiveSection("blogs"),
     },
     {
-      title: "Pending Changes",
+      title: "Organizer Changes",
       icon: Clock,
       key: "pending-changes",
       onClick: () => setActiveSection("pending-changes"),

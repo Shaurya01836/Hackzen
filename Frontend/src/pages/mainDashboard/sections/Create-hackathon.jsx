@@ -1772,10 +1772,13 @@ export default function CreateHackathon({ onBack, initialData = null, onSubmit =
                 <Button
                   onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
-                  className="w-full bg-indigo-500 hover:bg-indigo-600"
+                  className={`w-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center${isSubmitting ? ' opacity-80 cursor-not-allowed' : ''}`}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSubmitting ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Hackathon" : "Create Hackathon")}
+                  {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {!isSubmitting && <Save className="w-4 h-4 mr-2" />}
+                  {isSubmitting
+                    ? (isEdit ? "Updating..." : "Creating...")
+                    : (isEdit ? "Update Hackathon" : "Create Hackathon")}
                 </Button>
                 <Button onClick={() => handleSubmit(true)} disabled={isSubmitting} variant="outline" className="w-full">
                   <FileText className="w-4 h-4 mr-2" />

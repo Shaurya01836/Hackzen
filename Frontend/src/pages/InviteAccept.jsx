@@ -18,14 +18,13 @@ export function InviteAccept() {
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [inviteData, setInviteData] = useState(null);
-  const [user, setUser] = useState(getUserFromStorage());
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
 
   // Helper to refresh user from storage
   const refreshUser = useCallback(() => {
-    setUser(getUserFromStorage());
+    /* no-op: removed user state */
   }, []);
 
   // On mount, check for stored invite redirect after login
@@ -53,10 +52,8 @@ export function InviteAccept() {
       }
       const invite = await inviteRes.json();
       setInviteData(invite);
-      const token = localStorage.getItem("token");
       const userObj = getUserFromStorage();
-      setUser(userObj);
-      if (!token || !userObj) {
+      if (!userObj) {
         setShowLoginModal(true);
         setShowAcceptModal(false);
         setStatus("login");
@@ -81,7 +78,7 @@ export function InviteAccept() {
       setShowLoginModal(false);
       setShowAcceptModal(true);
       setStatus("pending");
-    } catch (err) {
+    } catch {
       setStatus("error");
       setMessage("❌ Failed to process invitation.");
     }
@@ -109,7 +106,10 @@ export function InviteAccept() {
         await checkInvite();
         setTimeout(() => {
           if (inviteData && inviteData.hackathon && inviteData.hackathon._id) {
-            navigate(`/dashboard/hackathons/${inviteData.hackathon._id}`);
+            const hackathonId = inviteData.hackathon._id;
+            const hackathonTitle = inviteData.hackathon.title || "";
+            const encodedTitle = encodeURIComponent(hackathonTitle);
+            navigate(`/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodedTitle}`);
           } else {
             navigate("/dashboard/my-hackathons");
           }
@@ -118,7 +118,7 @@ export function InviteAccept() {
         setStatus("error");
         setMessage(data.error || "❌ Failed to accept invite.");
       }
-    } catch (err) {
+    } catch {
       setStatus("error");
       setMessage("❌ Failed to accept invite.");
     }
@@ -144,7 +144,7 @@ export function InviteAccept() {
         setStatus("error");
         setMessage(data.error || "❌ Failed to decline invite.");
       }
-    } catch (err) {
+    } catch {
       setStatus("error");
       setMessage("❌ Failed to decline invite.");
     }
