@@ -48,6 +48,8 @@ import {
   Users,
   Users2,
   Zap,
+  Send,
+  MessageCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -74,7 +76,8 @@ export default function HackathonDetailsPage({
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [sponsorProposals, setSponsorProposals] = useState([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
-  const [reviewModal, setReviewModal] = useState({ open: false, proposalId: null, action: '', loading: false, message: '' });
+  const [reviewModal, setReviewModal] = useState({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' });
+  const [messageModal, setMessageModal] = useState({ open: false, proposal: null, message: '' });
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -217,18 +220,44 @@ export default function HackathonDetailsPage({
   // Approve/Reject proposal with message
   const handleReviewProposal = (proposalId, action) => {
     console.log('DEBUG: handleReviewProposal called', { proposalId, action });
-    setReviewModal({ open: true, proposalId, action, loading: false, message: '' });
+    setReviewModal({ open: true, proposalId, action, loading: false, message: '', price: '' });
   };
 
   const submitReview = async () => {
     if (!reviewModal.message.trim()) return;
     setReviewModal((prev) => ({ ...prev, loading: true }));
-    await fetch(`http://localhost:3000/api/sponsor-proposals/${reviewModal.proposalId}`, {
+    try {
+      const payload = {
+        status: reviewModal.action,
+        reviewMessage: reviewModal.message,
+      };
+      if (reviewModal.action === 'approved') {
+        payload.priceAmount = reviewModal.price;
+      }
+      await fetch(`http://localhost:3000/api/sponsor-proposals/${reviewModal.proposalId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' });
+      fetchSponsorProposals();
+    } catch (err) {
+      setReviewModal(prev => ({ ...prev, loading: false }));
+      alert('Failed to submit review.');
+    }
+  };
+
+  function openMessageModal(proposal) {
+    setMessageModal({ open: true, proposal, message: proposal.messageToSponsor || '' });
+  }
+  async function handleSendMessageToSponsor() {
+    if (!messageModal.proposal) return;
+    await fetch(`http://localhost:3000/api/sponsor-proposals/${messageModal.proposal._id}/message`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: reviewModal.action, reviewMessage: reviewModal.message }),
+      body: JSON.stringify({ messageToSponsor: messageModal.message }),
     });
-    setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '' });
+    setMessageModal({ open: false, proposal: null, message: '' });
     fetchSponsorProposals();
   };
 
@@ -752,10 +781,18 @@ export default function HackathonDetailsPage({
                     <div className="mb-2"><b>Judging:</b> {p.provideJudges === 'yes' ? `Sponsor Provided (${p.judgeName}, ${p.judgeEmail}, ${p.judgeRole})` : 'Organizer Assigned'}</div>
                     <div className="mb-2"><b>Timeline:</b> {p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : 'N/A'} - {p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : 'N/A'}</div>
                     <div className="mb-2"><b>Notes:</b> {p.notes || 'None'}</div>
+                    <div className="mb-2 flex items-center gap-2"><b>Telegram:</b> {p.telegram ? <><a href={p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram}`} target="_blank" rel="noopener noreferrer">{p.telegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram.replace('@', '')}`)}><Send className="w-4 h-4" /></Button></> : <Button size="icon" variant="ghost" onClick={() => alert('Sponsor has not provided a Telegram username/link yet.')}><Send className="w-4 h-4 text-gray-400" /></Button>}</div>
+                    <div className="mb-2"><b>Discord:</b> {p.discord ? <span>{p.discord}</span> : 'None'}</div>
+                    <div className="mb-2 flex items-center gap-2"><b>Message:</b> {p.messageToSponsor ? <span>{p.messageToSponsor}</span> : 'None'}</div>
                     {p.status === 'pending' && (
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleReviewProposal(p._id, 'approved')}>Approve</Button>
                         <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => handleReviewProposal(p._id, 'rejected')}>Reject</Button>
+                      </div>
+                    )}
+                    {p.status !== 'pending' && (
+                      <div className="mb-2">
+                        <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Sponsor</Button>
                       </div>
                     )}
                   </div>
@@ -769,8 +806,23 @@ export default function HackathonDetailsPage({
       {reviewModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-indigo-400">
-            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => { console.log('DEBUG: Closing review modal'); setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '' }); }}>&times;</button>
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => { setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' }); }}>&times;</button>
             <h2 className="text-xl font-bold mb-4 text-indigo-700">{reviewModal.action === 'approved' ? 'Accept Proposal & Provide Contact Instructions' : 'Reject Proposal'}</h2>
+
+            {reviewModal.action === 'approved' && (
+              <div className="mb-4">
+                <label className="block text-sm font-semibold mb-2">Set Price/Prize Amount (required)</label>
+                <input
+                  type="text"
+                  className="w-full border-2 border-indigo-300 rounded p-2 mb-2 focus:outline-indigo-500"
+                  placeholder="e.g., ₹5000 / $100"
+                  value={reviewModal.price || ''}
+                  onChange={e => setReviewModal(prev => ({ ...prev, price: e.target.value }))}
+                  disabled={reviewModal.loading}
+                  required
+                />
+              </div>
+            )}
             <label className="block text-sm font-semibold mb-2">
               {reviewModal.action === 'approved'
                 ? 'Contact Instructions / Next Steps for Sponsor (required)'
@@ -786,10 +838,30 @@ export default function HackathonDetailsPage({
             />
             <Button
               className={reviewModal.action === 'approved' ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
-              onClick={() => { console.log('DEBUG: Submitting review', reviewModal); submitReview(); }}
-              disabled={reviewModal.loading || !reviewModal.message.trim()}
+              onClick={() => submitReview()}
+              disabled={reviewModal.loading || !reviewModal.message.trim() || (reviewModal.action === 'approved' && !reviewModal.price)}
             >
               {reviewModal.loading ? 'Submitting...' : reviewModal.action === 'approved' ? 'Accept & Send' : 'Reject & Send'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+
+      {messageModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-blue-400">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => setMessageModal({ open: false, proposal: null, message: '' })}>&times;</button>
+            <h2 className="text-xl font-bold mb-4 text-blue-700">Send Message to Sponsor</h2>
+            <textarea
+              className="w-full border-2 border-blue-300 rounded p-2 mb-4 focus:outline-blue-500"
+              rows={4}
+              placeholder="Type your message to the sponsor here..."
+              value={messageModal.message}
+              onChange={e => setMessageModal(prev => ({ ...prev, message: e.target.value }))}
+            />
+            <Button className="bg-blue-500 hover:bg-blue-600 text-white" onClick={handleSendMessageToSponsor} disabled={!messageModal.message.trim()}>
+              Send Message
             </Button>
           </div>
         </div>
