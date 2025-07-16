@@ -63,7 +63,6 @@ export function HackathonRequest() {
   const [actionLoading, setActionLoading] = useState({});
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
-  const [quickPreview, setQuickPreview] = useState(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -138,7 +137,10 @@ export function HackathonRequest() {
     }
   };
 
-  const filteredRequests = organizerRequests.filter((request) => {
+  // Sort requests by createdAt descending (recent first)
+  const sortedRequests = [...organizerRequests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const filteredRequests = sortedRequests.filter((request) => {
     const matchesSearch =
       request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       request.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -146,6 +148,14 @@ export function HackathonRequest() {
       statusFilter === "All" || request.approvalStatus === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
+
+  // Calculate statistics
+  const stats = {
+    total: organizerRequests.length,
+    pending: organizerRequests.filter((r) => r.approvalStatus === "pending").length,
+    approved: organizerRequests.filter((r) => r.approvalStatus === "approved").length,
+    rejected: organizerRequests.filter((r) => r.approvalStatus === "rejected").length,
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -182,51 +192,68 @@ export function HackathonRequest() {
     );
 
   return (
-    <div className="space-y-6 p-4 md:p-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-3xl font-bold text-black">Organizer Requests</h1>
+    <div className="space-y-8 p-4 md:p-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <h1 className="text-3xl font-bold text-black">Hackathon Requests</h1>
         <div className="flex gap-2">
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200" variant="outline">
             <Clock className="w-4 h-4 mr-1" />
-            {organizerRequests.filter((r) => r.approvalStatus === "pending").length} Pending
+            {stats.pending} Pending
           </Badge>
           <Badge className="bg-green-100 text-green-800 border-green-200" variant="outline">
             <Check className="w-4 h-4 mr-1" />
-            {organizerRequests.filter((r) => r.approvalStatus === "approved").length} Approved
+            {stats.approved} Approved
+          </Badge>
+          <Badge className="bg-red-100 text-red-800 border-red-200" variant="outline">
+            <X className="w-4 h-4 mr-1" />
+            {stats.rejected} Rejected
+          </Badge>
+          <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200" variant="outline">
+            <Info className="w-4 h-4 mr-1" />
+            {stats.total} Total
           </Badge>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
-          <Input
-            placeholder="Search by event or organizer..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white text-black"
-          />
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="text-black">
-              <Filter className="w-4 h-4 mr-2" />
-              Status: {statusFilter}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
-              <DropdownMenuItem
-                key={status}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {/* Filters and Search */}
+ 
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
+            {/* Search */}
+            <div className="flex-1 w-full">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
+                <Input
+                  placeholder="Search by event or organizer..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 bg-white text-black text-base"
+                />
+              </div>
+            </div>
+            {/* Filter Buttons */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="text-black">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Status: {statusFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                  >
+                    {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+      
 
+      {/* Results Table */}
       <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-black text-lg">
@@ -237,6 +264,7 @@ export function HackathonRequest() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="text-black w-12">#</TableHead>
                 <TableHead className="text-black">Organizer</TableHead>
                 <TableHead className="text-black">Event</TableHead>
                 <TableHead className="text-black">Status</TableHead>
@@ -245,8 +273,9 @@ export function HackathonRequest() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRequests.map((req) => (
+              {filteredRequests.map((req, idx) => (
                 <TableRow key={req._id} className="hover:bg-gray-50">
+                  <TableCell className="font-bold text-indigo-700 text-lg">{idx + 1}</TableCell>
                   <TableCell>
                     <div className="text-black font-medium">
                       {req.organizer?.name || "Unknown"}
@@ -281,6 +310,10 @@ export function HackathonRequest() {
                         <Users className="w-3 h-3" />
                         {req.maxParticipants || "Unlimited"}
                       </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {req.location || "N/A"}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -295,7 +328,6 @@ export function HackathonRequest() {
                         <Eye className="w-4 h-4 mr-1" />
                         Preview
                       </Button>
-
                       {/* Action Buttons for Pending Requests */}
                       {req.approvalStatus === "pending" && (
                         <>
@@ -332,16 +364,6 @@ export function HackathonRequest() {
                           </Button>
                         </>
                       )}
-
-                      {/* View Full Details Button (removed) */}
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedHackathon(req)}
-                        className="text-gray-600 hover:text-gray-800"
-                      >
-                        <Info className="w-4 h-4" />
-                      </Button> */}
                     </div>
                   </TableCell>
                 </TableRow>
@@ -350,9 +372,6 @@ export function HackathonRequest() {
           </Table>
         </CardContent>
       </Card>
-
-      {/* Quick Preview Modal (removed, now handled by ModalHackathonDetails) */}
-      {/* {quickPreview && (...)} */}
 
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
