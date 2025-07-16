@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '../../components/CommonUI/button';
-import { MessageCircle, Send, Mail } from 'lucide-react';
+import { MessageCircle, Send, Mail, RefreshCw } from 'lucide-react';
+import ChatModal from './components/ChatModal';
 
 const proposalFields = [
   { key: 'name', label: 'Your Name', required: true },
@@ -8,7 +9,6 @@ const proposalFields = [
   { key: 'organization', label: 'Organization / Company Name', required: true },
   { key: 'website', label: 'Website / LinkedIn', required: false },
   { key: 'telegram', label: 'Telegram', required: false },
-  { key: 'discord', label: 'Discord', required: false },
   { key: 'title', label: 'Proposal Title', required: true },
   { key: 'description', label: 'Description / Problem Context', required: true, textarea: true },
   { key: 'deliverables', label: 'Expected Deliverables', required: true, textarea: true },
@@ -38,47 +38,59 @@ export default function SponsoredPS() {
   const [orgMsgProposalIdx, setOrgMsgProposalIdx] = useState(null);
   const [seenMessages, setSeenMessages] = useState({}); // { proposalId: true }
   const [organizerTelegrams, setOrganizerTelegrams] = useState({}); // { hackathonId: telegram }
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatProposalId, setChatProposalId] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => {
-    async function fetchProposalsAndTelegrams() {
-      setLoading(true);
-      const res = await fetch(`/api/sponsor-proposals/user/${user?.email}`);
-      const data = await res.json();
-      const approvedProposals = Array.isArray(data) ? data.filter(p => p.status === 'approved') : [];
-      setProposals(approvedProposals);
-      // Fetch organizer Telegrams for each proposal
-      const telegrams = {};
-      await Promise.all(approvedProposals.map(async (proposal) => {
-        if (proposal.hackathon) {
-          // Fetch hackathon to get organizer
-          const hackathonRes = await fetch(`/api/hackathons/${proposal.hackathon}`);
-          if (hackathonRes.ok) {
-            const hackathon = await hackathonRes.json();
-            let organizerId = null;
-            if (hackathon.organizer) {
-              // Handle both populated object and plain ID
-              if (typeof hackathon.organizer === 'object' && hackathon.organizer._id) {
-                organizerId = hackathon.organizer._id;
-              } else if (typeof hackathon.organizer === 'string') {
-                organizerId = hackathon.organizer;
-              }
+  // Move fetchProposalsAndTelegrams outside useEffect so it can be called from button and event
+  async function fetchProposalsAndTelegrams() {
+    setLoading(true);
+    const res = await fetch(`/api/sponsor-proposals/user/${user?.email}`);
+    const data = await res.json();
+    const approvedProposals = Array.isArray(data) ? data.filter(p => p.status === 'approved') : [];
+    setProposals(approvedProposals);
+    // Fetch organizer Telegrams for each proposal
+    const telegrams = {};
+    await Promise.all(approvedProposals.map(async (proposal) => {
+      if (proposal.hackathon) {
+        // Fetch hackathon to get organizer
+        const hackathonRes = await fetch(`/api/hackathons/${proposal.hackathon}`);
+        if (hackathonRes.ok) {
+          const hackathon = await hackathonRes.json();
+          let organizerId = null;
+          if (hackathon.organizer) {
+            // Handle both populated object and plain ID
+            if (typeof hackathon.organizer === 'object' && hackathon.organizer._id) {
+              organizerId = hackathon.organizer._id;
+            } else if (typeof hackathon.organizer === 'string') {
+              organizerId = hackathon.organizer;
             }
-            if (organizerId) {
-              // Fetch organizer user profile
-              const organizerRes = await fetch(`/api/users/${organizerId}`);
-              if (organizerRes.ok) {
-                const organizer = await organizerRes.json();
-                telegrams[proposal.hackathon] = organizer.telegram || null;
-              }
+          }
+          if (organizerId) {
+            // Fetch organizer user profile
+            const organizerRes = await fetch(`/api/users/${organizerId}`);
+            if (organizerRes.ok) {
+              const organizer = await organizerRes.json();
+              telegrams[proposal.hackathon] = organizer.telegram || null;
             }
           }
         }
-      }));
-      setOrganizerTelegrams(telegrams);
-      setLoading(false);
-    }
+      }
+    }));
+    setOrganizerTelegrams(telegrams);
+    setLoading(false);
+  }
+
+  useEffect(() => {
     if (user?.email) fetchProposalsAndTelegrams();
+    // Auto-refresh on tab focus
+    function handleVisibility() {
+      if (document.visibilityState === 'visible' && user?.email) {
+        fetchProposalsAndTelegrams();
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, [user?.email]);
 
   function startEdit(idx) {
@@ -157,7 +169,10 @@ export default function SponsoredPS() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><span role="img" aria-label="sponsor">🤝</span> Sponsored Problem Statements</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2"><span role="img" aria-label="sponsor">🤝</span> Sponsored Problem Statements</h1>
+        <Button size="icon" variant="outline" title="Refresh" onClick={fetchProposalsAndTelegrams}><RefreshCw className="w-5 h-5" /></Button>
+      </div>
       {proposals.map((p, idx) => {
         const hasNewMsg = !!p.messageToSponsor && !seenMessages[p._id];
         const organizerTelegram = organizerTelegrams[p.hackathon];
@@ -199,12 +214,15 @@ export default function SponsoredPS() {
                 </div>
               </form>
             ) : (
-              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {proposalFields.map(field => (
-                  <div key={field.key}>
-                    <b>{field.label}:</b> {p[field.key] || <span className="text-gray-400">-</span>}
-                  </div>
-                ))}
+              <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                  {proposalFields.map(field => (
+                    <React.Fragment key={field.key}>
+                      <dt className="font-semibold text-gray-700">{field.label}:</dt>
+                      <dd className="text-gray-900 break-words">{p[field.key] || <span className="text-gray-400">-</span>}</dd>
+                    </React.Fragment>
+                  ))}
+                </dl>
               </div>
             )}
             {editIdx === idx ? null : (
@@ -238,9 +256,11 @@ export default function SponsoredPS() {
               </div>
               <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Organizer</Button>
             </div>
+            <Button size="sm" variant="default" className="mt-2" onClick={() => { setChatProposalId(p._id); setChatOpen(true); }}>Chat with Organizer</Button>
           </div>
         );
       })}
+      <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} proposalId={chatProposalId} currentUser={user} />
       {messageModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-blue-400">

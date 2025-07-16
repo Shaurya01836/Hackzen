@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from '../../../hooks/use-toast';
+import ChatModal from '../components/ChatModal';
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
@@ -80,6 +81,9 @@ export default function HackathonDetailsPage({
   const [reviewModal, setReviewModal] = useState({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' });
   const [messageModal, setMessageModal] = useState({ open: false, proposal: null, message: '' });
   const { toast } = useToast();
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatProposalId, setChatProposalId] = useState(null);
+  const user = JSON.parse(localStorage.getItem('user'));
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -746,18 +750,46 @@ export default function HackathonDetailsPage({
                       <div className="font-semibold text-lg">{p.title}</div>
                       <span className={p.status === 'pending' ? 'text-yellow-600' : p.status === 'approved' ? 'text-green-600' : 'text-red-600'}>{p.status}</span>
                     </div>
-                    <div className="text-sm text-gray-700 mb-1"><b>By:</b> {p.name} ({p.email}) | {p.organization}</div>
-                    <div className="text-xs text-gray-500 mb-2">Submitted: {new Date(p.createdAt).toLocaleString()}</div>
-                    <div className="mb-2"><b>Description:</b> {p.description}</div>
-                    <div className="mb-2"><b>Deliverables:</b> {p.deliverables}</div>
-                    <div className="mb-2"><b>Tech Stack:</b> {p.techStack}</div>
-                    <div className="mb-2"><b>Target Audience:</b> {p.targetAudience}</div>
-                    <div className="mb-2"><b>Prize:</b> {p.prizeAmount} - {p.prizeDescription}</div>
-                    <div className="mb-2"><b>Judging:</b> {p.provideJudges === 'yes' ? `Sponsor Provided (${p.judgeName}, ${p.judgeEmail}, ${p.judgeRole})` : 'Organizer Assigned'}</div>
-                    <div className="mb-2"><b>Timeline:</b> {p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : 'N/A'} - {p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : 'N/A'}</div>
-                    <div className="mb-2"><b>Notes:</b> {p.notes || 'None'}</div>
-                    <div className="mb-2 flex items-center gap-2"><b>Telegram:</b> {p.telegram ? <><a href={p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram}`} target="_blank" rel="noopener noreferrer">{p.telegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram.replace('@','')}`, '_blank')}><Send className="w-4 h-4" /></Button></> : <Button size="icon" variant="ghost" onClick={() => alert('Sponsor has not provided a Telegram username/link yet.') }><Send className="w-4 h-4 text-gray-400" /></Button>}</div>
-                    <div className="mb-2"><b>Discord:</b> {p.discord ? <span>{p.discord}</span> : 'None'}</div>
+                    <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                        <dt className="font-semibold text-gray-700">Organization / Company Name:</dt>
+                        <dd className="text-gray-900 break-words">{p.organization || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Proposal Title:</dt>
+                        <dd className="text-gray-900 break-words">{p.title || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Description / Problem Context:</dt>
+                        <dd className="text-gray-900 break-words">{p.description || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Expected Deliverables:</dt>
+                        <dd className="text-gray-900 break-words">{p.deliverables || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Preferred Tech Stack or Domain:</dt>
+                        <dd className="text-gray-900 break-words">{p.techStack || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Target Audience:</dt>
+                        <dd className="text-gray-900 break-words">{p.targetAudience || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Prize Amount:</dt>
+                        <dd className="text-gray-900 break-words">{p.prizeAmount || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Prize Description:</dt>
+                        <dd className="text-gray-900 break-words">{p.prizeDescription || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Will you provide judges?</dt>
+                        <dd className="text-gray-900 break-words">{p.provideJudges || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Judge Name:</dt>
+                        <dd className="text-gray-900 break-words">{p.judgeName || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Judge Email:</dt>
+                        <dd className="text-gray-900 break-words">{p.judgeEmail || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Judge Role:</dt>
+                        <dd className="text-gray-900 break-words">{p.judgeRole || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Preferred Start Date:</dt>
+                        <dd className="text-gray-900 break-words">{p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Preferred Deadline:</dt>
+                        <dd className="text-gray-900 break-words">{p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Additional Notes:</dt>
+                        <dd className="text-gray-900 break-words">{p.notes || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Telegram:</dt>
+                        <dd className="text-gray-900 break-words">{p.telegram ? <a href={p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer">{p.telegram}</a> : <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Discord:</dt>
+                        <dd className="text-gray-900 break-words">{p.discord || <span className="text-gray-400">-</span>}</dd>
+                        <dt className="font-semibold text-gray-700">Sponsor Email:</dt>
+                        <dd className="text-gray-900 break-words">{p.email || <span className="text-gray-400">-</span>}</dd>
+                      </dl>
+                    </div>
                     {p.status === 'pending' && (
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleReviewProposal(p._id, 'approved')}>Approve</Button>
@@ -769,6 +801,15 @@ export default function HackathonDetailsPage({
                         <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Sponsor</Button>
                       </div>
                     )}
+                    <div className="mb-3">
+                      <div className="font-semibold text-gray-700 mb-1">Message from Sponsor:</div>
+                      {p.messageToOrganizer ? (
+                        <div className="border border-blue-200 bg-blue-50 rounded p-3 text-gray-900 whitespace-pre-line">{p.messageToOrganizer}</div>
+                      ) : (
+                        <div className="text-gray-400 italic">No message from sponsor.</div>
+                      )}
+                    </div>
+                    <Button size="sm" variant="default" className="mt-2" onClick={() => { setChatProposalId(p._id); setChatOpen(true); }}>Chat with Sponsor</Button>
                   </div>
                 ))}
               </div>
@@ -842,6 +883,7 @@ export default function HackathonDetailsPage({
           </div>
         </div>
       )}
+      <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} proposalId={chatProposalId} currentUser={user} />
     </>
   );
 }

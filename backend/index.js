@@ -97,6 +97,19 @@ const io = new Server(server, {
 
 socketHandler(io); // WebSocket logic
 
+// Socket.IO chat logic
+io.on('connection', (socket) => {
+  socket.on('joinProposalRoom', (proposalId) => {
+    socket.join(proposalId);
+  });
+  socket.on('chat message', ({ proposalId, message }) => {
+    io.to(proposalId).emit('chat message', message);
+  });
+});
+
+// Make io accessible in controllers
+app.set('io', io);
+
 // ✅ MongoDB + Start server
 const PORT = process.env.PORT || 3000;
 
