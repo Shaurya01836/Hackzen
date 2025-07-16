@@ -40,8 +40,15 @@ export default function RevokeInviteDialog({ open, invite, onClose, onRevoked })
         description: `The invite to ${invite.invitedEmail} has been revoked.`,
       });
 
-      onRevoked?.();  // Optional callback to refresh invite list
-      onClose?.();    // Close dialog
+      // Call both callbacks to ensure UI updates
+      if (onRevoked) {
+        console.log("Calling onRevoked callback");
+        onRevoked();
+      }
+      if (onClose) {
+        console.log("Calling onClose callback");
+        onClose();
+      }
     } catch (err) {
       toast({
         title: "Error",

@@ -152,6 +152,7 @@ export default function TeamManagementSection({
         `http://localhost:3000/api/team-invites/hackathon/${hackathon._id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      console.log("Fetched team invites:", res.data);
       setTeamInvites(res.data);
     } catch (err) {
       console.error("Error fetching invites", err);
@@ -165,6 +166,15 @@ export default function TeamManagementSection({
     }
   }, [hackathon && hackathon._id]);
 
+  useEffect(() => {
+    if (!hackathon || !hackathon._id) return;
+    // Poll every 10 seconds
+    const interval = setInterval(() => {
+      fetchTeamInvites();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [hackathon && hackathon._id]);
+
   const myTeam = userTeams[0];
 
   const handleShowInviteModal = (team) => {
@@ -173,7 +183,27 @@ export default function TeamManagementSection({
     setShowInviteModal(true);
   };
 
+  // Use the same simple logic as the old working system
   const pendingInvites = teamInvites.filter(invite => invite.status === "pending");
+
+  // Debug logging
+  console.log("Team Management Debug:", {
+    userTeams: userTeams.length,
+    myTeam: myTeam?._id,
+    myTeamLeader: myTeam?.leader?._id,
+    currentUser: user?._id,
+    isLeader: myTeam?.leader._id?.toString() === user?._id?.toString(),
+    teamInvites: teamInvites.length,
+    pendingInvites: pendingInvites.length,
+    pendingInvitesData: pendingInvites.map(invite => ({
+      id: invite._id,
+      email: invite.invitedEmail,
+      status: invite.status,
+      teamId: invite.team._id,
+      teamLeader: invite.team.leader?._id,
+      canRevoke: invite.team.leader?._id?.toString() === user?._id?.toString()
+    }))
+  });
 
   return (
     <section ref={sectionRef} className="space-y-8">
@@ -334,10 +364,10 @@ export default function TeamManagementSection({
         </Card>
 
         {/* Pending Invites */}
-        {pendingInvites.length > 0 && myTeam && myTeam.leader._id?.toString() === user?._id?.toString() && (
+        {pendingInvites.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Pending Invites</CardTitle>
+              <CardTitle>Pending Invites ({pendingInvites.length})</CardTitle>
             </CardHeader>
             <CardContent>
               {pendingInvites.map((invite) => (
@@ -366,7 +396,7 @@ export default function TeamManagementSection({
                     </div>
                   </div>
 
-                  {invite.status === "pending" && invite.team.leader?._id?.toString() === user?._id?.toString() ? (
+                  {invite.status === "pending" ? (
                     <Button
                       size="sm"
                       variant="destructive"
@@ -415,9 +445,7 @@ export default function TeamManagementSection({
         onRevoked={fetchTeamInvites}
       />
 
-      <Button onClick={fetchUserTeams} variant="outline" size="sm">
-        Refresh Teams
-      </Button>
+    
     </section>
   );
 }

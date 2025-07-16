@@ -230,14 +230,19 @@ const getHackathonInvites = async (req, res) => {
 
     const teamIds = userTeams.map(team => team._id);
 
-    // Get all invites for these teams
+    // Get all invites for these teams - ONLY pending invites
     const invites = await TeamInvite.find({
       team: { $in: teamIds },
-      status: 'pending'
+      status: 'pending'  // Explicitly only get pending invites
     })
-    .populate('team', 'name')
+    .populate('team', 'name leader')
     .populate('invitedBy', 'name email')
     .populate('hackathon', 'title');
+
+    console.log(`Found ${invites.length} pending invites for teams:`, teamIds);
+    invites.forEach(invite => {
+      console.log(`Invite: ${invite._id}, Email: ${invite.invitedEmail}, Status: ${invite.status}`);
+    });
 
     res.json(invites);
   } catch (err) {
@@ -269,7 +274,7 @@ const getProjectInvites = async (req, res) => {
       team: { $in: teamIds },
       status: 'pending'
     })
-    .populate('team', 'name')
+    .populate('team', 'name leader')
     .populate('invitedBy', 'name email')
     .populate('project', 'title');
 
