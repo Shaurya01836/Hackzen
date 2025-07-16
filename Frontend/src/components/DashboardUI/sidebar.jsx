@@ -642,25 +642,6 @@ const SidebarMenuSubButton = React.forwardRef(
 )
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
-function SponsoredPSLink() {
-  const [show, setShow] = useState(false);
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    async function checkSponsoredPS() {
-      if (!user?.email) return setShow(false);
-      const res = await fetch(`/api/sponsor-proposals/user/${user.email}`);
-      const data = await res.json();
-      setShow(Array.isArray(data) && data.some(p => p.status === 'approved'));
-    }
-    checkSponsoredPS();
-  }, []);
-  if (!show) return null;
-  return (
-    <Link to="/dashboard/sponsored-ps" className="sidebar-link">
-      <span role="img" aria-label="sponsor">🤝</span> Sponsored PS
-    </Link>
-  );
-}
 
 export {
   Sidebar,
@@ -686,5 +667,4 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
-  SponsoredPSLink,
 }

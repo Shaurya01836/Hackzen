@@ -23,6 +23,7 @@ import {
   CalendarX,
   Gavel,
   ShieldCheck,
+  Handshake,
 } from "lucide-react";
 
 import {
@@ -39,7 +40,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  SponsoredPSLink,
 } from "../../components/DashboardUI/sidebar";
 
 import { useAuth } from "../../context/AuthContext";
@@ -156,7 +156,7 @@ export default function HackZenDashboard() {
     },
     {
       title: "Sponsored PS",
-      icon: SponsoredPSLink,
+      icon: Handshake,
       key: "sponsored-ps",
       onClick: () => changeView("sponsored-ps"),
     },
