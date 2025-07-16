@@ -57,7 +57,6 @@ import { ProjectArchive } from "./sections/ProjectArchive";
 import MyHackathon from "./sections/Myhackthon";
 import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
-import  MyCommunity  from "./sections/MyCommunity";
 import SponsoredPS from "./SponsoredPS";
 
 export default function HackZenDashboard() {
@@ -145,13 +144,6 @@ export default function HackZenDashboard() {
       key: "explore-hackathons",
       onClick: () => changeView("explore-hackathons"),
     },
-    {
-      title: "My Community",
-      icon: UsersRoundIcon,
-      key: "my-community",
-      onClick: () => changeView("my-community"),
-    },
-
     {
       title: "Blogs",
       icon: NotebookTabs,
@@ -275,8 +267,6 @@ export default function HackZenDashboard() {
         return <Blogs onBack={() => changeView("profile")} />;
       case "project-archive":
         return <ProjectArchive onBack={() => changeView("profile")} />;
-      case "my-community":
-        return <MyCommunity onBack={() => changeView("profile")} /> ;
       case "judge-panel":
         return <DashboardJudgePanel onBack={() => changeView("profile")} />;
       case "my-judgments":

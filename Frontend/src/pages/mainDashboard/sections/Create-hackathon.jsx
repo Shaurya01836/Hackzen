@@ -953,11 +953,12 @@ export default function CreateHackathon({
             {errors.stepError}
           </div>
         )}
-        <div className="space-y-6">
+        {/* Step Content wrapped in Card */}
+        <Card className="space-y-6">
           {step === 0 && (
             <>
               {/* Basic Information */}
-              <div className="p-6 bg-white rounded-lg shadow border space-y-4">
+              <div className="p-6 bg-white rounded-lg shadow space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-5 h-5 text-indigo-600" />
                   <span className="font-semibold">Basic Information</span>
@@ -1654,7 +1655,7 @@ export default function CreateHackathon({
           {step === 1 && (
             <>
               {/* Images & Media - remove Card, use divs */}
-              <div className="p-6 bg-white rounded-lg shadow border space-y-4">
+              <div className="p-6 bg-white rounded-lg shadow space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Upload className="w-5 h-5 text-indigo-600" />
                   <span className="font-semibold">Images & Media</span>
@@ -1720,7 +1721,7 @@ export default function CreateHackathon({
           {step === 2 && (
             <>
               {/* Problem Statements - Combined */}
-              <div className="p-6 bg-white rounded-lg shadow border space-y-4">
+              <div className="p-6 bg-white rounded-lg shadow space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-5 h-5 text-indigo-600" />
                   <span className="font-semibold">Problem Statements</span>
@@ -1888,7 +1889,7 @@ export default function CreateHackathon({
           {step === 3 && (
             <>
               {/* Requirements */}
-              <div className="p-6 bg-white rounded-lg shadow border space-y-4">
+              <div className="p-6 bg-white rounded-lg shadow space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <FileText className="w-5 h-5 text-indigo-600" />
                   <span className="font-semibold">Requirements</span>
@@ -2048,7 +2049,7 @@ export default function CreateHackathon({
               </div>
             </>
           )}
-        </div>
+        </Card>
         {/* Navigation */}
         <div className="flex justify-between mt-4">
           <Button onClick={prevStep} disabled={step === 0} variant="outline">
@@ -2224,6 +2225,6 @@ export default function CreateHackathon({
           )}
         </div>
       </div>
-      </div>
-    );
+    </div>
+  );
 }
