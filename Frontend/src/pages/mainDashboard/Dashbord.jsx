@@ -39,6 +39,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  SponsoredPSLink,
 } from "../../components/DashboardUI/sidebar";
 
 import { useAuth } from "../../context/AuthContext";
@@ -57,6 +58,7 @@ import MyHackathon from "./sections/Myhackthon";
 import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
 import  MyCommunity  from "./sections/MyCommunity";
+import SponsoredPS from "./SponsoredPS";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -152,6 +154,12 @@ export default function HackZenDashboard() {
       key: "organization-hub",
       onClick: () => changeView("organization-hub"),
     },
+    {
+      title: "Sponsored PS",
+      icon: SponsoredPSLink,
+      key: "sponsored-ps",
+      onClick: () => changeView("sponsored-ps"),
+    },
   ];
 
   const organizerMenuItems = [
@@ -227,6 +235,8 @@ export default function HackZenDashboard() {
         return <ExploreHackathons onBack={() => changeView("profile")} />;
       case "organization-hub":
         return <OrganizationHub onBack={() => changeView("profile")} />;
+      case "sponsored-ps":
+        return <SponsoredPS onBack={() => changeView("profile")} />;
       case "created-hackathons":
         return (
           <CreatedHackathons
@@ -333,6 +343,7 @@ export default function HackZenDashboard() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
 
           {/* Organizer Menu - Only show to organizers, NOT to judges */}
           {user?.role === "organizer" && user?.role !== "judge" && (
