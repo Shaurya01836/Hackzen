@@ -23,6 +23,7 @@ import {
   CalendarX,
   Gavel,
   ShieldCheck,
+  Handshake,
 } from "lucide-react";
 
 import {
@@ -54,9 +55,10 @@ import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
 import MyHackathon from "./sections/Myhackthon";
-import JudgePanel from "../JudgePanel/JudgePage";
 import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
+import  MyCommunity  from "./sections/MyCommunity";
+import SponsoredPS from "./SponsoredPS";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -152,6 +154,12 @@ export default function HackZenDashboard() {
       key: "organization-hub",
       onClick: () => changeView("organization-hub"),
     },
+    {
+      title: "Sponsored PS",
+      icon: Handshake,
+      key: "sponsored-ps",
+      onClick: () => changeView("sponsored-ps"),
+    },
   ];
 
   const organizerMenuItems = [
@@ -227,6 +235,8 @@ export default function HackZenDashboard() {
         return <ExploreHackathons onBack={() => changeView("profile")} />;
       case "organization-hub":
         return <OrganizationHub onBack={() => changeView("profile")} />;
+      case "sponsored-ps":
+        return <SponsoredPS onBack={() => changeView("profile")} />;
       case "created-hackathons":
         return (
           <CreatedHackathons
@@ -249,7 +259,7 @@ export default function HackZenDashboard() {
       case "project-archive":
         return <ProjectArchive onBack={() => changeView("profile")} />;
       case "my-community":
-        return <div className="p-6">My Community Section - Coming Soon</div>;
+        return <MyCommunity onBack={() => changeView("profile")} /> ;
       case "judge-panel":
         return <DashboardJudgePanel onBack={() => changeView("profile")} />;
       case "my-judgments":
@@ -333,6 +343,7 @@ export default function HackZenDashboard() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
 
           {/* Organizer Menu - Only show to organizers, NOT to judges */}
           {user?.role === "organizer" && user?.role !== "judge" && (

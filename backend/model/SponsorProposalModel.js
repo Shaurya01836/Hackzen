@@ -8,6 +8,8 @@ const SponsorProposalSchema = new Schema({
   email: { type: String, required: true },
   organization: { type: String, required: true },
   website: { type: String },
+  telegram: { type: String }, // Sponsor's Telegram ID or link
+  discord: { type: String },  // Sponsor's Discord ID or link
   // Proposal Details
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -31,6 +33,7 @@ const SponsorProposalSchema = new Schema({
   // Status
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   reviewMessage: { type: String },
+  messageToSponsor: { type: String }, // Message from organizer to sponsor
   createdAt: { type: Date, default: Date.now }
 });
 

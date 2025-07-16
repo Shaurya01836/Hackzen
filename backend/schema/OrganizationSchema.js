@@ -31,6 +31,7 @@ const OrganizationSchema = new mongoose.Schema(
     contactMethods: {
       whatsapp: { type: String },
       telegram: { type: String },
+      discord: { type: String }, // Organizer's Discord ID or link
     },
     organizationType: {
       type: String,
@@ -90,6 +91,7 @@ const OrganizationSchema = new mongoose.Schema(
       contactMethods: {
         whatsapp: String,
         telegram: String,
+        discord: String, // Organizer's Discord ID or link
       },
       submittedAt: Date,
       submittedBy: {
