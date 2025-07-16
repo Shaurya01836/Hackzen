@@ -237,24 +237,14 @@ export default function SponsoredPS() {
                       <svg className="w-4 h-4 text-blue-500 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>
                       {organizerTelegram.startsWith('@') ? organizerTelegram : `@${organizerTelegram}`}
                     </a>
-                    <Button size="icon" variant="ghost" onClick={() => window.open(organizerTelegram.startsWith('http') ? organizerTelegram : `https://t.me/${organizerTelegram.replace(/^@/, '')}`, '_blank')}><Send className="w-4 h-4" /></Button>
+                   
                   </>
                 ) : (
                   <span className="text-gray-400 flex items-center gap-1"><svg className="w-4 h-4 text-blue-300 mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>Organizer has not provided a Telegram handle yet.</span>
                 )}
               </div>
-              <div className="mb-2 flex items-center gap-2">
-                <b>Message from Organizer:</b>
-                {p.messageToSponsor ? (
-                  <>
-                    <Button size="sm" variant={hasNewMsg ? 'default' : 'outline'} className={hasNewMsg ? 'bg-yellow-400 text-black animate-pulse' : ''} onClick={() => handleShowOrgMsg(idx)}>
-                      {hasNewMsg && <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2" />}View Message
-                    </Button>
-                    {hasNewMsg && <span className="text-xs text-yellow-600 font-semibold ml-2">New</span>}
-                  </>
-                ) : <span className="text-gray-400">No message yet</span>}
-              </div>
-              <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Organizer</Button>
+              
+             
             </div>
             <Button size="sm" variant="default" className="mt-2" onClick={() => { setChatProposalId(p._id); setChatOpen(true); }}>Chat with Organizer</Button>
           </div>

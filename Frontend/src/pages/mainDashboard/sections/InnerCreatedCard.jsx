@@ -796,19 +796,7 @@ export default function HackathonDetailsPage({
                         <Button size="sm" className="bg-red-500 hover:bg-red-600 text-white" onClick={() => handleReviewProposal(p._id, 'rejected')}>Reject</Button>
                       </div>
                     )}
-                    {p.status !== 'pending' && (
-                      <div className="mb-2">
-                        <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Sponsor</Button>
-                      </div>
-                    )}
-                    <div className="mb-3">
-                      <div className="font-semibold text-gray-700 mb-1">Message from Sponsor:</div>
-                      {p.messageToOrganizer ? (
-                        <div className="border border-blue-200 bg-blue-50 rounded p-3 text-gray-900 whitespace-pre-line">{p.messageToOrganizer}</div>
-                      ) : (
-                        <div className="text-gray-400 italic">No message from sponsor.</div>
-                      )}
-                    </div>
+                   
                     <Button size="sm" variant="default" className="mt-2" onClick={() => { setChatProposalId(p._id); setChatOpen(true); }}>Chat with Sponsor</Button>
                   </div>
                 ))}
