@@ -54,9 +54,9 @@ import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
 import MyHackathon from "./sections/Myhackthon";
-import JudgePanel from "../JudgePanel/JudgePage";
 import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
+import  MyCommunity  from "./sections/MyCommunity";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -249,7 +249,7 @@ export default function HackZenDashboard() {
       case "project-archive":
         return <ProjectArchive onBack={() => changeView("profile")} />;
       case "my-community":
-        return <div className="p-6">My Community Section - Coming Soon</div>;
+        return <MyCommunity onBack={() => changeView("profile")} /> ;
       case "judge-panel":
         return <DashboardJudgePanel onBack={() => changeView("profile")} />;
       case "my-judgments":
