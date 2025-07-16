@@ -335,3 +335,8 @@ html {
   90% { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-8px) scale(0.95); }
 }
+
+/* TipTap/ProseMirror heading styles */
+.ProseMirror h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
+.ProseMirror h2 { font-size: 1.5em; font-weight: bold; margin: 0.75em 0; }
+.ProseMirror h3 { font-size: 1.17em; font-weight: bold; margin: 0.83em 0; }

@@ -37,7 +37,7 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { Label } from "../../../components/CommonUI/label";
-import { RichTextEditor } from "./RichTextEditor";
+import RichTextEditor from "./RichTextEditor";
 import { Textarea } from "../../../components/CommonUI/textarea";
 import { useNavigate, useLocation } from "react-router-dom";
 
@@ -374,9 +374,7 @@ export default function ProjectSubmission({
                   <div className="mt-1">
                     <RichTextEditor
                       value={formData.description}
-                      onChange={(value) =>
-                        handleInputChange("description", value)
-                      }
+                      onChange={(value) => handleInputChange("description", value)}
                       placeholder="Describe your project vision and what problem it solves..."
                       maxLength={FIELD_LIMITS.description}
                     />
