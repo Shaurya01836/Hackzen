@@ -112,6 +112,8 @@ const UserSchema = new Schema({
   twitter: String,
   instagram: String,
   portfolio: String,
+  telegram: String, // User's Telegram ID or link
+  discord: String,  // User's Discord ID or link
   
   // Hackathon Specific Information
   preferredHackathonTypes: [{

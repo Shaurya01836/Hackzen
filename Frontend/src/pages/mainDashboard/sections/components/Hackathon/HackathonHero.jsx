@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "../../../../../components/CommonUI/card";
 import { Progress } from "../../../../../components/DashboardUI/progress";
-import { Calendar, Star, Trophy, Users, BadgeCheck, Hourglass, XCircle, Mail, Copy } from "lucide-react";
+import { Calendar, Star, Trophy, Users, BadgeCheck, Hourglass, XCircle, Mail, Copy, Send, MessageCircle } from "lucide-react";
 import { Button } from "../../../../../components/CommonUI/button";
 import { useState, useEffect } from "react";
 import { useAuth } from '../../../../../context/AuthContext';
@@ -95,6 +95,8 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
     email: "",
     organization: "",
     website: "",
+    telegram: "", // NEW
+    discord: "",  // NEW
     title: "",
     description: "",
     deliverables: "",
@@ -113,6 +115,10 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccessMsg, setShowSuccessMsg] = useState(false);
+
+  // Add state for editing proposal
+  const [editingProposal, setEditingProposal] = useState(false);
+  const [editForm, setEditForm] = useState({ telegram: '', discord: '' });
 
   // Helper: get sponsor email (from logged-in user)
   const sponsorEmail = user?.email || '';
@@ -323,6 +329,8 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
                     email: "",
                     organization: "",
                     website: "",
+                    telegram: "", // NEW
+                    discord: "",  // NEW
                     title: "",
                     description: "",
                     deliverables: "",
@@ -370,6 +378,14 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
                     <div>
                       <label className="block text-sm font-medium mb-1">Website / LinkedIn</label>
                       <input type="url" className="w-full border rounded p-2" placeholder="Website / LinkedIn (optional)" value={sponsorForm.website} onChange={e => setSponsorForm(f => ({ ...f, website: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Telegram</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Telegram ID or link (optional)" value={sponsorForm.telegram} onChange={e => setSponsorForm(f => ({ ...f, telegram: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Discord</label>
+                      <input type="text" className="w-full border rounded p-2" placeholder="Discord ID or link (optional)" value={sponsorForm.discord} onChange={e => setSponsorForm(f => ({ ...f, discord: e.target.value }))} />
                     </div>
                   </div>
                 </div>
@@ -507,36 +523,77 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
                 {myProposal.status === 'rejected' && <XCircle className="text-red-500 w-6 h-6" />}
                 <span className={`font-semibold text-lg ${myProposal.status === 'pending' ? 'text-yellow-700' : myProposal.status === 'approved' ? 'text-green-700' : 'text-red-700'}`}>{myProposal.status.charAt(0).toUpperCase() + myProposal.status.slice(1)}</span>
               </div>
-              {myProposal.status === 'pending' && (
-                <div className="text-yellow-700 font-medium mb-2">Your request is under review by the organizer. You will be notified here once a decision is made.</div>
+              {/* Show organizer message if present */}
+              {/* Edit button for user to update Telegram/Discord if pending or rejected */}
+              {(myProposal.status === 'pending' || myProposal.status === 'rejected') && !editingProposal && (
+                <Button className="mb-4" onClick={() => {
+                  setEditForm({ telegram: myProposal.telegram || '', discord: myProposal.discord || '' });
+                  setEditingProposal(true);
+                }}>Edit Contact Details</Button>
               )}
-              {myProposal.status === 'approved' && (
-                <div className="text-green-700 font-medium mb-2 flex items-center gap-2"> <BadgeCheck className="w-5 h-5" /> Congratulations! Your sponsorship proposal has been <b>accepted</b>.<br/>Contact Instructions from Organizer:</div>
-              )}
-              {myProposal.status === 'rejected' && (
-                <div className="text-red-700 font-medium mb-2 flex items-center gap-2"><XCircle className="w-5 h-5" /> Unfortunately, your sponsorship proposal was <b>rejected</b>.<br/>Reason from organizer:</div>
-              )}
-              {(myProposal.status === 'approved' || myProposal.status === 'rejected') && (
-                <div className="border rounded p-4 bg-gray-50 text-gray-800 mb-2 relative whitespace-pre-line" style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                  <div className="whitespace-pre-line text-base leading-relaxed">
-                    {autoLink(myProposal.reviewMessage)}
+              {/* Edit form for Telegram/Discord */}
+              {editingProposal && (
+                <form className="mb-4" onSubmit={async e => {
+                  e.preventDefault();
+                  // Call backend to update proposal
+                  await fetch(`http://localhost:3000/api/sponsor-proposals/${myProposal._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegram: editForm.telegram, discord: editForm.discord })
+                  });
+                  setEditingProposal(false);
+                  fetchMyProposal(sponsorEmail);
+                }}>
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium mb-1">Telegram</label>
+                    <div className="flex items-center gap-2">
+                      <input type="text" className="w-full border rounded p-2" placeholder="Telegram ID or link" value={editForm.telegram} onChange={e => setEditForm(f => ({ ...f, telegram: e.target.value }))} />
+                      <Button type="button" size="icon" onClick={() => {
+                        if (editForm.telegram) {
+                          window.open(editForm.telegram.startsWith('http') ? editForm.telegram : `https://t.me/${editForm.telegram.replace('@','')}`, '_blank');
+                        } else {
+                          alert('Please enter your Telegram username or link.');
+                        }
+                      }}><Send className="w-5 h-5" /></Button>
+                    </div>
                   </div>
-                  {/* Copy Email button if email present */}
-                  {extractEmail(myProposal.reviewMessage) && (
-                    <button
-                      className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs"
-                      onClick={() => {
-                        navigator.clipboard.writeText(extractEmail(myProposal.reviewMessage));
-                      }}
-                      title="Copy Email"
-                    >
-                      <Mail className="w-4 h-4" />
-                      <Copy className="w-4 h-4" />
-                      Copy Email
-                    </button>
-                  )}
+                  <div className="mb-2">
+                    <label className="block text-sm font-medium mb-1">Discord</label>
+                    <input type="text" className="w-full border rounded p-2" placeholder="Discord ID or link" value={editForm.discord} onChange={e => setEditForm(f => ({ ...f, discord: e.target.value }))} />
+                  </div>
+                  <div className="flex gap-2 mt-2">
+                    <Button type="submit">Save</Button>
+                    <Button type="button" variant="outline" onClick={() => setEditingProposal(false)}>Cancel</Button>
+                  </div>
+                </form>
+              )}
+              {/* Show Telegram icon for direct messaging if both have Telegram */}
+              {myProposal.telegram && hackathon.organizerTelegram && (
+                <div className="flex items-center gap-2 mt-4">
+                  <Button type="button" variant="outline" onClick={() => window.open(hackathon.organizerTelegram.startsWith('http') ? hackathon.organizerTelegram : `https://t.me/${hackathon.organizerTelegram.replace('@','')}`, '_blank')}>
+                    <Send className="w-5 h-5 mr-2" /> Message Organizer on Telegram
+                  </Button>
                 </div>
               )}
+              <div className="border rounded p-4 bg-gray-50 text-gray-800 mb-2 relative whitespace-pre-line" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                <div className="whitespace-pre-line text-base leading-relaxed">
+                  {autoLink(myProposal.reviewMessage)}
+                </div>
+                {/* Copy Email button if email present */}
+                {extractEmail(myProposal.reviewMessage) && (
+                  <button
+                    className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs"
+                    onClick={() => {
+                      navigator.clipboard.writeText(extractEmail(myProposal.reviewMessage));
+                    }}
+                    title="Copy Email"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <Copy className="w-4 h-4" />
+                    Copy Email
+                  </button>
+                )}
+              </div>
               <div className="text-xs text-gray-500 mt-4">If you have questions, contact the hackathon organizer.</div>
             </div>
           </div>

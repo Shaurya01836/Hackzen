@@ -3,6 +3,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { Link } from 'react-router-dom';
 
 import { useIsMobile } from "../../hooks/use-mobile"
 import { cn } from "../../lib/utils"
@@ -17,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from "./tooltip"
+import { useEffect, useState } from 'react';
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -640,6 +642,26 @@ const SidebarMenuSubButton = React.forwardRef(
 )
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
 
+function SponsoredPSLink() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    async function checkSponsoredPS() {
+      if (!user?.email) return setShow(false);
+      const res = await fetch(`/api/sponsor-proposals/user/${user.email}`);
+      const data = await res.json();
+      setShow(Array.isArray(data) && data.some(p => p.status === 'approved'));
+    }
+    checkSponsoredPS();
+  }, []);
+  if (!show) return null;
+  return (
+    <Link to="/dashboard/sponsored-ps" className="sidebar-link">
+      <span role="img" aria-label="sponsor">🤝</span> Sponsored PS
+    </Link>
+  );
+}
+
 export {
   Sidebar,
   SidebarContent,
@@ -664,4 +686,5 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  SponsoredPSLink,
 }
