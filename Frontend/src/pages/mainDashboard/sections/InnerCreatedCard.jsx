@@ -49,9 +49,10 @@ import {
   Users2,
   Zap,
   Send,
-  MessageCircle
+  MessageCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from '../../../hooks/use-toast';
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
@@ -78,6 +79,7 @@ export default function HackathonDetailsPage({
   const [loadingProposals, setLoadingProposals] = useState(false);
   const [reviewModal, setReviewModal] = useState({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' });
   const [messageModal, setMessageModal] = useState({ open: false, proposal: null, message: '' });
+  const { toast } = useToast();
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -241,6 +243,7 @@ export default function HackathonDetailsPage({
       });
       setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' });
       fetchSponsorProposals();
+      toast({ title: 'Message sent!', description: 'Your message to the sponsor was sent successfully.' });
     } catch (err) {
       setReviewModal(prev => ({ ...prev, loading: false }));
       alert('Failed to submit review.');
@@ -255,11 +258,12 @@ export default function HackathonDetailsPage({
     await fetch(`http://localhost:3000/api/sponsor-proposals/${messageModal.proposal._id}/message`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageToSponsor: messageModal.message }),
+      body: JSON.stringify({ messageToSponsor: messageModal.message })
     });
     setMessageModal({ open: false, proposal: null, message: '' });
     fetchSponsorProposals();
-  };
+    toast({ title: 'Message sent!', description: 'Your message to the sponsor was sent successfully.' });
+  }
 
   // Add back button if onBack function is provided
   return (
@@ -382,56 +386,54 @@ export default function HackathonDetailsPage({
                 </ACard>
               </div>
 
-              {/* Top Tracks and Locations - Only show if there are submissions */}
-              {submissions.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                  <Card className=" border-gray-200">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Top Tracks</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {Array.isArray(hackathon.topTracks) && hackathon.topTracks.map((track, index) => (
-                          <div
-                            key={track}
-                            className="flex items-center justify-between"
-                          >
-                            <span className="text-sm text-gray-700">{track}</span>
-                            <Badge variant="secondary" className="text-xs">
-                              #{index + 1}
-                            </Badge>
+              {/* Top Tracks and Locations */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <Card className=" border-gray-200">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Top Tracks</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {Array.isArray(hackathon.topTracks) && hackathon.topTracks.map((track, index) => (
+                        <div
+                          key={track}
+                          className="flex items-center justify-between"
+                        >
+                          <span className="text-sm text-gray-700">{track}</span>
+                          <Badge variant="secondary" className="text-xs">
+                            #{index + 1}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className=" border-gray-200 ">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Top Locations</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {Array.isArray(hackathon.topLocations) && hackathon.topLocations.map((location, index) => (
+                        <div
+                          key={location}
+                          className="flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-700">
+                              {location}
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className=" border-gray-200 ">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Top Locations</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <div className="space-y-3">
-                        {Array.isArray(hackathon.topLocations) && hackathon.topLocations.map((location, index) => (
-                          <div
-                            key={location}
-                            className="flex items-center justify-between"
-                          >
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4 text-gray-400" />
-                              <span className="text-sm text-gray-700">
-                                {location}
-                              </span>
-                            </div>
-                            <Badge variant="secondary" className="text-xs">
-                              #{index + 1}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
+                          <Badge variant="secondary" className="text-xs">
+                            #{index + 1}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </section>
           </div>
 
@@ -494,103 +496,76 @@ export default function HackathonDetailsPage({
                   </div>
 
                   {/* Projects Grid - Scrollable, Hide Scrollbar */}
-                  {filteredProjects.length === 0 ? (
-                    <Card className="flex-1 h-full w-full min-h-[340px] lg:min-h-[520px] flex items-center justify-center">
-                      <CardContent className="flex flex-col items-center justify-center w-full h-full max-w-md mx-auto p-8">
-                        <div className="flex items-center justify-center mb-4">
-                          <span className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-50">
-                            <svg className="w-9 h-9 text-orange-400" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                              <path d="M8.21 13.89l-.94 4.13A1 1 0 008.24 19a1 1 0 00.51-.14L12 16.94l3.25 1.92a1 1 0 001.49-1.06l-.94-4.13 3.18-2.77a1 1 0 00-.57-1.76l-4.19-.36-1.63-3.89a1 1 0 00-1.84 0l-1.63 3.89-4.19.36a1 1 0 00-.57 1.76l3.18 2.77z" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[74vh] overflow-y-auto scrollbar-hide p-3">
+                    {filteredProjects.map((project, index) => (
+                      <ACard
+                        key={project.id}
+                        className="w-full flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100"
+                      >
+                        {/* Banner / Logo */}
+                        <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
+                          <img
+                            src={
+                              hackathon.images?.logo?.url ||
+                              hackathon.images?.banner?.url ||
+                              "/assets/default-banner.png"
+                            }
+                            alt={project.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Status Badge */}
+                          <div className="absolute top-2 right-2">
+                            <Badge
+                              variant={project.score ? "default" : "outline"}
+                              className="font-semibold shadow"
+                            >
+                              {project.score ? "Judged" : "Submitted"}
+                            </Badge>
+                          </div>
+                          {/* Index Number */}
+                          <div className="absolute top-2 left-2">
+                            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center ">
+                              <span className="text-sm font-semibold text-indigo-700">
+                                #{index + 1}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-2xl font-bold text-gray-900 mb-2 text-center">No Submissions Yet</div>
-                        <div className="text-gray-600 text-base text-center mb-6">No teams have submitted projects for this hackathon yet. Once teams submit, their projects will appear here for your review and management.</div>
-                        <button
-                          className="inline-flex items-center gap-2 px-6 py-2 rounded-lg bg-[#20124d] hover:bg-[#2d186b] text-white font-semibold text-base shadow transition-colors"
-                          onClick={() => window.location.href = '/explore-hackathons'}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path d="M18 13v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h6" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M15 3h6v6" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M10 14L21 3" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          View All Hackathons
-                        </button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[74vh] overflow-y-auto scrollbar-hide p-3">
-                      {filteredProjects.map((project, index) => (
-                        <ACard
-                          key={project.id}
-                          className="w-full flex flex-col overflow-hidden rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg bg-white border border-indigo-100"
-                        >
-                          {/* Banner / Logo */}
-                          <div className="relative h-32 w-full bg-indigo-50 flex items-center justify-center">
-                            <img
-                              src={
-                                hackathon.images?.logo?.url ||
-                                hackathon.images?.banner?.url ||
-                                "/assets/default-banner.png"
-                              }
-                              alt={project.title}
-                              className="w-full h-full object-cover"
-                            />
-                            {/* Status Badge */}
-                            <div className="absolute top-2 right-2">
-                              <Badge
-                                variant={project.score ? "default" : "outline"}
-                                className="font-semibold shadow"
-                              >
-                                {project.score ? "Judged" : "Submitted"}
-                              </Badge>
-                            </div>
-                            {/* Index Number */}
-                            <div className="absolute top-2 left-2">
-                              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center ">
-                                <span className="text-sm font-semibold text-indigo-700">
-                                  #{index + 1}
-                                </span>
-                              </div>
-                            </div>
+
+                        {/* Content */}
+                        <div className="p-4 flex flex-col gap-3 flex-1">
+                          {/* Title and Track */}
+                          <div>
+                            <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2 mb-2">
+                              {project.title}
+                            </h3>
                           </div>
 
-                          {/* Content */}
-                          <div className="p-4 flex flex-col gap-3 flex-1">
-                            {/* Title and Track */}
-                            <div>
-                              <h3 className="text-lg font-semibold text-indigo-700 leading-tight line-clamp-2 mb-2">
-                                {project.title}
-                              </h3>
-                            </div>
-
-                            {/* Team Name Badge */}
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-xs">
-                                <Users className="h-3 w-3 mr-1" />
-                                {project.teamName}
-                              </Badge>
-                            </div>
-
-                            {/* Score and Submission Time */}
-                            <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
-                              <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <Clock className="h-4 w-4" />
-                                {formatDate(project.submittedOn)}
-                              </div>
-                              {project.score && (
-                                <div className="flex items-center gap-1 text-indigo-600 font-semibold">
-                                  <Medal className="h-4 w-4" />
-                                  {project.score}/100
-                                </div>
-                              )}
-                            </div>
+                          {/* Team Name Badge */}
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              <Users className="h-3 w-3 mr-1" />
+                              {project.teamName}
+                            </Badge>
                           </div>
-                        </ACard>
-                      ))}
-                    </div>
-                  )}
+
+                          {/* Score and Submission Time */}
+                          <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <Clock className="h-4 w-4" />
+                              {formatDate(project.submittedOn)}
+                            </div>
+                            {project.score && (
+                              <div className="flex items-center gap-1 text-indigo-600 font-semibold">
+                                <Medal className="h-4 w-4" />
+                                {project.score}/100
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </ACard>
+                    ))}
+                  </div>
                 </section>
               </div>
               {/* Quick Actions Panel */}
@@ -781,9 +756,8 @@ export default function HackathonDetailsPage({
                     <div className="mb-2"><b>Judging:</b> {p.provideJudges === 'yes' ? `Sponsor Provided (${p.judgeName}, ${p.judgeEmail}, ${p.judgeRole})` : 'Organizer Assigned'}</div>
                     <div className="mb-2"><b>Timeline:</b> {p.customStartDate ? new Date(p.customStartDate).toLocaleDateString() : 'N/A'} - {p.customDeadline ? new Date(p.customDeadline).toLocaleDateString() : 'N/A'}</div>
                     <div className="mb-2"><b>Notes:</b> {p.notes || 'None'}</div>
-                    <div className="mb-2 flex items-center gap-2"><b>Telegram:</b> {p.telegram ? <><a href={p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram}`} target="_blank" rel="noopener noreferrer">{p.telegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram.replace('@', '')}`)}><Send className="w-4 h-4" /></Button></> : <Button size="icon" variant="ghost" onClick={() => alert('Sponsor has not provided a Telegram username/link yet.')}><Send className="w-4 h-4 text-gray-400" /></Button>}</div>
+                    <div className="mb-2 flex items-center gap-2"><b>Telegram:</b> {p.telegram ? <><a href={p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram}`} target="_blank" rel="noopener noreferrer">{p.telegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.telegram.startsWith('http') ? p.telegram : `https://t.me/${p.telegram.replace('@','')}`, '_blank')}><Send className="w-4 h-4" /></Button></> : <Button size="icon" variant="ghost" onClick={() => alert('Sponsor has not provided a Telegram username/link yet.') }><Send className="w-4 h-4 text-gray-400" /></Button>}</div>
                     <div className="mb-2"><b>Discord:</b> {p.discord ? <span>{p.discord}</span> : 'None'}</div>
-                    <div className="mb-2 flex items-center gap-2"><b>Message:</b> {p.messageToSponsor ? <span>{p.messageToSponsor}</span> : 'None'}</div>
                     {p.status === 'pending' && (
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleReviewProposal(p._id, 'approved')}>Approve</Button>
@@ -808,7 +782,6 @@ export default function HackathonDetailsPage({
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-indigo-400">
             <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={() => { setReviewModal({ open: false, proposalId: null, action: '', loading: false, message: '', price: '' }); }}>&times;</button>
             <h2 className="text-xl font-bold mb-4 text-indigo-700">{reviewModal.action === 'approved' ? 'Accept Proposal & Provide Contact Instructions' : 'Reject Proposal'}</h2>
-
             {reviewModal.action === 'approved' && (
               <div className="mb-4">
                 <label className="block text-sm font-semibold mb-2">Set Price/Prize Amount (required)</label>
@@ -846,8 +819,6 @@ export default function HackathonDetailsPage({
           </div>
         </div>
       )}
-
-
       {messageModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-blue-400">

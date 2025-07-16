@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '../../components/CommonUI/button';
-import { MessageCircle, Send } from 'lucide-react';
+import { MessageCircle, Send, Mail } from 'lucide-react';
 
 const proposalFields = [
   { key: 'name', label: 'Your Name', required: true },
@@ -34,6 +34,9 @@ export default function SponsoredPS() {
   const [saveStatus, setSaveStatus] = useState(null);
   const [messageModal, setMessageModal] = useState({ open: false, proposal: null, message: '' });
   const [messageStatus, setMessageStatus] = useState(null);
+  const [showOrgMsgModal, setShowOrgMsgModal] = useState(false);
+  const [orgMsgProposalIdx, setOrgMsgProposalIdx] = useState(null);
+  const [seenMessages, setSeenMessages] = useState({}); // { proposalId: true }
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
@@ -106,68 +109,95 @@ export default function SponsoredPS() {
     }
   }
 
+  // Show org message modal
+  function handleShowOrgMsg(idx) {
+    setShowOrgMsgModal(true);
+    setOrgMsgProposalIdx(idx);
+    // Mark as seen
+    setSeenMessages(prev => ({ ...prev, [proposals[idx]._id]: true }));
+  }
+  function closeOrgMsgModal() {
+    setShowOrgMsgModal(false);
+    setOrgMsgProposalIdx(null);
+  }
+
   if (loading) return <div className="p-8">Loading...</div>;
   if (proposals.length === 0) return <div className="p-8">No sponsored problem statements found.</div>;
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2"><span role="img" aria-label="sponsor">🤝</span> Sponsored Problem Statements</h1>
-      {proposals.map((p, idx) => (
-        <div key={p._id} className="border rounded-lg p-6 mb-6 shadow-sm bg-white">
-          <div className="flex justify-between items-center mb-2">
-            <div className="font-semibold text-lg">{p.title}</div>
-            <span className="text-green-600">{p.status}</span>
-          </div>
-          {editIdx === idx ? (
-            <form className="space-y-3 mb-4" onSubmit={e => { e.preventDefault(); saveEdit(idx); }}>
-              {proposalFields.map(field => (
-                <div key={field.key}>
-                  <label className="block text-sm font-medium mb-1">{field.label}{field.required && ' *'}</label>
-                  {field.type === 'radio' ? (
-                    <div className="flex gap-4">
-                      <label><input type="radio" name="provideJudges" value="yes" checked={editForm.provideJudges === 'yes'} onChange={() => setEditForm(f => ({ ...f, provideJudges: 'yes' }))} /> Yes</label>
-                      <label><input type="radio" name="provideJudges" value="no" checked={editForm.provideJudges === 'no'} onChange={() => setEditForm(f => ({ ...f, provideJudges: 'no' }))} /> No</label>
-                    </div>
-                  ) : field.textarea ? (
-                    <textarea className="w-full border rounded p-2" rows={field.key === 'description' ? 3 : 2} required={field.required} value={editForm[field.key] || ''} onChange={e => setEditForm(f => ({ ...f, [field.key]: e.target.value }))} />
-                  ) : (
-                    <input
-                      type={field.type || 'text'}
-                      className="w-full border rounded p-2"
-                      required={field.required}
-                      disabled={field.disabled}
-                      value={editForm[field.key] || ''}
-                      onChange={e => setEditForm(f => ({ ...f, [field.key]: e.target.value }))}
-                    />
-                  )}
-                </div>
-              ))}
-              <div className="flex gap-2 mt-2">
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
-                <Button type="button" variant="outline" onClick={cancelEdit}>Cancel</Button>
-                {saveStatus === 'success' && <span className="text-green-600 ml-2">Saved!</span>}
-                {saveStatus === 'error' && <span className="text-red-600 ml-2">Failed to save.</span>}
-              </div>
-            </form>
-          ) : (
-            <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {proposalFields.map(field => (
-                <div key={field.key}>
-                  <b>{field.label}:</b> {p[field.key] || <span className="text-gray-400">-</span>}
-                </div>
-              ))}
+      {proposals.map((p, idx) => {
+        const hasNewMsg = !!p.messageToSponsor && !seenMessages[p._id];
+        return (
+          <div key={p._id} className="border rounded-lg p-6 mb-6 shadow-sm bg-white">
+            <div className="flex justify-between items-center mb-2">
+              <div className="font-semibold text-lg">{p.title}</div>
+              <span className="text-green-600">{p.status}</span>
             </div>
-          )}
-          {editIdx === idx ? null : (
-            <Button size="sm" variant="outline" className="mb-2" onClick={() => startEdit(idx)}>Edit Proposal</Button>
-          )}
-          <div className="border-t pt-4 mt-4">
-            <div className="mb-2 flex items-center gap-2"><b>Organizer Telegram:</b> {p.organizerTelegram ? <><a href={p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram}`} target="_blank" rel="noopener noreferrer">{p.organizerTelegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram.replace('@','')}`, '_blank')}><Send className="w-4 h-4" /></Button></> : <span className="text-gray-400">Not provided</span>}</div>
-            <div className="mb-2"><b>Message from Organizer:</b> {p.messageToSponsor || <span className="text-gray-400">No message yet</span>}</div>
-            <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Organizer</Button>
+            {editIdx === idx ? (
+              <form className="space-y-3 mb-4" onSubmit={e => { e.preventDefault(); saveEdit(idx); }}>
+                {proposalFields.map(field => (
+                  <div key={field.key}>
+                    <label className="block text-sm font-medium mb-1">{field.label}{field.required && ' *'}</label>
+                    {field.type === 'radio' ? (
+                      <div className="flex gap-4">
+                        <label><input type="radio" name="provideJudges" value="yes" checked={editForm.provideJudges === 'yes'} onChange={() => setEditForm(f => ({ ...f, provideJudges: 'yes' }))} /> Yes</label>
+                        <label><input type="radio" name="provideJudges" value="no" checked={editForm.provideJudges === 'no'} onChange={() => setEditForm(f => ({ ...f, provideJudges: 'no' }))} /> No</label>
+                      </div>
+                    ) : field.textarea ? (
+                      <textarea className="w-full border rounded p-2" rows={field.key === 'description' ? 3 : 2} required={field.required} value={editForm[field.key] || ''} onChange={e => setEditForm(f => ({ ...f, [field.key]: e.target.value }))} />
+                    ) : (
+                      <input
+                        type={field.type || 'text'}
+                        className="w-full border rounded p-2"
+                        required={field.required}
+                        disabled={field.disabled}
+                        value={editForm[field.key] || ''}
+                        onChange={e => setEditForm(f => ({ ...f, [field.key]: e.target.value }))}
+                      />
+                    )}
+                  </div>
+                ))}
+                <div className="flex gap-2 mt-2">
+                  <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+                  <Button type="button" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                  {saveStatus === 'success' && <span className="text-green-600 ml-2">Saved!</span>}
+                  {saveStatus === 'error' && <span className="text-red-600 ml-2">Failed to save.</span>}
+                </div>
+              </form>
+            ) : (
+              <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {proposalFields.map(field => (
+                  <div key={field.key}>
+                    <b>{field.label}:</b> {p[field.key] || <span className="text-gray-400">-</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {editIdx === idx ? null : (
+              <Button size="sm" variant="outline" className="mb-2" onClick={() => startEdit(idx)}>Edit Proposal</Button>
+            )}
+            <div className="border-t pt-4 mt-4">
+              <div className="mb-2 flex items-center gap-2">
+                <b>Organizer Telegram:</b> {p.organizerTelegram ? <><a href={p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram}`} target="_blank" rel="noopener noreferrer">{p.organizerTelegram}</a> <Button size="icon" variant="ghost" onClick={() => window.open(p.organizerTelegram.startsWith('http') ? p.organizerTelegram : `https://t.me/${p.organizerTelegram.replace('@','')}`, '_blank')}><Send className="w-4 h-4" /></Button></> : <span className="text-gray-400">Not provided</span>}
+              </div>
+              <div className="mb-2 flex items-center gap-2">
+                <b>Message from Organizer:</b>
+                {p.messageToSponsor ? (
+                  <>
+                    <Button size="sm" variant={hasNewMsg ? 'default' : 'outline'} className={hasNewMsg ? 'bg-yellow-400 text-black animate-pulse' : ''} onClick={() => handleShowOrgMsg(idx)}>
+                      {hasNewMsg && <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-2" />}View Message
+                    </Button>
+                    {hasNewMsg && <span className="text-xs text-yellow-600 font-semibold ml-2">New</span>}
+                  </>
+                ) : <span className="text-gray-400">No message yet</span>}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => openMessageModal(p)}><MessageCircle className="w-4 h-4 mr-1" />Message Organizer</Button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {messageModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-4 border-blue-400">
@@ -185,6 +215,17 @@ export default function SponsoredPS() {
             </Button>
             {messageStatus === 'success' && <div className="text-green-600 mt-2">Message sent!</div>}
             {messageStatus === 'error' && <div className="text-red-600 mt-2">Failed to send message.</div>}
+          </div>
+        </div>
+      )}
+      {showOrgMsgModal && orgMsgProposalIdx !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full relative border-4 border-yellow-400" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold" onClick={closeOrgMsgModal}>&times;</button>
+            <h2 className="text-xl font-bold mb-4 text-yellow-700 flex items-center gap-2"><Mail className="w-5 h-5" />Message from Organizer</h2>
+            <div className="whitespace-pre-line text-base leading-relaxed" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
+              {proposals[orgMsgProposalIdx]?.messageToSponsor}
+            </div>
           </div>
         </div>
       )}
