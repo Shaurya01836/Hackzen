@@ -66,7 +66,7 @@ export default function SponsoredPSList({ proposals, onSelectProposal }) {
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 md:min-h-screen">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-5xl mx-auto min-w-full">
         {/* Header Section */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">Sponsored Problem Statements</h1>
@@ -111,7 +111,7 @@ export default function SponsoredPSList({ proposals, onSelectProposal }) {
         </div>
 
         {/* Table Section */}
-        <Card className="bg-white border border-gray-200 shadow-none rounded-xl bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+        <Card className="bg-white border border-gray-200 shadow-none rounded-xl">
           <CardHeader className="px-4 py-3 border-b border-gray-100">
             <CardTitle className="text-lg font-semibold text-gray-800 pt-4">Your Sponsored Statements</CardTitle>
           </CardHeader>
