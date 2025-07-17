@@ -43,7 +43,6 @@ import { Dashboard } from "./sections/dashboard";
 import { UsersManagement } from "./sections/users-management";
 import { HackathonsPage } from "./sections/hackathons-page";
 import { AnnouncementsPanel } from "./sections/announcements-panel";
-import { SubmissionsPage } from "./sections/submissions-page";
 import { OrganizerRequestsPage } from "./sections/organizer-requests-V1";
 import { HackathonRequest } from "./sections/HackathonRequest";
 import { AnalyticsPage } from "./sections/analytics-page";
@@ -105,12 +104,6 @@ export default function AdminPanel() {
       icon: Trophy,
       key: "hackathons",
       onClick: () => setActiveSection("hackathons"),
-    },
-    {
-      title: "Submissions",
-      icon: FileText,
-      key: "submissions",
-      onClick: () => setActiveSection("submissions"),
     },
     {
       title: "Announcements",
@@ -198,8 +191,6 @@ export default function AdminPanel() {
         return <UsersManagement />;
       case "hackathons":
         return <HackathonsPage />;
-      case "submissions":
-        return <SubmissionsPage />;
       case "mentors":
         return <MentorChatPage />;
       case "announcements":

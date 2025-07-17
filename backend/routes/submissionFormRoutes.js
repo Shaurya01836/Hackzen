@@ -127,6 +127,12 @@ router.get("/debug/registration", async (req, res) => {
 // Admin: Get total submissions stats for dashboard
 router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionFormController").getAdminSubmissionStats);
 
+// Admin: Get all submissions for dashboard
+router.get("/admin/all", protect, isAdmin, require("../controllers/submissionFormController").getAllSubmissionsAdmin);
+
+// Admin: Get all submissions for a specific hackathon
+router.get("/admin/hackathon/:hackathonId", protect, isAdmin, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
+
 // Add endpoints for deleting and editing a submission by ID
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);
 router.put("/submission/:id", protect, require("../controllers/submissionFormController").editSubmissionById);

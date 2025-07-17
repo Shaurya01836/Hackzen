@@ -26,6 +26,10 @@ import {
   PieChart,
   Pie,
   Cell,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
 } from "recharts";
 
 const initialDashboardStats = [
@@ -95,6 +99,7 @@ export function Dashboard() {
     { name: "Mentors", value: 0, color: "#10B981" },
     { name: "Judges", value: 0, color: "#F59E0B" },
   ]);
+  const [chartType, setChartType] = useState("area"); // 'area', 'line', 'bar'
 
   useEffect(() => {
     fetchStats();
@@ -167,7 +172,18 @@ export function Dashboard() {
         }
       });
       if (lineRes.ok) {
-        const lineData = await lineRes.json();
+        let lineData = await lineRes.json();
+        // Ensure last 12 months are always present
+        const now = new Date();
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          months.push(monthNames[d.getMonth()]);
+        }
+        const dataMap = {};
+        lineData.forEach(d => { dataMap[d.month] = d.hackathons; });
+        lineData = months.map(m => ({ month: m, hackathons: dataMap[m] || 0 }));
         setChartData(lineData);
       }
     } catch (e) {
@@ -247,37 +263,92 @@ export function Dashboard() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Line Chart */}
+        {/* Line/Area/Bar Chart with selector */}
         <Card className="">
           <CardHeader>
             <CardTitle className=" flex items-center">
               <TrendingUp className="w-5 h-5 mr-2 text-indigo-400" />
               Hackathons Created Over Time
             </CardTitle>
+            <div className="mt-2">
+              <label className="mr-2 font-medium text-sm">Chart Type:</label>
+              <select
+                value={chartType}
+                onChange={e => setChartType(e.target.value)}
+                className="border rounded px-2 py-1 text-sm bg-white text-black"
+              >
+                <option value="area">Area</option>
+                <option value="line">Line</option>
+                <option value="bar">Bar</option>
+              </select>
+            </div>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
-                <YAxis stroke="#9CA3AF" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.8)",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
-                    borderRadius: "8px",
-                    color: "white",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="hackathons"
-                  stroke="#8B5CF6"
-                  strokeWidth={3}
-                  dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 8, stroke: "#8B5CF6", strokeWidth: 2 }}
-                />
-              </LineChart>
+              {chartType === "area" && (
+                <AreaChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="hackathons"
+                    stroke="#8B5CF6"
+                    fill="#8B5CF6"
+                    fillOpacity={0.2}
+                    strokeWidth={3}
+                    dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: "#8B5CF6", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              )}
+              {chartType === "line" && (
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hackathons"
+                    stroke="#8B5CF6"
+                    strokeWidth={3}
+                    dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 6 }}
+                    activeDot={{ r: 8, stroke: "#8B5CF6", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              )}
+              {chartType === "bar" && (
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="month" stroke="#9CA3AF" />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      border: "1px solid rgba(168, 85, 247, 0.3)",
+                      borderRadius: "8px",
+                      color: "white",
+                    }}
+                  />
+                  <Bar dataKey="hackathons" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              )}
             </ResponsiveContainer>
           </CardContent>
         </Card>

@@ -25,8 +25,12 @@ import {
   Trophy,
   Eye,
   FolderCode,
+  Download,
+  User,
+  Shuffle,
 } from "lucide-react";
 import { CreateHackathon } from "./CreateHackathon";
+import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 
 export function HackathonsPage() {
   const [hackathons, setHackathons] = useState([]);
@@ -34,6 +38,14 @@ export function HackathonsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedHackathon, setSelectedHackathon] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [fullProject, setFullProject] = useState(null);
+  const [projectLoading, setProjectLoading] = useState(false);
+  const [projectError, setProjectError] = useState(null);
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -79,6 +91,42 @@ export function HackathonsPage() {
   const handleCreateHackathon = (hackathonData) => {
     console.log("Creating hackathon:", hackathonData);
     setShowCreateForm(false);
+  };
+
+  const handleViewSubmissions = async (hackathon) => {
+    setSelectedHackathon(hackathon);
+    setSubmissions([]);
+    setSubmissionsLoading(true);
+    setSubmissionsError(null);
+    try {
+      const res = await axios.get(`/api/submission-form/admin/hackathon/${hackathon._id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setSubmissions(res.data.submissions || []);
+    } catch (err) {
+      setSubmissionsError("Failed to fetch submissions");
+    } finally {
+      setSubmissionsLoading(false);
+    }
+  };
+
+  const handleViewDetails = async (submission) => {
+    setSelectedSubmission(submission);
+    setFullProject(null);
+    setProjectLoading(true);
+    setProjectError(null);
+    try {
+      const res = await fetch(`/api/projects/${submission.projectId?._id || submission.projectId}`);
+      if (!res.ok) throw new Error("Failed to fetch project details");
+      const data = await res.json();
+      setFullProject(data);
+    } catch (err) {
+      setProjectError(err.message || "Error fetching project details");
+    } finally {
+      setProjectLoading(false);
+    }
   };
 
   if (loading) return <p className="text-gray-700">Loading hackathons...</p>;
@@ -155,6 +203,14 @@ export function HackathonsPage() {
                     <FolderCode className="w-4 h-4 mr-2 text-yellow-500" />
                     {hackathon.submissions?.length || 0} submissions received
                   </div>
+                  <Button
+                    variant="outline"
+                    className="mt-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    onClick={() => handleViewSubmissions(hackathon)}
+                  >
+                    <Eye className="w-4 h-4 mr-1" />
+                    View Submissions
+                  </Button>
                 </RCardContent>
               </RCard>
             ))}
@@ -165,6 +221,94 @@ export function HackathonsPage() {
           onBack={() => setShowCreateForm(false)}
           onSave={handleCreateHackathon}
         />
+      )}
+      {/* Submissions Modal */}
+      {selectedHackathon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full p-6 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-black"
+              onClick={() => { setSelectedHackathon(null); setSelectedSubmission(null); }}
+            >
+              ×
+            </button>
+            <h2 className="text-2xl font-bold mb-4 text-purple-700">
+              Submissions for {selectedHackathon.title}
+            </h2>
+            {submissionsLoading ? (
+              <div className="p-10 text-center text-lg">Loading submissions...</div>
+            ) : submissionsError ? (
+              <div className="p-10 text-center text-red-500">{submissionsError}</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-purple-200">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Project</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Team</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Submitted By</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Submitted At</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Status</th>
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {submissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-6 text-gray-500">No submissions found.</td>
+                      </tr>
+                    ) : (
+                      submissions.map((submission) => (
+                        <tr key={submission._id} className="hover:bg-purple-50">
+                          <td className="px-4 py-2">
+                            <div className="font-medium text-gray-800">{submission.projectId?.title || "Untitled Project"}</div>
+                            <div className="text-xs text-gray-500">{submission.projectId?.description?.slice(0, 40) || ""}</div>
+                          </td>
+                          <td className="px-4 py-2">{submission.teamName || "-"}</td>
+                          <td className="px-4 py-2">{submission.submittedByName || "-"}</td>
+                          <td className="px-4 py-2">{submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : "-"}</td>
+                          <td className="px-4 py-2">
+                            <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-purple-100 text-purple-700">
+                              {submission.status || "-"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-gray-400 hover:text-black"
+                              onClick={() => handleViewDetails(submission)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {/* Submission Details Modal */}
+            {selectedSubmission && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full p-0 relative overflow-y-auto max-h-[95vh]">
+                  {projectLoading ? (
+                    <div className="p-10 text-center text-lg">Loading project details...</div>
+                  ) : projectError ? (
+                    <div className="p-10 text-center text-red-500">{projectError}</div>
+                  ) : fullProject ? (
+                    <ProjectDetail
+                      project={fullProject}
+                      onBack={() => setSelectedSubmission(null)}
+                      backButtonLabel="Back to Submissions"
+                    />
+                  ) : null}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

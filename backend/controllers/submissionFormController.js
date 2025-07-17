@@ -246,3 +246,68 @@ exports.getAdminSubmissionStats = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Admin: Get all submissions with full info for dashboard
+exports.getAllSubmissionsAdmin = async (req, res) => {
+  try {
+    // Find all submissions, populate project, hackathon, and submittedBy
+    const submissions = await Submission.find()
+      .populate({
+        path: 'projectId',
+        select: 'title description technologies links attachments',
+      })
+      .populate({
+        path: 'hackathonId',
+        select: 'title',
+      })
+      .populate({
+        path: 'submittedBy',
+        select: 'name email',
+      })
+      .sort({ submittedAt: -1 });
+
+    // Add submittedByName and teamName if available
+    const formatted = submissions.map(sub => ({
+      ...sub.toObject(),
+      submittedByName: sub.submittedBy?.name || sub.submittedBy?.email || '-',
+      teamName: sub.teamName || '-',
+    }));
+
+    res.json({ submissions: formatted });
+  } catch (err) {
+    console.error('Error fetching all admin submissions:', err);
+    res.status(500).json({ error: 'Failed to fetch all submissions for admin' });
+  }
+};
+
+// Admin: Get all submissions for a specific hackathon
+exports.getSubmissionsByHackathonAdmin = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const submissions = await Submission.find({ hackathonId })
+      .populate({
+        path: 'projectId',
+        select: 'title description technologies links attachments',
+      })
+      .populate({
+        path: 'hackathonId',
+        select: 'title',
+      })
+      .populate({
+        path: 'submittedBy',
+        select: 'name email',
+      })
+      .sort({ submittedAt: -1 });
+
+    const formatted = submissions.map(sub => ({
+      ...sub.toObject(),
+      submittedByName: sub.submittedBy?.name || sub.submittedBy?.email || '-',
+      teamName: sub.teamName || '-',
+    }));
+
+    res.json({ submissions: formatted });
+  } catch (err) {
+    console.error('Error fetching hackathon submissions (admin):', err);
+    res.status(500).json({ error: 'Failed to fetch hackathon submissions for admin' });
+  }
+};

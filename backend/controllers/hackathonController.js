@@ -825,13 +825,20 @@ exports.getHackathonStats = async (req, res) => {
 // ✅ Get monthly hackathon creation data for charts
 exports.getMonthlyHackathonStats = async (req, res) => {
   try {
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    // Get the last 12 months
+    const now = new Date();
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+    }
 
+    // Get all hackathons created in the last 12 months
+    const startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
     const monthlyStats = await Hackathon.aggregate([
       {
         $match: {
-          createdAt: { $gte: sixMonthsAgo }
+          createdAt: { $gte: startDate }
         }
       },
       {
@@ -848,10 +855,16 @@ exports.getMonthlyHackathonStats = async (req, res) => {
       }
     ]);
 
+    // Map stats to a lookup for easy access
+    const statsMap = {};
+    monthlyStats.forEach(stat => {
+      statsMap[`${stat._id.year}-${stat._id.month}`] = stat.count;
+    });
+
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const chartData = monthlyStats.map(stat => ({
-      month: monthNames[stat._id.month - 1],
-      hackathons: stat.count
+    const chartData = months.map(({ year, month }) => ({
+      month: monthNames[month - 1],
+      hackathons: statsMap[`${year}-${month}`] || 0
     }));
 
     res.json(chartData);
