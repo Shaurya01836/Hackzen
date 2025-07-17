@@ -69,7 +69,8 @@ exports.updateProposalStatus = async (req, res) => {
 exports.getProposalsForUser = async (req, res) => {
   try {
     // Only return approved proposals for this user
-    const proposals = await SponsorProposal.find({ email: req.params.userId, status: 'approved' });
+   const proposals = await SponsorProposal.find({ email: req.params.userId, status: 'approved' })
+      .populate('hackathon', 'title problemStatements');
     res.json(proposals);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch proposals', error: err.message });
