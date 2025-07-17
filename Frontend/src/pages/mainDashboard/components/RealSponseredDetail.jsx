@@ -352,7 +352,7 @@ export default function RealSponseredDetail({ proposal, onBack, onProposalUpdate
           </div>
 
           {/* Right Section - Discussion sticky/static, plain HTML */}
-          <div className="hidden lg:block sticky top-6 h-[calc(90vh-60px)]">
+          <div className="hidden lg:block sticky top-6 h-[calc(80vh-100px)]">
             {/* Discussion */}
             <div className="bg-white rounded-lg border border-gray-200 mb-6 flex flex-col h-full min-h-[600px]">
               <div className="px-6 pt-6 pb-2 flex items-center gap-2">
