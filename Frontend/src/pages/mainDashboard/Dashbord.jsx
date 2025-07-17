@@ -58,6 +58,7 @@ import MyHackathon from "./sections/Myhackthon";
 import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
 import SponsoredPS from "./SponsoredPS";
+import JudgeManagement from "./sections/JudgeManagement";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -179,6 +180,12 @@ export default function HackZenDashboard() {
       onClick: () => changeView("organizer-tools"),
     },
     {
+      title: "Judge Management",
+      icon: Gavel,
+      key: "judge-management",
+      onClick: () => changeView("judge-management"),
+    },
+    {
       title: "Hackathons",
       icon: CalendarX,
       key: "created-hackathons", // ✅ keep this
@@ -261,6 +268,8 @@ export default function HackZenDashboard() {
         return <Announcements onBack={() => changeView("profile")} />;
       case "organizer-tools":
         return <OrganizerTools onBack={() => changeView("profile")} />;
+      case "judge-management":
+        return <JudgeManagement hackathonId={params.hackathonId} onBack={() => changeView("profile")} />;
       case "create-hackathon":
         return <CreateHackathon onBack={() => changeView("profile")} />;
       case "blogs":

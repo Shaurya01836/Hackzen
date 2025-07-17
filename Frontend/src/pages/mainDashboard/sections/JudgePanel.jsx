@@ -14,6 +14,7 @@ import {
   ACardContent,
 } from "../../../components/DashboardUI/AnimatedCard";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
+import { useAuth } from "../../../context/AuthContext";
 
 export default function JudgePanel() {
   const [judgeData, setJudgeData] = useState({
@@ -25,7 +26,9 @@ export default function JudgePanel() {
   const [loading, setLoading] = useState(true);
   const [hackathons, setHackathons] = useState([]);
   const [loadingHackathons, setLoadingHackathons] = useState(true);
+  const [pendingInvites, setPendingInvites] = useState([]);
   const navigate = useNavigate();
+  const { token } = useAuth();
 
   useEffect(() => {
     const fetchHackathons = async () => {
@@ -73,6 +76,16 @@ export default function JudgePanel() {
     fetchJudgeData();
   }, []);
 
+  // Fetch pending judge invites
+  useEffect(() => {
+    if (!token) return;
+    fetch("http://localhost:3000/api/role-invites/my", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setPendingInvites(data || []));
+  }, [token]);
+
   if (loading) {
     return (
       <div className="p-6">
@@ -103,6 +116,26 @@ export default function JudgePanel() {
           </p>
         </div>
       </div>
+
+      {/* Pending Judge Invites */}
+      {pendingInvites.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-2">Pending Judge Invites</h2>
+          {pendingInvites.map((invite) => (
+            <div key={invite._id} className="p-4 border rounded mb-2 flex justify-between items-center bg-yellow-50">
+              <div>
+                <b>{invite.hackathon?.title}</b> — {invite.role}
+              </div>
+              <Button
+                onClick={() => navigate(`/invite/role?token=${invite.token}`)}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
+                View Invite
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
@@ -206,7 +239,7 @@ export default function JudgePanel() {
 
       {/* Hackathons You're Judging */}
       <h2 className="text-xl font-semibold mt-12 mb-4">
-        Hackathons You’re Judging
+        Hackathons You're Judging
       </h2>
       {loadingHackathons ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -231,7 +264,7 @@ export default function JudgePanel() {
         </div>
       ) : (
         <p className="text-gray-500">
-          You’re not assigned to judge any hackathons yet.
+          You're not assigned to judge any hackathons yet.
         </p>
       )}
     </div>

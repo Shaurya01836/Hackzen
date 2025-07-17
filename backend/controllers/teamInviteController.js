@@ -6,6 +6,7 @@ const Hackathon = require('../model/HackathonModel');
 const HackathonRegistration = require('../model/HackathonRegistrationModel');
 const nodemailer = require('nodemailer');
 const RoleInvite = require('../model/RoleInviteModel');
+const JudgeAssignment = require('../model/JudgeAssignmentModel');
 
 // POST /api/team-invites
 const createInvite = async (req, res) => {
@@ -301,7 +302,7 @@ const acceptInviteById = async (req, res) => {
 
     // If not already accepted/declined
     if (invite.status !== 'pending') {
-      return res.status(400).json({ error: 'Invite already responded to' });
+      return res.status(400).json({ error: 'Invite already responded' });
     }
 
     // Set invitedUser to whoever accepts
@@ -424,6 +425,15 @@ const acceptRoleInvite = async (req, res) => {
     invite.respondedAt = new Date();
     invite.invitedUser = user._id;
     await invite.save();
+
+    // Update JudgeAssignment status to 'active' if this is a judge invite
+    if (invite.role === 'judge') {
+      await JudgeAssignment.findOneAndUpdate(
+        { hackathon: invite.hackathon, 'judge.email': invite.email },
+        { status: 'active' }
+      );
+    }
+
     // Set user role if not already
     if (user.role !== invite.role) {
       user.role = invite.role;

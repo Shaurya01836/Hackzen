@@ -91,7 +91,7 @@ const quickActions = [
   },
   {
     title: "Manage Judges",
-    description: "Add, remove, or assign judges to events",
+    description: "Advanced judge management with problem statement assignments",
     icon: Users,
     action: "manage-judges",
     category: "Event Management",

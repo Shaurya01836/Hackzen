@@ -1,148 +1,53 @@
-import { useEffect, useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Button } from "../components/CommonUI/button";
 
 export default function InviteRole() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { user, token, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [actionMsg, setActionMsg] = useState(null);
+  const navigate = useNavigate();
 
-  // Parse token from URL
-  const urlParams = new URLSearchParams(location.search);
-  const inviteToken = urlParams.get('token');
-
-  // User info is now handled by AuthContext
-  console.log('AuthContext user:', user);
-  console.log('AuthContext token:', !!token);
-
-  // Fetch invite details
   useEffect(() => {
-    if (!inviteToken) {
-      setError('No invite token provided.');
-      setLoading(false);
-      return;
+    if (token) {
+      fetch(`http://localhost:3000/api/role-invites/${token}`)
+        .then(res => res.json())
+        .then(data => setInvite(data))
+        .finally(() => setLoading(false));
     }
-    async function fetchInvite() {
-      setLoading(true);
-      try {
-        console.log('Fetching invite with token:', inviteToken);
-        const res = await fetch(`/api/role-invites/${inviteToken}`);
-        console.log('Invite fetch response:', res.status);
-        if (res.ok) {
-          const data = await res.json();
-          console.log('Invite data:', data);
-          setInvite(data);
-        } else {
-          const errorData = await res.json();
-          console.log('Invite fetch failed:', errorData);
-          setError('Invalid or expired invite.');
-        }
-      } catch (error) {
-        console.error('Invite fetch error:', error);
-        setError('Failed to fetch invite.');
-      }
-      setLoading(false);
-    }
-    fetchInvite();
-  }, [inviteToken]);
+  }, [token]);
 
-  // If not logged in, prompt login/register
-  if (!token || !user) {
-    return (
-      <div style={{ maxWidth: 400, margin: '40px auto', textAlign: 'center' }}>
-        <h2>Login Required</h2>
-        <p>You must be logged in to respond to this invitation.</p>
-        <button
-          onClick={() => {
-            // Save current location for redirect after login
-            localStorage.setItem('invite_redirect', location.pathname + location.search);
-            navigate(`/login?redirectTo=${encodeURIComponent(location.pathname + location.search)}`);
-          }}
-          style={{ padding: '10px 24px', background: '#6366f1', color: 'white', border: 'none', borderRadius: 6 }}
-        >
-          Login / Register
-        </button>
-      </div>
-    );
-  }
-
-  if (loading) return <div style={{ textAlign: 'center', marginTop: 40 }}>Loading...</div>;
-  if (error) return <div style={{ color: 'red', textAlign: 'center', marginTop: 40 }}>{error}</div>;
-  if (!invite) return null;
-
-  const handleAction = async (action) => {
-    setActionMsg('Processing...');
-    try {
-      console.log('Making action request:', action);
-      console.log('Using token:', !!token);
-      
-      const res = await fetch(`/api/role-invites/${inviteToken}/${action}`, {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('Action response status:', res.status);
-      const data = await res.json();
-      console.log('Action response data:', data);
-      
-      if (res.ok) {
-        setActionMsg(data.message);
-        // Update invite status
-        setInvite((prev) => ({ ...prev, status: action === 'accept' ? 'accepted' : 'declined' }));
-        
-        // If accepted, refresh user info to get updated role
-        if (action === 'accept') {
-          await refreshUser();
-        }
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          navigate('/dashboard/profile');
-        }, 2000);
-      } else {
-        setActionMsg(data.error || 'Action failed.');
-      }
-    } catch (error) {
-      console.error('Action error:', error);
-      setActionMsg('Action failed.');
+  const respond = async (action) => {
+    const endpoint = action === "accept"
+      ? `/api/role-invites/${token}/accept`
+      : `/api/role-invites/${token}/decline`;
+    const res = await fetch(`http://localhost:3000${endpoint}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+    if (res.ok) {
+      alert(`Invite ${action}ed!`);
+      navigate("/dashboard/judge");
+    } else {
+      alert("Failed to respond to invite.");
     }
   };
 
+  if (loading) return <div>Loading...</div>;
+  if (!invite || invite.error) return <div>Invite not found or expired.</div>;
+
   return (
-    <div style={{ maxWidth: 500, margin: '40px auto', padding: 24, border: '1px solid #eee', borderRadius: 8 }}>
-      <h2>Invitation to become a {invite.role}</h2>
-      <p><b>Hackathon:</b> {invite.hackathon?.title || 'Loading...'}</p>
-      <p><b>Your Email:</b> {invite.email}</p>
-      <p><b>Status:</b> {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}</p>
-      {actionMsg && <div style={{ margin: '16px 0', color: '#6366f1' }}>{actionMsg}</div>}
-      {invite.status === 'pending' && !actionMsg && (
-        <div style={{ marginTop: 24 }}>
-          <button
-            onClick={() => handleAction('accept')}
-            style={{ marginRight: 16, padding: '10px 24px', background: '#10B981', color: 'white', border: 'none', borderRadius: 6 }}
-          >
-            Accept
-          </button>
-          <button
-            onClick={() => handleAction('decline')}
-            style={{ padding: '10px 24px', background: '#EF4444', color: 'white', border: 'none', borderRadius: 6 }}
-          >
-            Decline
-          </button>
-        </div>
-      )}
-      {invite.status !== 'pending' && (
-        <div style={{ marginTop: 24, color: '#888' }}>
-          You have {invite.status} this invitation.
-        </div>
-      )}
+    <div className="max-w-xl mx-auto p-8 bg-white rounded shadow">
+      <h1 className="text-2xl font-bold mb-4">Judge Invitation</h1>
+      <p>
+        <b>Hackathon:</b> {invite.hackathon?.title}<br />
+        <b>Role:</b> {invite.role}
+      </p>
+      <div className="mt-6 flex gap-4">
+        <Button onClick={() => respond("accept")}>Accept</Button>
+        <Button variant="outline" onClick={() => respond("decline")}>Decline</Button>
+      </div>
     </div>
   );
-} 
+}
