@@ -8,6 +8,7 @@ const {
   getSubmissionById,
   submitPPTForRound,
   deletePPTSubmission,
+  getSubmissionByIdAdmin,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -132,6 +133,9 @@ router.get("/admin/all", protect, isAdmin, require("../controllers/submissionFor
 
 // Admin: Get all submissions for a specific hackathon
 router.get("/admin/hackathon/:hackathonId", protect, isAdmin, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
+
+// Admin: Get a single submission by ID
+router.get("/admin/submission/:id", protect, isAdmin, getSubmissionByIdAdmin);
 
 // Add endpoints for deleting and editing a submission by ID
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);

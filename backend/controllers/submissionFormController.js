@@ -311,3 +311,26 @@ exports.getSubmissionsByHackathonAdmin = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch hackathon submissions for admin' });
   }
 };
+
+exports.getSubmissionByIdAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const submission = await Submission.findById(id)
+      .populate({
+        path: 'projectId',
+        select: 'title description technologies links attachments',
+      })
+      .populate({
+        path: 'hackathonId',
+        select: 'title',
+      })
+      .populate({
+        path: 'submittedBy',
+        select: 'name email',
+      });
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    res.json({ submission });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch submission', details: err.message });
+  }
+};

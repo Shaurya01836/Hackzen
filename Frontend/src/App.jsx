@@ -30,6 +30,8 @@ import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
 import CreatedHackathons from "./pages/mainDashboard/sections/Created-hackathons";
 import EditHackathonPage from "./pages/mainDashboard/sections/EditHackathonPage";
 import JudgeProjectGallery from "./pages/mainDashboard/sections/JudgeProjectGallery";
+import AdminHackathonSubmissionsPage from "./pages/AdminDashboard/sections/AdminHackathonSubmissionsPage";
+import AdminSubmissionDetailsPage from "./pages/AdminDashboard/sections/AdminSubmissionDetailsPage";
 
 function App() {
   return (
@@ -46,6 +48,14 @@ function App() {
         <Route path="/loader" element={<Loader />} />
 
         {/* Admin */}
+        <Route
+          path="/admin/hackathons/:id/submissions/:submissionId"
+          element={<AdminSubmissionDetailsPage />}
+        />
+        <Route
+          path="/admin/hackathons/:id/submissions"
+          element={<AdminHackathonSubmissionsPage />}
+        />
         <Route
           path="/admin/hackathons/:id"
           element={<HackathonDetailsPage />}

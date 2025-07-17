@@ -41,7 +41,7 @@ import { useToast } from "../../hooks/use-toast";
 import axios from "axios";
 import JudgeScoreForm from "../../pages/mainDashboard/sections/components/Scoring/JudgeScoreForm";
 
-export function ProjectDetail({ project, onBack, backButtonLabel }) {
+export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton = false }) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -419,14 +419,16 @@ export function ProjectDetail({ project, onBack, backButtonLabel }) {
       {/* Improved Header */}
       <header className=" px-6 py-4 sticky top-0 z-20 ">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 text-gray-700 font-medium "
-          >
-            <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
-          </Button>
+          {!hideBackButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 text-gray-700 font-medium "
+            >
+              <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
+            </Button>
+          )}
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
