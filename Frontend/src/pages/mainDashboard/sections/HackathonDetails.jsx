@@ -15,6 +15,7 @@ import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 import TeamManagementSection from "./components/Hackathon/TeamManagementSection";
+import { SmartCountdown } from "../../../components/DashboardUI/countdown";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();
@@ -222,14 +223,16 @@ const sections = [
       />
 
       <main className="flex-1 ml-0 transition-all duration-300">
-        <div className="p-6 md:p-10 w-full mx-auto max-w-6xl">
+        <div className="p-6 md:p-10 w-full mx-auto ">
           {activeTab === "overview" && (
             <>
+            
               <HackathonHero
                 hackathon={hackathon}
                 isRegistered={isRegistered}
                 isSaved={isSaved}
               />
+                <SmartCountdown hackathon={hackathon} />
               <HackathonOverview hackathon={hackathon} user={user} />
             </>
           )}
