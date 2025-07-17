@@ -104,6 +104,8 @@ export function Dashboard() {
   const fetchStats = async () => {
     let totalUsers = "N/A";
     let activeHackathons = "N/A";
+    let totalSubmissions = "N/A";
+    let submissionChange = "+0%";
     try {
       // Fetch total users
       const userStatsResponse = await fetch('/api/users/admin/stats', {
@@ -132,9 +134,26 @@ export function Dashboard() {
     } catch (e) {
       activeHackathons = "N/A";
     }
+    try {
+      // Fetch total submissions
+      const submissionStatsResponse = await fetch('/api/submission-form/admin/stats', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (submissionStatsResponse.ok) {
+        const submissionStats = await submissionStatsResponse.json();
+        totalSubmissions = submissionStats.totalSubmissions?.toLocaleString() || "N/A";
+        submissionChange = submissionStats.submissionGrowthPercentage || "+0%";
+      }
+    } catch (e) {
+      totalSubmissions = "N/A";
+      submissionChange = "+0%";
+    }
     setDashboardStats(prev => prev.map((stat, idx) => {
       if (idx === 0) return { ...stat, value: totalUsers };
       if (idx === 1) return { ...stat, value: activeHackathons };
+      if (idx === 2) return { ...stat, value: totalSubmissions, change: submissionChange };
       return stat;
     }));
   };

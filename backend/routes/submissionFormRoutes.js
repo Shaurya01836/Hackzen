@@ -13,6 +13,7 @@ const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
 
 const { protect } = require("../middleware/authMiddleware");
+const { isAdmin } = require("../middleware/authMiddleware");
 
 // Organizer: Save form
 router.put("/hackathon/:hackathonId", protect, saveHackathonForm);
@@ -122,6 +123,9 @@ router.get("/debug/registration", async (req, res) => {
     res.status(500).json({ error: 'Failed to check registration status' });
   }
 });
+
+// Admin: Get total submissions stats for dashboard
+router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionFormController").getAdminSubmissionStats);
 
 // Add endpoints for deleting and editing a submission by ID
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);

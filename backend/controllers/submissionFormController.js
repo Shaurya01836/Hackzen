@@ -206,3 +206,43 @@ exports.editSubmissionById = async (req, res) => {
     res.status(500).json({ error: 'Failed to edit submission', details: err.message });
   }
 };
+
+// Admin: Get total submissions count for dashboard
+exports.getAdminSubmissionStats = async (req, res) => {
+  try {
+    // Get total submissions count
+    const totalSubmissions = await Submission.countDocuments();
+
+    // Get submissions created this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    const submissionsThisMonth = await Submission.countDocuments({
+      submittedAt: { $gte: startOfMonth }
+    });
+
+    // Calculate percentage change from last month
+    const startOfLastMonth = new Date();
+    startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
+    startOfLastMonth.setDate(1);
+    startOfLastMonth.setHours(0, 0, 0, 0);
+    const endOfLastMonth = new Date();
+    endOfLastMonth.setDate(1);
+    endOfLastMonth.setHours(0, 0, 0, 0);
+    const submissionsLastMonth = await Submission.countDocuments({
+      submittedAt: { $gte: startOfLastMonth, $lt: endOfLastMonth }
+    });
+
+    const submissionGrowthPercentage = submissionsLastMonth > 0 
+      ? ((submissionsThisMonth - submissionsLastMonth) / submissionsLastMonth * 100).toFixed(1)
+      : submissionsThisMonth > 0 ? 100 : 0;
+
+    res.json({
+      totalSubmissions,
+      submissionsThisMonth,
+      submissionGrowthPercentage: submissionGrowthPercentage > 0 ? `+${submissionGrowthPercentage}%` : `${submissionGrowthPercentage}%`
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

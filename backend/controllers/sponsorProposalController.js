@@ -14,8 +14,10 @@ exports.createProposal = async (req, res) => {
 // GET /api/sponsor-proposals/:hackathonId
 exports.getProposalsForHackathon = async (req, res) => {
   try {
-    // Only return approved proposals
-    const proposals = await SponsorProposal.find({ hackathon: req.params.hackathonId, status: 'approved' });
+    const { email } = req.query;
+    const query = { hackathon: req.params.hackathonId };
+    if (email) query.email = email;
+    const proposals = await SponsorProposal.find(query);
     res.json(proposals);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch proposals', error: err.message });
