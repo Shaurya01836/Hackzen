@@ -66,6 +66,7 @@ export default function CreateHackathon({
   onBack,
   initialData = null,
   onSubmit = null,
+  isAdminCreate = false,
 }) {
   const { user, token } = useAuth(); // Using AuthContext instead of localStorage
   const navigate = useNavigate();
@@ -464,7 +465,7 @@ export default function CreateHackathon({
         problemStatements: validProblems.map((ps) => ({
           statement: ps.statement,
           type: ps.type,
-        })), // <-- fix here
+        })),
         problemStatementTypes: validProblems.map((ps) => ps.type),
         rounds: formData.rounds
           .filter((r) => r.name.trim())
@@ -493,6 +494,7 @@ export default function CreateHackathon({
         maxSubmissionsPerParticipant: formData.maxSubmissionsPerParticipant,
         wantsSponsoredProblems: formData.wantsSponsoredProblems, // <-- add this
         sponsoredPSConfig: formData.sponsoredPSConfig, // <-- add this
+        ...(isAdminCreate ? { approvalStatus: "approved" } : {}),
       };
 
       const response = await fetch("http://localhost:3000/api/hackathons", {
@@ -914,9 +916,10 @@ export default function CreateHackathon({
                 : "Set up your hackathon event with all the necessary details"}
             </p>
           </div>
+       
         </div>
-        {/* Admin Approval Notice */}
-        {!isEdit && (
+        {/* Admin Approval Notice (hide if isAdminCreate) */}
+        {!isEdit && !isAdminCreate && (
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertCircle className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">

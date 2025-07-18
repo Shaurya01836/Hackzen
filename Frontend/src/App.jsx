@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useParams,
 } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/Home/LandingPage";
@@ -32,6 +33,7 @@ import EditHackathonPage from "./pages/mainDashboard/sections/EditHackathonPage"
 import JudgeProjectGallery from "./pages/mainDashboard/sections/JudgeProjectGallery";
 import AdminHackathonSubmissionsPage from "./pages/AdminDashboard/sections/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./pages/AdminDashboard/sections/AdminSubmissionDetailsPage";
+import PublicProfileView from "./pages/mainDashboard/PublicProfileView";
 
 function App() {
   return (
@@ -47,28 +49,8 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/loader" element={<Loader />} />
 
-        {/* Admin */}
-        <Route
-          path="/admin/hackathons/:id/submissions/:submissionId"
-          element={<AdminSubmissionDetailsPage />}
-        />
-        <Route
-          path="/admin/hackathons/:id/submissions"
-          element={<AdminHackathonSubmissionsPage />}
-        />
-        <Route
-          path="/admin/hackathons/:id"
-          element={<HackathonDetailsPage />}
-        />
-        <Route path="/admin/:section" element={<AdminPanel />} />
-        <Route
-          path="/admin"
-          element={<Navigate to="/admin/dashboard" replace />}
-        />
-        <Route
-          path="/dashboard/project-archive/:id"
-          element={<DashboardPage />}
-        />
+        {/* Admin - all admin pages with sidebar */}
+        <Route path="/admin/*" element={<AdminPanel />} />
 
         {/* Dashboard */}
         <Route
@@ -118,6 +100,7 @@ function App() {
           path="/dashboard/profile/help-support"
           element={<DashboardPage />}
         />
+        <Route path="/profile/:userId" element={<PublicProfileViewWrapper />} />
         <Route path="/invite/:inviteId" element={<InviteAccept />} />
         <Route path="/invite/role" element={<InviteRole />} />
 
@@ -128,6 +111,11 @@ function App() {
       </Routes>
     </>
   );
+}
+
+function PublicProfileViewWrapper() {
+  const { userId } = useParams();
+  return <PublicProfileView userId={userId} />;
 }
 
 export default App;

@@ -29,7 +29,7 @@ import {
   User,
   Shuffle,
 } from "lucide-react";
-import { CreateHackathon } from "./CreateHackathon";
+import CreateHackathon from "../../mainDashboard/sections/Create-hackathon";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { useNavigate } from "react-router-dom";
 
@@ -39,15 +39,6 @@ export function HackathonsPage() {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedHackathon, setSelectedHackathon] = useState(null);
-  const [submissions, setSubmissions] = useState([]);
-  const [submissionsLoading, setSubmissionsLoading] = useState(false);
-  const [submissionsError, setSubmissionsError] = useState(null);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [fullProject, setFullProject] = useState(null);
-  const [projectLoading, setProjectLoading] = useState(false);
-  const [projectError, setProjectError] = useState(null);
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,8 +46,7 @@ export function HackathonsPage() {
       try {
         const res = await axios.get("http://localhost:3000/api/hackathons");
         setHackathons(res.data);
-      } catch (err) {
-        console.error("Fetch error:", err);
+      } catch {
         setError("Failed to fetch hackathons");
       } finally {
         setLoading(false);
@@ -78,46 +68,11 @@ export function HackathonsPage() {
       year: "numeric",
     });
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "upcoming":
-        return "bg-orange-500 text-white border-orange-500/30";
-      case "ended":
-        return "bg-red-600 text-white border-red-500/30";
-      case "ongoing":
-        return "bg-green-500 text-white border-green-500/30";
-      default:
-        return "bg-gray-500 text-white border-gray-500/30";
-    }
-  };
-
-  const handleCreateHackathon = (hackathonData) => {
-    console.log("Creating hackathon:", hackathonData);
-    setShowCreateForm(false);
-  };
-
-  const handleViewDetails = async (submission) => {
-    setSelectedSubmission(submission);
-    setFullProject(null);
-    setProjectLoading(true);
-    setProjectError(null);
-    try {
-      const res = await fetch(`/api/projects/${submission.projectId?._id || submission.projectId}`);
-      if (!res.ok) throw new Error("Failed to fetch project details");
-      const data = await res.json();
-      setFullProject(data);
-    } catch (err) {
-      setProjectError(err.message || "Error fetching project details");
-    } finally {
-      setProjectLoading(false);
-    }
-  };
-
   if (loading) return <p className="text-gray-700">Loading hackathons...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       {!showCreateForm ? (
         <>
           <div className="flex items-center justify-between">
@@ -134,7 +89,7 @@ export function HackathonsPage() {
           </div>
 
           {/* Search */}
-          <div className="relative">
+          <div className="relative max-w-md mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
             <Input
               placeholder="Search hackathons by title or organizer..."
@@ -145,66 +100,93 @@ export function HackathonsPage() {
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredHackathons.map((hackathon) => (
-              <RCard key={hackathon._id}>
-                <RCardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <RCardTitle className="text-gray-800 text-lg mb-2 transition-colors">
-                        {hackathon.title}
-                      </RCardTitle>
-                      <p className="text-gray-600 text-sm">
-                        by {hackathon.organizer?.name || "Unknown"}
-                      </p>
-                    </div>
-                    <Badge className={getStatusColor(hackathon.status)}>
-                      {hackathon.status}
-                    </Badge>
-                  </div>
-                </RCardHeader>
-                <RCardContent className="space-y-4">
-                  <div className="flex items-center text-gray-700 text-sm">
-                    <Calendar className="w-4 h-4 mr-2 text-purple-500" />
-                    {formatDate(hackathon.startDate)} — {formatDate(hackathon.endDate)}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center text-gray-700 text-sm">
-                      <Users className="w-4 h-4 mr-2 text-blue-500" />
-                      {hackathon.participants?.length || 0} participants
-                    </div>
-                    <div className="flex items-center text-gray-700 text-sm">
-                      <Trophy className="w-4 h-4 mr-2 text-yellow-500" />
+              <RCard
+                key={hackathon._id}
+                className="w-full flex flex-col overflow-hidden rounded-xl shadow-md hover:shadow-lg transition-transform duration-300 hover:scale-[1.02]"
+              >
+                {/* Thumbnail */}
+                <div className="relative h-40 w-full">
+                  <img
+                    src={
+                      hackathon.images?.logo?.url ||
+                      hackathon.images?.banner?.url ||
+                      "/assets/default-banner.png"
+                    }
+                    alt={hackathon.title}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  {/* Prize Pool Badge */}
+                  <div className="absolute top-2 right-2">
+                    <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
+                      <Trophy className="w-3 h-3 mr-1" />
                       {hackathon.prizePool?.amount
                         ? `${hackathon.prizePool.amount} ${hackathon.prizePool.currency}`
-                        : "N/A"}{" "}
-                      pool
-                    </div>
+                        : "N/A"}
+                    </Badge>
                   </div>
-
-                  <div className="flex items-center text-gray-600 text-sm">
-                    <FolderCode className="w-4 h-4 mr-2 text-yellow-500" />
-                    {hackathon.submissions?.length || 0} submissions received
+                </div>
+                {/* Content */}
+                <div className="p-4 flex flex-col gap-2 flex-1">
+                  {/* Title */}
+                  <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-2 h-10">
+                    {hackathon.title}
+                  </h3>
+                  {/* Organizer */}
+                  <p className="text-xs text-gray-500 mb-1">
+                    by {hackathon.organizer?.name || "Unknown"}
+                  </p>
+                  {/* Date */}
+                  <div className="flex items-center text-gray-700 text-xs mb-2">
+                    <Calendar className="w-4 h-4 mr-1 text-purple-500" />
+                    {formatDate(hackathon.startDate)} — {formatDate(hackathon.endDate)}
+                  </div>
+                  {/* Details Row */}
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-700 mb-2">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4 text-blue-500" />
+                      {hackathon.participants?.length || 0} participants
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      {hackathon.prizePool?.amount
+                        ? `${hackathon.prizePool.amount} ${hackathon.prizePool.currency}`
+                        : "N/A"} pool
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <FolderCode className="w-4 h-4 text-yellow-500" />
+                      {hackathon.submissions?.length || 0} submissions received
+                    </span>
                   </div>
                   <Button
                     variant="outline"
-                    className="mt-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    className="mt-auto text-indigo-600 border-indigo-200 hover:bg-indigo-50"
                     onClick={() => navigate(`/admin/hackathons/${hackathon._id}/submissions`)}
                   >
                     <Eye className="w-4 h-4 mr-1" />
                     View Submissions
                   </Button>
-                </RCardContent>
+                </div>
               </RCard>
             ))}
           </div>
         </>
       ) : (
-        <CreateHackathon
-          onBack={() => setShowCreateForm(false)}
-          onSave={handleCreateHackathon}
-        />
+        <div>
+          <button
+            onClick={() => setShowCreateForm(false)}
+            className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-black mb-4"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            Back
+          </button>
+          <CreateHackathon
+            onBack={() => setShowCreateForm(false)}
+            isAdminCreate={true}
+            onSave={() => setShowCreateForm(false)}
+          />
+        </div>
       )}
     </div>
   );

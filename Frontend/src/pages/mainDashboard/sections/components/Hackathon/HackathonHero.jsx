@@ -265,28 +265,26 @@ export default function HackathonHero({ hackathon, isRegistered, isSaved }) {
         {/* CTA for submission or sponsor */}
         {/* If proposal exists, show status button; else show sponsor button */}
         {myProposal ? (
-          <Card>
-            <CardContent className="pt-6">
-              <Button
-                className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold py-3"
-                size="lg"
-                onClick={() => setShowStatusModal(true)}
-                disabled={statusLoading}
-              >
-                {myProposal.status === "pending" && "Review Your Request"}
-                {myProposal.status === "approved" && "Check Your Request"}
-                {myProposal.status === "rejected" && "Check Your Request"}
-              </Button>
-              <div className="text-xs text-gray-600 mt-2 text-center">
-                {myProposal.status === "pending" &&
-                  "Your sponsorship proposal has been submitted and is currently awaiting review by the organizer."}
-                {myProposal.status === "approved" &&
-                  "Your sponsorship proposal has been accepted! See details."}
-                {myProposal.status === "rejected" &&
-                  "Your sponsorship proposal was rejected. See reason."}
-              </div>
-            </CardContent>
-          </Card>
+          <CardContent className="pt-6">
+            <Button
+              className="w-full bg-indigo-500 hover:bg-indigo-600 text-black font-semibold py-3"
+              size="lg"
+              onClick={() => setShowStatusModal(true)}
+              disabled={statusLoading}
+            >
+              {myProposal.status === "pending" && "Review Your Request"}
+              {myProposal.status === "approved" && "Check Your Request"}
+              {myProposal.status === "rejected" && "Check Your Request"}
+            </Button>
+            <div className="text-xs text-gray-600 mt-2 text-center">
+              {myProposal.status === "pending" &&
+                "Your sponsorship proposal has been submitted and is currently awaiting review by the organizer."}
+              {myProposal.status === "approved" &&
+                "Your sponsorship proposal has been accepted! See details."}
+              {myProposal.status === "rejected" &&
+                "Your sponsorship proposal was rejected. See reason."}
+            </div>
+          </CardContent>
         ) : canShowSponsorForm ? (
           <Button
             className="w-full bg-indigo-500 hover:bg-indigo-600 text-black font-semibold py-3"

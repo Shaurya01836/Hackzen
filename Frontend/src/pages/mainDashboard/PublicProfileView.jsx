@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -60,6 +60,10 @@ export default function PublicProfileView({ userId }) {
   const [publicLoading, setPublicLoading] = useState(false);
   const [publicError, setPublicError] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Check if rendered from admin panel user profile route
+  const isAdminUserProfile = location.pathname.startsWith("/admin/users/");
 
   useEffect(() => {
     if (!userId) return;
@@ -100,14 +104,14 @@ export default function PublicProfileView({ userId }) {
     .substring(0, 2);
 
   return (
-    <div className="flex flex-col gap-8 w-full p-8 md:p-20">
+    <div className="flex flex-col gap-8 w-full">
       {/* Back Button */}
       <button
-        onClick={() => navigate("/dashboard/profile")}
+        onClick={() => isAdminUserProfile ? navigate("/admin/users") : navigate("/dashboard/profile")}
         className="self-start mb-2 px-4 py-2 rounded-lg bg-indigo-100 text-indigo-700 font-medium hover:bg-indigo-200 transition flex items-center gap-2 shadow"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-        Back to My Profile
+        {isAdminUserProfile ? "Back" : "Back to My Profile"}
       </button>
       {/* Hero Profile Card */}
       <Card className="w-full overflow-hidden relative rounded-3xl border-0 bg-gradient-to-br from-white via-purple-50/30 to-white">

@@ -28,8 +28,9 @@ export function ProjectArchive() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-const location = useLocation();
-const urlProjectId = location.pathname.match(/project-archive\/(\w+)/)?.[1] || null;
+  const location = useLocation();
+  const urlProjectId =
+    location.pathname.match(/project-archive\/(\w+)/)?.[1] || null;
 
   const categories = [
     "all",
@@ -45,28 +46,27 @@ const urlProjectId = location.pathname.match(/project-archive\/(\w+)/)?.[1] || n
     "Other",
   ];
 
-useEffect(() => {
-  const fetchProjects = async () => {
-    try {
-      const res = await fetch("http://localhost:3000/api/projects");
-      const data = await res.json();
-      setProjects(data);
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/projects");
+        const data = await res.json();
+        setProjects(data);
 
-      // If user opened a direct project link, match by ID
-      if (urlProjectId) {
-        const matched = data.find((p) => p._id === urlProjectId);
-        if (matched) setSelectedProject(matched);
+        // If user opened a direct project link, match by ID
+        if (urlProjectId) {
+          const matched = data.find((p) => p._id === urlProjectId);
+          if (matched) setSelectedProject(matched);
+        }
+      } catch (err) {
+        console.error("Failed to fetch projects:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to fetch projects:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchProjects();
-}, [urlProjectId]);
-
+    fetchProjects();
+  }, [urlProjectId]);
 
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
@@ -74,25 +74,24 @@ useEffect(() => {
       project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       project.skills?.some((tech) =>
         tech.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
+      );
+
     const matchesCategory =
-    selectedCategory === "all" || project.category === selectedCategory;
-    
+      selectedCategory === "all" || project.category === selectedCategory;
+
     const isSubmitted = project.status === "submitted";
-    
+
     return matchesSearch && matchesCategory && isSubmitted;
   });
-  
+
   const handleProjectClick = (project) => {
     setSelectedProject(project);
-navigate(`/dashboard/project-archive/${project._id}`);
+    navigate(`/dashboard/project-archive/${project._id}`);
   };
-  
-  
+
   const handleBackToProjects = () => {
     setSelectedProject(null);
-    navigate('/dashboard/project-archive');
+    navigate("/dashboard/project-archive");
   };
 
   const renderLoadingCards = () => (
@@ -127,21 +126,22 @@ navigate(`/dashboard/project-archive/${project._id}`);
 
   if (selectedProject) {
     return (
-      <ProjectDetail project={selectedProject} onBack={handleBackToProjects} backButtonLabel="Back to Project Archive" />
+      <ProjectDetail
+        project={selectedProject}
+        onBack={handleBackToProjects}
+        backButtonLabel="Back to Project Archive"
+      />
     );
   }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100">
-      <header className="px-6 py-4">
+      <header className="px-6 py-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Code className="h-5 w-5 text-indigo-600" />
-              </div>
-              <h1 className="text-xl font-semibold text-gray-800">
+              <h1 className="text-2xl font-bold text-gray-800">
                 Project Archive
               </h1>
             </div>

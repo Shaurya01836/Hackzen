@@ -212,10 +212,10 @@ export function Dashboard() {
   };
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black min-h-screen">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard Overview</h1>
-        <Button className="bg-indigo-600 hover:bg-indigo-700">
+        <h1 className="text-3xl font-bold text-black">Dashboard Overview</h1>
+        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold">
           <TrendingUp className="w-4 h-4 mr-2" />
           View Full Analytics
         </Button>
@@ -228,7 +228,7 @@ export function Dashboard() {
           return (
             <RCard
               key={index}
-              className=""
+              className="rounded-xl shadow-md bg-white/80 border border-purple-100"
             >
               <RCardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <RCardTitle className="text-sm font-medium text-gray-700">
@@ -248,13 +248,9 @@ export function Dashboard() {
                   </div>
                 </div>
               </RCardHeader>
-              <RCardContent>
-                <div className="text-2xl font-bold text-gray-900">
-                  {stat.value}
-                </div>
-                <p className="text-xs text-green-600 mt-1">
-                  {stat.change} from last month
-                </p>
+              <RCardContent className="pt-0">
+                <div className="text-2xl font-bold text-black">{stat.value}</div>
+                <div className="text-xs text-gray-500 mt-1">{stat.change}</div>
               </RCardContent>
             </RCard>
           );
@@ -263,129 +259,68 @@ export function Dashboard() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Line/Area/Bar Chart with selector */}
-        <Card className="">
+        <Card className="rounded-xl shadow-md bg-white/80 border border-purple-100">
           <CardHeader>
-            <CardTitle className=" flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-indigo-400" />
-              Hackathons Created Over Time
-            </CardTitle>
-            <div className="mt-2">
-              <label className="mr-2 font-medium text-sm">Chart Type:</label>
-              <select
-                value={chartType}
-                onChange={e => setChartType(e.target.value)}
-                className="border rounded px-2 py-1 text-sm bg-white text-black"
-              >
-                <option value="area">Area</option>
-                <option value="line">Line</option>
-                <option value="bar">Bar</option>
-              </select>
-            </div>
+            <CardTitle className="text-lg font-semibold text-gray-700">Hackathons Over Time</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              {chartType === "area" && (
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(0, 0, 0, 0.8)",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "white",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="hackathons"
-                    stroke="#8B5CF6"
-                    fill="#8B5CF6"
-                    fillOpacity={0.2}
-                    strokeWidth={3}
-                    dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: "#8B5CF6", strokeWidth: 2 }}
-                  />
+          <CardContent className="h-72 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === "area" ? (
+                <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorHackathons" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" stroke="#8884d8" />
+                  <YAxis stroke="#8884d8" />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="hackathons" stroke="#8B5CF6" fillOpacity={1} fill="url(#colorHackathons)" />
                 </AreaChart>
-              )}
-              {chartType === "line" && (
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(0, 0, 0, 0.8)",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "white",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="hackathons"
-                    stroke="#8B5CF6"
-                    strokeWidth={3}
-                    dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 6 }}
-                    activeDot={{ r: 8, stroke: "#8B5CF6", strokeWidth: 2 }}
-                  />
+              ) : chartType === "line" ? (
+                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="month" stroke="#8884d8" />
+                  <YAxis stroke="#8884d8" />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="hackathons" stroke="#8B5CF6" strokeWidth={2} />
                 </LineChart>
-              )}
-              {chartType === "bar" && (
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="month" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(0, 0, 0, 0.8)",
-                      border: "1px solid rgba(168, 85, 247, 0.3)",
-                      borderRadius: "8px",
-                      color: "white",
-                    }}
-                  />
-                  <Bar dataKey="hackathons" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+              ) : (
+                <BarChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="month" stroke="#8884d8" />
+                  <YAxis stroke="#8884d8" />
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <Tooltip />
+                  <Bar dataKey="hackathons" fill="#8B5CF6" />
                 </BarChart>
               )}
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        {/* Pie Chart */}
-        <Card className="">
+        <Card className="rounded-xl shadow-md bg-white/80 border border-purple-100">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <RechartsPieChart className="w-5 h-5 mr-2 text-indigo-400" />
-              User Roles Breakdown
-            </CardTitle>
+            <CardTitle className="text-lg font-semibold text-gray-700">User Roles Breakdown</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+          <CardContent className="h-72 flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={pieData}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    `${name} ${(percent * 100).toFixed(0)}%`
-                  }
+                  fill="#8884d8"
+                  label
                 >
                   {pieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0, 0, 0, 0.8)",
-                    border: "1px solid rgba(168, 85, 247, 0.3)",
-                    borderRadius: "8px",
-                    color: "white",
-                  }}
-                />
+                <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

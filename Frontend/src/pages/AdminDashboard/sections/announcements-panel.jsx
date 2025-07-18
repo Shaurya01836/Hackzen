@@ -90,7 +90,7 @@ export function AnnouncementsPanel() {
   };
 
   return (
-    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">Announcements</h1>
         <div className="flex items-center text-black text-xl font-bold">
@@ -102,9 +102,9 @@ export function AnnouncementsPanel() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Left: Static Send Announcement Form */}
         <div className="w-full lg:w-1/2 flex-shrink-0">
-          <Card>
+          <Card className="rounded-xl shadow-md bg-white/80 border border-purple-100">
             <CardHeader>
-              <CardTitle className="text-black flex items-center">
+              <CardTitle className="text-black flex items-center text-lg font-semibold">
                 <Send className="w-5 h-5 mr-2 text-purple-700" />
                 Send New Announcement
               </CardTitle>
@@ -184,7 +184,7 @@ export function AnnouncementsPanel() {
                 <Button
                   onClick={handleSend}
                   disabled={!title || !message || !audience}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
                 >
                   <Send className="w-4 h-4 mr-2" />
                   Send Now
@@ -192,7 +192,7 @@ export function AnnouncementsPanel() {
               </div>
 
               {showPreview && title && message && (
-                <Card>
+                <Card className="rounded-xl shadow bg-white/80 border border-purple-100 mt-4">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <h3 className="text-gray-600 font-semibold">{title}</h3>
@@ -212,9 +212,9 @@ export function AnnouncementsPanel() {
 
         {/* Right: Fixed Height Recent Announcements with Scroll */}
         <div className="w-full lg:w-1/2 flex-grow">
-          <Card className="">
+          <Card className="rounded-xl shadow-md bg-white/80 border border-purple-100">
             <CardHeader>
-              <CardTitle className="text-black flex items-center">
+              <CardTitle className="text-black flex items-center text-lg font-semibold">
                 <Clock className="w-5 h-5 mr-2 text-blue-600" />
                 Recent Announcements
               </CardTitle>
@@ -247,29 +247,13 @@ export function AnnouncementsPanel() {
                           <span className="text-gray-700 text-xs">
                             {new Date(announcement.createdAt).toLocaleString()}
                           </span>
-                        
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <Clock className="w-12 h-12 text-gray-400 mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No announcements yet
-                      </h3>
-                      <p className="text-gray-500 text-sm">
-                        Send your first announcement to see it appear here
-                      </p>
-                    </div>
+                    <div className="text-gray-500 text-center py-8">No announcements yet.</div>
                   )}
                 </div>
-              </div>
-              {/* Scroll indicator */}
-
-              <div className="text-center mt-2 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-500">
-                  Scroll to see more announcements
-                </p>
               </div>
             </CardContent>
           </Card>

@@ -54,6 +54,10 @@ import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
 import { PendingChangesPage } from "./sections/pending-changes-page";
 import AddCertificateForm from "./sections/AddCertificateForm";
+import AdminHackathonSubmissionsPage from "./sections/AdminHackathonSubmissionsPage";
+import AdminSubmissionDetailsPage from "./sections/AdminSubmissionDetailsPage";
+import HackathonDetailsPage from "./sections/HackathonDetailsPage";
+import PublicProfileView from "../mainDashboard/PublicProfileView";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -184,6 +188,30 @@ export default function AdminPanel() {
 
   // Function to render content based on current view
   const renderContent = () => {
+    // Check for user profile route
+    const userProfileMatch = location.pathname.match(/^\/admin\/users\/([^/]+)$/);
+    if (userProfileMatch) {
+      const userId = userProfileMatch[1];
+      return <PublicProfileView userId={userId} />;
+    }
+    // Check for hackathon submissions and submission details routes
+    const path = location.pathname;
+    const hackathonSubmissionsMatch = path.match(/^\/admin\/hackathons\/([^/]+)\/submissions$/);
+    const hackathonSubmissionDetailsMatch = path.match(/^\/admin\/hackathons\/([^/]+)\/submissions\/([^/]+)$/);
+    const hackathonDetailsMatch = path.match(/^\/admin\/hackathons\/([^/]+)$/);
+    if (hackathonSubmissionDetailsMatch) {
+      const hackathonId = hackathonSubmissionDetailsMatch[1];
+      const submissionId = hackathonSubmissionDetailsMatch[2];
+      return <AdminSubmissionDetailsPage hackathonId={hackathonId} submissionId={submissionId} />;
+    }
+    if (hackathonSubmissionsMatch) {
+      const hackathonId = hackathonSubmissionsMatch[1];
+      return <AdminHackathonSubmissionsPage hackathonId={hackathonId} />;
+    }
+    if (hackathonDetailsMatch) {
+      const hackathonId = hackathonDetailsMatch[1];
+      return <HackathonDetailsPage hackathonId={hackathonId} />;
+    }
     switch (activeSection) {
       case "dashboard":
         return <Dashboard />;

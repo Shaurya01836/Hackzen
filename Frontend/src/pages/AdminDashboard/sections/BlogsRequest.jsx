@@ -103,7 +103,7 @@ export function BlogManage() {
     )
 
   return (
-    <div className="space-y-6 p-4 md:p-8 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-3xl font-bold text-black">Manage Blogs</h1>
         <Badge variant="outline">

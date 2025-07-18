@@ -71,7 +71,7 @@ export default function ChangeRoleDialog({ userId, currentRole, onRoleUpdate }) 
       <DialogTrigger asChild>
         <Button
           variant="ghost"
-          className="w-full text-white hover:bg-white/5 justify-start"
+          className="w-full justify-start"
         >
           <Shield className="w-4 h-4 mr-2" />
           Change Role

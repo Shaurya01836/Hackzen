@@ -384,16 +384,13 @@ export function Blogs() {
       </Dialog>
 
       {/* Header */}
-      <header className="px-6 pt-5">
+      <header className="px-1 pt-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-5">
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <BookOpen className="w-5 h-5 text-indigo-600" />
-              </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900">
                   Blogs & Articles
                 </h1>
                 <p className="text-sm text-gray-500">

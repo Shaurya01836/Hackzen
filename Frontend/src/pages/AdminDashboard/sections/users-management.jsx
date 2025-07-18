@@ -29,12 +29,15 @@ import {
 import { Search, Filter, Eye, Ban, Shuffle } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import PublicProfileView from "../../mainDashboard/PublicProfileView";
+import { useNavigate } from "react-router-dom";
 
 export function UsersManagement() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("All");
   const [loadingExport, setLoadingExport] = useState(false);
+  const navigate = useNavigate();
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(0);
@@ -132,6 +135,7 @@ export function UsersManagement() {
 
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 text-black">
+      {/* The viewProfileUserId state and its associated modal are removed as per the edit hint. */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Users Management</h1>
         <Button
@@ -232,8 +236,8 @@ export function UsersManagement() {
                           <Shuffle className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                        <DropdownMenuItem className="text-white hover:bg-white/5">
+                      <DropdownMenuContent >
+                        <DropdownMenuItem className="" onClick={() => navigate(`/admin/users/${user._id}`)}>
                           <Eye className="w-4 h-4 mr-2" />
                           View Profile
                         </DropdownMenuItem>
