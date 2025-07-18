@@ -25,10 +25,9 @@ import {
   Shield,
   Check,
   X,
-  Copy,
   Twitter,
   Instagram,
-  LinkIcon,
+  Share2Icon,
 } from "lucide-react";
 import {
   Card,
@@ -49,7 +48,7 @@ import { Input } from "../../components/CommonUI/input";
 import { Label } from "../../components/CommonUI/label";
 import { Textarea } from "../../components/CommonUI/textarea";
 import { useAuth } from "../../context/AuthContext";
-import { Progress } from "../../components/DashboardUI/progress";
+import PublicProfileView from "./PublicProfileView";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 import TwoFASetup from "../../components/security/TwoFASetup";
 import PasswordModal from "../../components/security/PasswordModal";
@@ -66,13 +65,15 @@ import {
   AlertDialogCancel,
 } from "../../components/DashboardUI/alert-dialog";
 
-
 // Add this utility function at the top
 function getCurrentViewFromPath(pathname) {
   if (pathname.includes("/dashboard/profile/edit")) return "edit-profile";
-  if (pathname.includes("/dashboard/profile/account-settings")) return "account-settings";
-  if (pathname.includes("/dashboard/profile/privacy-security")) return "privacy-security";
-  if (pathname.includes("/dashboard/profile/help-support")) return "help-support";
+  if (pathname.includes("/dashboard/profile/account-settings"))
+    return "account-settings";
+  if (pathname.includes("/dashboard/profile/privacy-security"))
+    return "privacy-security";
+  if (pathname.includes("/dashboard/profile/help-support"))
+    return "help-support";
   return "overview";
 }
 
@@ -94,7 +95,9 @@ export function ProfileSection({ viewUserId }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [currentView, setCurrentViewState] = useState(() => getCurrentViewFromPath(location.pathname));
+  const [currentView, setCurrentViewState] = useState(() =>
+    getCurrentViewFromPath(location.pathname)
+  );
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
     maxStreak: 0,
@@ -201,7 +204,11 @@ export function ProfileSection({ viewUserId }) {
 
   // Show loading if user context is not ready
   if (!user) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   // If viewing someone else's profile, show public view immediately
@@ -433,27 +440,6 @@ export function ProfileSection({ viewUserId }) {
     .toUpperCase()
     .substring(0, 2);
 
-  const renderHeader = () => (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-      <div className="flex gap-2 mt-4 md:mt-0">
-        {/* Share Profile Button */}
-        <Button
-          variant="outline"
-          className="flex items-center gap-2"
-          onClick={async () => {
-            const url = `${window.location.origin}/dashboard/profile/${user?._id}`;
-            await navigator.clipboard.writeText(url);
-            alert("Public profile link copied to clipboard!");
-          }}
-        >
-          <Copy className="w-4 h-4" />
-          Share Profile
-        </Button>
-        {/* Existing edit button, etc. can go here */}
-      </div>
-    </div>
-  );
-
   const renderOverview = () => (
     <div className="flex flex-col gap-8 w-full">
       {/* Hero Profile Card */}
@@ -498,6 +484,17 @@ export function ProfileSection({ viewUserId }) {
         </div>
         {/* Profile Info Section */}
         <div className="relative px-8 pb-8">
+          <button
+            className="p-2 rounded-full hover:bg-gray-100 transition-all ml-auto block mt-2"
+            title="Share Profile"
+            onClick={async () => {
+              const url = `${window.location.origin}/dashboard/profile/${user?._id}`;
+              await navigator.clipboard.writeText(url);
+              alert("Public profile link copied to clipboard!");
+            }}
+          >
+            <Share2Icon className="w-5 h-5 text-gray-600" />
+          </button>
           {/* Avatar */}
           <div className="flex justify-start -mt-20 mb-6">
             <div className="relative group">
@@ -509,6 +506,7 @@ export function ProfileSection({ viewUserId }) {
               </Avatar>
             </div>
           </div>
+
           {/* User Info */}
           <div className="text-start mb-8">
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
@@ -726,8 +724,6 @@ export function ProfileSection({ viewUserId }) {
                       </div>
                     </div>
                   )}
-                  
-                  
                 </div>
               </div>
             </div>
@@ -1143,8 +1139,10 @@ export function ProfileSection({ viewUserId }) {
                   <div>
                     <Label className="text-xs text-gray-600">Telegram</Label>
                     <Input
-                      value={inlineForm.telegram || ''}
-                      onChange={e => handleInlineChange('telegram', e.target.value)}
+                      value={inlineForm.telegram || ""}
+                      onChange={(e) =>
+                        handleInlineChange("telegram", e.target.value)
+                      }
                       placeholder="Enter your Telegram username or link"
                       className="text-sm"
                     />
@@ -1502,14 +1500,27 @@ export function ProfileSection({ viewUserId }) {
           )}
 
           {/* Additional Social Links Display */}
-          {(user?.twitter || user?.instagram || user?.portfolio || user?.telegram) &&
+          {(user?.twitter ||
+            user?.instagram ||
+            user?.portfolio ||
+            user?.telegram) &&
             !inlineEditing.all && (
               <div className="space-y-6">
                 <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
                   <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
                     {/* SVG icon for social */}
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"
+                      />
                     </svg>
                   </div>
                   Additional Social Links
@@ -1592,22 +1603,44 @@ export function ProfileSection({ viewUserId }) {
                   )}
                   {user?.telegram && (
                     <a
-                      href={`https://t.me/${user.telegram.replace(/^@/, '')}`}
+                      href={`https://t.me/${user.telegram.replace(/^@/, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100 transition-all group"
                     >
                       <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center">
                         {/* Telegram SVG icon */}
-                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z"/></svg>
+                        <svg
+                          className="w-5 h-5 text-white"
+                          fill="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z" />
+                        </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-semibold mb-1">Telegram</p>
+                        <p className="text-sm text-gray-500 font-semibold mb-1">
+                          Telegram
+                        </p>
                         <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
-                          {user.telegram.startsWith('@') ? user.telegram : `@${user.telegram}`}
+                          {user.telegram.startsWith("@")
+                            ? user.telegram
+                            : `@${user.telegram}`}
                         </p>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                      <svg
+                        className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                        />
+                      </svg>
                     </a>
                   )}
                 </div>
@@ -2741,8 +2774,6 @@ export function ProfileSection({ viewUserId }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-10">
-        {renderHeader()}
-
         <div className="flex flex-col gap-8">
           {/* Horizontal Tab Navigation */}
           <div className="flex flex-wrap gap-2 justify-start">

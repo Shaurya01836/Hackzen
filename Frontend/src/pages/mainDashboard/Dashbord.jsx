@@ -75,7 +75,7 @@ export default function HackZenDashboard() {
 
   const [currentView, setCurrentView] = useState(getActiveSectionFromPath());
   const [hasApprovedSponsoredPS, setHasApprovedSponsoredPS] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
     async function checkSponsoredPS() {
@@ -164,12 +164,16 @@ export default function HackZenDashboard() {
       onClick: () => changeView("organization-hub"),
     },
     // Conditionally add Sponsored PS
-    ...(hasApprovedSponsoredPS ? [{
-      title: "Sponsored PS",
-      icon: Handshake,
-      key: "sponsored-ps",
-      onClick: () => changeView("sponsored-ps"),
-    }] : []),
+    ...(hasApprovedSponsoredPS
+      ? [
+          {
+            title: "Sponsored PS",
+            icon: Handshake,
+            key: "sponsored-ps",
+            onClick: () => changeView("sponsored-ps"),
+          },
+        ]
+      : []),
   ];
 
   const organizerMenuItems = [
@@ -178,12 +182,6 @@ export default function HackZenDashboard() {
       icon: Settings,
       key: "organizer-tools",
       onClick: () => changeView("organizer-tools"),
-    },
-    {
-      title: "Judge Management",
-      icon: Gavel,
-      key: "judge-management",
-      onClick: () => changeView("judge-management"),
     },
     {
       title: "Hackathons",
@@ -198,7 +196,12 @@ export default function HackZenDashboard() {
       key: "create-hackathon", // ✅ FIX this key!
       onClick: () => changeView("create-hackathon"),
     },
-
+    {
+      title: "Judge Management",
+      icon: Gavel,
+      key: "judge-management",
+      onClick: () => changeView("judge-management"),
+    },
     {
       title: "Announcements",
       icon: MessageSquare,
@@ -269,7 +272,12 @@ export default function HackZenDashboard() {
       case "organizer-tools":
         return <OrganizerTools onBack={() => changeView("profile")} />;
       case "judge-management":
-        return <JudgeManagement hackathonId={params.hackathonId} onBack={() => changeView("profile")} />;
+        return (
+          <JudgeManagement
+            hackathonId={params.hackathonId}
+            onBack={() => changeView("profile")}
+          />
+        );
       case "create-hackathon":
         return <CreateHackathon onBack={() => changeView("profile")} />;
       case "blogs":
@@ -359,7 +367,6 @@ export default function HackZenDashboard() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-
 
           {/* Organizer Menu - Only show to organizers, NOT to judges */}
           {authUser?.role === "organizer" && authUser?.role !== "judge" && (
