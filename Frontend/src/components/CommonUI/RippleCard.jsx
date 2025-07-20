@@ -63,16 +63,11 @@ const RCard = React.forwardRef(({ className, ...props }, ref) => {
       ref={ref}
       className={cn(
         "relative group cursor-pointer overflow-hidden",
-        "ring-1 ring-indigo-300 rounded-2xl border border-white/20",
-        "bg-gradient-to-br from-white/10 to-indigo-200/10 backdrop-blur-lg",
-        "shadow-sm shadow-indigo-300 text-gray-900",
-        "transition-all duration-500 ease-out",
-        "transform-gpu perspective-1000",
-        "hover:scale-105 hover:rotate-1 hover:shadow-2xl hover:shadow-indigo-400/30",
-        "hover:ring-2 hover:ring-indigo-400",
-        "before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent",
-        "before:translate-x-[-100%] before:skew-x-12 before:transition-transform before:duration-1000",
-        "hover:before:translate-x-[100%]",
+        "rounded-2xl border border-indigo-400/25",
+        "bg-white/50 backdrop-blur-md",
+        "shadow-md shadow-indigo-100/40 text-gray-900",
+        "transition-all duration-200 ease-out",
+        "hover:shadow-md hover:shadow-indigo-200/50",
         className
       )}
       onMouseMove={handleMouseMove}

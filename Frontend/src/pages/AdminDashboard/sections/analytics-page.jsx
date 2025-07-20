@@ -57,7 +57,7 @@ export function AnalyticsPage() {
         setStatusData(statusRes.data);
         setEngagementData(engagementRes.data);
         setCategoryData(categoryRes.data);
-      } catch (err) {
+      } catch {
         // Optionally handle error
         setUserStats(null);
         setUserMonthlyStats([]);

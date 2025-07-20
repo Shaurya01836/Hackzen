@@ -118,20 +118,20 @@ export function MySubmissions() {
         </TabsList>
 
         <TabsContent value="all">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {projectSubmissions.map(renderSubmissionCard)}
           </div>
         </TabsContent>
 
         <TabsContent value="judged">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {judgedSubmissions.map(renderSubmissionCard)}
           </div>
         </TabsContent>
 
         <TabsContent value="pending">
           {pendingSubmissions.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {pendingSubmissions.map(renderSubmissionCard)}
             </div>
           ) : (
