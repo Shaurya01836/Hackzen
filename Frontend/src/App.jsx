@@ -72,6 +72,8 @@ function App() {
           path="/dashboard/my-submissions/:projectId"
           element={<DashboardPage />}
         />
+        <Route path="/dashboard/project-archive" element={<DashboardPage />} />
+        <Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
 
         {/* Created Hackathons */}
         <Route path="/dashboard/created-hackathons" element={<DashboardPage />} />
