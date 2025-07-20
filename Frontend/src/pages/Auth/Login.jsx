@@ -258,6 +258,9 @@ function Login({ onClose, onSwitchToRegister }) {
                 required
               />
             </div>
+            <div className="flex justify-end mb-2">
+              <button type="button" onClick={() => navigate('/forgot-password')} className="text-[#1b0c3f] text-sm font-medium hover:underline">Forgot Password?</button>
+            </div>
             <button
               type="submit"
               disabled={loading}

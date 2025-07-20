@@ -6,6 +6,10 @@ const Project = require('../model/ProjectModel');
 const Hackathon = require('../model/HackathonModel');
 const RoleInvite = require('../model/RoleInviteModel');
 const Score = require('../model/ScoreModel');
+const PendingUser = require('../model/PendingUserModel');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
+const PasswordResetToken = require('../model/PasswordResetTokenModel');
 // ✅ Generate JWT token
 const generateToken = (user) => {
   return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
@@ -58,43 +62,93 @@ const registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
   try {
+    // Check if user already exists in main User collection
     const existingUser = await User.findOne({ email });
-
     if (existingUser) {
-      if (existingUser.applicationStatus === "pending" && !existingUser.passwordHash) {
-        existingUser.name = name;
-        existingUser.passwordHash = await bcrypt.hash(password, 10);
-        existingUser.authProvider = "email";
-        await existingUser.save();
-
-        return res.status(200).json({
-          user: {
-            _id: existingUser._id,
-            name: existingUser.name,
-            email: existingUser.email,
-            role: existingUser.role,
-            profileCompleted: existingUser.profileCompleted || false
-          },
-          token: generateToken(existingUser)
-        });
-      }
-
       return res.status(400).json({ message: 'User already exists' });
     }
-
+    // Check if pending user exists and not expired
+    const pending = await PendingUser.findOne({ email });
+    if (pending && pending.codeExpiresAt > new Date()) {
+      return res.status(400).json({ message: 'Verification code already sent. Please check your email.' });
+    }
+    // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
-    const isAdminEmail = email === 'admin@rr.dev';
+    // Generate 6-digit code
+    const verificationCode = (Math.floor(100000 + Math.random() * 900000)).toString();
+    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    // Store in PendingUser
+    await PendingUser.findOneAndUpdate(
+      { email },
+      { name, email, passwordHash, verificationCode, codeExpiresAt, createdAt: new Date() },
+      { upsert: true }
+    );
+    // Send email
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #f4f6fb; border-radius: 12px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px;">Verify Your Email</h2>
+        </div>
+        <div style="background: #fff; padding: 32px 24px; border-radius: 0 0 10px 10px; text-align: center;">
+          <p style="color: #333; font-size: 16px;">Hi <b>${name || email}</b>,</p>
+          <p style="color: #555;">Thank you for registering! Please use the code below to verify your email address. This code is valid for <b>10 minutes</b>.</p>
+          <div style="margin: 32px 0;">
+            <span style="display: inline-block; font-size: 32px; letter-spacing: 8px; background: #f4f6fb; color: #764ba2; padding: 16px 32px; border-radius: 8px; font-weight: bold; border: 2px dashed #764ba2;">${verificationCode}</span>
+          </div>
+          <p style="color: #888; font-size: 14px;">If you did not request this, you can ignore this email.</p>
+        </div>
+        <div style="text-align: center; margin-top: 16px; color: #aaa; font-size: 12px;">&copy; 2025 HackZen Platform</div>
+      </div>
+    `;
+    await transporter.sendMail({
+      from: `"HackZen" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: 'Your Verification Code for HackZen Registration',
+      html: emailTemplate
+    });
+    res.status(200).json({ message: 'Verification code sent to your email.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
+// ✅ Verify registration code and complete registration
+const verifyRegistrationCode = async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    const pending = await PendingUser.findOne({ email });
+    if (!pending) {
+      return res.status(400).json({ message: 'No pending registration found for this email.' });
+    }
+    if (pending.codeExpiresAt < new Date()) {
+      await PendingUser.deleteOne({ email });
+      return res.status(400).json({ message: 'Verification code expired. Please register again.' });
+    }
+    if (pending.verificationCode !== code) {
+      return res.status(400).json({ message: 'Invalid verification code.' });
+    }
+    // Create user
+    const isAdminEmail = email === 'admin@rr.dev';
     const newUser = await User.create({
-      name,
-      email,
-      passwordHash,
+      name: pending.name,
+      email: pending.email,
+      passwordHash: pending.passwordHash,
       authProvider: 'email',
       role: isAdminEmail ? 'admin' : undefined,
       bannerImage: "/assets/default-banner.png",
       profileCompleted: false
     });
-
+    await PendingUser.deleteOne({ email });
     res.status(201).json({
       user: {
         _id: newUser._id,
@@ -789,9 +843,87 @@ const getPublicProfile = async (req, res) => {
   }
 };
 
+// ✅ Forgot Password
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    // Always respond with generic message
+    if (!user) {
+      return res.status(200).json({ message: 'If this email is registered, you will receive a password reset link.' });
+    }
+    // Remove old tokens
+    await PasswordResetToken.deleteMany({ userId: user._id });
+    // Generate token
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    await PasswordResetToken.create({ userId: user._id, token, expiresAt });
+    // Send email
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      return res.status(500).json({ message: 'Email service not configured' });
+    }
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+    const resetUrl = `http://localhost:5173/reset-password?token=${token}`;
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; background: #f4f6fb; border-radius: 12px;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h2 style="margin: 0; font-size: 24px;">Reset Your Password</h2>
+        </div>
+        <div style="background: #fff; padding: 32px 24px; border-radius: 0 0 10px 10px; text-align: center;">
+          <p style="color: #333; font-size: 16px;">Hi <b>${user.name || user.email}</b>,</p>
+          <p style="color: #555;">We received a request to reset your password. Click the button below to set a new password. This link is valid for <b>15 minutes</b>.</p>
+          <div style="margin: 32px 0;">
+            <a href="${resetUrl}" style="display: inline-block; font-size: 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 8px; font-weight: bold; text-decoration: none;">Change your password</a>
+          </div>
+          <p style="color: #888; font-size: 14px;">If you did not request this, you can ignore this email.</p>
+        </div>
+        <div style="text-align: center; margin-top: 16px; color: #aaa; font-size: 12px;">&copy; 2024 STPI Hackathon Platform</div>
+      </div>
+    `;
+    await transporter.sendMail({
+      from: `"STPI Hackathon" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: 'Reset your password for STPI',
+      html: emailTemplate
+    });
+    return res.status(200).json({ message: 'If this email is registered, you will receive a password reset link.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Reset Password
+const resetPassword = async (req, res) => {
+  const { token, password } = req.body;
+  try {
+    const resetToken = await PasswordResetToken.findOne({ token });
+    if (!resetToken || resetToken.expiresAt < new Date()) {
+      return res.status(400).json({ message: 'Invalid or expired reset link.' });
+    }
+    const user = await User.findById(resetToken.userId);
+    if (!user) {
+      return res.status(400).json({ message: 'User not found.' });
+    }
+    user.passwordHash = await bcrypt.hash(password, 10);
+    await user.save();
+    await PasswordResetToken.deleteOne({ token });
+    res.status(200).json({ message: 'Password updated successfully. You can now log in.' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 module.exports = {
   inviteToOrganization,
   registerUser,
+  verifyRegistrationCode,
   loginUser,
   getAllUsers,
   getUserById,
@@ -809,6 +941,8 @@ module.exports = {
   getJudgeStats,
   getWeeklyEngagementStats,
   completeProfile,
+  forgotPassword,
+  resetPassword,
 };
 
 module.exports.getPublicProfile = getPublicProfile;

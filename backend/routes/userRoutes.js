@@ -76,7 +76,10 @@ router.get('/google/callback', passport.authenticate('google', {
 
 // ✉️ Auth
 router.post('/register', userController.registerUser);
+router.post('/verify-registration', userController.verifyRegistrationCode);
 router.post('/login', userController.loginUser);
+router.post('/forgot-password', userController.forgotPassword);
+router.post('/reset-password', userController.resetPassword);
 
 // 🚪 Logout
 router.get('/logout', (req, res) => {
