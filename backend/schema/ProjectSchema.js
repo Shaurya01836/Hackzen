@@ -36,7 +36,9 @@ teamIntro: String,customAnswers: [
   },
 ],
 
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  likes: { type: Number, default: 0 },
+  likedBy: [{ type: String }]
 });
 
 module.exports = { ProjectSchema };

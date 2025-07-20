@@ -40,8 +40,11 @@ import {
 import { useToast } from "../../hooks/use-toast";
 import axios from "axios";
 import JudgeScoreForm from "../../pages/mainDashboard/sections/components/Scoring/JudgeScoreForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../DashboardUI/dialog";
+import { SiWhatsapp, SiFacebook, SiX, SiTelegram, SiLinkedin } from "react-icons/si";
+import { Share2 as Share2Icon, Heart as HeartIcon, Copy as CopyIcon } from "lucide-react";
 
-export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton = false }) {
+export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton = false, onlyOverview = false }) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -68,6 +71,15 @@ export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton
   const [submittedUser, setSubmittedUser] = useState(null);
   // Video preview state for YouTube
   const [showVideo, setShowVideo] = useState(false);
+  const [likeCount, setLikeCount] = useState(project.likes || 0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // On mount, check if this project is liked in localStorage
+  useEffect(() => {
+    const likedProjects = JSON.parse(localStorage.getItem('likedProjects') || '{}');
+    setIsLiked(!!likedProjects[project._id]);
+  }, [project._id]);
 
   // Fetch user teams for this project's hackathon
   useEffect(() => {
@@ -412,7 +424,92 @@ export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton
     }
   };
 
+  // Like handler (public, no login required)
+  const handleLike = async () => {
+    if (!user || !user._id) {
+      toast({ title: "Login Required", description: "Please log in to like projects.", duration: 2000 });
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/projects/${project._id}/like`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to like project");
+      const data = await res.json();
+      setIsLiked(data.liked);
+      setLikeCount(data.likes);
+      // Persist like in localStorage
+      const likedProjects = JSON.parse(localStorage.getItem('likedProjects') || '{}');
+      if (data.liked) {
+        likedProjects[project._id] = true;
+      } else {
+        delete likedProjects[project._id];
+      }
+      localStorage.setItem('likedProjects', JSON.stringify(likedProjects));
+      if (data.message) {
+        toast({ title: data.liked ? "Liked!" : "Unliked!", description: data.message, duration: 2000 });
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to like project", duration: 2000 });
+    }
+  };
+  // Share handler (opens modal)
+  const handleShare = () => setShareOpen(true);
+  const projectUrl = `${window.location.origin}/dashboard/project-archive/${project._id}`;
+  const handleCopy = async () => {
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(projectUrl);
+        toast({ title: "Link Copied!", description: "Project link copied to clipboard.", duration: 2000 });
+      } catch {
+        toast({ title: "Error", description: "Failed to copy link", duration: 2000 });
+      }
+    } else {
+      toast({ title: "Error", description: "Clipboard not available", duration: 2000 });
+    }
+  };
+  const handleSocialShare = (platform) => {
+    let url = "";
+    const encoded = encodeURIComponent(projectUrl);
+    switch (platform) {
+      case "whatsapp":
+        url = `https://wa.me/?text=${encoded}`;
+        break;
+      case "telegram":
+        url = `https://t.me/share/url?url=${encoded}`;
+        break;
+      case "facebook":
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encoded}`;
+        break;
+      case "twitter":
+        url = `https://twitter.com/intent/tweet?url=${encoded}`;
+        break;
+      case "linkedin":
+        url = `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`;
+        break;
+      case "instagram":
+        toast({ title: "Not Supported", description: "Instagram does not support direct web sharing.", duration: 2000 });
+        return;
+      default:
+        return;
+    }
+    window.open(url, "_blank");
+  };
+
   if (!project) return <p>Loading...</p>;
+
+  const sharePlatforms = [
+    { name: "WhatsApp", icon: <SiWhatsapp size={32} />, color: "#25D366", handler: () => handleSocialShare("whatsapp"), aria: "Share on WhatsApp" },
+    { name: "Facebook", icon: <SiFacebook size={32} />, color: "#1877F3", handler: () => handleSocialShare("facebook"), aria: "Share on Facebook" },
+    { name: "X", icon: <SiX size={32} />, color: "#228ED7", handler: () => handleSocialShare("twitter"), aria: "Share on X (Twitter)" },
+    { name: "Telegram", icon: <SiTelegram size={32} />, color: "#229ED9", handler: () => handleSocialShare("telegram"), aria: "Share on Telegram" },
+    { name: "LinkedIn", icon: <SiLinkedin size={32} />, color: "#0077B5", handler: () => handleSocialShare("linkedin"), aria: "Share on LinkedIn" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
@@ -431,22 +528,77 @@ export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton
           )}
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
+              variant={isLiked ? "solid" : "outline"}
               size="sm"
-              className="flex items-center gap-2 bg-transparent hover:bg-pink-50 rounded-full px-3 py-2 transition-all"
+              className={`flex items-center gap-2 bg-transparent hover:bg-pink-50 rounded-full px-3 py-2 transition-all ${isLiked ? "text-red-500" : ""}`}
+              onClick={handleLike}
             >
-              <Heart className="w-4 h-4" /> 7
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} /> {likeCount}
             </Button>
             <Button
               variant="outline"
               size="sm"
               className="flex items-center gap-2 bg-transparent hover:bg-blue-50 rounded-full px-3 py-2 transition-all"
+              onClick={handleShare}
             >
               <Share2 className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </header>
+      {/* Share Modal */}
+      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+        <DialogContent className="max-w-md p-6">
+          <DialogHeader>
+            <DialogTitle>Share</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-row flex-wrap items-center justify-center gap-6 py-4">
+            {sharePlatforms.map((platform) => (
+              <button
+                key={platform.name}
+                onClick={platform.handler}
+                aria-label={platform.aria}
+                className="flex flex-col items-center focus:outline-none group"
+                style={{ background: "none", border: "none" }}
+              >
+                <span
+                  className="flex items-center justify-center mb-1"
+                  style={{
+                    background: platform.color,
+                    borderRadius: "50%",
+                    width: 56,
+                    height: 56,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                    transition: "transform 0.15s",
+                  }}
+                >
+                  {platform.icon}
+                </span>
+                <span className="text-xs text-center text-gray-700 font-medium mt-1">
+                  {platform.name}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-4 bg-gray-100 rounded-xl px-3 py-2">
+            <input
+              type="text"
+              value={projectUrl}
+              readOnly
+              className="flex-1 bg-transparent text-gray-800 text-base outline-none border-none font-mono"
+              onFocus={e => e.target.select()}
+              aria-label="Project share link"
+            />
+            <button
+              onClick={handleCopy}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-base font-semibold transition"
+              aria-label="Copy project link"
+            >
+              <CopyIcon className="w-5 h-5" /> Copy
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Project Summary Card */}
       <div className="px-6 pt-8">
@@ -516,15 +668,19 @@ export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <Play className="w-4 h-4" /> Overview
               </TabsTrigger>
-              <TabsTrigger
-                value="hackathon"
-                className="flex items-center gap-2"
-              >
-                <Award className="w-4 h-4" /> Hackathon
-              </TabsTrigger>
-              <TabsTrigger value="team" className="flex items-center gap-2">
-                <Users className="w-4 h-4" /> Team
-              </TabsTrigger>
+              {!onlyOverview && (
+                <TabsTrigger
+                  value="hackathon"
+                  className="flex items-center gap-2"
+                >
+                  <Award className="w-4 h-4" /> Hackathon
+                </TabsTrigger>
+              )}
+              {!onlyOverview && (
+                <TabsTrigger value="team" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" /> Team
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
           {/* Wrap the grid and sidebar in a single parent div to fix JSX error */}
@@ -621,384 +777,388 @@ export function ProjectDetail({ project, onBack, backButtonLabel, hideBackButton
                 <div className="border-t border-gray-200 my-6 w-full" />
               </TabsContent>
 
-              <TabsContent value="hackathon" className="space-y-8">
-                {project.hackathon ? (
+              {!onlyOverview && (
+                <TabsContent value="hackathon" className="space-y-8">
+                  {project.hackathon ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Submitted Hackathon</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                          {project.hackathon.title}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          {project.hackathon.prizeTrack || "Prize track info"}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Status: {project.hackathon.status || "Unknown"}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <p>No hackathon linked.</p>
+                  )}
+                </TabsContent>
+              )}
+
+              {!onlyOverview && (
+                <TabsContent value="team" className="space-y-8">
+                  {/* Team Intro */}
+                  {project?.submittedBy && (
+                    <>
+                      <CardHeader>
+                        <CardTitle className="text-sm text-gray-500">
+                          Team Leader
+                        </CardTitle>
+                      </CardHeader>
+
+                      <CardContent>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage
+                              src={
+                                project.submittedBy.profileImage ||
+                                "/placeholder.svg"
+                              }
+                              alt={project.submittedBy.name || "Team Leader"}
+                            />
+                            <AvatarFallback>
+                              {project.submittedBy.name?.[0]?.toUpperCase() ||
+                                "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {project.submittedBy.name || "Unknown"}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </>
+                  )}
+
+                  {/* Project Team Management Section */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Submitted Hackathon</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                        {project.hackathon.title}
-                      </h3>
-                      <p className="text-gray-600 mb-4">
-                        {project.hackathon.prizeTrack || "Prize track info"}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Status: {project.hackathon.status || "Unknown"}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <p>No hackathon linked.</p>
-                )}
-              </TabsContent>
-
-              <TabsContent value="team" className="space-y-8">
-                {/* Team Intro */}
-                {project?.submittedBy && (
-                  <>
-                    <CardHeader>
-                      <CardTitle className="text-sm text-gray-500">
-                        Team Leader
-                      </CardTitle>
-                    </CardHeader>
-
-                    <CardContent>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10">
-                          <AvatarImage
-                            src={
-                              project.submittedBy.profileImage ||
-                              "/placeholder.svg"
-                            }
-                            alt={project.submittedBy.name || "Team Leader"}
-                          />
-                          <AvatarFallback>
-                            {project.submittedBy.name?.[0]?.toUpperCase() ||
-                              "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {project.submittedBy.name || "Unknown"}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </>
-                )}
-
-                {/* Project Team Management Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-blue-500" />
-                        Project Team Management
-                      </span>
-                      <Button
-                        onClick={() => setShowCreateTeamModal(true)}
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        Create Team
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {projectTeams.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          No Teams Yet
-                        </h3>
-                        <p className="text-gray-500 mb-4">
-                          Create a team to collaborate on this project and
-                          invite members to join.
-                        </p>
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Users className="w-5 h-5 text-blue-500" />
+                          Project Team Management
+                        </span>
                         <Button
                           onClick={() => setShowCreateTeamModal(true)}
+                          size="sm"
                           className="flex items-center gap-2"
                         >
                           <UserPlus className="w-4 h-4" />
-                          Create Your First Team
+                          Create Team
                         </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {projectTeams.map((team) => (
-                          <div
-                            key={team._id}
-                            className="mb-6 p-4 border rounded-lg bg-gray-50"
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h4 className="font-semibold text-lg">
-                                  {team.name}
-                                </h4>
-                                <p className="text-sm text-gray-500">
-                                  Team Code:{" "}
-                                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-                                    {team.teamCode}
-                                  </span>
-                                </p>
-                              </div>
-                              <Badge
-                                variant={
-                                  team.members.length >= team.maxMembers
-                                    ? "destructive"
-                                    : "default"
-                                }
-                              >
-                                {team.members.length}/{team.maxMembers} members
-                              </Badge>
-                            </div>
-                            <div className="flex items-start justify-between mb-3">
-                              <p className="text-gray-600 flex-1">
-                                {team.description}
-                              </p>
-                              {team.leader._id === user?._id && (
-                                <Button
-                                  onClick={() => handleEditDescription(team)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="ml-2 text-blue-600 hover:text-blue-800"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                              )}
-                            </div>
-                            {/* Team Members */}
-                            <div className="mb-4">
-                              <h5 className="font-medium mb-2">
-                                Team Members:
-                              </h5>
-                              <div className="flex flex-wrap gap-2">
-                                {team.members.map((member) => (
-                                  <div
-                                    key={member._id}
-                                    className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full"
-                                  >
-                                    <Avatar className="w-6 h-6">
-                                      <AvatarImage src={member.avatar} />
-                                      <AvatarFallback>
-                                        {member.name?.charAt(0)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-sm">
-                                      {member.name}
-                                    </span>
-                                    {member._id === team.leader._id && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-xs"
-                                      >
-                                        Leader
-                                      </Badge>
-                                    )}
-                                    {team.leader._id === user?._id &&
-                                      member._id !== user?._id && (
-                                        <AlertDialog
-                                          open={
-                                            removeDialog.open &&
-                                            removeDialog.teamId === team._id &&
-                                            removeDialog.memberId === member._id
-                                          }
-                                          onOpenChange={(open) =>
-                                            setRemoveDialog(
-                                              open
-                                                ? {
-                                                    open: true,
-                                                    teamId: team._id,
-                                                    memberId: member._id,
-                                                  }
-                                                : {
-                                                    open: false,
-                                                    teamId: null,
-                                                    memberId: null,
-                                                  }
-                                            )
-                                          }
-                                        >
-                                          <AlertDialogTrigger asChild>
-                                            <Button
-                                              size="xs"
-                                              variant="destructive"
-                                            >
-                                              Remove
-                                            </Button>
-                                          </AlertDialogTrigger>
-                                          <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                              <AlertDialogTitle>
-                                                Remove Team Member?
-                                              </AlertDialogTitle>
-                                              <AlertDialogDescription>
-                                                Are you sure you want to remove{" "}
-                                                <b>{member.name}</b> from the
-                                                team? They will be unregistered
-                                                from the hackathon and need to
-                                                register again if they want to
-                                                participate. This action cannot
-                                                be undone.
-                                              </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                              <AlertDialogCancel>
-                                                Cancel
-                                              </AlertDialogCancel>
-                                              <AlertDialogAction
-                                                onClick={confirmRemoveMember}
-                                                disabled={loading}
-                                              >
-                                                Remove
-                                              </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                          </AlertDialogContent>
-                                        </AlertDialog>
-                                      )}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                            {/* Team Actions */}
-                            <div className="flex gap-2 mb-2">
-                              {team.members.length < team.maxMembers && (
-                                <Button
-                                  onClick={() => {
-                                    setSelectedTeam(team);
-                                    setShowInviteModal(true);
-                                  }}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <UserPlus className="w-4 h-4 mr-2" />
-                                  Invite Member
-                                </Button>
-                              )}
-                              <div className="relative inline-block">
-                                <Button
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(
-                                      team.teamCode
-                                    );
-                                    setCopiedTeamId(team._id);
-                                    toast({
-                                      title: "Code copied!",
-                                      description:
-                                        "Team code copied to clipboard.",
-                                    });
-                                    setTimeout(
-                                      () => setCopiedTeamId(null),
-                                      1500
-                                    );
-                                  }}
-                                  variant="outline"
-                                  size="sm"
-                                >
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy Code
-                                </Button>
-                                {copiedTeamId === team._id && (
-                                  <span
-                                    className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full shadow-lg flex items-center gap-1 text-xs font-semibold animate-fade-in-out z-10"
-                                    style={{ pointerEvents: "none" }}
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-1" />
-                                    Code Copied!
-                                  </span>
-                                )}
-                              </div>
-                              {/* Leave team button for members (not leader) */}
-                              {team.leader._id !== user?._id && (
-                                <AlertDialog
-                                  open={
-                                    leaveDialog.open &&
-                                    leaveDialog.teamId === team._id
-                                  }
-                                  onOpenChange={(open) =>
-                                    setLeaveDialog(
-                                      open
-                                        ? { open: true, teamId: team._id }
-                                        : { open: false, teamId: null }
-                                    )
-                                  }
-                                >
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      disabled={loading}
-                                      className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                                    >
-                                      <LogOut className="w-4 h-4 mr-2" />
-                                      Leave Team
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>
-                                        Leave Team?
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to leave this
-                                        team? You will be unregistered from the
-                                        hackathon and need to register again if
-                                        you want to participate.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Cancel
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={confirmLeaveTeam}
-                                        disabled={loading}
-                                      >
-                                        Leave Team
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Original Team Members Display */}
-                {(project.team || []).length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>
-                        <Users className="w-5 h-5" /> Project Team Members
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {project.team.map((member, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-4 p-4 rounded-lg bg-gray-50"
+                      {projectTeams.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            No Teams Yet
+                          </h3>
+                          <p className="text-gray-500 mb-4">
+                            Create a team to collaborate on this project and
+                            invite members to join.
+                          </p>
+                          <Button
+                            onClick={() => setShowCreateTeamModal(true)}
+                            className="flex items-center gap-2"
                           >
-                            <Avatar className="w-12 h-12">
-                              <AvatarImage
-                                src={member.avatar || "/placeholder.svg"}
-                              />
-                              <AvatarFallback>
-                                {member.name?.[0] || "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-semibold text-gray-900">
-                                {member.name}
-                              </p>
-                              <p className="text-sm text-gray-600">
-                                {member.role}
-                              </p>
+                            <UserPlus className="w-4 h-4" />
+                            Create Your First Team
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {projectTeams.map((team) => (
+                            <div
+                              key={team._id}
+                              className="mb-6 p-4 border rounded-lg bg-gray-50"
+                            >
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h4 className="font-semibold text-lg">
+                                    {team.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-500">
+                                    Team Code:{" "}
+                                    <span className="font-mono bg-gray-100 px-2 py-1 rounded">
+                                      {team.teamCode}
+                                    </span>
+                                  </p>
+                                </div>
+                                <Badge
+                                  variant={
+                                    team.members.length >= team.maxMembers
+                                      ? "destructive"
+                                      : "default"
+                                  }
+                                >
+                                  {team.members.length}/{team.maxMembers} members
+                                </Badge>
+                              </div>
+                              <div className="flex items-start justify-between mb-3">
+                                <p className="text-gray-600 flex-1">
+                                  {team.description}
+                                </p>
+                                {team.leader._id === user?._id && (
+                                  <Button
+                                    onClick={() => handleEditDescription(team)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 text-blue-600 hover:text-blue-800"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                )}
+                              </div>
+                              {/* Team Members */}
+                              <div className="mb-4">
+                                <h5 className="font-medium mb-2">
+                                  Team Members:
+                                </h5>
+                                <div className="flex flex-wrap gap-2">
+                                  {team.members.map((member) => (
+                                    <div
+                                      key={member._id}
+                                      className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full"
+                                    >
+                                      <Avatar className="w-6 h-6">
+                                        <AvatarImage src={member.avatar} />
+                                        <AvatarFallback>
+                                          {member.name?.charAt(0)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="text-sm">
+                                        {member.name}
+                                      </span>
+                                      {member._id === team.leader._id && (
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-xs"
+                                        >
+                                          Leader
+                                        </Badge>
+                                      )}
+                                      {team.leader._id === user?._id &&
+                                        member._id !== user?._id && (
+                                          <AlertDialog
+                                            open={
+                                              removeDialog.open &&
+                                              removeDialog.teamId === team._id &&
+                                              removeDialog.memberId === member._id
+                                            }
+                                            onOpenChange={(open) =>
+                                              setRemoveDialog(
+                                                open
+                                                  ? {
+                                                      open: true,
+                                                      teamId: team._id,
+                                                      memberId: member._id,
+                                                    }
+                                                  : {
+                                                      open: false,
+                                                      teamId: null,
+                                                      memberId: null,
+                                                    }
+                                              )
+                                            }
+                                          >
+                                            <AlertDialogTrigger asChild>
+                                              <Button
+                                                size="xs"
+                                                variant="destructive"
+                                              >
+                                                Remove
+                                              </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                                <AlertDialogTitle>
+                                                  Remove Team Member?
+                                                </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                  Are you sure you want to remove{" "}
+                                                  <b>{member.name}</b> from the
+                                                  team? They will be unregistered
+                                                  from the hackathon and need to
+                                                  register again if they want to
+                                                  participate. This action cannot
+                                                  be undone.
+                                                </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                                <AlertDialogCancel>
+                                                  Cancel
+                                                </AlertDialogCancel>
+                                                <AlertDialogAction
+                                                  onClick={confirmRemoveMember}
+                                                  disabled={loading}
+                                                >
+                                                  Remove
+                                                </AlertDialogAction>
+                                              </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                          </AlertDialog>
+                                        )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Team Actions */}
+                              <div className="flex gap-2 mb-2">
+                                {team.members.length < team.maxMembers && (
+                                  <Button
+                                    onClick={() => {
+                                      setSelectedTeam(team);
+                                      setShowInviteModal(true);
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <UserPlus className="w-4 h-4 mr-2" />
+                                    Invite Member
+                                  </Button>
+                                )}
+                                <div className="relative inline-block">
+                                  <Button
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(
+                                        team.teamCode
+                                      );
+                                      setCopiedTeamId(team._id);
+                                      toast({
+                                        title: "Code copied!",
+                                        description:
+                                          "Team code copied to clipboard.",
+                                      });
+                                      setTimeout(
+                                        () => setCopiedTeamId(null),
+                                        1500
+                                      );
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    Copy Code
+                                  </Button>
+                                  {copiedTeamId === team._id && (
+                                    <span
+                                      className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-full shadow-lg flex items-center gap-1 text-xs font-semibold animate-fade-in-out z-10"
+                                      style={{ pointerEvents: "none" }}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      Code Copied!
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Leave team button for members (not leader) */}
+                                {team.leader._id !== user?._id && (
+                                  <AlertDialog
+                                    open={
+                                      leaveDialog.open &&
+                                      leaveDialog.teamId === team._id
+                                    }
+                                    onOpenChange={(open) =>
+                                      setLeaveDialog(
+                                        open
+                                          ? { open: true, teamId: team._id }
+                                          : { open: false, teamId: null }
+                                      )
+                                    }
+                                  >
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={loading}
+                                        className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                                      >
+                                        <LogOut className="w-4 h-4 mr-2" />
+                                        Leave Team
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Leave Team?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to leave this
+                                          team? You will be unregistered from the
+                                          hackathon and need to register again if
+                                          you want to participate.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={confirmLeaveTeam}
+                                          disabled={loading}
+                                        >
+                                          Leave Team
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-                )}
-              </TabsContent>
+
+                  {/* Original Team Members Display */}
+                  {(project.team || []).length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>
+                          <Users className="w-5 h-5" /> Project Team Members
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {project.team.map((member, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-4 p-4 rounded-lg bg-gray-50"
+                            >
+                              <Avatar className="w-12 h-12">
+                                <AvatarImage
+                                  src={member.avatar || "/placeholder.svg"}
+                                />
+                                <AvatarFallback>
+                                  {member.name?.[0] || "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {member.name}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {member.role}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              )}
             </div>
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">

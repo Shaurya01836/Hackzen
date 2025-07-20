@@ -221,3 +221,27 @@ exports.getProjectsByHackathon = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+// PATCH /api/projects/:id/like (user-based only, must be logged in)
+exports.likeProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id?.toString();
+    if (!userId) return res.status(401).json({ message: 'You must be logged in to like projects.' });
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+    const hasLiked = project.likedBy.includes(userId);
+    if (hasLiked) {
+      project.likes = Math.max(0, project.likes - 1);
+      project.likedBy = project.likedBy.filter(l => l !== userId);
+      await project.save();
+      return res.status(200).json({ liked: false, likes: project.likes, message: 'Like removed.' });
+    }
+    project.likes++;
+    project.likedBy.push(userId);
+    await project.save();
+    res.status(200).json({ liked: true, likes: project.likes, message: 'Project liked!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error liking project', error: err.message });
+  }
+};

@@ -246,6 +246,7 @@ export default function MyHackathons() {
             navigate("/dashboard/my-hackathons");
           }}
           backButtonLabel="Back to My Hackathons"
+          onlyOverview={true}
         />
         <div className="fixed bottom-8 right-8">
           <Button
