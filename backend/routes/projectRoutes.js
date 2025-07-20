@@ -10,7 +10,8 @@ const {
   assignHackathonToProject,
   getMyProjects,
   getProjectsByHackathon,
-  likeProject
+  likeProject,
+  viewProject
 } = require('../controllers/projectController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -25,5 +26,6 @@ router.delete('/:id', protect, deleteProject);
 router.put('/:id/submit', protect, submitProject);
 router.put('/:id/assign-hackathon', protect, assignHackathonToProject);
 router.patch('/:id/like', protect, likeProject);
+router.patch('/:id/view', protect, viewProject);
 
 module.exports = router;

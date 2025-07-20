@@ -235,13 +235,38 @@ exports.likeProject = async (req, res) => {
       project.likes = Math.max(0, project.likes - 1);
       project.likedBy = project.likedBy.filter(l => l !== userId);
       await project.save();
+      // Emit socket event for like update
+      req.app.get('io').emit('project-like-update', { projectId: id, likes: project.likes, likedBy: project.likedBy });
       return res.status(200).json({ liked: false, likes: project.likes, message: 'Like removed.' });
     }
     project.likes++;
     project.likedBy.push(userId);
     await project.save();
+    // Emit socket event for like update
+    req.app.get('io').emit('project-like-update', { projectId: id, likes: project.likes, likedBy: project.likedBy });
     res.status(200).json({ liked: true, likes: project.likes, message: 'Project liked!' });
   } catch (err) {
     res.status(500).json({ message: 'Error liking project', error: err.message });
+  }
+};
+
+// PATCH /api/projects/:id/view (increment unique view, user-based only)
+exports.viewProject = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id?.toString();
+    if (!userId) return res.status(401).json({ message: 'You must be logged in to view projects.' });
+    const project = await Project.findById(id);
+    if (!project) return res.status(404).json({ message: 'Project not found' });
+    if (!project.viewedBy.includes(userId)) {
+      project.views++;
+      project.viewedBy.push(userId);
+      await project.save();
+      // Emit socket event for view update
+      req.app.get('io').emit('project-view-update', { projectId: id, views: project.views });
+    }
+    res.status(200).json({ views: project.views });
+  } catch (err) {
+    res.status(500).json({ message: 'Error incrementing view', error: err.message });
   }
 };

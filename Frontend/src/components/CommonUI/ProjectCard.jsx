@@ -1,10 +1,21 @@
 import { Link } from "react-router-dom";
-import { Star, Eye } from "lucide-react";
+import { Heart, Eye } from "lucide-react";
 import { Card, CardContent } from "../CommonUI/card";
 import { Badge } from "../CommonUI/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../DashboardUI/avatar";
+import { useState } from "react";
+import { useToast } from "../../hooks/use-toast";
+import { useAuth } from "../../context/AuthContext";
 
 export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
+  const { toast } = useToast ? useToast() : { toast: () => {} };
+  const { user: authUser } = useAuth ? useAuth() : { user: null };
+  const [likeCount, setLikeCount] = useState(project.likes ?? 0);
+  const [isLiked, setIsLiked] = useState(
+    !!(authUser && project.likedBy && project.likedBy.includes(authUser._id))
+  );
+  const [viewCount, setViewCount] = useState(project.views ?? 0);
+
   const coverImage =
     project.logo?.url ||
     project.images?.[0] ||
@@ -14,6 +25,49 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
   // ✅ Show judged badge only if judge and already scored this project
   const alreadyScored =
     user?.role === "judge" && judgeScores.includes(project._id);
+
+  const handleLike = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!authUser || !authUser._id) {
+      toast && toast({ title: "Login Required", description: "Please log in to like projects.", duration: 2000 });
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/projects/${project._id}/like`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to like project");
+      const data = await res.json();
+      setIsLiked(data.liked);
+      setLikeCount(data.likes);
+      if (data.message && toast) {
+        toast({ title: data.liked ? "Liked!" : "Unliked!", description: data.message, duration: 2000 });
+      }
+    } catch (err) {
+      toast && toast({ title: "Error", description: "Failed to like project", duration: 2000 });
+    }
+  };
+
+  // Increment view count when card is clicked (if onClick is provided)
+  const handleCardClick = async () => {
+    if (onClick) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`http://localhost:3000/api/projects/${project._id}/view`, {
+          method: "PATCH",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        setViewCount((prev) => prev + 1); // Optimistic update
+      } catch {}
+      onClick(project);
+    }
+  };
 
   const CardContentEl = (
     <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
@@ -52,12 +106,12 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
           </div>
           <div className="flex items-center gap-2 text-[11px] text-gray-500 pt-2">
             <div className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5" />
-              {project.stars ?? 0}
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-red-500" : ""}`} />
+              {likeCount}
             </div>
             <div className="flex items-center gap-1">
               <Eye className="w-3.5 h-3.5" />
-              {project.views ?? 0}
+              {viewCount}
             </div>
           </div>
         </div>
@@ -67,7 +121,7 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
 
   if (onClick) {
     return (
-      <div onClick={() => onClick(project)} style={{ cursor: "pointer" }}>
+      <div onClick={handleCardClick} style={{ cursor: "pointer" }}>
         {CardContentEl}
       </div>
     );

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Search, Code } from "lucide-react";
 import { Input } from "../../../components/CommonUI/input";
 import { Card, CardContent } from "../../../components/CommonUI/card";
@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "../../../components/CommonUI/select";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
+import { io } from "socket.io-client";
 
 export function ProjectArchive() {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ export function ProjectArchive() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
+  const socketRef = useRef(null);
   const urlProjectId =
     location.pathname.match(/project-archive\/(\w+)/)?.[1] || null;
 
@@ -66,7 +68,34 @@ export function ProjectArchive() {
     };
 
     fetchProjects();
-  }, [urlProjectId]);
+  }, [urlProjectId, location.pathname]);
+
+  // Real-time updates with socket.io
+  useEffect(() => {
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:3000");
+    }
+    const socket = socketRef.current;
+    socket.on("project-like-update", ({ projectId, likes, likedBy }) => {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === projectId ? { ...p, likes, likedBy } : p
+        )
+      );
+    });
+    socket.on("project-view-update", ({ projectId, views }) => {
+      setProjects((prev) =>
+        prev.map((p) =>
+          p._id === projectId ? { ...p, views } : p
+        )
+      );
+    });
+    return () => {
+      socket.off("project-like-update");
+      socket.off("project-view-update");
+      // Optionally disconnect: socket.disconnect();
+    };
+  }, []);
 
   const filteredProjects = projects.filter((project) => {
     const matchesSearch =
