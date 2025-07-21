@@ -246,7 +246,6 @@ export default function JudgeManagement({ hackathonId }) {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-
       if (response.ok) {
         fetchJudgeAssignments();
       }

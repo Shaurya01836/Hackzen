@@ -470,6 +470,7 @@ const acceptRoleInvite = async (req, res) => {
     if (!invite) return res.status(404).json({ error: 'Invite not found' });
     if (invite.status !== 'pending') return res.status(400).json({ error: 'Invite already responded' });
     if (user.email !== invite.email) return res.status(403).json({ error: 'This invite is not for your email' });
+
     invite.status = 'accepted';
     invite.respondedAt = new Date();
     invite.invitedUser = user._id;
@@ -477,19 +478,23 @@ const acceptRoleInvite = async (req, res) => {
 
     // Update JudgeAssignment status to 'active' if this is a judge invite
     if (invite.role === 'judge') {
-      await JudgeAssignment.findOneAndUpdate(
+      const result = await JudgeAssignment.findOneAndUpdate(
         { hackathon: invite.hackathon, 'judge.email': invite.email },
         { status: 'active' }
       );
+      if (!result) {
+        console.error('No matching JudgeAssignment found for invite:', invite);
+        // Optionally, you can return a warning but still proceed
+      }
     }
 
-    // Set user role if not already
+    // Set user role if not already, using findByIdAndUpdate to avoid validating other fields
     if (user.role !== invite.role) {
-      user.role = invite.role;
-      await user.save();
+      await User.findByIdAndUpdate(user._id, { role: invite.role });
     }
     res.json({ message: `You are now a ${invite.role} for this hackathon.` });
   } catch (err) {
+    console.error('Error in acceptRoleInvite:', err);
     res.status(500).json({ error: 'Failed to accept invite', details: err.message });
   }
 };

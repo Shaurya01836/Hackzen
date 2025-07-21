@@ -140,7 +140,8 @@ exports.assignJudges = async (req, res) => {
       let invite = await RoleInvite.findOne({
         email: judgeEmail,
         hackathon: hackathonId,
-        role: 'judge'
+        role: 'judge',
+        status: 'pending'
       });
       if (!invite) {
         // Generate invite token
@@ -295,10 +296,24 @@ exports.removeJudgeAssignment = async (req, res) => {
       });
     }
 
+    // Remove judge email from hackathon's judges array
+    await Hackathon.findByIdAndUpdate(
+      assignment.hackathon,
+      { $pull: { judges: assignment.judge.email } }
+    );
+
+    // Remove any pending RoleInvite for this judge (so they can be re-invited)
+    await RoleInvite.deleteMany({
+      email: assignment.judge.email,
+      hackathon: assignment.hackathon,
+      role: 'judge',
+      status: 'pending'
+    });
+
     await JudgeAssignment.findByIdAndDelete(assignmentId);
 
     res.status(200).json({
-      message: 'Judge assignment removed successfully'
+      message: 'Judge assignment and invite removed successfully'
     });
 
   } catch (error) {
