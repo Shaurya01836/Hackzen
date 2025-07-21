@@ -37,6 +37,7 @@ import { Trash2 } from "lucide-react";
 import { HackathonRegistration } from "../../RegistrationHackathon";
 import { Input } from "../../../../../components/CommonUI/input";
 import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
 
 export default function TeamManagementSection({
   hackathon,
@@ -457,16 +458,6 @@ export default function TeamManagementSection({
                             </AlertDialogContent>
                           </AlertDialog>
                         )}
-                        {team.leader._id?.toString() !== user?._id?.toString() && member._id === user?._id && (
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            className="ml-2 px-2 py-0 text-xs text-orange-600 border-orange-600 hover:bg-orange-50"
-                            onClick={() => handleLeaveTeam(team._id)}
-                          >
-                            Leave
-                          </Button>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -497,10 +488,7 @@ export default function TeamManagementSection({
                       onClick={() => {
                         navigator.clipboard.writeText(team.teamCode);
                         setCopiedTeamId(team._id);
-                        toast({
-                          title: "Copied",
-                          description: "Team code copied",
-                        });
+                        toast("Code copied!");
                         setTimeout(() => setCopiedTeamId(null), 1500);
                       }}
                     >
@@ -548,15 +536,35 @@ export default function TeamManagementSection({
                         </AlertDialog>
                       </>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                        onClick={() => handleLeaveTeam(team._id)}
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Leave
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                          >
+                            <LogOut className="w-4 h-4 mr-2" />
+                            Leave Team
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Leave Team?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to leave the team <span className="font-semibold">{team.name}</span>? You will be removed from the team and the hackathon.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleLeaveTeam(team._id)}
+                              className="bg-orange-600 hover:bg-orange-700 text-white"
+                            >
+                              Yes, Leave
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
                 </div>

@@ -767,27 +767,30 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
                 </CardContent>
               </Card>
 
-              <Card className="border-2 border-gray-100 shadow-sm">
-                <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Users className="w-5 h-5 text-green-600" />
-                    Team & Project
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Team Name:</span>
-                    <span className="font-medium">{formData.teamName}</span>
-                  </div>
-
-                  {formData.teamDescription && (
-                    <div>
-                      <span className="text-gray-600">Description:</span>
-                      <p className="font-medium text-xs mt-1">{formData.teamDescription}</p>
+              {/* Only show Team & Project card if not inviteMode */}
+              {!inviteMode && (
+                <Card className="border-2 border-gray-100 shadow-sm">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Users className="w-5 h-5 text-green-600" />
+                      Team & Project
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Team Name:</span>
+                      <span className="font-medium">{formData.teamName}</span>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+
+                    {formData.teamDescription && (
+                      <div>
+                        <span className="text-gray-600">Description:</span>
+                        <p className="font-medium text-xs mt-1">{formData.teamDescription}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             <Card className="border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50">
