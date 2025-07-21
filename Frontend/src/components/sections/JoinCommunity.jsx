@@ -123,7 +123,7 @@ function JoinCommunity() {
             </div>
 
             <div className="flex justify-center sm:justify-start">
-              <button className="group relative inline-flex items-center gap-3 bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-indigo-700 shadow-lg cursor-none">
+              <button className="group relative inline-flex items-center gap-3 bg-indigo-600 text-white text-lg font-bold px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-indigo-700 shadow-lg">
                 <MessageCircle className="w-6 h-6" />
                 <span>Join Our Community</span>
                 <svg
