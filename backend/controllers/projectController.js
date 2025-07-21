@@ -106,11 +106,15 @@ exports.getProjectsByHackathon = async (req, res) => {
 exports.getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(req.params.id)
-      .populate('hackathon', 'title status prizeTrack')
+      .populate('hackathon') // <-- Populate all fields for hackathon
       .populate('submittedBy', 'name profileImage')
-      .populate('team');
-
-    console.log("🔍 Populated project:", project); // 👈 ADD THIS
+      .populate({
+        path: 'team',
+        populate: [
+          { path: 'members', select: 'name profileImage email' },
+          { path: 'leader', select: 'name profileImage email' }
+        ]
+      });
 
     if (!project) return res.status(404).json({ message: 'Project not found' });
 

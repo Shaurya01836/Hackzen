@@ -1,7 +1,7 @@
 import { Badge } from "../CommonUI/badge";
 import { Button } from "../CommonUI/button";
 import { ACard } from "./AnimatedCard";
-import { Trophy } from "lucide-react";
+import { Trophy, Clock } from "lucide-react";
 
 export function HackathonCard({ hackathon, onClick }) {
   return (
@@ -31,24 +31,26 @@ export function HackathonCard({ hackathon, onClick }) {
         </div>
       </div>
       {/* Card Content */}
-      <div className="p-4 flex flex-col gap-3 flex-1">
+      <div className="p-4 flex flex-col gap-2 flex-1">
         <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-1 ">
           {hackathon.name || hackathon.title}
         </h3>
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-500"></div>
-        <div className="flex gap-2 flex-wrap mt-1">
-          <Badge
-            variant="outline"
-            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-          >
-            {hackathon.category}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="text-xs px-2 py-1 bg-gray-100 text-gray-700 border-gray-200"
-          >
-            {hackathon.difficulty}
-          </Badge>
+        {/* Category and Difficulty */}
+        <div className="text-xs text-gray-500 mb-1">
+          {hackathon.category && <span>{hackathon.category}</span>}
+          {hackathon.category && hackathon.difficulty && <span> • </span>}
+          {hackathon.difficulty && <span>{hackathon.difficulty}</span>}
+        </div>
+        {/* Date and Prize Row */}
+        <div className="flex items-center justify-between text-xs text-gray-700 mt-1">
+          <span className="flex items-center gap-1">
+            <Clock className="w-4 h-4" />
+            {hackathon.deadline || hackathon.registrationDeadline || "TBA"}
+          </span>
+          <span className="flex items-center gap-1">
+            <Trophy className="w-4 h-4" />
+            {hackathon.prize || "TBA"}
+          </span>
         </div>
       </div>
     </ACard>

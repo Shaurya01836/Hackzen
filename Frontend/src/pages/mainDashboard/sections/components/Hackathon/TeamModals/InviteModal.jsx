@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "../../../../../../components/CommonUI/input";
 import { Button } from "../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
@@ -16,6 +16,15 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (show) {
+      setSuccessMessage("");
+      setErrorMessage("");
+      setInviteLink(null);
+      setEmail("");
+    }
+  }, [show]);
 
   const handleInvite = async () => {
     if (!email.trim()) return;
@@ -79,7 +88,10 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
         });
       } else {
         let errorMsg = data.error || data.message || "Could not send invite";
-        if (errorMsg.toLowerCase().includes("already sent")) {
+        if (
+          errorMsg.toLowerCase().includes("already sent") ||
+          errorMsg.toLowerCase().includes("already invited")
+        ) {
           errorMsg = "You have already sent an invite to this email.";
         }
         setErrorMessage(errorMsg);

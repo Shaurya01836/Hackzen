@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { io } from "socket.io-client";
 import {
   FileText,
   Award,
@@ -19,6 +20,7 @@ export function MySubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -41,6 +43,36 @@ export function MySubmissions() {
       }
     };
     fetchSubmissions();
+  }, []);
+
+  // Real-time updates with socket.io for like/view counts
+  useEffect(() => {
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:3000");
+    }
+    const socket = socketRef.current;
+    socket.on("project-like-update", ({ projectId, likes, likedBy }) => {
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.projectId && s.projectId._id === projectId
+            ? { ...s, projectId: { ...s.projectId, likes, likedBy } }
+            : s
+        )
+      );
+    });
+    socket.on("project-view-update", ({ projectId, views }) => {
+      setSubmissions((prev) =>
+        prev.map((s) =>
+          s.projectId && s.projectId._id === projectId
+            ? { ...s, projectId: { ...s.projectId, views } }
+            : s
+        )
+      );
+    });
+    return () => {
+      socket.off("project-like-update");
+      socket.off("project-view-update");
+    };
   }, []);
 
   // Only show submissions with a project (ignore PPT-only, unless you want to show those too)

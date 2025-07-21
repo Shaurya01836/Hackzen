@@ -43,6 +43,9 @@ import {
 } from "lucide-react";
 import { ACard } from "../DashboardUI/AnimatedCard";
 import { Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { HackathonCard } from "../DashboardUI/HackathonCard";
+import axios from "axios";
 
 export function ProjectDetail({
   project,
@@ -53,10 +56,16 @@ export function ProjectDetail({
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [likeCount, setLikeCount] = useState(project.likes || 0);
   const [isLiked, setIsLiked] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [fullHackathon, setFullHackathon] = useState(
+    typeof project.hackathon === "object" && project.hackathon && project.hackathon.images
+      ? project.hackathon
+      : null
+  );
 
   // On mount, check if this project is liked in localStorage
   useEffect(() => {
@@ -79,6 +88,28 @@ export function ProjectDetail({
       // REMOVE: fetchProjectTeams();
     }
   }, [project]);
+
+  // Fetch full hackathon if needed
+  useEffect(() => {
+    async function fetchHackathonIfNeeded() {
+      if (!project.hackathon) return;
+      // If already have full object with images, use it
+      if (typeof project.hackathon === "object" && project.hackathon.images) {
+        setFullHackathon(project.hackathon);
+        return;
+      }
+      // If it's just an ID or missing images, fetch
+      const hackathonId = typeof project.hackathon === "string" ? project.hackathon : project.hackathon._id || project.hackathon.id;
+      if (!hackathonId) return;
+      try {
+        const res = await axios.get(`http://localhost:3000/api/hackathons/${hackathonId}`);
+        setFullHackathon(res.data);
+      } catch (err) {
+        setFullHackathon(null);
+      }
+    }
+    fetchHackathonIfNeeded();
+  }, [project.hackathon]);
 
   // Like handler (public, no login required)
   const handleLike = async () => {
@@ -229,6 +260,17 @@ export function ProjectDetail({
       aria: "Share on LinkedIn",
     },
   ];
+
+  // Debug: log hackathon data for troubleshooting
+  console.log('ProjectDetail HackathonCard data:', project.hackathon);
+  if (!project.hackathon) {
+    console.warn('No hackathon data found for this project.');
+  } else {
+    if (!project.hackathon.images) console.warn('No images field in hackathon');
+    if (!project.hackathon.title) console.warn('No title field in hackathon');
+    if (!project.hackathon.prizePool) console.warn('No prizePool field in hackathon');
+    if (!project.hackathon.registrationDeadline) console.warn('No registrationDeadline field in hackathon');
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
@@ -474,39 +516,40 @@ export function ProjectDetail({
               {!onlyOverview && (
                 <TabsContent value="hackathon" className="space-y-8 pb-10">
                   <section>
-                    {((Array.isArray(project.hackathons) && project.hackathons.length > 0) || project.hackathon) ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {(project.hackathons && project.hackathons.length > 0 ? project.hackathons : [project.hackathon]).map((hackathon, idx) => (
-                          <Card key={hackathon._id || idx} className="relative group bg-white/90 border border-indigo-100 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer">
-                            <div className="h-32 w-full bg-muted">
-                              <img
-                                src={hackathon.images?.banner?.url || hackathon.images?.logo?.url || hackathon.banner?.url || hackathon.logo?.url || hackathon.image || "/assets/default-banner.png"}
-                                alt={hackathon.name || hackathon.title}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <CardHeader className="px-4 pt-3 pb-1">
-                              <CardTitle className="text-lg font-semibold text-indigo-700 line-clamp-1 group-hover:text-indigo-900 transition">
-                                {hackathon.name || hackathon.title}
-                              </CardTitle>
-                              <CardDescription className="text-xs text-gray-500">
-                                {hackathon.category} {hackathon.difficulty ? `• ${hackathon.difficulty}` : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="px-4 pb-4 pt-2 space-y-2">
-                              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <span>
-                                  <Clock className="inline w-4 h-4 mr-1" />
-                                  {hackathon.deadline || (hackathon.registrationDeadline ? new Date(hackathon.registrationDeadline).toDateString() : "")}
-                                </span>
-                                <span>
-                                  <Trophy className="inline w-4 h-4 mr-1" />
-                                  {hackathon.prize || hackathon.prizeTrack || "TBA"}
-                                </span>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
+                    {fullHackathon ? (
+                      <div className="flex justify-center">
+                        <HackathonCard
+                          hackathon={{
+                            id: fullHackathon._id,
+                            name: fullHackathon.title,
+                            image: fullHackathon.images?.banner?.url || fullHackathon.images?.logo?.url || fullHackathon.image,
+                            images: fullHackathon.images,
+                            status: fullHackathon.status,
+                            deadline: fullHackathon.registrationDeadline
+                              ? new Date(fullHackathon.registrationDeadline).toDateString()
+                              : "",
+                            participants: Array.isArray(fullHackathon.participants) ? fullHackathon.participants.length : 0,
+                            description: fullHackathon.description,
+                            prize: fullHackathon.prizePool?.amount
+                              ? `$${Number(fullHackathon.prizePool.amount).toLocaleString()}`
+                              : "TBA",
+                            startDate: fullHackathon.startDate
+                              ? new Date(fullHackathon.startDate).toDateString()
+                              : "",
+                            endDate: fullHackathon.endDate
+                              ? new Date(fullHackathon.endDate).toDateString()
+                              : "",
+                            category: fullHackathon.category,
+                            difficulty: fullHackathon.difficultyLevel,
+                          }}
+                          onClick={() =>
+                            navigate(
+                              `/dashboard/explore-hackathons?hackathon=${
+                                fullHackathon._id || fullHackathon.id
+                              }&title=${encodeURIComponent(fullHackathon.title)}`
+                            )
+                          }
+                        />
                       </div>
                     ) : (
                       <div className="text-center text-gray-400 mt-8">No hackathon linked.</div>
@@ -518,50 +561,47 @@ export function ProjectDetail({
               {!onlyOverview && (
                 <TabsContent value="team" className="space-y-8 pb-10">
                   <section>
-                  
-                   
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-8">
-                        {/* Team Leader */}
-                        {project?.submittedBy && (
-                          <Card className="">
-                            <a
-                              href={`/dashboard/profile/${project.submittedBy._id}`}
-                              className="group flex flex-col items-center"
-                            >
-                                <img
-                                  src={project.submittedBy.profileImage || "/placeholder.svg"}
-                                  alt={project.submittedBy.name || "Team Leader"}
-                                  className="w-full h-32 object-cover rounded-t-xl"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = "/placeholder.svg";
-                                  }}
-                                />
-                                {/* Fallback for missing image: show first letter if using placeholder */}
-                                {(!project.submittedBy.profileImage || project.submittedBy.profileImage === "/placeholder.svg") && (
-                                  <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl -mt-32 ">
-                                    {project.submittedBy.name?.[0]?.toUpperCase() || "?"}
-                                  </div>
-                                )}
-                                <div className="flex flex-col items-center w-full py-4">
-                                <span className="font-bold text-lg text-gray-700">
-                                  {project.submittedBy.name || "Unknown"}
-                                </span>
-                                <span className="text-xs text-gray-500 mt-1">Team Leader</span>
-                                </div>
-                              </a>
-                            </Card>
-                          )}
-
-                        {/* Divider for visual separation if there are members */}
-                        {(project.team || []).filter((member) => member._id !== project.submittedBy?._id).length > 0 && (
-                          <div className="sm:col-span-2 md:col-span-3 flex items-center justify-center my-2">
-                            <div className="w-full h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" />
-                          </div>
-                        )}
-
-                        {/* Team Members */}
-                        {(project.team || [])
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-8">
+                      {/* Team Leader Card */}
+                      {project?.submittedBy && (
+                        <Card className="">
+                          <a
+                            href={`/dashboard/profile/${project.submittedBy._id}`}
+                            className="group flex flex-col items-center"
+                          >
+                            <img
+                              src={project.submittedBy.profileImage || "/placeholder.svg"}
+                              alt={project.submittedBy.name || "Team Leader"}
+                              className="w-full h-32 object-cover rounded-t-xl"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = "/placeholder.svg";
+                              }}
+                            />
+                            {/* Fallback for missing image: show first letter if using placeholder */}
+                            {(!project.submittedBy.profileImage || project.submittedBy.profileImage === "/placeholder.svg") && (
+                              <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl -mt-32 ">
+                                {project.submittedBy.name?.[0]?.toUpperCase() || "?"}
+                              </div>
+                            )}
+                            <div className="flex flex-col items-center w-full py-4">
+                              <span className="font-bold text-lg text-gray-700">
+                                {project.submittedBy.name || "Unknown"}
+                              </span>
+                              <span className="text-xs text-gray-500 mt-1">Team Leader</span>
+                            </div>
+                          </a>
+                        </Card>
+                      )}
+                      {/* Divider for visual separation if there are members */}
+                      {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length > 0 && (
+                        <div className="sm:col-span-2 md:col-span-3 flex items-center justify-center my-2">
+                          <div className="w-full h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" />
+                        </div>
+                      )}
+                      {/* Team Members (excluding leader) */}
+                      {project.team && project.team.members &&
+                        project.team.members
                           .filter((member) => member._id !== project.submittedBy?._id)
                           .map((member, idx) => (
                             <Card key={member._id || idx} className="">
@@ -569,69 +609,71 @@ export function ProjectDetail({
                                 href={`/dashboard/profile/${member._id}`}
                                 className="group flex flex-col items-center"
                               >
-                                  <img
-                                    src={member.avatar || "/placeholder.svg"}
-                                    alt={member.name || "Team Member"}
-                                    className="w-full h-32 object-cover rounded-t-xl border-b border-indigo-100 shadow"
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = "/placeholder.svg";
-                                    }}
-                                  />
-                                  {/* Fallback for missing image: show first letter if using placeholder */}
-                                  {(!member.avatar || member.avatar === "/placeholder.svg") && (
-                                    <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl border-b border-indigo-100 shadow -mt-32 mb-4">
-                                      {member.name?.[0]?.toUpperCase() || "?"}
-                                    </div>
-                                  )}
-                                  <div className="flex flex-col items-center w-full py-4">
+                                <img
+                                  src={member.profileImage || member.avatar || "/placeholder.svg"}
+                                  alt={member.name || "Team Member"}
+                                  className="w-full h-32 object-cover rounded-t-xl border-b border-indigo-100 shadow"
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/placeholder.svg";
+                                  }}
+                                />
+                                {/* Fallback for missing image: show first letter if using placeholder */}
+                                {(!member.profileImage && !member.avatar) || member.profileImage === "/placeholder.svg" || member.avatar === "/placeholder.svg" ? (
+                                  <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl border-b border-indigo-100 shadow -mt-32 mb-4">
+                                    {member.name?.[0]?.toUpperCase() || "?"}
+                                  </div>
+                                ) : null}
+                                <div className="flex flex-col items-center w-full py-4">
                                   <span className="font-semibold text-gray-900 group-hover:underline">
                                     {member.name}
                                   </span>
                                   <span className="text-xs text-gray-500 mt-1">Member</span>
-                                  </div>
-                                </a>
-                              </Card>
-                            ))}
-                      </div>
+                                </div>
+                              </a>
+                            </Card>
+                          ))}
                       {/* If no members, show a friendly message */}
-                      {(project.team || []).filter((member) => member._id !== project.submittedBy?._id).length === 0 && (
+                      {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length === 0 && (
                         <div className="text-center text-gray-400 mt-8">No other team members yet.</div>
                       )}
-                 
+                    </div>
                   </section>
                 </TabsContent>
               )}
             </div>
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">
-              {project.submittedBy && (
+              {(project.team && project.team.length > 0) && (
                 <Card className="bg-white/50">
                   <CardHeader>
                     <CardTitle className="text-sm text-gray-500">
-                      Team Leader
+                      Team Members
                     </CardTitle>
                   </CardHeader>
-
                   <CardContent>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage
-                          src={
-                            project.submittedBy?.profileImage ||
-                            "/placeholder.svg"
-                          }
-                          alt={project.submittedBy?.name || "Team Leader"}
-                        />
-                        <AvatarFallback>
-                          {project.submittedBy?.name?.[0]?.toUpperCase() || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {project.submittedBy?.name || "Unknown"}
-                        </p>
-                      </div>
+                    <div className="flex flex-col gap-3">
+                      {project.team.map((member) => (
+                        <div key={member._id} className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10">
+                            <AvatarImage
+                              src={member.profileImage || member.avatar || "/placeholder.svg"}
+                              alt={member.name || "Team Member"}
+                            />
+                            <AvatarFallback>
+                              {member.name?.[0]?.toUpperCase() || "?"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {member.name || "Unknown"}
+                            </p>
+                            <span className="text-xs text-gray-500">
+                              {member._id === project.submittedBy?._id ? "Team Leader" : "Member"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>

@@ -68,7 +68,7 @@ router.get("/submissions", async (req, res) => {
           { pptFile: { $exists: true, $ne: "" } }
         ]
       })
-        .populate('projectId', 'title description logo links attachments')
+        .populate('projectId', 'title description logo links attachments likes views likedBy images submittedBy category status')
         .populate('hackathonId', 'title name')
         .sort({ submittedAt: -1 });
 
@@ -87,7 +87,7 @@ router.get("/submissions", async (req, res) => {
 
       // Find all submissions for user's projects
       const submissions = await Submission.find({ projectId: { $in: projectIds } })
-        .populate('projectId', 'title description logo links attachments')
+        .populate('projectId', 'title description logo links attachments likes views likedBy images submittedBy category status')
         .populate('hackathonId', 'title name')
         .sort({ submittedAt: -1 });
       
