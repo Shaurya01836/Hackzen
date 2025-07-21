@@ -24,6 +24,9 @@ router.get('/project/:projectId', protect, teamInviteController.getProjectInvite
 // Accept invite by id (for invite link)
 router.post('/:id/accept', protect, teamInviteController.acceptInviteById);
 
+// Register invitee with form data after accepting invite
+router.post('/:id/register', protect, teamInviteController.registerInvitee);
+
 // Revoke (delete) a pending invite
 router.delete('/:id', protect, teamInviteController.deleteInvite);
 

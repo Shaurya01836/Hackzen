@@ -322,27 +322,76 @@ const acceptInviteById = async (req, res) => {
       await team.save();
     }
 
-    // Register user for hackathon if not already registered
-    const hackathonId = invite.hackathon;
-    const existingReg = await HackathonRegistration.findOne({ hackathonId, userId });
-    if (!existingReg) {
-      // Get user info for autofill
-      const user = await User.findById(userId);
-      await HackathonRegistration.create({
-        hackathonId,
-        userId,
-        formData: {
-          fullName: user.name,
-          email: user.email,
-          phone: user.phone || '',
-        },
-        acceptedTerms: true
-      });
-    }
-
-    res.json({ message: 'Invite accepted and user registered for hackathon' });
+    res.json({ message: 'Invite accepted and user added to team. Please complete registration.' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to accept invite', details: err.message });
+  }
+};
+
+// POST /api/team-invites/:id/register
+const registerInvitee = async (req, res) => {
+  try {
+    const inviteId = req.params.id;
+    const userId = req.user._id;
+    const { formData } = req.body;
+
+    // Validate invite
+    const invite = await TeamInvite.findById(inviteId).populate('team').populate('hackathon');
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    if (invite.status === 'declined') return res.status(400).json({ error: 'Invite was declined' });
+    if (!invite.hackathon) return res.status(400).json({ error: 'Hackathon not found for this invite' });
+
+    // Accept invite if not already
+    if (invite.status !== 'accepted') {
+      invite.status = 'accepted';
+      invite.respondedAt = new Date();
+      if (!invite.invitedUser) invite.invitedUser = userId;
+      await invite.save();
+    }
+
+    // Add user to team if not already
+    const team = await Team.findById(invite.team._id);
+    if (!team.members.includes(userId)) {
+      team.members.push(userId);
+      await team.save();
+    }
+
+    // Register user for hackathon if not already
+    const hackathonId = invite.hackathon._id;
+    const HackathonRegistration = require('../model/HackathonRegistrationModel');
+    const existingReg = await HackathonRegistration.findOne({ hackathonId, userId });
+    if (existingReg) {
+      return res.status(200).json({ message: 'Already registered for hackathon and added to team.' });
+    }
+
+    // Only allow non-team fields
+    const allowedFields = [
+      'fullName','email','phone','age','gender','collegeOrCompany','degreeOrRole','yearOfStudyOrExperience','projectIdea','github','linkedin','resumeURL','heardFrom','acceptedTerms'
+    ];
+    const filteredFormData = {};
+    allowedFields.forEach(f => { if (formData && formData[f] !== undefined) filteredFormData[f] = formData[f]; });
+    if (!filteredFormData.fullName || !filteredFormData.email || !filteredFormData.collegeOrCompany || !filteredFormData.acceptedTerms) {
+      return res.status(400).json({ error: 'Missing required fields.' });
+    }
+
+    await HackathonRegistration.create({
+      hackathonId,
+      userId,
+      formData: filteredFormData,
+      acceptedTerms: !!filteredFormData.acceptedTerms
+    });
+
+    // Add user to hackathon participants
+    const Hackathon = require('../model/HackathonModel');
+    await Hackathon.findByIdAndUpdate(hackathonId, { $addToSet: { participants: userId } });
+
+    // Add hackathon to user's registeredHackathonIds
+    const User = require('../model/UserModel');
+    await User.findByIdAndUpdate(userId, { $addToSet: { registeredHackathonIds: hackathonId } });
+
+    res.json({ message: 'Registered for hackathon and added to team.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to register via invite', details: err.message });
   }
 };
 
@@ -475,5 +524,6 @@ module.exports = {
   deleteInvite,
   getRoleInviteByToken,
   acceptRoleInvite,
-  declineRoleInvite
+  declineRoleInvite,
+  registerInvitee
 };

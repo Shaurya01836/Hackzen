@@ -6,15 +6,21 @@ import { Button } from "../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
 import { Copy } from "lucide-react";
 import { useToast } from "../../../../../../hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 export default function InviteModal({ onInvite, team, hackathon, project, show, onClose }) {
   const [email, setEmail] = useState("");
   const [inviteLink, setInviteLink] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
   const { toast } = useToast();
 
   const handleInvite = async () => {
     if (!email.trim()) return;
+    setSuccessMessage("");
+    setErrorMessage("");
     // Robust null checks
     if (!team || !team._id) {
       toast({
@@ -22,6 +28,7 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
         description: "Team not loaded. Please try again later.",
         variant: "destructive",
       });
+      setErrorMessage("Team not loaded. Please try again later.");
       return;
     }
     if (!hackathon && !project) {
@@ -30,9 +37,11 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
         description: "Context not loaded. Please try again later.",
         variant: "destructive",
       });
+      setErrorMessage("Context not loaded. Please try again later.");
       return;
     }
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const inviteData = {
         invitedEmail: email,
@@ -63,24 +72,33 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
         const link = `${window.location.origin}/invite/${data.invite._id}`;
         setInviteLink(link);
         setEmail("");
+        setSuccessMessage("Invite sent successfully!");
         toast({
           title: "Invite Sent",
-          description: "Link generated. Share or copy it below.",
+          description: "The invitation was sent successfully.",
         });
       } else {
+        let errorMsg = data.error || data.message || "Could not send invite";
+        if (errorMsg.toLowerCase().includes("already sent")) {
+          errorMsg = "You have already sent an invite to this email.";
+        }
+        setErrorMessage(errorMsg);
         toast({
           title: "Invite Failed",
-          description: data.error || data.message || "Could not send invite",
+          description: errorMsg,
           variant: "destructive",
         });
       }
     } catch (err) {
       console.error("Error sending invite:", err);
+      setErrorMessage(err.message || "Something went wrong while sending the invite");
       toast({
         title: "Error",
         description: err.message || "Something went wrong while sending the invite",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -110,12 +128,26 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="friend@example.com"
+            disabled={loading}
           />
-          <Button onClick={handleInvite} disabled={!email.trim()}>
-            Send Invite
+          <Button onClick={handleInvite} disabled={!email.trim() || loading}>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending...
+              </>
+            ) : (
+              "Send Invite"
+            )}
           </Button>
 
-          {inviteLink && (
+          {successMessage && !loading && (
+            <div className="text-green-700 font-medium text-center">{successMessage}</div>
+          )}
+          {errorMessage && !loading && (
+            <div className="text-red-600 font-medium text-center">{errorMessage}</div>
+          )}
+
+          {inviteLink && !loading && (
             <div className="text-sm text-gray-600">
               Share this invite link:
               <div className="bg-gray-100 mt-2 px-3 py-2 rounded flex items-center justify-between">

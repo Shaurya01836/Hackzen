@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
+import { HackathonRegistration } from "./mainDashboard/sections/RegistrationHackathon";
 
 function getUserFromStorage() {
   try {
@@ -20,6 +21,8 @@ export function InviteAccept() {
   const [inviteData, setInviteData] = useState(null);
   const [showAcceptModal, setShowAcceptModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const navigate = useNavigate();
 
   // Helper to refresh user from storage
@@ -88,7 +91,7 @@ export function InviteAccept() {
     checkInvite();
   }, [checkInvite]);
 
-  // Accept invite handler
+  // Accept invite handler (now just accepts, then shows registration form)
   const handleAccept = async () => {
     setShowAcceptModal(false);
     setStatus("loading");
@@ -100,20 +103,8 @@ export function InviteAccept() {
       });
       const data = await acceptRes.json();
       if (acceptRes.ok) {
-        setStatus("accepted");
-        setMessage("✅ You have successfully joined the team and registered for the hackathon!");
-        // Refresh invite data and user state
-        await checkInvite();
-        setTimeout(() => {
-          if (inviteData && inviteData.hackathon && inviteData.hackathon._id) {
-            const hackathonId = inviteData.hackathon._id;
-            const hackathonTitle = inviteData.hackathon.title || "";
-            const encodedTitle = encodeURIComponent(hackathonTitle);
-            navigate(`/dashboard/explore-hackathons?hackathon=${hackathonId}&title=${encodedTitle}`);
-          } else {
-            navigate("/dashboard/my-hackathons");
-          }
-        }, 2000);
+        setStatus("register");
+        setShowRegistrationForm(true);
       } else {
         setStatus("error");
         setMessage(data.error || "❌ Failed to accept invite.");
@@ -121,6 +112,36 @@ export function InviteAccept() {
     } catch {
       setStatus("error");
       setMessage("❌ Failed to accept invite.");
+    }
+  };
+
+  // Registration form submit handler
+  const handleRegistrationSubmit = async (formData) => {
+    setStatus("loading");
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ formData })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRegistrationSuccess(true);
+        setStatus("accepted");
+        setMessage("✅ You have successfully joined the team and registered for the hackathon!");
+      } else {
+        setStatus("error");
+        setMessage(data.error || "❌ Failed to register for hackathon.");
+      }
+    } catch {
+      setStatus("error");
+      setMessage("❌ Failed to register for hackathon.");
+    } finally {
+      // Always redirect after registration attempt
+      setTimeout(() => {
+        navigate("/dashboard/my-hackathons");
+      }, 2000);
     }
   };
 
@@ -326,6 +347,27 @@ export function InviteAccept() {
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  // Show registration form after accepting invite
+  if (showRegistrationForm && inviteData && inviteData.hackathon) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <div className="w-full max-w-2xl p-6">
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <p className="text-lg font-semibold text-blue-900">
+              {inviteData.invitedBy?.name || inviteData.invitedBy?.email || "A friend"} is inviting you to join the hackathon <span className="font-bold">{inviteData.hackathon?.title}</span>!
+            </p>
+          </div>
+          <HackathonRegistration
+            hackathon={inviteData.hackathon}
+            onBack={() => setShowRegistrationForm(false)}
+            onSuccess={handleRegistrationSubmit}
+            inviteMode={true}
+          />
+        </div>
       </div>
     );
   }

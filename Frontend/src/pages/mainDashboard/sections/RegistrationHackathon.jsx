@@ -50,7 +50,7 @@ function generateTeamCode(length = 8) {
   return code;
 }
 
-export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode = false, startStep = 1, initialData }) {
+export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode = false, startStep = 1, initialData, inviteMode = false }) {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(editMode ? startStep : 1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -182,8 +182,10 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
         // Optional fields, no validation needed
         break
       case 3:
-        if (!formData.teamName.trim())
-          newErrors.teamName = "Team name is required"
+        if (!inviteMode) {
+          if (!formData.teamName.trim())
+            newErrors.teamName = "Team name is required"
+        }
         break
       case 4:
         if (!formData.acceptedTerms)
@@ -225,15 +227,30 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
         return;
       }
 
+      let submitFormData = { ...formData };
+      if (inviteMode) {
+        // Remove team fields for invite registration
+        delete submitFormData.teamName;
+        delete submitFormData.teamDescription;
+      }
+
       const endpoint = editMode 
         ? `http://localhost:3000/api/registration/${hackathon._id}/update`
-        : "http://localhost:3000/api/registration";
-      
+        : inviteMode
+          ? null // handled by parent
+          : "http://localhost:3000/api/registration";
       const method = editMode ? "PUT" : "POST";
+
+      if (inviteMode) {
+        // Call parent onSuccess with filtered formData
+        onSuccess(submitFormData);
+        setIsSubmitting(false);
+        return;
+      }
 
       console.log(`${editMode ? "Updating" : "Submitting"} registration with data:`, {
         hackathonId: hackathon._id,
-        formData: formData
+        formData: submitFormData
       });
 
       const response = await fetch(endpoint, {
@@ -244,7 +261,7 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
         },
         body: JSON.stringify({
           hackathonId: hackathon._id,
-          formData
+          formData: submitFormData
         })
       });
 
@@ -516,6 +533,24 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
         )
 
       case 3:
+        if (inviteMode) {
+          // Skip team fields, just show a message or nothing
+          return (
+            <div className="space-y-8 py-4">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full mb-6 shadow-lg">
+                  <Users className="w-10 h-10 text-green-600" />
+                </div>
+                <h2 className="text-4xl font-bold text-gray-900 mb-3">
+                  Team Details
+                </h2>
+                <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+                  You are joining a team by invitation. Team details are managed by your team leader.
+                </p>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="space-y-8 py-4">
             {/* Enhanced Header */}
