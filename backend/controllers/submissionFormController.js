@@ -300,7 +300,11 @@ exports.getSubmissionsByHackathonAdmin = async (req, res) => {
     const submissions = await Submission.find({ hackathonId })
       .populate({
         path: 'projectId',
-        select: 'title description technologies links attachments',
+        select: 'title description technologies links attachments repoLink skills team submittedBy logo images videoLink oneLineIntro category',
+        populate: [
+          { path: 'team', populate: [ { path: 'members', select: 'name profileImage email' }, { path: 'leader', select: 'name profileImage email' } ] },
+          { path: 'submittedBy', select: 'name profileImage email' }
+        ]
       })
       .populate({
         path: 'hackathonId',

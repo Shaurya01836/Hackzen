@@ -10,8 +10,8 @@ import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/Home/LandingPage";
 import NotFound from "./pages/Notfound";
 import Page from "./pages/AdminDashboard/AdminPanel";
-import Login from "./pages/Auth/Login";
-import Register from "./pages/Auth/Register";
+import LoginPage from "./pages/Auth/LoginPage";
+import RegistrationPage from "./pages/Auth/RegistrationPage";
 import CompleteProfile from "./pages/Auth/CompleteProfile";
 import DashboardPage from "./pages/mainDashboard/Page";
 import OAuthSuccess from "./pages/OAuthSuccess";
@@ -45,8 +45,8 @@ function App() {
       <Routes>
         {/* Landing and auth */}
         <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegistrationPage/>} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />

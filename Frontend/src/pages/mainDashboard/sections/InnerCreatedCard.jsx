@@ -114,12 +114,8 @@ export default function HackathonDetailsPage({
       try {
         const fetchJson = async (url) => {
           const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-          const text = await res.text();
-          try {
-            return JSON.parse(text);
-          } catch (err) {
-            throw new Error(`API error at ${url}: ${res.status} - ${text.slice(0, 100)}`);
-          }
+          if (!res.ok) throw new Error(await res.text());
+          return await res.json();
         };
         const [h, t, s, p] = await Promise.all([
           fetchJson(`http://localhost:3000/api/hackathons/${id}`),
@@ -127,16 +123,25 @@ export default function HackathonDetailsPage({
           fetchJson(`http://localhost:3000/api/projects/hackathon/${id}`),
           fetchJson(`http://localhost:3000/api/registration/hackathon/${id}/participants`),
         ]);
-        setHackathon(h);
         setTeams(t);
-        setSubmissions(s);
         setParticipants(p.participants || []);
+
+        // Fetch all submissions for this hackathon (admin endpoint)
+        const submissionsRes = await fetchJson(`http://localhost:3000/api/submission-form/admin/hackathon/${id}`);
+        const allSubs = submissionsRes.submissions || [];
+        // Separate project and PPT submissions (match judge panel logic)
+        const pptSubs = allSubs
+          .filter((s) => s.pptFile && !s.projectId)
+          .map((s) => ({
+            ...s,
+            type: 'ppt',
+            title: s.originalName || 'PPT Submission',
+          }));
+        const projectSubs = allSubs.filter((s) => s.projectId);
+        setSubmissions([...projectSubs, ...pptSubs]);
+        setHackathon(h);
       } catch (err) {
-        setFetchError(err.message);
-        setHackathon(null);
-        setTeams([]);
-        setSubmissions([]);
-        setParticipants([]);
+        setFetchError(err.message || 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
@@ -149,11 +154,16 @@ export default function HackathonDetailsPage({
   if (!hackathon) return <div>No data found.</div>;
 
   const filteredProjects = submissions.filter((project) => {
+    const title = typeof project.title === 'string' ? project.title : '';
+    const teamName = typeof project.teamName === 'string' ? project.teamName : '';
+    const members = Array.isArray(project.members) ? project.members : [];
+    const search = typeof searchTerm === 'string' ? searchTerm : '';
+
     const matchesSearch =
-      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.members.some((member) =>
-        member.toLowerCase().includes(searchTerm.toLowerCase())
+      title.toLowerCase().includes(search.toLowerCase()) ||
+      teamName.toLowerCase().includes(search.toLowerCase()) ||
+      members.some((member) =>
+        typeof member === 'string' && member.toLowerCase().includes(search.toLowerCase())
       );
     const matchesTrack = filterTrack === "all" || project.track === filterTrack;
     const matchesStatus =
@@ -362,7 +372,10 @@ export default function HackathonDetailsPage({
                     ← Back to Submissions
                   </button>
                   <ProjectDetail
-                    project={sub}
+                    project={{
+                      ...sub,
+                      ...(sub.projectId && typeof sub.projectId === 'object' ? sub.projectId : {}),
+                    }}
                     onBack={() => setSelectedSubmissionId(null)}
                     hideBackButton={true}
                     onlyOverview={false}
@@ -377,13 +390,28 @@ export default function HackathonDetailsPage({
               </button>
               <h1 className="text-3xl font-bold text-indigo-900 mb-8 text-center">Submissions</h1>
               {(() => {
-                // Filter submissions by selectedType
-                const filteredSubs = selectedType === 'All'
-                  ? submissions
-                  : submissions.filter(sub => {
-                      const type = sub.type ? sub.type.toLowerCase() : (sub.pptFile ? 'ppt' : 'project');
-                      return type === selectedType.toLowerCase();
-                    });
+                let filteredSubs = submissions;
+                try {
+                  const safeSelectedType = typeof selectedType === 'string' && selectedType ? selectedType : 'All';
+                  filteredSubs = safeSelectedType.toLowerCase() === 'all'
+                    ? submissions
+                    : submissions.filter(sub => {
+                        let type = 'project';
+                        if (typeof sub.type === 'string' && sub.type) {
+                          type = sub.type.toLowerCase();
+                        } else if (sub.pptFile) {
+                          type = 'ppt';
+                        }
+                        if (typeof type !== 'string' || typeof safeSelectedType !== 'string') {
+                          console.warn('Skipping submission due to invalid type:', sub, type, safeSelectedType);
+                          return false;
+                        }
+                        return type === safeSelectedType.toLowerCase();
+                      });
+                } catch (err) {
+                  console.error('Error filtering submissions:', err);
+                  filteredSubs = submissions; // fallback to showing all
+                }
                 if (filteredSubs.length === 0) {
                   return <div className="text-center text-gray-500">No submissions yet.</div>;
                 }
@@ -391,10 +419,11 @@ export default function HackathonDetailsPage({
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredSubs.map((sub, idx) => (
                       <ProjectCard
-                        key={sub._id || idx}
+                        key={sub._id ? String(sub._id) : `submission-${idx}`}
                         project={{
                           ...sub,
-                          title: sub.title || sub.originalName || 'Untitled',
+                          ...(sub.projectId && typeof sub.projectId === 'object' ? sub.projectId : {}),
+                          title: sub.title || sub.originalName || (sub.projectId && sub.projectId.title) || 'Untitled',
                           name: sub.teamName || (sub.team && sub.team.name) || '-',
                           type: sub.type ? sub.type.toUpperCase() : (sub.pptFile ? 'PPT' : 'Project'),
                           status: sub.status || 'Submitted',
