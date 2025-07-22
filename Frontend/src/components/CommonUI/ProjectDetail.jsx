@@ -46,6 +46,7 @@ import { Trophy } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { HackathonCard } from "../DashboardUI/HackathonCard";
 import axios from "axios";
+import ProjectScoresList from './ProjectScoresList';
 
 export function ProjectDetail({
   project,
@@ -507,6 +508,7 @@ export function ProjectDetail({
           </div>
         </div>
       </div>
+      <ProjectScoresList projectId={project._id} />
       {/* Horizontal line above tabs */}
       <div className="max-w-7xl mx-auto px-6 pt-4">
         <div className="border-t border-gray-200 mb-4 w-full" />

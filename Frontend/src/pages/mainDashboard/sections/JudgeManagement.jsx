@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { MultiSelect } from "../../../components/CommonUI/multiselect";
+import ProjectScoresList from '../../../components/CommonUI/ProjectScoresList';
 
 import axios from "axios";
 
@@ -1050,7 +1051,7 @@ export default function JudgeManagement({ hackathonId }) {
                       {assignments.map((assignment) => (
                         <div
                           key={assignment._id}
-                          className="p-4 border rounded-lg bg-white"
+                          className="p-4 border rounded-lg bg-white mb-6"
                         >
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
@@ -1064,7 +1065,6 @@ export default function JudgeManagement({ hackathonId }) {
                             </div>
                             {getStatusBadge(assignment.status)}
                           </div>
-
                           {/* Problem Statement Assignments */}
                           {assignment.assignedProblemStatements?.length > 0 && (
                             <div className="mb-4">
@@ -1085,7 +1085,6 @@ export default function JudgeManagement({ hackathonId }) {
                               </div>
                             </div>
                           )}
-
                           {/* Round Assignments */}
                           {assignment.assignedRounds?.length > 0 && (
                             <div className="mb-4">
@@ -1106,16 +1105,15 @@ export default function JudgeManagement({ hackathonId }) {
                               </div>
                             </div>
                           )}
-
                           {/* Metrics */}
-                          <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div className="grid grid-cols-3 gap-4 text-sm mb-4">
                             <div>
                               <p className="text-gray-600">Submissions Judged</p>
                               <p className="font-medium">
                                 {assignment.metrics?.totalSubmissionsJudged || 0}
                               </p>
                             </div>
-                            <div>                                 
+                            <div>
                               <p className="text-gray-600">Avg Score</p>
                               <p className="font-medium">
                                 {assignment.metrics?.averageScoreGiven?.toFixed(1) || "N/A"}
@@ -1128,6 +1126,10 @@ export default function JudgeManagement({ hackathonId }) {
                               </p>
                             </div>
                           </div>
+                          {/* Project Scores Table (if project exists) */}
+                          {assignment.project && assignment.project._id && (
+                            <ProjectScoresList projectId={assignment.project._id} />
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1138,6 +1140,17 @@ export default function JudgeManagement({ hackathonId }) {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Example integration for demonstration, replace with real projectId as needed */}
+      {/* <ProjectScoresList projectId={hackathon?.problemStatements?.[0]?._id || ''} /> */}
+
+      {/* For demonstration, add a section at the bottom: */}
+      {hackathon?.problemStatements?.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold mb-2">Demo: Project Scores Table</h2>
+          <ProjectScoresList projectId={hackathon.problemStatements[0]._id} />
+        </div>
+      )}
     </div>
   );
 } 
