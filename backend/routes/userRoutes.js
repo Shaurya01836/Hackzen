@@ -86,7 +86,8 @@ router.get('/logout', (req, res) => {
   req.logout(() => {
     req.session.destroy(() => {
       res.clearCookie('connect.sid');
-      res.redirect('http://localhost:5173/');
+      // Instead of redirect, send a JSON response for CORS compliance
+      res.status(200).json({ message: 'Logged out successfully' });
     });
   });
 });

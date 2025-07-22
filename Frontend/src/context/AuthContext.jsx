@@ -90,9 +90,13 @@ export const AuthProvider = ({ children }) => {
   // ✅ Logout handler
   const logout = async () => {
     try {
-      await axios.get("http://localhost:3000/api/users/logout", {
+      const res = await axios.get("http://localhost:3000/api/users/logout", {
         withCredentials: true
       });
+      if (res.status === 200) {
+        console.log("Logout successful");
+        // Optionally show a toast here
+      }
     } catch (err) {
       console.error("Logout error:", err.message);
     }
