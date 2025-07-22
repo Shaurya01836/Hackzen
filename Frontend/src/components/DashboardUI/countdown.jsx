@@ -58,15 +58,11 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
   const getTypeStyles = () => {
     return {
       gradient: "from-blue-500 to-indigo-500",
-    
-      borderColor: "border-blue-200",
       textColor: "text-blue-700",
       iconColor: "text-blue-600",
       badgeClass: "bg-gradient-to-r from-blue-500 to-indigo-500 text-white",
       timeUnitBg: "bg-white/80 backdrop-blur-sm",
       timeUnitBorder: "border-blue-100",
-      timeUnitText: "text-blue-900",
-      timeUnitLabel: "text-blue-600"
     };
   };
 
@@ -75,7 +71,7 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
   if (timeLeft.isExpired) {
     return (
       <Card
-        className={`bg-gradient-to-br ${styles.bgGradient} ${styles.borderColor} border-2 shadow-lg transition-all duration-300 hover:shadow-xl`}
+  
       >
         <CardHeader className="pb-4">
           <CardTitle
@@ -105,11 +101,11 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
 
   // Check if deadline is urgent (less than 24 hours)
   const isUrgent = timeLeft.days === 0 && timeLeft.hours < 24;
-  const urgentPulse = isUrgent ? "animate-pulse" : "";
+
 
   return (
     <Card
-      className={`bg-gradient-to-br ${styles.bgGradient} ${styles.borderColor} border-2 shadow-md transition-all duration-300 ${urgentPulse}`}
+ 
     >
       <CardHeader className="pb-4">
         <CardTitle
@@ -432,7 +428,7 @@ export function SmartCountdown({ hackathon }) {
 
   if (!currentCountdown) {
     return (
-      <Card className="bg-gradient-to-br from-gray-50 to-slate-50 border-gray-200 border-2 shadow-md">
+      <Card className="">
         <CardContent className="py-6 px-6">
           <div className="flex items-center justify-center text-gray-500">
             <CheckCircle className="w-6 h-6 mr-2" />

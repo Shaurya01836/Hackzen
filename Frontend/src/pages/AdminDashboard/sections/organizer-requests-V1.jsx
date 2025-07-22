@@ -6,20 +6,22 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../components/CommonUI/card";
-import { 
-  Loader2, 
-  Globe, 
-  Mail, 
-  Github, 
-  CalendarDays, 
-  Clock, 
-  CheckCircle, 
-  X, 
+import {
+  Loader2,
+  Globe,
+  Mail,
+  Github,
+  CalendarDays,
+  Clock,
+  CheckCircle,
+  X,
   Filter,
   Search,
-  RefreshCw
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { usePagination } from "../../../hooks/usePagination";
+import { Pagination } from "../../../components/CommonUI/Pagination";
 
 export function OrganizerRequestsPage() {
   const [allRequests, setAllRequests] = useState([]);
@@ -28,6 +30,14 @@ export function OrganizerRequestsPage() {
   const [updatingId, setUpdatingId] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+
+  const {
+    currentItems: currentRequests,
+    currentPage,
+    totalPages,
+    totalItems,
+    setCurrentPage,
+  } = usePagination(filteredRequests, 2);
 
   useEffect(() => {
     fetchAllRequests();
@@ -47,17 +57,20 @@ export function OrganizerRequestsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch");
-      
+
       // Debug: Log the data structure
-      console.log('Fetched organizations:', data.map(org => ({
-        name: org.name,
-        approved: org.approved,
-        rejected: org.rejected,
-        type: typeof org.approved
-      })));
-      
+      console.log(
+        "Fetched organizations:",
+        data.map((org) => ({
+          name: org.name,
+          approved: org.approved,
+          rejected: org.rejected,
+          type: typeof org.approved,
+        }))
+      );
+
       setAllRequests(data);
-    } catch (err) {
+    } catch {
       toast.error("❌ Failed to load requests");
     } finally {
       setLoading(false);
@@ -85,24 +98,27 @@ export function OrganizerRequestsPage() {
 
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter((org) =>
-        org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.organizationType?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (org) =>
+          org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          org.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          org.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          org.organizationType?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Debug logging
-    console.log('Filter Debug:', {
+    console.log("Filter Debug:", {
       activeFilter,
       totalRequests: allRequests.length,
       filteredCount: filtered.length,
-      sampleOrg: allRequests[0] ? {
-        name: allRequests[0].name,
-        approved: allRequests[0].approved,
-        rejected: allRequests[0].rejected
-      } : null
+      sampleOrg: allRequests[0]
+        ? {
+            name: allRequests[0].name,
+            approved: allRequests[0].approved,
+            rejected: allRequests[0].rejected,
+          }
+        : null,
     });
 
     setFilteredRequests(filtered);
@@ -126,7 +142,7 @@ export function OrganizerRequestsPage() {
         toast.success(`✅ Application approved`);
         // Refresh to show updated status
         fetchAllRequests();
-      } catch (err) {
+      } catch {
         toast.error(`❌ Failed to approve`);
       } finally {
         setUpdatingId(null);
@@ -148,7 +164,7 @@ export function OrganizerRequestsPage() {
         toast.success(`✅ Application rejected`);
         // Refresh to show updated status
         fetchAllRequests();
-      } catch (err) {
+      } catch {
         toast.error(`❌ Failed to reject`);
       } finally {
         setUpdatingId(null);
@@ -216,82 +232,80 @@ export function OrganizerRequestsPage() {
           variant="outline"
           className="flex items-center gap-2"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
       {/* Statistics Cards */}
-     
 
       {/* Filters and Search */}
-     
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by name, contact person, email, or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
 
-            {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={activeFilter === "all" ? "default" : "outline"}
-                onClick={() => setActiveFilter("all")}
-                className="flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                All
-              </Button>
-              <Button
-                variant={activeFilter === "pending" ? "default" : "outline"}
-                onClick={() => setActiveFilter("pending")}
-                className={`flex items-center gap-2 ${
-                  activeFilter === "pending" 
-                    ? "bg-yellow-600 hover:bg-yellow-700 text-white" 
-                    : "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300"
-                }`}
-              >
-                <Clock className="w-4 h-4" />
-                Pending
-              </Button>
-              <Button
-                variant={activeFilter === "approved" ? "default" : "outline"}
-                onClick={() => setActiveFilter("approved")}
-                className={`flex items-center gap-2 ${
-                  activeFilter === "approved" 
-                    ? "bg-green-600 hover:bg-green-700 text-white" 
-                    : "bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                }`}
-              >
-                <CheckCircle className="w-4 h-4" />
-                Approved
-              </Button>
-              <Button
-                variant={activeFilter === "rejected" ? "default" : "outline"}
-                onClick={() => setActiveFilter("rejected")}
-                className={`flex items-center gap-2 ${
-                  activeFilter === "rejected" 
-                    ? "bg-red-600 hover:bg-red-700 text-white" 
-                    : "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                }`}
-              >
-                <X className="w-4 h-4" />
-                Rejected
-              </Button>
+      <CardContent className="p-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by name, contact person, email, or type..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
             </div>
           </div>
-        </CardContent>
-    
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={activeFilter === "all" ? "default" : "outline"}
+              onClick={() => setActiveFilter("all")}
+              className="flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              All
+            </Button>
+            <Button
+              variant={activeFilter === "pending" ? "default" : "outline"}
+              onClick={() => setActiveFilter("pending")}
+              className={`flex items-center gap-2 ${
+                activeFilter === "pending"
+                  ? "bg-yellow-600 hover:bg-yellow-700 text-white"
+                  : "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-300"
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              Pending
+            </Button>
+            <Button
+              variant={activeFilter === "approved" ? "default" : "outline"}
+              onClick={() => setActiveFilter("approved")}
+              className={`flex items-center gap-2 ${
+                activeFilter === "approved"
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              }`}
+            >
+              <CheckCircle className="w-4 h-4" />
+              Approved
+            </Button>
+            <Button
+              variant={activeFilter === "rejected" ? "default" : "outline"}
+              onClick={() => setActiveFilter("rejected")}
+              className={`flex items-center gap-2 ${
+                activeFilter === "rejected"
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+              }`}
+            >
+              <X className="w-4 h-4" />
+              Rejected
+            </Button>
+          </div>
+        </div>
+      </CardContent>
 
       {/* Results */}
       {filteredRequests.length === 0 ? (
@@ -302,7 +316,9 @@ export function OrganizerRequestsPage() {
             </div>
             <p className="text-gray-600 text-lg">No applications found</p>
             <p className="text-gray-400 text-sm mt-2">
-              {searchTerm ? "Try adjusting your search terms" : "No applications match the selected filter"}
+              {searchTerm
+                ? "Try adjusting your search terms"
+                : "No applications match the selected filter"}
             </p>
           </CardContent>
         </Card>
@@ -310,22 +326,31 @@ export function OrganizerRequestsPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
-              Showing {filteredRequests.length} of {allRequests.length} applications
+              Showing {filteredRequests.length} of {allRequests.length}{" "}
+              applications
             </p>
           </div>
-          
-          {filteredRequests.map((org) => (
-            <Card key={org._id} className={`${
-              org.approved ? "border-green-200 bg-green-50" : 
-              org.rejected ? "border-red-200 bg-red-50" : 
-              "border-yellow-200 bg-yellow-50"
-            }`}>
+
+          {currentRequests.map((org) => (
+            <Card
+              key={org._id}
+              className={`${
+                org.approved
+                  ? "border-green-200 bg-green-50"
+                  : org.rejected
+                  ? "border-red-200 bg-red-50"
+                  : "border-yellow-200 bg-yellow-50"
+              }`}
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl font-semibold">{org.name}</CardTitle>
+                    <CardTitle className="text-xl font-semibold">
+                      {org.name}
+                    </CardTitle>
                     <p className="text-sm text-gray-500">
-                      Submitted by <span className="font-medium">{org.contactPerson}</span>
+                      Submitted by{" "}
+                      <span className="font-medium">{org.contactPerson}</span>
                     </p>
                   </div>
                   {getStatusBadge(org)}
@@ -333,10 +358,20 @@ export function OrganizerRequestsPage() {
               </CardHeader>
 
               <CardContent className="space-y-3 text-sm text-gray-700">
-                <p><Mail className="inline-block w-4 h-4 mr-1" /> <strong>Email:</strong> {org.email}</p>
-                <p><strong>Type:</strong> {org.organizationType || "N/A"}</p>
-                <p><strong>Support Needs:</strong> {org.supportNeeds?.join(", ") || "None"}</p>
-                <p><strong>Purpose:</strong> {org.purpose || "N/A"}</p>
+                <p>
+                  <Mail className="inline-block w-4 h-4 mr-1" />{" "}
+                  <strong>Email:</strong> {org.email}
+                </p>
+                <p>
+                  <strong>Type:</strong> {org.organizationType || "N/A"}
+                </p>
+                <p>
+                  <strong>Support Needs:</strong>{" "}
+                  {org.supportNeeds?.join(", ") || "None"}
+                </p>
+                <p>
+                  <strong>Purpose:</strong> {org.purpose || "N/A"}
+                </p>
 
                 {org.website && (
                   <p>
@@ -372,7 +407,8 @@ export function OrganizerRequestsPage() {
                   {new Date(org.createdAt).toLocaleString()}
                   {org.rejectedAt && (
                     <span className="ml-2 text-red-600">
-                      (Rejected: {new Date(org.rejectedAt).toLocaleDateString()})
+                      (Rejected: {new Date(org.rejectedAt).toLocaleDateString()}
+                      )
                     </span>
                   )}
                 </p>
@@ -428,6 +464,14 @@ export function OrganizerRequestsPage() {
           ))}
         </div>
       )}
+      {/* Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={setCurrentPage}
+        itemsPerPage={2}
+      />
     </div>
   );
 }
