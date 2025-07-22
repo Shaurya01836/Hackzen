@@ -191,10 +191,12 @@ export default function MyHackathons() {
   }, []);
 
   const handleCreateProject = () => {
+    navigate("?createProject=1", { replace: false });
     setCurrentView("create-project");
   };
 
   const handleBackToDashboard = () => {
+    navigate("/dashboard/my-hackathons", { replace: false });
     setCurrentView("dashboard");
   };
 
@@ -511,7 +513,7 @@ export default function MyHackathons() {
                 </div>
               ) : (
                 <Card>
-                  <CardContent className="pt-8 flex flex-col items-center justify-center py-16 text-center">
+                  <CardContent className="pt-12 flex flex-col items-center justify-center py-16 text-center">
                     <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center mb-6">
                       <Trophy className="w-8 h-8 text-orange-600" />
                     </div>
