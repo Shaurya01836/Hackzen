@@ -175,7 +175,7 @@ export function Announcements() {
         <RCard>
           <RCardHeader>
             <RCardTitle className="text-lg text-black flex items-center">
-              <Send className="w-5 h-5 mr-2 text-purple-600" />
+              <Send className="w-5 h-5 mr-2 text-indigo-600" />
               Audience Reach
             </RCardTitle>
           </RCardHeader>
@@ -202,7 +202,7 @@ export function Announcements() {
           <Card>
             <CardHeader>
               <CardTitle className="text-black flex items-center">
-                <Send className="w-5 h-5 mr-2 text-purple-700" />
+                <Send className="w-5 h-5 mr-2 text-indigo-700" />
                 Send New Announcement
               </CardTitle>
             </CardHeader>
@@ -215,7 +215,7 @@ export function Announcements() {
                   placeholder="Enter announcement title..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
+                  className="bg-white/5 border-indigo-500/20 text-black placeholder-gray-600"
                 />
               </div>
 
@@ -228,7 +228,7 @@ export function Announcements() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
-                  className="bg-white/5 border-purple-500/20 text-black placeholder-gray-600 resize-none"
+                  className="bg-white/5 border-indigo-500/20 text-black placeholder-gray-600 resize-none"
                 />
               </div>
 
@@ -237,10 +237,10 @@ export function Announcements() {
                   Hackathon
                 </label>
                 <Select value={hackathon} onValueChange={setHackathon}>
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                  <SelectTrigger className="bg-white/5 border-indigo-500/20 text-black">
                     <SelectValue placeholder="Select hackathon" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-indigo-500/20">
                     <SelectItem
                       value="all"
                       className="text-white hover:bg-white/5"
@@ -256,10 +256,10 @@ export function Announcements() {
                   Priority
                 </label>
                 <Select value={priority} onValueChange={setPriority}>
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                  <SelectTrigger className="bg-white/5 border-indigo-500/20 text-black">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-indigo-500/20">
                     <SelectItem
                       value="alert"
                       className="text-white hover:bg-white/5"
@@ -287,10 +287,10 @@ export function Announcements() {
                   Audience
                 </label>
                 <Select value={audience} onValueChange={setAudience}>
-                  <SelectTrigger className="bg-white/5 border-purple-500/20 text-black">
+                  <SelectTrigger className="bg-white/5 border-indigo-500/20 text-black">
                     <SelectValue placeholder="Select target audience" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                  <SelectContent className="bg-black/90 backdrop-blur-xl border-indigo-500/20">
                     <SelectItem
                       value="all"
                       className="text-white hover:bg-white/5"
@@ -323,7 +323,7 @@ export function Announcements() {
                 <Button
                   variant="outline"
                   onClick={() => setShowPreview(!showPreview)}
-                  className="flex-1 border-purple-500 text-black hover:bg-purple-600 hover:text-white"
+                  className="flex-1 border-indigo-500 text-black hover:bg-indigo-600 hover:text-white"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Preview
@@ -389,7 +389,7 @@ export function Announcements() {
                     sent.map((announcement) => (
                       <div
                         key={announcement._id}
-                        className="p-4 bg-white/5 rounded-lg border border-purple-500/20 hover:bg-white/10 transition-colors"
+                        className="p-4 bg-white/5 rounded-lg border border-indigo-500/20 hover:bg-white/10 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <h4 className="text-black font-medium text-sm leading-tight">

@@ -98,6 +98,15 @@ const quickActions = [
   },
 ];
 
+// Placeholder chart component
+function AnalyticsGraph() {
+  return (
+    <div className="w-full h-[430px] flex items-center justify-center bg-indigo-50 rounded-xl border border-indigo-100 my-4">
+      <span className="text-indigo-400">[Analytics Graph Placeholder]</span>
+    </div>
+  );
+}
+
 export function OrganizerTools() {
   const [analyticsData, setAnalyticsData] = useState({
     totalEvents: 0,
@@ -172,30 +181,22 @@ export function OrganizerTools() {
     }
   };
 
-  const groupedActions = quickActions.reduce((acc, action) => {
-    if (!acc[action.category]) {
-      acc[action.category] = [];
-    }
-    acc[action.category].push(action);
-    return acc;
-  }, {});
-
   return (
-    <div className="flex-1 space-y-8 p-6 bg-gray-50 min-h-screen">
-      <div className="flex items-center gap-4 mb-2">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Organizer Tools
-          </h1>
-          <p className="text-base text-gray-500 mt-1">
-            Advanced tools and analytics for event management
-          </p>
-        </div>
+    <div className="flex-1 p-6 bg-gray-50 min-h-screen">
+      {/* Heading */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          Organizer Tools
+        </h1>
+        <p className="text-base text-gray-500 mt-1">
+          Advanced tools and analytics for event management
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-8">
+      {/* Main Analytics and Sidebar */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left: Analytics Overview and Graph */}
+        <div className="flex-1 space-y-8">
           {/* Analytics Overview */}
           <Card className="shadow-sm border border-gray-200 bg-white">
             <CardHeader>
@@ -261,63 +262,12 @@ export function OrganizerTools() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions by Category */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Object.entries(groupedActions).map(([category, actions]) => {
-                const CategoryIcon = actions[0].icon;
-                return (
-                  <Card
-                    key={category}
-                    className="border border-gray-200 bg-white shadow-sm"
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-base font-semibold text-indigo-700 flex items-center gap-2">
-                        {CategoryIcon && (
-                          <CategoryIcon className="w-5 h-5 text-indigo-500" />
-                        )}{" "}
-                        {category}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-0">
-                      {actions.map((action) => {
-                        const ActionIcon = action.icon;
-                        return (
-                          <div
-                            key={action.action}
-                            className="flex items-start gap-3 border-b last:border-b-0 border-gray-100 pb-4 last:pb-0"
-                          >
-                            <ActionIcon className="w-8 h-8 text-indigo-500 mt-1" />
-                            <div className="flex-1">
-                              <h3 className="font-medium text-gray-900">
-                                {action.title}
-                              </h3>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {action.description}
-                              </p>
-                              <Button
-                                size="sm"
-                                className="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow"
-                              >
-                                Execute
-                              </Button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
+          {/* Analytics Graph */}
+          <AnalyticsGraph />
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-8">
+        {/* Right: Sidebar */}
+        <div className="w-full lg:w-[350px] flex-shrink-0 space-y-8">
           {/* Recent Activity */}
           <Card className="border border-gray-200 bg-white shadow-sm">
             <CardHeader>
@@ -349,44 +299,7 @@ export function OrganizerTools() {
             </CardContent>
           </Card>
 
-          {/* System Status */}
-          <Card className="border border-gray-200 bg-white shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">
-                System Status
-              </CardTitle>
-              <CardDescription className="text-gray-500">
-                Platform health and performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Platform Status</span>
-                <Badge className="bg-green-500 text-white">Operational</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">API Response Time</span>
-                <span className="text-sm font-medium">142ms</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Active Users</span>
-                <span className="text-sm font-medium">1,247</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Server Load</span>
-                <div className="flex items-center gap-2">
-                  <Progress
-                    value={35}
-                    className="w-16 h-2 bg-indigo-100"
-                    indicatorClassName="bg-indigo-500"
-                  />
-                  <span className="text-sm">35%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
+          {/* Today's Summary */}
           <Card className="border border-gray-200 bg-white shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-gray-900">
@@ -412,6 +325,49 @@ export function OrganizerTools() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      </div>
+
+      {/* Quick Actions - Full Width */}
+      <div className="mt-12">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quickActions.map((action) => {
+            const ActionIcon = action.icon;
+            return (
+              <Card
+                key={action.action}
+                className="border border-gray-200 bg-white shadow-sm flex flex-col"
+              >
+                <CardHeader className="flex flex-row items-center gap-3 pb-2">
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100">
+                    <ActionIcon className="w-6 h-6 text-indigo-500" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base font-semibold text-indigo-700">
+                      {action.title}
+                    </CardTitle>
+                    <CardDescription className="text-gray-500">
+                      {action.category}
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col justify-between pt-0">
+                  <p className="text-sm text-gray-500 mb-4">
+                    {action.description}
+                  </p>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow"
+                  >
+                    Execute
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>

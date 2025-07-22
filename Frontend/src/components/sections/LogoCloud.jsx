@@ -12,19 +12,20 @@ const logos = [
 
 function LogoCloud() {
   return (
-    <section className=" py-10 px-6 ">
+    <section className="py-10 px-6">
       <div className="max-w-7xl mx-auto text-center">
         <p className="text-gray-600 text-sm md:text-base mb-6 font-semibold">
           Trusted by the world's leading organizations
         </p>
 
-        <div className=" border border-gray-300 rounded-3xl flex flex-wrap justify-center items-center gap-10 ">
+        <div className="border border-gray-300 rounded-3xl grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-x-6 gap-y-8 items-center justify-items-center">
           {logos.map((logo, index) => (
             <img
               key={index}
               src={logo}
               alt={`logo-${index}`}
-              className="h-10 md:h-28 object-contain hover:scale-110 transition-all duration-150 ease-in-out"
+              className="h-16 sm:h-16 md:h-28 object-contain hover:scale-110 transition-transform duration-150 ease-in-out"
+              loading="lazy"
             />
           ))}
         </div>

@@ -338,26 +338,24 @@ export function CreatedHackathons({ onCreateNew }) {
           }}
         />
       ) : (
-        <div className="min-h-screen flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Created Hackathons
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Manage and monitor your organized events
-                </p>
-              </div>
+        <div className="min-h-screen flex-1 space-y-6 p-4 sm:p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">
+                Created Hackathons
+              </h1>
+              <p className="text-sm text-gray-500">
+                Manage and monitor your organized events
+              </p>
             </div>
-            <Button className="flex items-center gap-2" onClick={onCreateNew}>
+            <Button className="flex items-center gap-2 w-full sm:w-auto" onClick={onCreateNew}>
               <Plus className="w-4 h-4" />
               Create New Hackathon
             </Button>
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 w-full">
+          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 w-full">
             <ACard>
               <ACardContent className="pt-4 pb-4">
                 <div className="flex items-center gap-3">
@@ -411,7 +409,7 @@ export function CreatedHackathons({ onCreateNew }) {
           </div>
 
           <Tabs defaultValue="all" className="space-y-6">
-            <TabsList>
+            <TabsList className="flex flex-wrap gap-2">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="live">Live</TabsTrigger>
               <TabsTrigger value="registration">Registration Open</TabsTrigger>
@@ -423,42 +421,42 @@ export function CreatedHackathons({ onCreateNew }) {
             </TabsList>
 
             <TabsContent value="all" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {hackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="live" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {liveHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="registration" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {registrationOpenHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="completed" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {completedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="draft" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {draftHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="pending" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {pendingHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="approved" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {approvedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>
             <TabsContent value="rejected" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {rejectedHackathons.map(h => renderHackathonCard(h, false, pendingSponsorCounts[h._id] || 0))}
               </div>
             </TabsContent>

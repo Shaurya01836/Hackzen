@@ -92,7 +92,7 @@ function Header() {
         </div>
 
         {/* Right Side: Enhanced Floating Tech Cards */}
-        <div className="w-full lg:w-2/5 flex items-center justify-center mt-16 lg:mt-0">
+        <div className="w-full lg:w-2/5 items-center justify-center mt-16 lg:mt-0 hidden lg:flex">
           <div className="relative w-[500px] h-[500px]">
             {/* AI/ML Card */}
             <div className="absolute top-[15%] left-[64%] glassmorphism rounded-xl p-4 shadow-xl animate-float animation-delay-500">
