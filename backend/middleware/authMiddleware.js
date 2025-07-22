@@ -80,11 +80,19 @@ const isAuthenticated = async (req, res, next) => {
   }
 };
 
+// Middleware: Judge Only
+const isJudge = (req, res, next) => {
+  if (req.user?.role === "judge") {
+    return next();
+  }
+  return res.status(403).json({ message: "Access denied: Judges only" });
+};
 
 
 module.exports = {
   protect,
   isAdmin,
   isOrganizerOrAdmin,
-   isAuthenticated,
+  isAuthenticated,
+  isJudge,
 };

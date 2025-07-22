@@ -48,6 +48,8 @@ import {
 import { useAuth } from "../../../context/AuthContext";
 import { MultiSelect } from "../../../components/CommonUI/multiselect";
 
+import axios from "axios";
+
 export default function JudgeManagement({ hackathonId }) {
   const { token } = useAuth();
   const [hackathon, setHackathon] = useState(null);
@@ -92,6 +94,8 @@ export default function JudgeManagement({ hackathonId }) {
   });
   const [showAddJudgeDialog, setShowAddJudgeDialog] = useState(false);
 
+  const [judgedSubmissions, setJudgedSubmissions] = useState([]);
+
   useEffect(() => {
     fetchHackathons();
   }, []);
@@ -110,6 +114,23 @@ export default function JudgeManagement({ hackathonId }) {
         .then(res => res.json())
         .then(data => setSponsoredProposals(data.filter(p => p.status === "approved")));
     }
+  }, [selectedHackathonId]);
+
+  const fetchJudged = async () => {
+    if (!selectedHackathonId) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`/api/scores/all/hackathon/${selectedHackathonId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setJudgedSubmissions(res.data || []);
+    } catch (err) {
+      setJudgedSubmissions([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchJudged();
   }, [selectedHackathonId]);
 
   const fetchHackathons = async () => {
@@ -598,6 +619,8 @@ export default function JudgeManagement({ hackathonId }) {
                   />
                   <small className="text-gray-500">Leave blank to assign to all eligible problem statements.</small>
                 </div>
+
+
                 <div>
                   <Label htmlFor="maxSubmissions">Max Submissions per Judge</Label>
                   <Input
@@ -727,6 +750,66 @@ export default function JudgeManagement({ hackathonId }) {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Judged Submissions</CardTitle>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" onClick={fetchJudged}>Refresh</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {judgedSubmissions.length === 0 ? (
+                <p className="text-gray-500">No submissions have been judged yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm border">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th className="p-2 border">Type</th>
+                        <th className="p-2 border">Title</th>
+                        <th className="p-2 border">Team Leader</th>
+                        <th className="p-2 border">Judge</th>
+                        <th className="p-2 border">Scores</th>
+                        <th className="p-2 border">Feedback</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {judgedSubmissions.map((score) => (
+                        <tr key={score._id} className="border-b">
+                          <td className="p-2 border">{score.project?.type === 'ppt' ? 'PPT' : 'Project'}</td>
+                          <td className="p-2 border">
+                            {score.project?._id ? (
+                              <a
+                                href={score.project.type === 'ppt'
+                                  ? `#` // No detail page for PPT, or you can link to a modal
+                                  : `/dashboard/project-archive/${score.project._id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                {score.project?.title || "-"}
+                              </a>
+                            ) : (
+                              score.project?.title || "-"
+                            )}
+                          </td>
+                          <td className="p-2 border">{score.project?.submittedBy?.name || score.project?.submittedBy?.email || "-"}</td>
+                          <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
+                          <td className="p-2 border">
+                            {score.scores && Object.entries(score.scores).map(([k, v]) => (
+                              <div key={k}>{k}: {v}</div>
+                            ))}
+                          </td>
+                          <td className="p-2 border">{score.feedback || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

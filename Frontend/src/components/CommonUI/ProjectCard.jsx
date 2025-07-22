@@ -69,6 +69,60 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
     }
   };
 
+  // Special rendering for PPT submissions
+  if (project.type === "ppt") {
+    // Team name fallback
+    const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
+    const author = project.submittedBy || {};
+    const likeCount = project.likes ?? 0;
+    const viewCount = project.views ?? 0;
+    return (
+      <div className="border rounded px-4 py-3 mb-2 bg-white shadow-sm">
+        <div className="flex items-center gap-3">
+          <img src={project.logo?.url || "/ppt.png"} alt="PPT" className="w-8 h-8" />
+          <span className="font-medium text-gray-800 text-base">{project.title}</span>
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+          <div className="flex items-center gap-2 pt-2">
+            <Avatar className="w-6 h-6 ring-1 ring-gray-100">
+              <AvatarImage src={author.profileImage || "/placeholder.svg"} />
+              <AvatarFallback className="text-[10px] bg-indigo-100 text-indigo-600">
+                {author.name?.[0]?.toUpperCase() || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="leading-tight">
+              <p className="text-xs font-medium text-gray-900">
+                {author.name || "Unknown"}
+              </p>
+              <p className="text-[10px] text-gray-500">
+                Team Leader
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 pt-2">
+            <div className="flex items-center gap-1">
+              <Heart className="w-4 h-4" />
+              {likeCount}
+            </div>
+            <div className="flex items-center gap-1">
+              <Eye className="w-3.5 h-3.5" />
+              {viewCount}
+            </div>
+            <button
+              className="text-blue-600 underline text-xs font-medium ml-4"
+              onClick={e => {
+                e.stopPropagation();
+                if (onClick) onClick(project);
+              }}
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const CardContentEl = (
     <Card className="cursor-pointer hover:shadow-md transition-all duration-300 group border border-gray-200 bg-white rounded-xl">
       <div className="relative h-36 overflow-hidden rounded-t-xl">

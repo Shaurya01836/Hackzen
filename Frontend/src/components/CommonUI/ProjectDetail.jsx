@@ -223,6 +223,89 @@ export function ProjectDetail({
 
   if (!project) return <p>Loading...</p>;
 
+  if (project.type === "ppt") {
+    const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
+        <header className="px-6 py-4 sticky top-0 z-20 ">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            {!hideBackButton && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onBack}
+                className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 text-gray-700 font-medium "
+              >
+                <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
+              </Button>
+            )}
+          </div>
+        </header>
+        <div className="px-6 pt-8 max-w-3xl mx-auto">
+          <Card className="mb-6">
+            <CardContent className="py-6 flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <img src={project.logo?.url || "public/assets/ppt.png"} alt="PPT" className="w-12 h-12" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h1>
+                  <div className="text-sm text-gray-500">Team: {teamName}</div>
+                </div>
+              </div>
+              <div className="flex gap-4 mt-2">
+                <a
+                  href={project.pptFile}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 underline text-sm font-medium"
+                >
+                </a>
+                <a
+                  href={project.pptFile}
+                  download
+                  className="text-green-600 underline text-sm font-medium"
+                >
+                  Download PPT
+                </a>
+              </div>
+              <div className="mt-4">
+                <iframe
+                  src={`https://docs.google.com/gview?url=${encodeURIComponent(project.pptFile)}&embedded=true`}
+                  style={{ width: "100%", height: "500px", border: "none" }}
+                  title="PPT Preview"
+                  allowFullScreen
+                />
+              </div>
+            </CardContent>
+          </Card>
+          {user?.role === "judge" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-yellow-500" /> Judge Evaluation
+                </CardTitle>
+                <p className="text-xs text-gray-500 mt-1">
+                  Score this submission based on the hackathon criteria. Your feedback helps determine the winners!
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
+                </div>
+                <JudgeScoreForm
+                  projectId={project._id}
+                  hackathonId={project.hackathon?._id}
+                  onSubmitted={() => {
+                    toast({ title: "✅ Score Submitted", duration: 2000 });
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const sharePlatforms = [
     {
       name: "WhatsApp",
