@@ -92,20 +92,20 @@ const createInvite = async (req, res) => {
        <p style="color: #666; margin: 0;"><strong>Description:</strong> ${project.description?.substring(0, 100)}${project.description?.length > 100 ? '...' : ''}</p>`;
 
     const emailTemplate = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="font-family: Arial, sans-serif; max-inline-size: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
           <h1 style="margin: 0; font-size: 28px;">🎉 Team Invitation</h1>
           <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been invited to join a ${contextType} team!</p>
         </div>
         
         <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-          <h2 style="color: #333; margin-top: 0;">Hello there! 👋</h2>
+          <h2 style="color: #333; margin-block-start: 0;">Hello there! 👋</h2>
           
           <p style="color: #555; line-height: 1.6;">
             <strong>${inviter.name}</strong> has invited you to join their team for the ${contextType}:
           </p>
           
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #667eea;">
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-inline-start: 4px solid #667eea;">
             <h3 style="color: #667eea; margin: 0 0 10px 0;">🏆 ${contextTitle}</h3>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Team:</strong> ${team.name}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Team Code:</strong> ${team.teamCode}</p>
@@ -125,12 +125,12 @@ const createInvite = async (req, res) => {
             </p>
           </div>
           
-          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+          <p style="color: #666; font-size: 14px; text-align: center; margin-block-start: 30px;">
             This invitation will expire in 7 days. Don't miss out on this amazing opportunity!
           </p>
         </div>
         
-        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+        <div style="text-align: center; margin-block-start: 20px; color: #999; font-size: 12px;">
           <p>© 2024 HackZen. All rights reserved.</p>
         </div>
       </div>
