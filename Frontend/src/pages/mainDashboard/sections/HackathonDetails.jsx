@@ -16,6 +16,8 @@ import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 import TeamManagementSection from "./components/Hackathon/TeamManagementSection";
 import { SmartCountdown } from "../../../components/DashboardUI/countdown";
+import BaseModal from "./components/Hackathon/TeamModals/BaseModal";
+import { fetchHackathonParticipants } from "../../../lib/api";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();
@@ -59,6 +61,10 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const [lastScrollY, setLastScrollY] = useState(0);
   const [editRegistration, setEditRegistration] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [participants, setParticipants] = useState([]);
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+  const [participantsError, setParticipantsError] = useState(null);
 
 const sections = [
   { id: "overview", label: "Overview & Requirements" },
@@ -184,6 +190,22 @@ const sections = [
     window.scrollTo(0, 0);
   }, []);
 
+  const handleShowParticipants = async () => {
+    if (!hackathon || !hackathon._id) return;
+    setParticipantsLoading(true);
+    setParticipantsError(null);
+    setShowParticipantsModal(true);
+    try {
+      const data = await fetchHackathonParticipants(hackathon._id);
+      setParticipants(data.participants || []);
+    } catch (err) {
+      setParticipantsError("Failed to fetch participants");
+      setParticipants([]);
+    } finally {
+      setParticipantsLoading(false);
+    }
+  };
+
   if (showRegistration) {
     return (
       <HackathonRegistration
@@ -233,7 +255,11 @@ const sections = [
                 isSaved={isSaved}
               />
                 <SmartCountdown hackathon={hackathon} />
-              <HackathonOverview hackathon={hackathon} user={user} />
+              <HackathonOverview
+                hackathon={hackathon}
+                user={user}
+                onShowParticipants={handleShowParticipants}
+              />
             </>
           )}
           {activeTab === "problems" && (
@@ -258,6 +284,35 @@ const sections = [
           )}
         </div>
       </main>
+
+      {/* Participants Modal */}
+      <BaseModal
+        open={showParticipantsModal}
+        onOpenChange={setShowParticipantsModal}
+        title="Registered Participants"
+        content={
+          participantsLoading ? (
+            <div className="p-4 text-center">Loading...</div>
+          ) : participantsError ? (
+            <div className="p-4 text-red-600">{participantsError}</div>
+          ) : participants.length === 0 ? (
+            <div className="p-4 text-gray-500">No participants registered yet.</div>
+          ) : (
+            <ul className="max-h-72 overflow-y-auto divide-y">
+              {participants.map((p) => (
+                <li key={p.userId} className="py-2 flex items-center gap-3">
+                  {p.avatar && <img src={p.avatar} alt="avatar" className="w-8 h-8 rounded-full" />}
+                  <div>
+                    <div className="font-medium">{p.name}</div>
+                    <div className="text-xs text-gray-500">{p.email}</div>
+                  </div>
+                  {p.teamName && <span className="ml-auto text-xs text-indigo-600">{p.teamName}</span>}
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      />
     </div>
   );
 }

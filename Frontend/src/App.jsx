@@ -36,6 +36,7 @@ import AdminSubmissionDetailsPage from "./pages/AdminDashboard/sections/AdminSub
 import PublicProfileView from "./pages/mainDashboard/PublicProfileView";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
+import TeamsParticipantsPage from "./pages/mainDashboard/sections/TeamsParticipantsPage";
 
 function App() {
   return (
@@ -82,6 +83,8 @@ function App() {
         {/* Created Hackathons */}
         <Route path="/dashboard/created-hackathons" element={<DashboardPage />} />
         <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
+        <Route path="/dashboard/created-hackathons/:hackathonId/teams" element={<TeamsParticipantsPage />} />
+        <Route path="/dashboard/created-hackathons/:hackathonId/teams/:teamId" element={<TeamsParticipantsPage />} />
 
         {/* Edit Hackathon Full Page */}
         <Route path="/dashboard/edit-hackathon/:id" element={<EditHackathonPage />} />

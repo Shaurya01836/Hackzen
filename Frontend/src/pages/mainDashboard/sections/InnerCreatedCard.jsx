@@ -54,6 +54,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useToast } from '../../../hooks/use-toast';
 import ChatModal from '../components/ChatModal';
+import BaseModal from "./components/Hackathon/TeamModals/BaseModal";
+import { fetchHackathonParticipants } from "../../../lib/api";
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
@@ -84,6 +86,10 @@ export default function HackathonDetailsPage({
   const [chatOpen, setChatOpen] = useState(false);
   const [chatProposalId, setChatProposalId] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [participantsModalLoading, setParticipantsModalLoading] = useState(false);
+  const [participantsModalError, setParticipantsModalError] = useState(null);
+  const [participantsList, setParticipantsList] = useState([]);
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -269,6 +275,22 @@ export default function HackathonDetailsPage({
     toast({ title: 'Message sent!', description: 'Your message to the sponsor was sent successfully.' });
   }
 
+  const handleShowParticipantsModal = async () => {
+    if (!hackathon || !hackathon._id) return;
+    setParticipantsModalLoading(true);
+    setParticipantsModalError(null);
+    setShowParticipantsModal(true);
+    try {
+      const data = await fetchHackathonParticipants(hackathon._id);
+      setParticipantsList(data.participants || []);
+    } catch (err) {
+      setParticipantsModalError("Failed to fetch participants");
+      setParticipantsList([]);
+    } finally {
+      setParticipantsModalLoading(false);
+    }
+  };
+
   // Add back button if onBack function is provided
   return (
     <>
@@ -322,7 +344,7 @@ export default function HackathonDetailsPage({
                 Hackathon Overview
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mb-8">
-                <ACard>
+                <ACard className="cursor-pointer hover:shadow-lg transition" onClick={handleShowParticipantsModal}>
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Users className="w-8 h-8 text-indigo-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
@@ -331,9 +353,13 @@ export default function HackathonDetailsPage({
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Participants
                     </p>
+                  
                   </ACardContent>
                 </ACard>
-                <ACard>
+                <ACard
+                  className="cursor-pointer hover:shadow-lg transition"
+                  onClick={() => navigate(`/dashboard/created-hackathons/${hackathon._id}/teams`)}
+                >
                   <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
                     <Users2 className="w-8 h-8 text-blue-500 mb-2" />
                     <p className="text-2xl font-bold text-gray-900 mb-1">
@@ -342,6 +368,7 @@ export default function HackathonDetailsPage({
                     <p className="text-sm text-gray-500 font-medium text-center">
                       Teams
                     </p>
+                    <p className="text-xs text-gray-400 mt-1">Click to view all teams</p>
                   </ACardContent>
                 </ACard>
                 <ACard>
@@ -355,39 +382,7 @@ export default function HackathonDetailsPage({
                     </p>
                   </ACardContent>
                 </ACard>
-                <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <Clock className="w-8 h-8 text-purple-500 mb-2" />
-                    <p className="text-lg font-bold text-gray-900 mb-1">
-                      {hackathon.duration}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Duration
-                    </p>
-                  </ACardContent>
-                </ACard>
-                <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <PieChart className="w-8 h-8 text-orange-500 mb-2" />
-                    <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {hackathon.averageAge}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Avg Age
-                    </p>
-                  </ACardContent>
-                </ACard>
-                <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <CalendarDays className="w-8 h-8 text-red-500 mb-2" />
-                    <p className="text-lg font-bold text-gray-900 mb-1">
-                      {hackathon.lastSubmission}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Last Submit
-                    </p>
-                  </ACardContent>
-                </ACard>
+               
               </div>
 
               {/* Top Tracks and Locations */}
@@ -872,6 +867,34 @@ export default function HackathonDetailsPage({
         </div>
       )}
       <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} proposalId={chatProposalId} currentUser={user} />
+      {/* Participants Modal */}
+      <BaseModal
+        open={showParticipantsModal}
+        onOpenChange={setShowParticipantsModal}
+        title="Registered Participants"
+        content={
+          participantsModalLoading ? (
+            <div className="p-4 text-center">Loading...</div>
+          ) : participantsModalError ? (
+            <div className="p-4 text-red-600">{participantsModalError}</div>
+          ) : participantsList.length === 0 ? (
+            <div className="p-4 text-gray-500">No participants registered yet.</div>
+          ) : (
+            <ul className="max-h-72 overflow-y-auto divide-y">
+              {participantsList.map((p, idx) => (
+                <li key={p.id || p.userId || idx} className="py-2 flex items-center gap-3">
+                  {p.avatar && <img src={p.avatar} alt="avatar" className="w-8 h-8 rounded-full" />}
+                  <div>
+                    <div className="font-medium">{p.name}</div>
+                    <div className="text-xs text-gray-500">{p.email}</div>
+                  </div>
+                  {p.teamName && <span className="ml-auto text-xs text-indigo-600">{p.teamName}</span>}
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      />
     </>
   );
 }
