@@ -72,3 +72,16 @@ exports.getProjectsToScore = async (req, res) => {
     res.status(500).json({ message: "Failed to get projects" });
   }
 };
+
+exports.getAllScoresForHackathon = async (req, res) => {
+  try {
+    const hackathonId = req.params.hackathonId;
+    // Find all scores for this hackathon, populate judge and project
+    const scores = await Score.find({ hackathon: hackathonId })
+      .populate("judge", "name email role")
+      .populate("project", "title submittedBy type");
+    res.json(scores);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get all scores for hackathon" });
+  }
+};

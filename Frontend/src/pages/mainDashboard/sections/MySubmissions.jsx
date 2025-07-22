@@ -13,6 +13,10 @@ import {
   ACard,
   ACardContent,
 } from "../../../components/DashboardUI/AnimatedCard";
+import {
+  Card,
+  CardContent,
+} from "../../../components/CommonUI/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/CommonUI/tabs";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
 
@@ -150,15 +154,43 @@ export function MySubmissions() {
         </TabsList>
 
         <TabsContent value="all">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {projectSubmissions.map(renderSubmissionCard)}
-          </div>
+          {projectSubmissions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {projectSubmissions.map(renderSubmissionCard)}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12 pt-12">
+                <FileText className="w-12 h-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Submissions Yet
+                </h3>
+                <p className="text-gray-500 text-center">
+                  You haven't submitted any projects yet.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="judged">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {judgedSubmissions.map(renderSubmissionCard)}
-          </div>
+          {judgedSubmissions.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {judgedSubmissions.map(renderSubmissionCard)}
+            </div>
+          ) : (
+            <Card>
+             <CardContent className="flex flex-col items-center justify-center py-12 pt-12">
+                <Award className="w-12 h-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No Judged Submissions
+                </h3>
+                <p className="text-gray-500 text-center">
+                  None of your submissions have been reviewed yet.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="pending">
@@ -167,8 +199,8 @@ export function MySubmissions() {
               {pendingSubmissions.map(renderSubmissionCard)}
             </div>
           ) : (
-            <ACard>
-              <ACardContent className="flex flex-col items-center justify-center py-12">
+            <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 pt-12">
                 <Upload className="w-12 h-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
                   No Pending Submissions
@@ -176,8 +208,8 @@ export function MySubmissions() {
                 <p className="text-gray-500 text-center">
                   All your submissions have been reviewed.
                 </p>
-              </ACardContent>
-            </ACard>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
       </Tabs>
