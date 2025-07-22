@@ -44,6 +44,8 @@ import {
   Building,
   Globe,
   Shield,
+  Trophy,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
 import { MultiSelect } from "../../../components/CommonUI/multiselect";
@@ -332,18 +334,29 @@ export default function JudgeManagement({ hackathonId }) {
 
   if (hackathons.length === 0) {
     return (
-      <div className="flex-1 space-y-8 p-6 bg-gray-50 min-h-screen">
-        <div className="text-center py-12">
-          <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            No Hackathons Found
-          </h2>
-          <p className="text-gray-600 mb-6">
-            You need to create a hackathon first to manage judges.
-          </p>
-          <Button onClick={() => window.location.href = '/dashboard/create-hackathon'}>
-            Create Hackathon
-          </Button>
+      <div className="flex flex-1 items-center justify-center min-h-screen bg-gray-50">
+        <div className="max-w-md w-full mx-auto">
+          <div className="bg-white rounded-2xl shadow-lg p-10 flex flex-col items-center text-center">
+            <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">No Hackathons Found</h2>
+            <p className="text-gray-600 mb-6">
+              You need to create a hackathon before you can manage judges and assignments.<br/>
+              Get started by creating your first hackathon!
+            </p>
+            <Button
+              className="w-full mb-2 bg-indigo-600 hover:bg-indigo-700 text-lg py-2"
+              onClick={() => window.location.href = '/dashboard/create-hackathon'}
+            >
+              <Plus className="w-5 h-5 mr-2" /> Create Hackathon
+            </Button>
+            <Button
+              className="w-full mt-1"
+              variant="outline"
+              onClick={() => window.location.href = '/dashboard'}
+            >
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );

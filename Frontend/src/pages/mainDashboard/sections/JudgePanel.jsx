@@ -247,14 +247,14 @@ export default function JudgePanel() {
             <Card key={i} className="animate-pulse h-52" />
           ))}
         </div>
-      ) : hackathons.length > 0 ? (
+      ) : hackathons && hackathons.filter(h => h && h._id).length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {hackathons.map((hackathon) => (
+          {hackathons.filter(h => h && h._id).map((hackathon) => (
             <HackathonCard
-              key={hackathon._id}
+              key={hackathon._id || hackathon.title || Math.random()}
               hackathon={hackathon}
               onClick={() =>
-                navigate(
+                hackathon._id && navigate(
                   `/judge/hackathon/${hackathon._id}/gallery`,
                   { state: { hackathon } }
                 )
