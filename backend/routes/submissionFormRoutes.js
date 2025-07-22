@@ -13,8 +13,7 @@ const {
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
 
-const { protect } = require("../middleware/authMiddleware");
-const { isAdmin } = require("../middleware/authMiddleware");
+const { protect, isAdmin, isJudge } = require("../middleware/authMiddleware");
 
 // Organizer: Save form
 router.put("/hackathon/:hackathonId", protect, saveHackathonForm);
@@ -132,10 +131,16 @@ router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionF
 router.get("/admin/all", protect, isAdmin, require("../controllers/submissionFormController").getAllSubmissionsAdmin);
 
 // Admin: Get all submissions for a specific hackathon
-router.get("/admin/hackathon/:hackathonId", protect, isAdmin, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
+router.get("/admin/hackathon/:hackathonId", protect, (req, res, next) => {
+  if (req.user?.role === "admin" || req.user?.role === "judge") return next();
+  return res.status(403).json({ message: "Access denied: Admins or Judges only" });
+}, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
 
 // Admin: Get a single submission by ID
-router.get("/admin/submission/:id", protect, isAdmin, getSubmissionByIdAdmin);
+router.get("/admin/submission/:id", protect, (req, res, next) => {
+  if (req.user?.role === "admin" || req.user?.role === "judge") return next();
+  return res.status(403).json({ message: "Access denied: Admins or Judges only" });
+}, getSubmissionByIdAdmin);
 
 // Add endpoints for deleting and editing a submission by ID
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);
