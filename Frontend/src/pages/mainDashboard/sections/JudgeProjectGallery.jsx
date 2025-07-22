@@ -49,7 +49,7 @@ export default function JudgeProjectGallery() {
           <HackathonProjectsGallery hackathonId={hackathonId} onProjectClick={handleProjectClick} selectedType={selectedType} />
         </>
       ) : (
-        <ProjectDetail project={selectedProject} onBack={handleBackToGallery} backButtonLabel="Back to Project Gallery" />
+        <ProjectDetail project={selectedProject} onBack={handleBackToGallery} backButtonLabel="Back to Project Gallery" hackathonId={hackathonId} />
       )}
     </div>
   );

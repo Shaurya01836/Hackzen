@@ -782,44 +782,39 @@ export default function JudgeManagement({ hackathonId }) {
                   <table className="min-w-full text-sm border">
                     <thead>
                       <tr className="bg-gray-100">
-                        <th className="p-2 border">Type</th>
-                        <th className="p-2 border">Title</th>
-                        <th className="p-2 border">Team Leader</th>
+                        <th className="p-2 border">Team Name</th>
+                        <th className="p-2 border">Problem Statement</th>
                         <th className="p-2 border">Judge</th>
+                        <th className="p-2 border">Avg Score</th>
                         <th className="p-2 border">Scores</th>
                         <th className="p-2 border">Feedback</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {judgedSubmissions.map((score) => (
-                        <tr key={score._id} className="border-b">
-                          <td className="p-2 border">{score.project?.type === 'ppt' ? 'PPT' : 'Project'}</td>
-                          <td className="p-2 border">
-                            {score.project?._id ? (
-                              <a
-                                href={score.project.type === 'ppt'
-                                  ? `#` // No detail page for PPT, or you can link to a modal
-                                  : `/dashboard/project-archive/${score.project._id}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 underline"
-                              >
-                                {score.project?.title || "-"}
-                              </a>
-                            ) : (
-                              score.project?.title || "-"
-                            )}
-                          </td>
-                          <td className="p-2 border">{score.project?.submittedBy?.name || score.project?.submittedBy?.email || "-"}</td>
-                          <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
-                          <td className="p-2 border">
-                            {score.scores && Object.entries(score.scores).map(([k, v]) => (
-                              <div key={k}>{k}: {v}</div>
-                            ))}
-                          </td>
-                          <td className="p-2 border">{score.feedback || "-"}</td>
-                        </tr>
-                      ))}
+                      {judgedSubmissions.map((score) => {
+                        // Calculate average score
+                        let avgScore = "N/A";
+                        if (score.scores) {
+                          const vals = Object.values(score.scores);
+                          if (vals.length > 0) {
+                            avgScore = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+                          }
+                        }
+                        return (
+                          <tr key={score._id} className="border-b">
+                            <td className="p-2 border">{score.project?.team?.name || "-"}</td>
+                            <td className="p-2 border">{score.problemStatement || "-"}</td>
+                            <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
+                            <td className="p-2 border">{avgScore}</td>
+                            <td className="p-2 border">
+                              {score.scores && Object.entries(score.scores).map(([k, v]) => (
+                                <div key={k}>{k}: {v}</div>
+                              ))}
+                            </td>
+                            <td className="p-2 border">{score.feedback || "-"}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

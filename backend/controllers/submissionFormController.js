@@ -53,9 +53,9 @@ exports.submitProjectWithAnswers = async (req, res) => {
     if (!hackathon) {
       return res.status(404).json({ error: "Hackathon not found" });
     }
-    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId });
+    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId, roundIndex });
     if (userSubmissionCount >= (hackathon.maxSubmissionsPerParticipant || 1)) {
-      return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
+      return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this round.` });
     }
 
     // Create new submission

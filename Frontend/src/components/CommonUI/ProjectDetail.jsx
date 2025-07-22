@@ -54,6 +54,7 @@ export function ProjectDetail({
   backButtonLabel,
   hideBackButton = false,
   onlyOverview = false,
+  hackathonId: propHackathonId,
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -222,6 +223,21 @@ export function ProjectDetail({
     window.open(url, "_blank");
   };
 
+  // Helper to get hackathonId robustly
+  const getHackathonId = () => {
+    if (project.hackathon) {
+      if (typeof project.hackathon === 'object' && project.hackathon._id) return project.hackathon._id;
+      if (typeof project.hackathon === 'string') return project.hackathon;
+      if (project.hackathon.id) return project.hackathon.id;
+    }
+    // fallback: try project.hackathonId or project.hackathon_id
+    if (project.hackathonId) return project.hackathonId;
+    if (project.hackathon_id) return project.hackathon_id;
+    // fallback: use propHackathonId from parent
+    if (propHackathonId) return propHackathonId;
+    return null;
+  };
+
   if (!project) return <p>Loading...</p>;
 
   if (project.type === "ppt") {
@@ -294,7 +310,7 @@ export function ProjectDetail({
                 </div>
                 <JudgeScoreForm
                   projectId={project._id}
-                  hackathonId={project.hackathon?._id}
+                  hackathonId={getHackathonId()}
                   onSubmitted={() => {
                     toast({ title: "✅ Score Submitted", duration: 2000 });
                   }}
