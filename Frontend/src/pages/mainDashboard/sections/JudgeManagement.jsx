@@ -46,6 +46,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { MultiSelect } from "../../../components/CommonUI/multiselect";
 
 export default function JudgeManagement({ hackathonId }) {
   const { token } = useAuth();
@@ -581,6 +582,22 @@ export default function JudgeManagement({ hackathonId }) {
                     </Label>
                   </div>
                 )}
+                <div>
+                  <Label>Assign to Problem Statement(s) (optional)</Label>
+                  <MultiSelect
+                    options={hackathon?.problemStatements?.map(ps => ({
+                      value: ps._id,
+                      label: ps.statement,
+                    })) || []}
+                    value={newJudgeAssignment.problemStatementIds}
+                    onChange={ids => setNewJudgeAssignment(prev => ({
+                      ...prev,
+                      problemStatementIds: ids,
+                    }))}
+                    placeholder="Select problem statements (leave blank for all eligible)"
+                  />
+                  <small className="text-gray-500">Leave blank to assign to all eligible problem statements.</small>
+                </div>
                 <div>
                   <Label htmlFor="maxSubmissions">Max Submissions per Judge</Label>
                   <Input

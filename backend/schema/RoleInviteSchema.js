@@ -11,4 +11,6 @@ const RoleInviteSchema = new Schema({
   invitedUser: { type: Schema.Types.ObjectId, ref: 'User' },
 });
 
+RoleInviteSchema.index({ email: 1, hackathon: 1, role: 1 }, { unique: true });
+
 module.exports = { RoleInviteSchema }; 

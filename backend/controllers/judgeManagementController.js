@@ -74,7 +74,25 @@ exports.assignJudges = async (req, res) => {
     const results = [];
 
     for (const assignment of judgeAssignments) {
-      const { judgeEmail, judgeType, sponsorCompany, problemStatementIds, roundIndices } = assignment;
+      let { judgeEmail, judgeType, sponsorCompany, problemStatementIds, roundIndices } = assignment;
+
+      // If problemStatementIds is empty or not provided, assign all eligible PS
+      if (!Array.isArray(problemStatementIds) || problemStatementIds.length === 0) {
+        if (judgeType === 'platform') {
+          // All general problem statements
+          problemStatementIds = hackathon.problemStatements
+            .filter(ps => ps.type === 'general')
+            .map(ps => ps._id.toString());
+        } else if (judgeType === 'sponsor') {
+          // All sponsored PS for their company
+          problemStatementIds = hackathon.problemStatements
+            .filter(ps => ps.type === 'sponsored' && ps.sponsorCompany === sponsorCompany)
+            .map(ps => ps._id.toString());
+        } else if (judgeType === 'hybrid') {
+          // All problem statements
+          problemStatementIds = hackathon.problemStatements.map(ps => ps._id.toString());
+        }
+      }
 
       // Validate judge type and permissions
       const validationResult = validateJudgeAssignment(
@@ -302,12 +320,11 @@ exports.removeJudgeAssignment = async (req, res) => {
       { $pull: { judges: assignment.judge.email } }
     );
 
-    // Remove any pending RoleInvite for this judge (so they can be re-invited)
+    // Remove any RoleInvite for this judge (so they can be re-invited and don't see the hackathon)
     await RoleInvite.deleteMany({
       email: assignment.judge.email,
       hackathon: assignment.hackathon,
-      role: 'judge',
-      status: 'pending'
+      role: 'judge'
     });
 
     await JudgeAssignment.findByIdAndDelete(assignmentId);
