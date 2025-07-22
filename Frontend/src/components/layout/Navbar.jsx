@@ -10,8 +10,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import LoginModal from "../LoginModal";
-import RegisterModal from "../RegisterModal";
 import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 import { AnimatedList } from "../Magic UI/AnimatedList";
 import SignOutModal from "../SignOutModal";
@@ -62,11 +60,12 @@ function Navbar() {
   };
 
   const handleLoginClick = () => {
-    navigate("/?modal=login");
+    // navigate("/?modal=login");
+    navigate("/login");
   };
 
   const handleRegisterClick = () => {
-    navigate("/?modal=register");
+    navigate("/register");
   };
 
   const handleCloseAuthModal = () => {
@@ -103,19 +102,6 @@ function Navbar() {
         onClose={() => setShowSignOutConfirm(false)}
         onConfirm={handleSignOut}
       />
-
-      {/* Auth Modals */}
-      {showLogin && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30">
-          <LoginModal onClose={handleCloseAuthModal} />
-        </div>
-      )}
-
-      {showRegister && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-30">
-          <RegisterModal onClose={handleCloseAuthModal} />
-        </div>
-      )}
 
       <nav className="px-6 pt-0">
         <div className="w-full px-6 py-4 flex items-center justify-between">

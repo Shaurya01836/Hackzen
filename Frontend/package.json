@@ -78,6 +78,8 @@
     "slick-carousel": "^1.8.1",
     "socket.io-client": "^4.8.1",
     "speakeasy": "^2.0.0",
+    "sweetalert2": "^11.22.2",
+    "sweetalert2-react-content": "^5.1.0",
     "ts-morph": "^26.0.0",
     "tsparticles": "^3.8.1",
     "uuid": "^11.1.0",
