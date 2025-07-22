@@ -54,7 +54,11 @@ exports.submitProjectWithAnswers = async (req, res) => {
     if (!hackathon) {
       return res.status(404).json({ error: "Hackathon not found" });
     }
-    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId });
+    const userSubmissionCount = await Submission.countDocuments({
+      hackathonId,
+      submittedBy: userId,
+      projectId: { $exists: true, $ne: null }
+    });
     if (userSubmissionCount >= (hackathon.maxSubmissionsPerParticipant || 1)) {
       return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
     }
@@ -151,7 +155,8 @@ exports.deletePPTSubmission = async (req, res) => {
     if (!submission) {
       return res.status(404).json({ error: 'No PPT submission found to delete' });
     }
-    res.status(200).json({ success: true });
+    console.log('[deletePPTSubmission] Deleted PPT submission:', submission);
+    res.status(200).json({ success: true, deleted: submission });
   } catch (err) {
     console.error('❌ Error in deletePPTSubmission:', err, req.body);
     res.status(500).json({ error: 'Server error during PPT deletion', details: err.message });
@@ -167,8 +172,16 @@ exports.deleteSubmissionById = async (req, res) => {
     if (submission.submittedBy.toString() !== userId.toString()) {
       return res.status(403).json({ error: 'Not authorized to delete this submission' });
     }
-    await Submission.findByIdAndDelete(id);
-    res.json({ success: true, message: 'Submission deleted' });
+    const deleted = await Submission.findByIdAndDelete(id);
+    console.log('[deleteSubmissionById] Deleted submission:', deleted);
+    // If the submission had a projectId, set its status back to 'draft'
+    if (deleted && deleted.projectId) {
+      await Project.findByIdAndUpdate(deleted.projectId, {
+        status: 'draft',
+        $unset: { hackathon: '', submittedAt: '' }
+      });
+    }
+    res.json({ success: true, message: 'Submission deleted', deleted });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete submission', details: err.message });
   }
@@ -300,7 +313,7 @@ exports.getSubmissionsByHackathonAdmin = async (req, res) => {
     const submissions = await Submission.find({ hackathonId })
       .populate({
         path: 'projectId',
-        select: 'title description technologies links attachments repoLink skills team submittedBy logo images videoLink oneLineIntro category',
+        select: 'title description technologies links attachments repoLink websiteLink videoLink socialLinks logo category customCategory team submittedBy hackathon scores status submittedAt oneLineIntro skills teamIntro customAnswers createdAt likes likedBy views viewedBy images',
         populate: [
           { path: 'team', populate: [ { path: 'members', select: 'name profileImage email' }, { path: 'leader', select: 'name profileImage email' } ] },
           { path: 'submittedBy', select: 'name profileImage email' }

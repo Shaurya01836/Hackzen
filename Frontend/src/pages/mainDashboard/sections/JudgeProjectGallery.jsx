@@ -26,7 +26,7 @@ export default function JudgeProjectGallery() {
   };
 
   return (
-    <div className="p-6">
+    <div className="max-w-7xl mx-auto w-full p-6">
       {!selectedProject ? (
         <>
           <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">Back</Button>
@@ -49,7 +49,7 @@ export default function JudgeProjectGallery() {
           <HackathonProjectsGallery hackathonId={hackathonId} onProjectClick={handleProjectClick} selectedType={selectedType} />
         </>
       ) : (
-        <ProjectDetail project={selectedProject} onBack={handleBackToGallery} backButtonLabel="Back to Project Gallery" hackathonId={hackathonId} />
+        <ProjectDetail project={selectedProject} onBack={handleBackToGallery} backButtonLabel="Back to Project Gallery" />
       )}
     </div>
   );

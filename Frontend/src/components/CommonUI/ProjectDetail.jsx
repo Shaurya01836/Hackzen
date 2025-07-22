@@ -15,6 +15,7 @@ import {
   Layers,
   UserPlus,
   Copy,
+  Globe,
 } from "lucide-react";
 import { Button } from "./button";
 import { Badge } from "./badge";
@@ -53,7 +54,6 @@ export function ProjectDetail({
   backButtonLabel,
   hideBackButton = false,
   onlyOverview = false,
-  hackathonId: propHackathonId,
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -67,6 +67,7 @@ export function ProjectDetail({
       ? project.hackathon
       : null
   );
+  const [pptLoading, setPptLoading] = useState(true);
 
   // On mount, check if this project is liked in localStorage
   useEffect(() => {
@@ -222,20 +223,7 @@ export function ProjectDetail({
     window.open(url, "_blank");
   };
 
-  // Helper to get hackathonId robustly
-  const getHackathonId = () => {
-    if (project.hackathon) {
-      if (typeof project.hackathon === 'object' && project.hackathon._id) return project.hackathon._id;
-      if (typeof project.hackathon === 'string') return project.hackathon;
-      if (project.hackathon.id) return project.hackathon.id;
-    }
-    // fallback: try project.hackathonId or project.hackathon_id
-    if (project.hackathonId) return project.hackathonId;
-    if (project.hackathon_id) return project.hackathon_id;
-    // fallback: use propHackathonId from parent
-    if (propHackathonId) return propHackathonId;
-    return null;
-  };
+  console.log('[ProjectDetail] project prop:', project);
 
   if (!project) return <p>Loading...</p>;
 
@@ -261,7 +249,10 @@ export function ProjectDetail({
           <Card className="mb-6">
             <CardContent className="py-6 flex flex-col gap-4">
               <div className="flex items-center gap-4">
-                <img src={project.logo?.url || "public/assets/ppt.png"} alt="PPT" className="w-12 h-12" />
+                <img
+                  src={project.logo?.url || "/assets/default-banner.png"}
+                  alt="PPT"
+                  className="w-12 h-12" />
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h1>
                   <div className="text-sm text-gray-500">Team: {teamName}</div>
@@ -284,11 +275,20 @@ export function ProjectDetail({
                 </a>
               </div>
               <div className="mt-4">
+                {pptLoading && (
+                  <div className="flex items-center justify-center w-full h-64">
+                    <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                  </div>
+                )}
                 <iframe
                   src={`https://docs.google.com/gview?url=${encodeURIComponent(project.pptFile)}&embedded=true`}
-                  style={{ width: "100%", height: "500px", border: "none" }}
+                  style={{ width: "100%", height: "500px", border: "none", display: pptLoading ? 'none' : 'block' }}
                   title="PPT Preview"
                   allowFullScreen
+                  onLoad={() => setPptLoading(false)}
                 />
               </div>
             </CardContent>
@@ -309,7 +309,7 @@ export function ProjectDetail({
                 </div>
                 <JudgeScoreForm
                   projectId={project._id}
-                  hackathonId={getHackathonId()}
+                  hackathonId={project.hackathon?._id}
                   onSubmitted={() => {
                     toast({ title: "✅ Score Submitted", duration: 2000 });
                   }}
@@ -470,7 +470,7 @@ export function ProjectDetail({
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 rounded-2xl">
             <div className="w-28 h-28 flex items-center justify-center rounded-2xl ">
               <img
-                src={project.logo?.url || "/placeholder.svg"}
+                src={project.logo?.url || "/assets/default-banner.png"}
                 alt="Project Logo"
                 className="rounded-xl object-cover w-24 h-24 "
               />
@@ -512,6 +512,37 @@ export function ProjectDetail({
                     Repo
                   </a>
                 )}
+                {project.websiteLink && (
+                  <a
+                    href={project.websiteLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:underline hover:text-blue-600 transition-all"
+                  >
+                    <Globe className="w-4 h-4" />
+                    Website
+                  </a>
+                )}
+                {project.socialLinks && project.socialLinks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {project.socialLinks.map((link, idx) => (
+                      <a
+                        key={link || idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"
+                      >
+                        {link}
+                      </a>
+                    ))}
+                  </div>
+                )}
+                {project.customCategory && (
+                  <Badge variant="outline" className="text-xs px-2 py-1 bg-gray-200">
+                    {project.customCategory}
+                  </Badge>
+                )}
                 {project.createdAt && (
                   <span className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
@@ -552,28 +583,53 @@ export function ProjectDetail({
             <div className="lg:col-span-3">
               <TabsContent value="overview" className="space-y-8">
                 <Card>
-                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
-                    {project.videoLink ? (
-                      // Remove YouTube-specific preview logic since getEmbeddableVideoLink and getYoutubeThumbnail are undefined
-                      <video
-                        src={project.videoLink}
-                        controls
-                        className="w-full h-full object-cover rounded-xl"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 gap-2 select-none">
-                        <span className="bg-purple-100 rounded-full p-6 mb-2 animate-pulse">
-                          <Play className="w-12 h-12 text-purple-400" />
-                        </span>
-                        <span className="font-semibold text-lg">
-                          No video available
-                        </span>
-                        <span className="text-sm text-gray-400">
-                          This project has not provided a demo video yet.
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  {project.videoLink ? (
+                    (() => {
+                      // Check if the link is a direct video file (mp4, webm, ogg)
+                      const isDirectVideo =
+                        typeof project.videoLink === 'string' &&
+                        /\.(mp4|webm|ogg)(\?.*)?$/i.test(project.videoLink);
+                      if (isDirectVideo) {
+                        return (
+                          <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                            <video
+                              src={project.videoLink}
+                              controls
+                              className="w-full h-full object-cover rounded-xl"
+                            />
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="py-6 px-4 flex flex-col items-start">
+                            <h2 className="text-xl font-bold mb-2 text-gray-900 flex items-center gap-2">
+                              <Play className="w-5 h-5" /> Demo Video
+                            </h2>
+                            <a
+                              href={project.videoLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline text-base font-medium break-all"
+                            >
+                              {project.videoLink}
+                            </a>
+                          </div>
+                        );
+                      }
+                    })()
+                  ) : (
+                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex flex-col items-center justify-center text-gray-400 gap-2 select-none">
+                      <span className="bg-purple-100 rounded-full p-6 mb-2 animate-pulse">
+                        <Play className="w-12 h-12 text-purple-400" />
+                      </span>
+                      <span className="font-semibold text-lg">
+                        No video available
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        This project has not provided a demo video yet.
+                      </span>
+                    </div>
+                  )}
                 </Card>
                 {/* Description Section */}
                 {project.description && (
@@ -610,6 +666,27 @@ export function ProjectDetail({
                 )}
                 {/* Horizontal line between description and skills */}
                 <div className="border-t border-gray-200 my-6 w-full" />
+                {project.teamIntro && (
+                  <Card className="bg-white/50 px-6 py-6 mb-4">
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Team Introduction</h2>
+                    <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed" style={{ whiteSpace: "pre-line" }}>
+                      {project.teamIntro}
+                    </div>
+                  </Card>
+                )}
+                {project.customAnswers && project.customAnswers.length > 0 && (
+                  <Card className="bg-white/50 px-6 py-6 mb-4">
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Custom Answers</h2>
+                    <ul className="list-disc pl-6">
+                      {project.customAnswers.map((ans, idx) => (
+                        <li key={ans.questionId || idx}>
+                          <strong>Q:</strong> {ans.questionId} <br />
+                          <strong>A:</strong> {ans.answer}
+                        </li>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
               </TabsContent>
 
               {!onlyOverview && (

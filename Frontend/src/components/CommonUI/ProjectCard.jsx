@@ -19,7 +19,7 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
   const coverImage =
     project.logo?.url ||
     project.images?.[0] ||
-    "/placeholder.svg?height=200&width=400";
+    "/assets/default-banner.png";
 
   const author = project.submittedBy || {}; // fallback in case it's not populated
   // ✅ Show judged badge only if judge and already scored this project
@@ -77,9 +77,15 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
     const likeCount = project.likes ?? 0;
     const viewCount = project.views ?? 0;
     return (
-      <div className="border rounded px-4 py-3 mb-2 bg-white shadow-sm">
+      <div
+        className="border rounded px-4 py-3 mb-2 bg-white shadow-sm cursor-pointer hover:shadow-md transition"
+        onClick={() => onClick && onClick(project)}
+        tabIndex={0}
+        role="button"
+        onKeyPress={e => { if (e.key === 'Enter' || e.key === ' ') { onClick && onClick(project); } }}
+      >
         <div className="flex items-center gap-3">
-          <img src={project.logo?.url || "/ppt.png"} alt="PPT" className="w-8 h-8" />
+          <img src={project.logo?.url || "/assets/default-banner.png"} alt="PPT" className="w-8 h-8" />
           <span className="font-medium text-gray-800 text-base">{project.title}</span>
         </div>
         <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
@@ -108,15 +114,9 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
               <Eye className="w-3.5 h-3.5" />
               {viewCount}
             </div>
-            <button
-              className="text-blue-600 underline text-xs font-medium ml-4"
-              onClick={e => {
-                e.stopPropagation();
-                if (onClick) onClick(project);
-              }}
-            >
+            <span className="text-blue-600 underline text-xs font-medium ml-4">
               View Details
-            </button>
+            </span>
           </div>
         </div>
       </div>
@@ -130,6 +130,7 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
           src={coverImage}
           alt={project.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={e => { e.target.onerror = null; e.target.src = '/assets/default-banner.png'; }}
         />
         {alreadyScored && (
           <div className="absolute top-2 right-2 bg-green-600 text-white text-[10px] px-2 py-1 rounded-full z-10 shadow">

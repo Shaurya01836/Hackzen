@@ -43,13 +43,17 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         const pptSubmissions = submissions
           .filter((s) => s.pptFile && !s.projectId)
           .map((s) => ({
-            _id: s._id,
-            title: s.originalName || "PPT Submission",
-          
-            type: "ppt",
-            pptFile: s.pptFile,
+            ...s,
+            type: 'PPT',
+            title: s.title || s.originalName || 'PPT Submission',
+            name: s.teamName || (s.team && s.team.name) || '-',
+            status: s.status || 'Submitted',
             submittedBy: s.submittedBy,
-            // Add more fields as needed
+            submittedAt: s.submittedAt,
+            pptFile: s.pptFile,
+            logo: { url: "/assets/default-banner.png" },
+            likes: s.likes || 0,
+            views: s.views || 0,
           }));
         setProjects([...projectsData, ...pptSubmissions]);
       } catch (err) {

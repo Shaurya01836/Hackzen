@@ -79,10 +79,10 @@ exports.getAllProjects = async (req, res) => {
 // Get my projects
 exports.getMyProjects = async (req, res) => {
   try {
+    // Return all fields for each project, plus submittedBy and hackathon title
     const projects = await Project.find({ submittedBy: req.user._id })
-      .populate("submittedBy", "name profileImage role") // ✅ this is the fix
-      .populate("hackathon", "title"); // if you want hackathon title also
-
+      .populate("submittedBy", "name profileImage role")
+      .populate("hackathon", "title");
     res.status(200).json(projects);
   } catch (err) {
     console.error("Error fetching user projects:", err);
