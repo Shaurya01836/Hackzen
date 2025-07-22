@@ -533,6 +533,29 @@ const leaveTeam = async (req, res) => {
   }
 };
 
+// GET /api/teams/hackathon/:hackathonId/all
+const getAllTeamsByHackathon = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    if (!hackathonId) {
+      return res.status(400).json({ error: 'Hackathon ID is required' });
+    }
+    // Get all teams for this hackathon
+    const allTeams = await Team.find({
+      hackathon: new mongoose.Types.ObjectId(hackathonId),
+      status: 'active'
+    })
+      .populate('members', 'name email avatar')
+      .populate('leader', 'name email')
+      .populate('hackathon', 'title')
+      .sort({ createdAt: -1 });
+    res.json(allTeams);
+  } catch (err) {
+    console.error('Error fetching all teams:', err);
+    res.status(500).json({ error: 'Failed to fetch all teams', details: err.message });
+  }
+};
+
 module.exports = {
   createTeam,
   addMember,
@@ -544,4 +567,5 @@ module.exports = {
   removeMember,
   leaveTeam,
   updateTeamDescription,
+  getAllTeamsByHackathon,
 };

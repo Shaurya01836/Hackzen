@@ -18,6 +18,9 @@ router.get('/hackathon/:hackathonId', protect, teamController.getTeamsByHackatho
 // Get all teams for a project
 router.get('/project/:projectId', protect, teamController.getTeamsByProject);
 
+// Get all teams in a hackathon (for organizers)
+router.get('/hackathon/:hackathonId/all', protect, teamController.getAllTeamsByHackathon);
+
 // Get one team by ID
 router.get('/:id', teamController.getTeamById);
 

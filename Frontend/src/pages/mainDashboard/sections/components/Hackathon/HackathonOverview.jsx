@@ -5,7 +5,7 @@ import { Building, MapPin, Target, Award, Users, AlertCircle, CheckCircle, Globe
 import { Avatar, AvatarFallback, AvatarImage } from "../../../../../components/DashboardUI/avatar";
 import { Button } from "../../../../../components/CommonUI/button";
 
-export default function HackathonOverview({ hackathon, sectionRef, user }) {
+export default function HackathonOverview({ hackathon, sectionRef, user, onShowParticipants }) {
   const getDifficultyColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
@@ -132,6 +132,23 @@ export default function HackathonOverview({ hackathon, sectionRef, user }) {
 
         {/* Event Details Card */}
         <div className="space-y-6">
+          {/* Participants Card - make clickable */}
+          <Card className="cursor-pointer hover:shadow-lg transition" onClick={onShowParticipants}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-blue-500" />
+                Participants
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold">{hackathon.participants?.length || 0}</span>
+                <span className="text-gray-500">Registered</span>
+              </div>
+              
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Event Details</CardTitle>

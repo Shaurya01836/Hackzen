@@ -87,4 +87,14 @@ export async function deletePPTSubmission({ hackathonId, roundIndex }) {
     throw new Error((await response.json()).error || 'Failed to delete PPT submission');
   }
   return response.json();
+}
+
+// Fetch participants for a hackathon (organizer view)
+export async function fetchHackathonParticipants(hackathonId) {
+  const url = buildApiUrl(`/registration/hackathon/${hackathonId}/participants`);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Failed to fetch participants');
+  return response.json();
 } 
