@@ -6,72 +6,43 @@ import { Card, CardContent } from "../../../../../components/CommonUI/card";
 import { Skeleton } from "../../../../../components/DashboardUI/skeleton";
 import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
 
-export default function HackathonProjectsGallery({ hackathonId, onProjectClick, selectedType }) {
+export default function HackathonProjectsGallery({ hackathonId, onProjectClick }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [judgeScores, setJudgeScores] = useState([]);
   const navigate = useNavigate();
 
-  // Fetch only submitted projects for the hackathon
+  // Fetch projects for the hackathon
   useEffect(() => {
-    const fetchSubmittedProjects = async () => {
-      setLoading(true);
+    const fetchProjects = async () => {
       try {
-        // 1. Fetch all submissions for this hackathon
-        const submissionsRes = await axios.get(
-          `/api/submission-form/admin/hackathon/${hackathonId}`,
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          }
+        const res = await axios.get(
+          `http://localhost:3000/api/projects/hackathon/${hackathonId}`
         );
-        const submissions = submissionsRes.data.submissions || [];
-        // 2. Get unique projectIds from submissions
-        const projectIds = [
-          ...new Set(
-            submissions
-              .filter((s) => s.projectId)
-              .map((s) => (typeof s.projectId === "object" ? s.projectId._id : s.projectId))
-          ),
-        ];
-        // 3. Fetch project details for each projectId
-        const projectPromises = projectIds.map((id) =>
-          axios.get(`/api/projects/${id}`).then((res) => ({ ...res.data, type: "project" }))
-        );
-        const projectsData = await Promise.all(projectPromises);
-        // 4. Add PPT submissions (those with pptFile and no projectId)
-        const pptSubmissions = submissions
-          .filter((s) => s.pptFile && !s.projectId)
-          .map((s) => ({
-            _id: s._id,
-            title: s.originalName || "PPT Submission",
-          
-            type: "ppt",
-            pptFile: s.pptFile,
-            submittedBy: s.submittedBy,
-            // Add more fields as needed
-          }));
-        setProjects([...projectsData, ...pptSubmissions]);
+        setProjects(res.data || []);
       } catch (err) {
-        console.error("Error fetching submitted projects for hackathon", err);
-        setProjects([]);
+        console.error("Error fetching hackathon projects", err);
       } finally {
         setLoading(false);
       }
     };
-    if (hackathonId) fetchSubmittedProjects();
+
+    if (hackathonId) fetchProjects();
   }, [hackathonId]);
 
   // Fetch current user + judge scores if applicable
   useEffect(() => {
     const fetchUserAndScores = async () => {
       const token = localStorage.getItem("token");
+
       try {
         const userRes = await axios.get("http://localhost:3000/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const currentUser = userRes.data;
         setUser(currentUser);
+
         if (currentUser.role === "judge") {
           const scoreRes = await axios.get("http://localhost:3000/api/scores/my-scored-projects", {
             headers: { Authorization: `Bearer ${token}` },
@@ -82,12 +53,13 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         console.error("Failed to fetch user or judge scores", err);
       }
     };
+
     fetchUserAndScores();
   }, []);
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <Skeleton className="h-40 w-full" />
@@ -101,25 +73,12 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
     );
   }
 
-  // Filter projects by selectedType if provided
-  const filteredProjects = selectedType && selectedType !== ""
-    ? projects.filter((project) => {
-        // If project.type exists, use it (case-insensitive)
-        if (project.type) {
-          return project.type.toLowerCase() === selectedType.toLowerCase();
-        }
-        // If no type, treat all as 'project' for filtering
-        if (selectedType.toLowerCase() === "project") return true;
-        return false;
-      })
-    : projects;
-
-  if (filteredProjects.length === 0) {
+  if (projects.length === 0) {
     return <p className="text-center text-gray-500">No projects submitted yet.</p>;
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {projects.map((project) => (
         <ProjectCard
           key={project._id}

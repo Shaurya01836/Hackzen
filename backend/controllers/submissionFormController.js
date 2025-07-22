@@ -2,6 +2,7 @@
 const Hackathon = require("../model/HackathonModel");
 const Project = require("../model/ProjectModel");
 const Submission = require("../model/SubmissionModel");
+const Team = require('../model/TeamModel');
 
 exports.saveHackathonForm = async (req, res) => {
   try {
@@ -53,11 +54,15 @@ exports.submitProjectWithAnswers = async (req, res) => {
     if (!hackathon) {
       return res.status(404).json({ error: "Hackathon not found" });
     }
-    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId, roundIndex });
+    const userSubmissionCount = await Submission.countDocuments({ hackathonId, submittedBy: userId });
     if (userSubmissionCount >= (hackathon.maxSubmissionsPerParticipant || 1)) {
-      return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this round.` });
+      return res.status(400).json({ error: `You have reached the maximum number of submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
     }
 
+    // Find the user's team for this hackathon
+    let teamName = '-';
+    const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+    if (team) teamName = team.name;
     // Create new submission
     const submission = await Submission.create({
       hackathonId,
@@ -69,6 +74,7 @@ exports.submitProjectWithAnswers = async (req, res) => {
       selectedMembers,
       pptFile, // Save pptFile if provided
       roundIndex, // Save roundIndex if provided
+      teamName,
     });
 
     // Update the project status and hackathon link
@@ -89,7 +95,7 @@ exports.submitProjectWithAnswers = async (req, res) => {
 exports.submitPPTForRound = async (req, res) => {
   console.log('submitPPTForRound called', req.body);
   try {
-    const { hackathonId, roundIndex, pptFile } = req.body;
+    const { hackathonId, roundIndex, pptFile, originalName } = req.body;
     const userId = req.user._id;
     if (!hackathonId || typeof roundIndex !== 'number' || !pptFile) {
       return res.status(400).json({ success: false, error: 'hackathonId, roundIndex, and pptFile are required' });
@@ -105,18 +111,25 @@ exports.submitPPTForRound = async (req, res) => {
     if (submission) {
       // Replace the pptFile (edit)
       submission.pptFile = pptFile;
+      submission.originalName = originalName;
       submission.submittedAt = new Date();
       await submission.save();
       return res.status(200).json({ success: true, submission, replaced: true });
     } else {
+      // Find the user's team for this hackathon
+      let teamName = '-';
+      const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+      if (team) teamName = team.name;
       // Create new submission
       submission = await Submission.create({
         hackathonId,
         roundIndex,
         pptFile,
+        originalName,
         submittedBy: userId,
         status: 'submitted',
         submittedAt: new Date(),
+        teamName,
       });
       return res.status(200).json({ success: true, submission, replaced: false });
     }

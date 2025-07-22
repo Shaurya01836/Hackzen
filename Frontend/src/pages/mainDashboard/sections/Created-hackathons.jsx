@@ -317,7 +317,12 @@ export function CreatedHackathons({ onCreateNew }) {
     return (
       <InnerCreatedCard
         hackathon={innerCardHackathon}
-        onBack={() => navigate("/dashboard/created-hackathons")}
+       onBack={(postBack) => {
+          setShowInnerCard(false);
+          setTimeout(() => {
+            if (typeof postBack === 'function') postBack();
+          },0);
+}}
         onEdit={(hackathon) => {
           setEditHackathon(hackathon);
           setShowInnerCard(false);

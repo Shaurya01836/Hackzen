@@ -56,6 +56,8 @@ import { useToast } from '../../../hooks/use-toast';
 import ChatModal from '../components/ChatModal';
 import BaseModal from "./components/Hackathon/TeamModals/BaseModal";
 import { fetchHackathonParticipants } from "../../../lib/api";
+import { ProjectCard } from '../../../components/CommonUI/ProjectCard';
+import { ProjectDetail } from '../../../components/CommonUI/ProjectDetail';
 
 export default function HackathonDetailsPage({
   hackathon: hackathonProp,
@@ -90,6 +92,12 @@ export default function HackathonDetailsPage({
   const [participantsModalLoading, setParticipantsModalLoading] = useState(false);
   const [participantsModalError, setParticipantsModalError] = useState(null);
   const [participantsList, setParticipantsList] = useState([]);
+  const [showTeamsView, setShowTeamsView] = useState(false);
+  const [selectedTeamId, setSelectedTeamId] = useState(null);
+  const [showParticipantsView, setShowParticipantsView] = useState(false);
+  const [showSubmissionsView, setShowSubmissionsView] = useState(false);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
+  const [selectedType, setSelectedType] = useState('All');
 
   // Define these before your return
   const totalParticipants = participants.length;
@@ -115,7 +123,7 @@ export default function HackathonDetailsPage({
         };
         const [h, t, s, p] = await Promise.all([
           fetchJson(`http://localhost:3000/api/hackathons/${id}`),
-          fetchJson(`http://localhost:3000/api/teams/hackathon/${id}`),
+          fetchJson(`http://localhost:3000/api/teams/hackathon/${id}/all`),
           fetchJson(`http://localhost:3000/api/projects/hackathon/${id}`),
           fetchJson(`http://localhost:3000/api/registration/hackathon/${id}/participants`),
         ]);
@@ -291,150 +299,338 @@ export default function HackathonDetailsPage({
     }
   };
 
-  // Add back button if onBack function is provided
   return (
     <>
-      {showSubmissionForm ? (
-        <CustomSubmissionForm
-          hackathon={submissionHackathon}
-          onCancel={() => {
-            setShowSubmissionForm(false);
-            setSubmissionHackathon(null);
-          }}
-        />
-      ) : (
-        <div className="min-h-screen bg-[#f9f9fb]">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-b border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {onBack && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onBack}
-                      className="flex items-center gap-2 hover:bg-white/50 transition-colors"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Back
-                    </Button>
-                  )}
-                  <div className="flex-1">
-                    <h1 className="text-xl font-bold text-gray-900 truncate">
-                      {hackathon.title}
-                    </h1>
-                  </div>
-                </div>
-                <Badge
-                  variant="outline"
-                  className="bg-green-50 text-green-700 border-green-200 text-xs"
+      {/* Header */}
+      <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {onBack && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBack}
+                  className="flex items-center gap-2 hover:bg-white/50 transition-colors"
                 >
-                  {hackathon.status || "Completed"}
-                </Badge>
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              <div className="flex-1">
+                <h1 className="text-xl font-bold text-gray-900 truncate">
+                  {hackathon.title}
+                </h1>
               </div>
             </div>
+            <Badge
+              variant="outline"
+              className="bg-green-50 text-green-700 border-green-200 text-xs"
+            >
+              {hackathon.status || "Completed"}
+            </Badge>
           </div>
+        </div>
+      </div>
 
-          {/* Stats and Top Tracks/Locations - Full Width */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-            {/* Stats Overview */}
-            <section>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Hackathon Overview
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mb-8">
-                <ACard className="cursor-pointer hover:shadow-lg transition" onClick={handleShowParticipantsModal}>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <Users className="w-8 h-8 text-indigo-500 mb-2" />
-                    <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {totalParticipants.toLocaleString()}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Participants
-                    </p>
-                  
-                  </ACardContent>
-                </ACard>
-                <ACard
-                  className="cursor-pointer hover:shadow-lg transition"
-                  onClick={() => navigate(`/dashboard/created-hackathons/${hackathon._id}/teams`)}
-                >
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <Users2 className="w-8 h-8 text-blue-500 mb-2" />
-                    <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {totalTeams}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Teams
-                    </p>
-                    <p className="text-xs text-gray-400 mt-1">Click to view all teams</p>
-                  </ACardContent>
-                </ACard>
-                <ACard>
-                  <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
-                    <Upload className="w-8 h-8 text-green-500 mb-2" />
-                    <p className="text-2xl font-bold text-gray-900 mb-1">
-                      {totalSubmissions}
-                    </p>
-                    <p className="text-sm text-gray-500 font-medium text-center">
-                      Submissions
-                    </p>
-                  </ACardContent>
-                </ACard>
-               
-              </div>
+      {/* Main Content Area - Only show one or the other */}
+      {showSubmissionsView ? (
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Dropdown filter for submission type */}
+          {!selectedSubmissionId && (
+            <div className="mb-6 flex items-center gap-4">
+              <label className="font-medium text-gray-700">Filter by Type:</label>
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="All">All</SelectItem>
+                  <SelectItem value="Project">Project</SelectItem>
+                  <SelectItem value="PPT">PPT</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {selectedSubmissionId ? (
+            (() => {
+              const sub = submissions.find(s => s._id === selectedSubmissionId);
+              if (!sub) return null;
+              return (
+                <div>
+                  <button className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium" onClick={() => setSelectedSubmissionId(null)}>
+                    ← Back to Submissions
+                  </button>
+                  <ProjectDetail
+                    project={sub}
+                    onBack={() => setSelectedSubmissionId(null)}
+                    hideBackButton={true}
+                    onlyOverview={false}
+                  />
+                </div>
+              );
+            })()
+          ) : (
+            <>
+              <button className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium" onClick={() => setShowSubmissionsView(false)}>
+                ← Back to Overview
+              </button>
+              <h1 className="text-3xl font-bold text-indigo-900 mb-8 text-center">Submissions</h1>
+              {(() => {
+                // Filter submissions by selectedType
+                const filteredSubs = selectedType === 'All'
+                  ? submissions
+                  : submissions.filter(sub => {
+                      const type = sub.type ? sub.type.toLowerCase() : (sub.pptFile ? 'ppt' : 'project');
+                      return type === selectedType.toLowerCase();
+                    });
+                if (filteredSubs.length === 0) {
+                  return <div className="text-center text-gray-500">No submissions yet.</div>;
+                }
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredSubs.map((sub, idx) => (
+                      <ProjectCard
+                        key={sub._id || idx}
+                        project={{
+                          ...sub,
+                          title: sub.title || sub.originalName || 'Untitled',
+                          name: sub.teamName || (sub.team && sub.team.name) || '-',
+                          type: sub.type ? sub.type.toUpperCase() : (sub.pptFile ? 'PPT' : 'Project'),
+                          status: sub.status || 'Submitted',
+                          submittedBy: sub.submittedBy,
+                          submittedAt: sub.submittedAt,
+                          pptFile: sub.pptFile,
+                        }}
+                        onClick={() => setSelectedSubmissionId(sub._id)}
+                        user={user}
+                        judgeScores={[]}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      ) : showParticipantsView ? (
+        <div className="max-w-5xl mx-auto p-6">
+          <button className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium" onClick={() => setShowParticipantsView(false)}>
+            ← Back to Overview
+          </button>
+          <h1 className="text-3xl font-bold text-indigo-900 mb-8 text-center">Participants</h1>
+          {participants.length === 0 ? (
+            <div className="text-center text-gray-500">No participants registered yet.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team Name</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {participants.map((p, idx) => (
+                    <tr key={p._id || p.userId || idx}>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{p.teamName || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : showTeamsView ? (
+        <div className="max-w-5xl mx-auto p-6">
+          {console.log('Teams array:', teams)}
+          {selectedTeamId ? (
+            (() => {
+              const team = teams.find(t => t._id === selectedTeamId);
+              // Build a map of userId to submission status
+              const userSubmissionMap = {};
+              submissions.forEach(sub => {
+                if (sub.submittedBy && sub.submittedBy._id) {
+                  userSubmissionMap[sub.submittedBy._id] = sub.status || "Draft";
+                }
+              });
+              return (
+                <>
+                  <button className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium" onClick={() => setSelectedTeamId(null)}>
+                    ← Back to Teams
+                  </button>
+                  <h1 className="text-3xl font-bold text-indigo-900 mb-8 text-center">{team?.name || 'Team Details'}</h1>
+                  <div className="bg-white rounded-xl shadow-md p-6 mb-6 border border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+                      <div>
+                        <div className="text-2xl font-bold text-indigo-800">{team?.name}</div>
+                        <div className="text-gray-600 text-sm mt-1">Team Leader: <span className="font-semibold">{team?.leader?.name}</span></div>
+                      </div>
+                      <div className="mt-2 sm:mt-0 text-sm text-gray-500">Members: {team?.members.length}</div>
+                    </div>
+                    {team?.members.length === 1 && (
+                      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm text-center">
+                        This team has only one member.
+                      </div>
+                    )}
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submission Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {team?.members.map((member) => (
+                          <tr key={member._id}>
+                            <td className="px-6 py-4 whitespace-nowrap">{member.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{member.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{team.leader._id === member._id ? "Team Leader" : "Member"}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{userSubmissionMap[member._id] || "Not Started"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              );
+            })()
+          ) : (
+            <>
+              <button className="mb-6 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-medium" onClick={() => setShowTeamsView(false)}>
+                ← Back to Overview
+              </button>
+              <h1 className="text-3xl font-bold text-indigo-900 mb-8 text-center">Teams & Leaders</h1>
+              {teams.length === 0 ? (
+                <div className="text-center text-gray-500">No teams found for this hackathon.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {teams.map((team) => (
+                    <div
+                      key={team._id}
+                      className="bg-white rounded-xl shadow-md p-6 mb-6 hover:shadow-lg transition cursor-pointer border border-gray-100"
+                      onClick={() => setSelectedTeamId(team._id)}
+                    >
+                      <div className="text-lg font-bold text-indigo-700 mb-2">{team.name}</div>
+                      <div className="text-sm text-gray-500 mb-1">Team Leader: <span className="font-semibold text-gray-700">{team.leader?.name}</span></div>
+                      <div className="text-xs text-gray-400 mt-2">Members: {team.members.length}</div>
+                      {team.members.length === 1 && (
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-blue-800 text-xs text-center">
+                          This team has only one member.
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="min-h-screen bg-[#f9f9fb]">
+          {/* Stats Overview */}
+          <section>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Hackathon Overview
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full mb-8">
+              <ACard className="cursor-pointer hover:shadow-lg transition" onClick={() => setShowParticipantsView(true)}>
+                <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                  <Users className="w-8 h-8 text-indigo-500 mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 mb-1">
+                    {totalParticipants}
+                  </p>
+                  <p className="text-sm text-gray-500 font-medium text-center">
+                    Participants
+                  </p>
+                </ACardContent>
+              </ACard>
+              <ACard
+                className="cursor-pointer hover:shadow-lg transition"
+                onClick={() => setShowTeamsView(true)}
+              >
+                <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                  <Users2 className="w-8 h-8 text-blue-500 mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 mb-1">
+                    {totalTeams}
+                  </p>
+                  <p className="text-sm text-gray-500 font-medium text-center">
+                    Teams
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Click to view all teams</p>
+                </ACardContent>
+              </ACard>
+              <ACard
+                className="cursor-pointer hover:shadow-lg transition"
+                onClick={() => setShowSubmissionsView(true)}
+              >
+                <ACardContent className="pt-4 flex flex-col items-center justify-center py-6">
+                  <Upload className="w-8 h-8 text-green-500 mb-2" />
+                  <p className="text-2xl font-bold text-gray-900 mb-1">
+                    {totalSubmissions}
+                  </p>
+                  <p className="text-sm text-gray-500 font-medium text-center">
+                    Submissions
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Click to view all submissions</p>
+                </ACardContent>
+              </ACard>
+            </div>
 
-              {/* Top Tracks and Locations */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                <Card className=" border-gray-200">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Top Tracks</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {Array.isArray(hackathon.topTracks) && hackathon.topTracks.map((track, index) => (
-                        <div
-                          key={track}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-sm text-gray-700">{track}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            #{index + 1}
-                          </Badge>
+            {/* Top Tracks and Locations */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <Card className=" border-gray-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Top Tracks</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    {Array.isArray(hackathon.topTracks) && hackathon.topTracks.map((track, index) => (
+                      <div
+                        key={track}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm text-gray-700">{track}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          #{index + 1}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className=" border-gray-200 ">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Top Locations</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-3">
+                    {Array.isArray(hackathon.topLocations) && hackathon.topLocations.map((location, index) => (
+                      <div
+                        key={location}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm text-gray-700">
+                            {location}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className=" border-gray-200 ">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Top Locations</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {Array.isArray(hackathon.topLocations) && hackathon.topLocations.map((location, index) => (
-                        <div
-                          key={location}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-700">
-                              {location}
-                            </span>
-                          </div>
-                          <Badge variant="secondary" className="text-xs">
-                            #{index + 1}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
-          </div>
+                        <Badge variant="secondary" className="text-xs">
+                          #{index + 1}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
 
           {/* Submitted Projects + Quick Actions Side by Side, Projects Scrollable */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -552,7 +748,7 @@ export default function HackathonDetailsPage({
                           <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <Clock className="h-4 w-4" />
-                              {formatDate(project.submittedOn)}
+                              {formatDate(project.submittedAt)}
                             </div>
                             {project.score && (
                               <div className="flex items-center gap-1 text-indigo-600 font-semibold">

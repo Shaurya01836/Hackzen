@@ -81,10 +81,10 @@ function App() {
         <Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
 
         {/* Created Hackathons */}
-        <Route path="/dashboard/created-hackathons" element={<DashboardPage />} />
-        <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
-        <Route path="/dashboard/created-hackathons/:hackathonId/teams" element={<TeamsParticipantsPage />} />
         <Route path="/dashboard/created-hackathons/:hackathonId/teams/:teamId" element={<TeamsParticipantsPage />} />
+        <Route path="/dashboard/created-hackathons/:hackathonId/teams" element={<TeamsParticipantsPage />} />
+        <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
+        <Route path="/dashboard/:section" element={<DashboardPage />} />
 
         {/* Edit Hackathon Full Page */}
         <Route path="/dashboard/edit-hackathon/:id" element={<EditHackathonPage />} />

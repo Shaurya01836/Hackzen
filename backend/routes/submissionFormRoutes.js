@@ -12,6 +12,7 @@ const {
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
+const Hackathon = require("../model/HackathonModel");
 
 const { protect, isAdmin, isJudge } = require("../middleware/authMiddleware");
 
@@ -130,10 +131,19 @@ router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionF
 // Admin: Get all submissions for dashboard
 router.get("/admin/all", protect, isAdmin, require("../controllers/submissionFormController").getAllSubmissionsAdmin);
 
-// Admin: Get all submissions for a specific hackathon
-router.get("/admin/hackathon/:hackathonId", protect, (req, res, next) => {
+// Admin/Judge/Organizer: Get all submissions for a specific hackathon
+router.get("/admin/hackathon/:hackathonId", protect, async (req, res, next) => {
   if (req.user?.role === "admin" || req.user?.role === "judge") return next();
-  return res.status(403).json({ message: "Access denied: Admins or Judges only" });
+  // Allow the organizer of this hackathon
+  try {
+    const hackathon = await Hackathon.findById(req.params.hackathonId).select("organizer");
+    if (hackathon && hackathon.organizer && hackathon.organizer.toString() === req.user.id) {
+      return next();
+    }
+  } catch (err) {
+    // fall through to forbidden
+  }
+  return res.status(403).json({ message: "Access denied: Admins, Judges, or Hackathon Organizer only" });
 }, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
 
 // Admin: Get a single submission by ID
