@@ -133,15 +133,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      {/* Main modal container - Fixed height */}
-      <Card className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden h-[750px]">
-        <div className="flex h-full">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-2 sm:p-6">
+      {/* Main modal container - Responsive */}
+      <Card className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden h-auto">
+        <div className="flex flex-col md:flex-row h-full">
           {/* Left Column - Branding */}
-          <div className="w-1/2 bg-gradient-to-br from-[#4F46E5] via-[#8B5CF6] to-[#10B981] relative overflow-hidden">
+          <div className="w-full md:w-1/2 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-500 relative overflow-hidden hidden md:flex">
             <div className="absolute inset-0 bg-black/10" />
-
-            <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white">
+            <div className="relative z-10 flex flex-col justify-center items-center h-full p-8 lg:p-12 text-white w-full">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
@@ -154,7 +153,6 @@ export default function LoginPage() {
                   Sign in to continue your hackathon journey
                 </p>
               </div>
-
               <div className="grid grid-cols-1 gap-4 max-w-sm w-full">
                 <div className="flex items-center gap-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
                   <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -194,11 +192,15 @@ export default function LoginPage() {
           </div>
 
           {/* Right Column - Login Form */}
-          <div className="w-1/2 bg-white flex flex-col">
-            <div className="h-full flex flex-col p-8">
+          <div className="w-full md:w-1/2 bg-white flex flex-col">
+            {/* 
+              Set a max-h-[600px] (or adjust as needed) for desktop, 
+              and make the form area scrollable if content overflows.
+            */}
+            <div className="h-full flex flex-col p-4 sm:p-8 md:max-h-[650px] md:overflow-y-auto">
               {/* Header - Fixed */}
               <div className="mb-6 flex-shrink-0">
-                <h2 className="text-3xl font-bold text-[#111827] mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#111827] mb-2">
                   Sign in to your account
                 </h2>
                 <p className="text-[#6B7280]">
@@ -208,7 +210,7 @@ export default function LoginPage() {
 
               {/* Login form - Scrollable if needed */}
               {show2FA ? (
-                <form onSubmit={handle2FASubmit} className="space-y-4 flex-1 overflow-y-auto pr-2 mb-4">
+                <form onSubmit={handle2FASubmit} className="space-y-4 flex-1 overflow-y-auto pr-0 sm:pr-2 mb-4">
                   <div className="text-center">
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,7 +256,7 @@ export default function LoginPage() {
                   </button>
                 </form>
               ) : (
-                <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-4">
+                <div className="flex-1 overflow-y-auto pr-0 sm:pr-2 space-y-4 mb-4">
                   {/* Google Login Button */}
                   <Button
                     variant="outline"
@@ -319,7 +321,7 @@ export default function LoginPage() {
                   )}
 
                   {/* Email Input */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 px-1">
                     <Label htmlFor="email" className="text-[#111827] font-medium">
                       Email Id
                     </Label>
@@ -344,7 +346,7 @@ export default function LoginPage() {
                   </div>
 
                   {/* Password Input */}
-                  <div className="space-y-2">
+                  <div className="space-y-2 px-1">
                     <Label
                       htmlFor="password"
                       className="text-[#111827] font-medium"

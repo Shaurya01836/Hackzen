@@ -288,7 +288,7 @@ export default function SignupPage() {
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
-            className="bg-[#4F46E5] h-2 rounded-full transition-all duration-300"
+            className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -1519,14 +1519,13 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <Card className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden h-[750px]">
-        <div className="flex h-full">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-2 sm:px-6">
+      <Card className="w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden h-auto mx-auto">
+        <div className="flex flex-col md:flex-row h-full">
           {/* Left Column - Branding */}
-          <div className="w-1/2 bg-gradient-to-br from-[#4F46E5] via-[#8B5CF6] to-[#10B981] relative overflow-hidden">
+          <div className="w-full md:w-1/2 bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-500 relative overflow-hidden hidden md:flex">
             <div className="absolute inset-0 bg-black/10" />
-
-            <div className="relative z-10 flex flex-col justify-center items-center h-full p-12 text-white">
+            <div className="relative z-10 flex flex-col justify-center items-center h-full p-8 lg:p-12 text-white w-full">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-6">
                   <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
@@ -1542,7 +1541,6 @@ export default function SignupPage() {
                   reality
                 </p>
               </div>
-
               <div className="grid grid-cols-1 gap-4 max-w-sm w-full">
                 <div className="flex items-center gap-4 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
                   <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -1582,8 +1580,8 @@ export default function SignupPage() {
           </div>
 
           {/* Right Column - Form */}
-          <div className="w-1/2 bg-white flex flex-col">
-            <div className="h-full flex flex-col p-8">
+          <div className="w-full md:w-1/2 bg-white flex flex-col">
+            <div className="h-full flex flex-col p-4 sm:p-8 md:max-h-[650px] md:min-h-[650px] md:overflow-y-auto">
               {/* Header */}
               <div className="mb-6 flex-shrink-0">
                 {currentStep > 1 && (
@@ -1597,7 +1595,7 @@ export default function SignupPage() {
                     Back
                   </Button>
                 )}
-                <h2 className="text-3xl font-bold text-[#111827] mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#111827] mb-2">
                   {currentStep === 1 ? "Create a new account" : getStepTitle()}
                 </h2>
                 <p className="text-[#6B7280]">
