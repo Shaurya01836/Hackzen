@@ -51,7 +51,6 @@ import { Announcements } from "./organizerDashboard/Announcements";
 import { OrganizerTools } from "./organizerDashboard/OrganizerTools";
 import { ExploreHackathons } from "./partipantDashboard/ExploreHackathon";
 import CreateHackathon from "./organizerDashboard/Create-hackathon";
-import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./partipantDashboard/Blogs";
 import { ProjectArchive } from "./partipantDashboard/ProjectArchive";
 import MyHackathon from "./partipantDashboard/Myhackathon";
@@ -115,11 +114,17 @@ export default function HackZenDashboard() {
       location.pathname === "/dashboard" ||
       location.pathname === "/dashboard/"
     ) {
-      navigate("/dashboard/profile", { replace: true });
+      if (authUser?.role === "organizer") {
+        navigate("/dashboard/organizer-tools", { replace: true });
+      } else if (authUser?.role === "judge") {
+        navigate("/dashboard/judge-panel", { replace: true });
+      } else {
+        navigate("/dashboard/profile", { replace: true});
+      }
     }
     // Update currentView when URL changes
     setCurrentView(getActiveSectionFromPath());
-  }, [location.pathname, navigate, params.section]);
+  }, [location.pathname, navigate, params.section, authUser?.role]);
 
   const participantMenuItems = [
     {
@@ -157,12 +162,6 @@ export default function HackZenDashboard() {
       icon: Archive,
       key: "project-archive",
       onClick: () => changeView("project-archive"),
-    },
-    {
-      title: "Organization Hub",
-      icon: Building,
-      key: "organization-hub",
-      onClick: () => changeView("organization-hub"),
     },
     // Conditionally add Sponsored PS
     ...(hasApprovedSponsoredPS
