@@ -227,7 +227,7 @@ export function ProjectDetail({
 
   if (!project) return <p>Loading...</p>;
 
-  if (project.type === "ppt") {
+  if (project.type && project.type.toLowerCase() === "ppt") {
     const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">

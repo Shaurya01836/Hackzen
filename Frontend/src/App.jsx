@@ -114,7 +114,8 @@ function App() {
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
         <Route path="/judge" element={<JudgePanel />} />
-        <Route path="/judge/hackathon/:hackathonId/gallery" element={<JudgeProjectGallery />} />
+        {/* Move JudgeProjectGallery under dashboard */}
+        <Route path="/dashboard/judge/hackathon/:hackathonId/gallery" element={<DashboardPage />} />
       </Routes>
     </>
   );

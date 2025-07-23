@@ -255,7 +255,7 @@ export default function JudgePanel() {
               hackathon={hackathon}
               onClick={() =>
                 hackathon._id && navigate(
-                  `/judge/hackathon/${hackathon._id}/gallery`,
+                  `/dashboard/judge/hackathon/${hackathon._id}/gallery`,
                   { state: { hackathon } }
                 )
               }

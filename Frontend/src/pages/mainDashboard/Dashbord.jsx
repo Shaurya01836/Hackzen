@@ -59,6 +59,7 @@ import DashboardJudgePanel from "./sections/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
 import SponsoredPS from "./SponsoredPS";
 import JudgeManagement from "./sections/JudgeManagement";
+import JudgeProjectGallery from "./sections/JudgeProjectGallery";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -233,6 +234,10 @@ export default function HackZenDashboard() {
 
   // Function to render content based on current view
   const renderContent = () => {
+    // Special case: judge project gallery route
+    if (location.pathname.match(/^\/dashboard\/judge\/hackathon\/[^/]+\/gallery/)) {
+      return <JudgeProjectGallery />;
+    }
     switch (currentView) {
       case "profile":
         return (
