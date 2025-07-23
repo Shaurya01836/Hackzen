@@ -30,6 +30,20 @@ import axios from "axios"
 import { useAuth } from "../../context/AuthContext"
 import Swal from "sweetalert2"
 import withReactContent from "sweetalert2-react-content"
+import RoleSelection from "./components/RoleSelection"
+import BasicInformationForm from "./components/BasicInformationForm"
+import AcademicDetailsForm from "./components/participant/AcademicDetailsForm"
+import CourseSpecializationForm from "./components/participant/CourseSpecializationForm"
+import SkillsInterestsForm from "./components/participant/SkillsInterestsForm"
+import ProfessionalDetailsForm from "./components/participant/ProfessionalDetailsForm"
+import SocialLinksForm from "./components/participant/SocialLinksForm"
+import HackathonPreferencesForm from "./components/participant/HackathonPreferencesForm"
+import OrganizationDetailsForm from "./components/organizer/OrganizationDetailsForm"
+import ExperienceMotivationForm from "./components/organizer/ExperienceMotivationForm"
+import JudgeProfessionalDetailsForm from "./components/judge/ProfessionalDetailsForm"
+import ExpertiseBioForm from "./components/judge/ExpertiseBioForm"
+import ProgressBar from "./components/ProgressBar"
+import StepFooter from "./components/StepFooter"
 
 export default function SignupPage() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -271,751 +285,60 @@ export default function SignupPage() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const renderProgressBar = () => {
-    if (currentStep === 1) return null
-
-    const maxSteps = getMaxSteps() - 1
-    const currentFormStep = currentStep - 1
-    const progress = (currentFormStep / maxSteps) * 100
-
-    return (
-      <div className="mb-6">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>
-            Step {currentFormStep} of {maxSteps}
-          </span>
-          <span>{Math.round(progress)}% Complete</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-indigo-500 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-      </div>
-    )
-  }
-
-  const renderBasicInformation = () => (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="firstName" className="text-[#111827] font-medium">
-            First Name *
-          </Label>
-          <Input
-            id="firstName"
-            value={formData.firstName}
-            onChange={e => handleInputChange("firstName", e.target.value)}
-            placeholder="John"
-            className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-              validationErrors.firstName
-                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                : ""
-            }`}
-          />
-          {validationErrors.firstName && (
-            <p className="text-red-500 text-sm">{validationErrors.firstName}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="lastName" className="text-[#111827] font-medium">
-            Last Name *
-          </Label>
-          <Input
-            id="lastName"
-            value={formData.lastName}
-            onChange={e => handleInputChange("lastName", e.target.value)}
-            placeholder="Doe"
-            className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-              validationErrors.lastName
-                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                : ""
-            }`}
-          />
-          {validationErrors.lastName && (
-            <p className="text-red-500 text-sm">{validationErrors.lastName}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="email" className="text-[#111827] font-medium">
-          Email *
-        </Label>
-        <Input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={e => handleInputChange("email", e.target.value)}
-          placeholder="john@example.com"
-          className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-            validationErrors.email
-              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-              : ""
-          }`}
-        />
-        {validationErrors.email && (
-          <p className="text-red-500 text-sm">{validationErrors.email}</p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="phone" className="text-[#111827] font-medium">
-          Phone Number *
-        </Label>
-        <Input
-          id="phone"
-          value={formData.phone}
-          onChange={e => handleInputChange("phone", e.target.value)}
-          placeholder="Enter your phone number"
-          className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-            validationErrors.phone
-              ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-              : ""
-          }`}
-        />
-        {validationErrors.phone && (
-          <p className="text-red-500 text-sm">{validationErrors.phone}</p>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-[#111827] font-medium">
-            Password *
-          </Label>
-          <Input
-            id="password"
-            type="password"
-            value={formData.password}
-            onChange={e => handleInputChange("password", e.target.value)}
-            className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-              validationErrors.password
-                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                : ""
-            }`}
-          />
-          {validationErrors.password && (
-            <p className="text-red-500 text-sm">{validationErrors.password}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label
-            htmlFor="confirmPassword"
-            className="text-[#111827] font-medium"
-          >
-            Confirm Password *
-          </Label>
-          <Input
-            id="confirmPassword"
-            type="password"
-            value={formData.confirmPassword}
-            onChange={e => handleInputChange("confirmPassword", e.target.value)}
-            className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-              validationErrors.confirmPassword
-                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                : ""
-            }`}
-          />
-          {validationErrors.confirmPassword && (
-            <p className="text-red-500 text-sm">
-              {validationErrors.confirmPassword}
-            </p>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="gender" className="text-[#111827] font-medium">
-            Gender
-          </Label>
-          <Select onValueChange={value => handleInputChange("gender", value)}>
-            <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-              <SelectValue placeholder="Select gender" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="prefer-not-to-say">
-                Prefer not to say
-              </SelectItem>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="country" className="text-[#111827] font-medium">
-            Country *
-          </Label>
-          <Input
-            id="country"
-            value={formData.country}
-            onChange={e => handleInputChange("country", e.target.value)}
-            placeholder="Enter your country"
-            className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-              validationErrors.country
-                ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                : ""
-            }`}
-          />
-          {validationErrors.country && (
-            <p className="text-red-500 text-sm">{validationErrors.country}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="city" className="text-[#111827] font-medium">
-          City *
-        </Label>
-        <Input
-          id="city"
-          value={formData.city}
-          onChange={e => handleInputChange("city", e.target.value)}
-          placeholder="Enter your city"
-          className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-        />
-      </div>
-    </div>
-  )
-
   const renderParticipantStep = step => {
     switch (step) {
       case 3: // Academic Details
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="collegeName"
-                className="text-[#111827] font-medium"
-              >
-                College/Institution Name *
-              </Label>
-              <Input
-                id="collegeName"
-                value={formData.collegeName}
-                onChange={e => handleInputChange("collegeName", e.target.value)}
-                placeholder="Poornima College of Engineering"
-                className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                  validationErrors.collegeName
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-              />
-              {validationErrors.collegeName && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.collegeName}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="userType"
-                  className="text-[#111827] font-medium"
-                >
-                  User Type *
-                </Label>
-                <Select
-                  onValueChange={value => handleInputChange("userType", value)}
-                >
-                  <SelectTrigger
-                    className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                      validationErrors.userType
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Select user type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="school">School Student</SelectItem>
-                    <SelectItem value="college">College Student</SelectItem>
-                    <SelectItem value="fresher">Fresher</SelectItem>
-                    <SelectItem value="professional">Professional</SelectItem>
-                  </SelectContent>
-                </Select>
-                {validationErrors.userType && (
-                  <p className="text-red-500 text-sm">
-                    {validationErrors.userType}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="currentYear"
-                  className="text-[#111827] font-medium"
-                >
-                  Current Year
-                </Label>
-                <Select
-                  onValueChange={value =>
-                    handleInputChange("currentYear", value)
-                  }
-                >
-                  <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                    <SelectValue placeholder="Select current year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1st-year">1st Year</SelectItem>
-                    <SelectItem value="2nd-year">2nd Year</SelectItem>
-                    <SelectItem value="3rd-year">3rd Year</SelectItem>
-                    <SelectItem value="4th-year">4th Year</SelectItem>
-                    <SelectItem value="final-year">Final Year</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+          <AcademicDetailsForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 4: // Course & Specialization
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="course" className="text-[#111827] font-medium">
-                Course *
-              </Label>
-              <Input
-                id="course"
-                value={formData.course}
-                onChange={e => handleInputChange("course", e.target.value)}
-                placeholder="B.Tech, B.E., BCA, etc."
-                className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                  validationErrors.course
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-              />
-              {validationErrors.course && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.course}
-                </p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="courseDuration"
-                  className="text-[#111827] font-medium"
-                >
-                  Course Duration *
-                </Label>
-                <Select
-                  onValueChange={value =>
-                    handleInputChange("courseDuration", value)
-                  }
-                >
-                  <SelectTrigger
-                    className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                      validationErrors.courseDuration
-                        ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                        : ""
-                    }`}
-                  >
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-year">1 Year</SelectItem>
-                    <SelectItem value="2-years">2 Years</SelectItem>
-                    <SelectItem value="3-years">3 Years</SelectItem>
-                    <SelectItem value="4-years">4 Years</SelectItem>
-                    <SelectItem value="5-years">5 Years</SelectItem>
-                    <SelectItem value="6-years">6 Years</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-                {validationErrors.courseDuration && (
-                  <p className="text-red-500 text-sm">
-                    {validationErrors.courseDuration}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="domain" className="text-[#111827] font-medium">
-                  Domain
-                </Label>
-                <Select
-                  onValueChange={value => handleInputChange("domain", value)}
-                >
-                  <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                    <SelectValue placeholder="Select domain" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="engineering">Engineering</SelectItem>
-                    <SelectItem value="computer-science">
-                      Computer Science
-                    </SelectItem>
-                    <SelectItem value="information-technology">
-                      Information Technology
-                    </SelectItem>
-                    <SelectItem value="data-science">Data Science</SelectItem>
-                    <SelectItem value="artificial-intelligence">
-                      Artificial Intelligence
-                    </SelectItem>
-                    <SelectItem value="machine-learning">
-                      Machine Learning
-                    </SelectItem>
-                    <SelectItem value="cybersecurity">Cybersecurity</SelectItem>
-                    <SelectItem value="web-development">
-                      Web Development
-                    </SelectItem>
-                    <SelectItem value="mobile-development">
-                      Mobile Development
-                    </SelectItem>
-                    <SelectItem value="game-development">
-                      Game Development
-                    </SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="business">Business</SelectItem>
-                    <SelectItem value="management">Management</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="courseSpecialization"
-                className="text-[#111827] font-medium"
-              >
-                Course Specialization *
-              </Label>
-              <Input
-                id="courseSpecialization"
-                value={formData.courseSpecialization}
-                onChange={e =>
-                  handleInputChange("courseSpecialization", e.target.value)
-                }
-                placeholder="Computer Science, Information Technology, etc."
-                className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                  validationErrors.courseSpecialization
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-              />
-              {validationErrors.courseSpecialization && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.courseSpecialization}
-                </p>
-              )}
-            </div>
-          </div>
+          <CourseSpecializationForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 5: // Skills & Interests
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="skills" className="text-[#111827] font-medium">
-                Technical Skills *
-              </Label>
-              <Input
-                id="skills"
-                value={formData.skills}
-                onChange={e => handleInputChange("skills", e.target.value)}
-                placeholder="JavaScript, Python, React, etc. (comma separated)"
-                className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
-                  validationErrors.skills
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : ""
-                }`}
-              />
-              {validationErrors.skills && (
-                <p className="text-red-500 text-sm">
-                  {validationErrors.skills}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="interests" className="text-[#111827] font-medium">
-                Interests
-              </Label>
-              <Input
-                id="interests"
-                value={formData.interests}
-                onChange={e => handleInputChange("interests", e.target.value)}
-                placeholder="AI, Web Development, Blockchain, etc. (comma separated)"
-                className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              />
-            </div>
-          </div>
+          <SkillsInterestsForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 6: // Professional Details
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="companyName"
-                  className="text-[#111827] font-medium"
-                >
-                  Company Name
-                </Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  onChange={e =>
-                    handleInputChange("companyName", e.target.value)
-                  }
-                  placeholder="Your current company"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="jobTitle"
-                  className="text-[#111827] font-medium"
-                >
-                  Job Title
-                </Label>
-                <Input
-                  id="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={e => handleInputChange("jobTitle", e.target.value)}
-                  placeholder="Software Developer, Student, etc."
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="yearsOfExperience"
-                className="text-[#111827] font-medium"
-              >
-                Years of Experience
-              </Label>
-              <Select
-                onValueChange={value =>
-                  handleInputChange("yearsOfExperience", value)
-                }
-              >
-                <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                  <SelectValue placeholder="Select experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0-1">0-1 years</SelectItem>
-                  <SelectItem value="1-2">1-2 years</SelectItem>
-                  <SelectItem value="2-3">2-3 years</SelectItem>
-                  <SelectItem value="3-5">3-5 years</SelectItem>
-                  <SelectItem value="5-10">5-10 years</SelectItem>
-                  <SelectItem value="10+">10+ years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <ProfessionalDetailsForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 7: // Social & Professional Links
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="website" className="text-[#111827] font-medium">
-                  Website
-                </Label>
-                <Input
-                  id="website"
-                  value={formData.website}
-                  onChange={e => handleInputChange("website", e.target.value)}
-                  placeholder="https://your-website.com"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="linkedin"
-                  className="text-[#111827] font-medium"
-                >
-                  LinkedIn Profile
-                </Label>
-                <Input
-                  id="linkedin"
-                  value={formData.linkedin}
-                  onChange={e => handleInputChange("linkedin", e.target.value)}
-                  placeholder="https://linkedin.com/in/username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="github" className="text-[#111827] font-medium">
-                  GitHub Profile
-                </Label>
-                <Input
-                  id="github"
-                  value={formData.github}
-                  onChange={e => handleInputChange("github", e.target.value)}
-                  placeholder="https://github.com/username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="githubUsername"
-                  className="text-[#111827] font-medium"
-                >
-                  GitHub Username
-                </Label>
-                <Input
-                  id="githubUsername"
-                  value={formData.githubUsername}
-                  onChange={e =>
-                    handleInputChange("githubUsername", e.target.value)
-                  }
-                  placeholder="username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="portfolio" className="text-[#111827] font-medium">
-                Portfolio Website
-              </Label>
-              <Input
-                id="portfolio"
-                value={formData.portfolio}
-                onChange={e => handleInputChange("portfolio", e.target.value)}
-                placeholder="https://your-portfolio.com"
-                className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="twitter" className="text-[#111827] font-medium">
-                  Twitter/X
-                </Label>
-                <Input
-                  id="twitter"
-                  value={formData.twitter}
-                  onChange={e => handleInputChange("twitter", e.target.value)}
-                  placeholder="@username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="instagram"
-                  className="text-[#111827] font-medium"
-                >
-                  Instagram
-                </Label>
-                <Input
-                  id="instagram"
-                  value={formData.instagram}
-                  onChange={e => handleInputChange("instagram", e.target.value)}
-                  placeholder="@username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="telegram"
-                  className="text-[#111827] font-medium"
-                >
-                  Telegram
-                </Label>
-                <Input
-                  id="telegram"
-                  value={formData.telegram}
-                  onChange={e => handleInputChange("telegram", e.target.value)}
-                  placeholder="@username"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="discord" className="text-[#111827] font-medium">
-                  Discord
-                </Label>
-                <Input
-                  id="discord"
-                  value={formData.discord}
-                  onChange={e => handleInputChange("discord", e.target.value)}
-                  placeholder="username#1234"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-          </div>
+          <SocialLinksForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 8: // Hackathon Preferences & Bio
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="preferredHackathonTypes"
-                className="text-[#111827] font-medium"
-              >
-                Preferred Hackathon Types
-              </Label>
-              <Input
-                id="preferredHackathonTypes"
-                value={formData.preferredHackathonTypes}
-                onChange={e =>
-                  handleInputChange("preferredHackathonTypes", e.target.value)
-                }
-                placeholder="web-development, ai-ml, blockchain, etc. (comma separated)"
-                className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="teamSizePreference"
-                className="text-[#111827] font-medium"
-              >
-                Team Size Preference
-              </Label>
-              <Select
-                onValueChange={value =>
-                  handleInputChange("teamSizePreference", value)
-                }
-              >
-                <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                  <SelectValue placeholder="Select preference" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="solo">Solo</SelectItem>
-                  <SelectItem value="2-3">2-3 members</SelectItem>
-                  <SelectItem value="4-5">4-5 members</SelectItem>
-                  <SelectItem value="6+">6+ members</SelectItem>
-                  <SelectItem value="any">Any size</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bio" className="text-[#111827] font-medium">
-                Bio
-              </Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={e => handleInputChange("bio", e.target.value)}
-                placeholder="Tell us about yourself, your interests, and what you hope to achieve..."
-                className="min-h-[120px] border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] resize-none"
-              />
-            </div>
-          </div>
+          <HackathonPreferencesForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       default:
@@ -1027,86 +350,20 @@ export default function SignupPage() {
     switch (step) {
       case 3: // Organization Details
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="organization"
-                  className="text-[#111827] font-medium"
-                >
-                  Organization *
-                </Label>
-                <Input
-                  id="organization"
-                  value={formData.organization}
-                  onChange={e =>
-                    handleInputChange("organization", e.target.value)
-                  }
-                  placeholder="Company or University"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="position"
-                  className="text-[#111827] font-medium"
-                >
-                  Position/Title *
-                </Label>
-                <Input
-                  id="position"
-                  value={formData.position}
-                  onChange={e => handleInputChange("position", e.target.value)}
-                  placeholder="Event Manager, Professor, etc."
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-          </div>
+          <OrganizationDetailsForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 4: // Experience & Motivation
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="experience_years"
-                className="text-[#111827] font-medium"
-              >
-                Years of Event Experience *
-              </Label>
-              <Select
-                onValueChange={value =>
-                  handleInputChange("experience_years", value)
-                }
-              >
-                <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                  <SelectValue placeholder="Select experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0-1">0-1 years</SelectItem>
-                  <SelectItem value="2-3">2-3 years</SelectItem>
-                  <SelectItem value="4-5">4-5 years</SelectItem>
-                  <SelectItem value="5+">5+ years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="motivation"
-                className="text-[#111827] font-medium"
-              >
-                Why do you want to organize hackathons? *
-              </Label>
-              <Textarea
-                id="motivation"
-                value={formData.motivation}
-                onChange={e => handleInputChange("motivation", e.target.value)}
-                placeholder="Share your motivation and goals..."
-                className="min-h-[120px] border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] resize-none"
-              />
-            </div>
-          </div>
+          <ExperienceMotivationForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       default:
@@ -1118,120 +375,20 @@ export default function SignupPage() {
     switch (step) {
       case 3: // Professional Details
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company" className="text-[#111827] font-medium">
-                  Company *
-                </Label>
-                <Input
-                  id="company"
-                  value={formData.company}
-                  onChange={e => handleInputChange("company", e.target.value)}
-                  placeholder="Your current company"
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label
-                  htmlFor="job_title"
-                  className="text-[#111827] font-medium"
-                >
-                  Job Title *
-                </Label>
-                <Input
-                  id="job_title"
-                  value={formData.job_title}
-                  onChange={e => handleInputChange("job_title", e.target.value)}
-                  placeholder="Senior Developer, CTO, etc."
-                  className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="yearsOfExperience"
-                className="text-[#111827] font-medium"
-              >
-                Years of Professional Experience *
-              </Label>
-              <Select
-                onValueChange={value =>
-                  handleInputChange("yearsOfExperience", value)
-                }
-              >
-                <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                  <SelectValue placeholder="Select experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0-1">0-1 years</SelectItem>
-                  <SelectItem value="1-2">1-2 years</SelectItem>
-                  <SelectItem value="2-3">2-3 years</SelectItem>
-                  <SelectItem value="3-5">3-5 years</SelectItem>
-                  <SelectItem value="5-10">5-10 years</SelectItem>
-                  <SelectItem value="10+">10+ years</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          <JudgeProfessionalDetailsForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       case 4: // Expertise & Bio
         return (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label
-                htmlFor="expertise_areas"
-                className="text-[#111827] font-medium"
-              >
-                Areas of Expertise *
-              </Label>
-              <Input
-                id="expertise_areas"
-                value={formData.expertise_areas}
-                onChange={e =>
-                  handleInputChange("expertise_areas", e.target.value)
-                }
-                placeholder="Web Development, AI/ML, Mobile Apps, etc."
-                className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label
-                htmlFor="judging_experience"
-                className="text-[#111827] font-medium"
-              >
-                Previous Judging Experience *
-              </Label>
-              <Select
-                onValueChange={value =>
-                  handleInputChange("judging_experience", value)
-                }
-              >
-                <SelectTrigger className="border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5]">
-                  <SelectValue placeholder="Select experience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No previous experience</SelectItem>
-                  <SelectItem value="1-3">1-3 events</SelectItem>
-                  <SelectItem value="4-10">4-10 events</SelectItem>
-                  <SelectItem value="10+">10+ events</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bio_judge" className="text-[#111827] font-medium">
-                Professional Bio *
-              </Label>
-              <Textarea
-                id="bio_judge"
-                value={formData.bio_judge}
-                onChange={e => handleInputChange("bio_judge", e.target.value)}
-                placeholder="Brief description of your background and expertise..."
-                className="min-h-[120px] border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] resize-none"
-              />
-            </div>
-          </div>
+          <ExpertiseBioForm
+            formData={formData}
+            errors={validationErrors}
+            onChange={handleInputChange}
+          />
         )
 
       default:
@@ -1242,54 +399,22 @@ export default function SignupPage() {
   const renderStepContent = () => {
     if (currentStep === 1) {
       return (
-        <div className="space-y-4 mb-6">
-          {roles.map(role => {
-            const Icon = role.icon
-            const isSelected = selectedRole === role.id
-
-            return (
-              <Card
-                key={role.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-md border-2 ${
-                  isSelected
-                    ? "border-[#10B981] shadow-md bg-[#10B981]/5"
-                    : "border-gray-200 hover:border-[#4F46E5]/30"
-                }`}
-                onClick={() => handleRoleSelect(role.id)}
-              >
-                <CardContent className="pt-4">
-                  <div className="flex items-start gap-6">
-                    <div
-                      className={`w-10 h-10 ${role.color} rounded-lg flex items-center justify-center flex-shrink-0`}
-                    >
-                      <Icon className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-[#111827]">
-                          {role.title}
-                        </h3>
-                        {isSelected && (
-                          <div className="w-5 h-5 bg-[#10B981] rounded-full flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-[#6B7280] text-sm">
-                        {role.description}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
+        <RoleSelection
+          roles={roles}
+          selectedRole={selectedRole}
+          onSelect={handleRoleSelect}
+        />
       )
     }
 
     if (currentStep === 2) {
-      return renderBasicInformation()
+      return (
+        <BasicInformationForm
+          formData={formData}
+          errors={validationErrors}
+          onChange={handleInputChange}
+        />
+      )
     }
 
     switch (selectedRole) {
@@ -1606,7 +731,7 @@ export default function SignupPage() {
               </div>
 
               {/* Progress Bar */}
-              {renderProgressBar()}
+              <ProgressBar currentStep={currentStep} getMaxSteps={getMaxSteps} />
 
               {/* Form Content */}
               <div className="flex-1 overflow-y-auto pr-2 space-y-4 mb-6">
@@ -1614,69 +739,18 @@ export default function SignupPage() {
               </div>
 
               {/* Footer */}
-              <div className="flex-shrink-0 space-y-4">
-                {Object.keys(validationErrors).length > 0 && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                    Please fill in all required fields to continue.
-                  </div>
-                )}
-                {errorMsg && (
-                  <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
-                    {errorMsg}
-                  </div>
-                )}
-                {successMsg && (
-                  <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                    {successMsg}
-                  </div>
-                )}
-                {step === 2 ? (
-                  <></>
-                ) : (
-                  <Button
-                    onClick={
-                      isLastStep()
-                        ? handleRegister
-                        : handleNext
-                    }
-                    disabled={loading || !canProceed()}
-                    className="w-full bg-[#4F46E5] hover:bg-[#4F46E5]/90 text-white font-medium py-3 h-12 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    size="lg"
-                  >
-                    {loading ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 mr-2 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : isLastStep() ? (
-                      <>
-                        Create Account
-                        <Sparkles className="w-4 h-4 ml-2" />
-                      </>
-                    ) : (
-                      <>
-                        Next
-                        <ArrowRight className="w-4 h-4 ml-2" />
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {currentStep === 1 && step === 1 && (
-                  <div className="text-center text-sm text-[#6B7280]">
-                    Already have an account?{" "}
-                    <a
-                      href="/login"
-                      className="text-[#4F46E5] hover:text-[#4F46E5]/80 font-medium"
-                    >
-                      Login
-                    </a>
-                  </div>
-                )}
-              </div>
+              <StepFooter
+                validationErrors={validationErrors}
+                errorMsg={errorMsg}
+                successMsg={successMsg}
+                step={step}
+                currentStep={currentStep}
+                isLastStep={isLastStep()}
+                loading={loading}
+                canProceed={canProceed()}
+                handleRegister={handleRegister}
+                handleNext={handleNext}
+              />
             </div>
           </div>
         </div>
