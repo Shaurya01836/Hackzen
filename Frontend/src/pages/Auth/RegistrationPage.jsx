@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "../../components/CommonUI/button"
 import { Card, CardContent } from "../../components/CommonUI/card"
 import { Input } from "../../components/CommonUI/input"
@@ -192,6 +192,12 @@ export default function SignupPage() {
         errors.firstName = "First name is required"
       if (!formData.lastName.trim()) errors.lastName = "Last name is required"
       if (!formData.email.trim()) errors.email = "Email is required"
+      if (selectedRole === 'organizer') {
+        const domain = formData.email.split('@')[1];
+        if (disallowedDomains.includes(domain)) {
+          errors.email = "Please use an official organization email address (not Gmail, Yahoo, etc).";
+        }
+      }
       if (!formData.password.trim()) errors.password = "Password is required"
       if (!formData.confirmPassword.trim())
         errors.confirmPassword = "Please confirm your password"
@@ -413,6 +419,7 @@ export default function SignupPage() {
           formData={formData}
           errors={validationErrors}
           onChange={handleInputChange}
+          emailReadOnly={!!(user && user.email)}
         />
       )
     }
@@ -504,7 +511,7 @@ export default function SignupPage() {
   }
 
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const [step, setStep] = useState(1) // 1: form, 2: verify code
   const [code, setCode] = useState("")
   const [emailForCode, setEmailForCode] = useState("")
@@ -513,18 +520,46 @@ export default function SignupPage() {
   const [successMsg, setSuccessMsg] = useState("")
   const MySwal = withReactContent(Swal)
 
+  const disallowedDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "protonmail.com"];
+
+  useEffect(() => {
+    // If user is logged in (OAuth), pre-fill email and make it read-only
+    if (user && user.email) {
+      setFormData(prev => ({ ...prev, email: user.email }));
+    }
+  }, [user]);
+
   // On last step, handle registration
   const handleRegister = async () => {
     setErrorMsg("")
     setSuccessMsg("")
     setLoading(true)
     try {
+      // If OAuth user, skip OTP and directly complete profile
+      if (user && (user.authProvider === 'google' || user.authProvider === 'github')) {
+        // Prepare profile fields
+        const profileFields = {
+          ...formData,
+          role: selectedRole === 'organizer' ? 'organizer' : selectedRole,
+          profileCompleted: true
+        };
+        await axios.put(
+          `http://localhost:3000/api/users/${user._id}/complete-profile`,
+          profileFields,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+        );
+        // Update AuthContext and redirect
+        await login({ ...user, profileCompleted: true, role: selectedRole === 'organizer' ? 'organizer' : selectedRole }, localStorage.getItem('token'));
+        navigate("/dashboard");
+        return;
+      }
       // 1. Register user (name, email, password)
       const name = `${formData.firstName} ${formData.lastName}`.trim()
       const res = await axios.post("http://localhost:3000/api/users/register", {
         name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        role: selectedRole === 'organizer' ? 'organizer' : selectedRole
       })
       setEmailForCode(formData.email)
       setSuccessMsg(res.data.message || "Verification code sent to your email.")

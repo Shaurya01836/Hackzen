@@ -59,7 +59,7 @@ const inviteToOrganization = async (req, res) => {
 
 // ✅ Register a new user (email only)
 const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
   try {
     // Check if user already exists in main User collection
@@ -80,7 +80,7 @@ const registerUser = async (req, res) => {
     // Store in PendingUser
     await PendingUser.findOneAndUpdate(
       { email },
-      { name, email, passwordHash, verificationCode, codeExpiresAt, createdAt: new Date() },
+      { name, email, passwordHash, verificationCode, codeExpiresAt, createdAt: new Date(), role },
       { upsert: true }
     );
     // Send email
@@ -144,7 +144,7 @@ const verifyRegistrationCode = async (req, res) => {
       email: pending.email,
       passwordHash: pending.passwordHash,
       authProvider: 'email',
-      role: isAdminEmail ? 'admin' : undefined,
+      role: isAdminEmail ? 'admin' : pending.role || undefined,
       bannerImage: "/assets/default-banner.png",
       profileCompleted: false
     });

@@ -26,52 +26,96 @@ router.get('/google', (req, res, next) => {
   })(req, res, next);
 });
 
-router.get('/github/callback', passport.authenticate('github', {
-  failureRedirect: '/login',
-  session: true,
-}), (req, res) => {
-  const user = req.user;
-  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  
-  // Get redirectTo from state parameter if present
-  let redirectTo = null;
-  if (req.query.state) {
-    try {
-      const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
-      redirectTo = stateData.redirectTo;
-    } catch (err) {
-      console.warn('Failed to parse OAuth state:', err);
+// Updated GitHub callback
+router.get('/github/callback', (req, res, next) => {
+  passport.authenticate('github', { failureRedirect: '/login', session: false }, (err, user) => {
+    if (err) return next(err);
+    if (user && user.needsRegistration) {
+      const baseRedirectUrl = `http://localhost:5173/oauth-success?needsRegistration=true&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&authProvider=github&profileImage=${encodeURIComponent(user.profileImage || '')}&githubUsername=${encodeURIComponent(user.githubUsername || '')}`;
+      return res.redirect(baseRedirectUrl);
     }
-  }
-  
-  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}`;
-  const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
-  
-  res.redirect(redirectUrl);
+    // Only create session for registered users
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      let redirectTo = null;
+      if (req.query.state) {
+        try {
+          const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+          redirectTo = stateData.redirectTo;
+        } catch (err) {
+          console.warn('Failed to parse OAuth state:', err);
+        }
+      }
+      const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}&authProvider=github`;
+      const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
+      res.redirect(redirectUrl);
+    });
+  })(req, res, next);
 });
 
-router.get('/google/callback', passport.authenticate('google', {
-  failureRedirect: '/login',
-  session: true,
-}), (req, res) => {
-  const user = req.user;
-  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  
-  // Get redirectTo from state parameter if present
-  let redirectTo = null;
-  if (req.query.state) {
-    try {
-      const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
-      redirectTo = stateData.redirectTo;
-    } catch (err) {
-      console.warn('Failed to parse OAuth state:', err);
+// Updated Google callback
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { failureRedirect: '/login', session: false }, (err, user) => {
+    if (err) return next(err);
+    if (user && user.needsRegistration) {
+      const baseRedirectUrl = `http://localhost:5173/oauth-success?needsRegistration=true&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&authProvider=google&profileImage=${encodeURIComponent(user.profileImage || '')}`;
+      return res.redirect(baseRedirectUrl);
     }
+    // Only create session for registered users
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+      let redirectTo = null;
+      if (req.query.state) {
+        try {
+          const stateData = JSON.parse(Buffer.from(req.query.state, 'base64').toString());
+          redirectTo = stateData.redirectTo;
+        } catch (err) {
+          console.warn('Failed to parse OAuth state:', err);
+        }
+      }
+      const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}&authProvider=google`;
+      const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
+      res.redirect(redirectUrl);
+    });
+  })(req, res, next);
+});
+
+// New endpoint: Complete OAuth registration
+router.post('/oauth-register', async (req, res) => {
+  try {
+    const { name, email, profileImage, authProvider, githubUsername, role } = req.body;
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+    // Create user with required info
+    user = await User.create({
+      name,
+      email,
+      profileImage: profileImage || '',
+      authProvider,
+      githubUsername: githubUsername || undefined,
+      role: role || undefined,
+      profileCompleted: false // Will be set true after full profile completion
+    });
+    // Generate JWT
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileCompleted: user.profileCompleted || false
+      },
+      token
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  
-  const baseRedirectUrl = `http://localhost:5173/oauth-success?token=${token}&name=${encodeURIComponent(user.name)}&email=${encodeURIComponent(user.email)}&_id=${user._id}&profileCompleted=${user.profileCompleted || false}`;
-  const redirectUrl = redirectTo ? `${baseRedirectUrl}&redirectTo=${encodeURIComponent(redirectTo)}` : baseRedirectUrl;
-  
-  res.redirect(redirectUrl);
 });
 
 // ✉️ Auth

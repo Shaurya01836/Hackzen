@@ -15,15 +15,17 @@ function OAuthSuccess() {
     const _id = searchParams.get("_id");
     const profileCompleted = searchParams.get("profileCompleted") === "true";
     const redirectTo = searchParams.get("redirectTo");
+    const authProvider = searchParams.get("authProvider");
 
     if (token && name && email && _id) {
       // ✅ Save full user with _id to context/localStorage
       const userData = { _id, name, email, profileCompleted };
+      if (authProvider) userData.authProvider = authProvider;
       login(userData, token);
       
       // Redirect based on profile completion
       if (!profileCompleted) {
-        navigate("/complete-profile");
+        navigate("/register");
       } else if (redirectTo) {
         navigate(redirectTo);
       } else {

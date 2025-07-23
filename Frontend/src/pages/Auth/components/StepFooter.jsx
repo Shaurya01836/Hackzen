@@ -12,7 +12,8 @@ export default function StepFooter({
   canProceed = true,
   handleRegister,
   handleNext,
-  children
+  children,
+  hideLoginLink = false
 }) {
   return (
     <div className="flex-shrink-0 space-y-4">
@@ -62,7 +63,7 @@ export default function StepFooter({
         </Button>
       )}
       {children}
-      {currentStep === 1 && step === 1 && (
+      {currentStep === 1 && step === 1 && !hideLoginLink && (
         <div className="text-center text-sm text-[#6B7280]">
           Already have an account?{" "}
           <a

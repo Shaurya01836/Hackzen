@@ -17,25 +17,26 @@ import OAuthSuccess from "./pages/OAuthSuccess";
 import Loader from "./pages/Loader";
 import About from "./pages/Home/About";
 import HackathonDetailsPage from "./pages/AdminDashboard/sections/HackathonDetailsPage";
-import { ExploreHackathons } from "./pages/mainDashboard/sections/ExploreHackathon";
+import { ExploreHackathons } from "./pages/mainDashboard/partipantDashboard/ExploreHackathon";
 import AdminPanel from "./pages/AdminDashboard/AdminPanel";
 import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
-import { Blogs } from "./pages/mainDashboard/sections/Blogs";
+import { Blogs } from "./pages/mainDashboard/partipantDashboard/Blogs";
 import InviteAccept from "./pages/InviteAccept";
 import InviteRole from "./pages/InviteRole";
 // import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
 import JudgePanel from "./pages/mainDashboard/judgeDashboard/JudgePanel";
-import { ProjectArchive } from "./pages/mainDashboard/sections/ProjectArchive";
-import CreatedHackathons from "./pages/mainDashboard/sections/Created-hackathons";
-import EditHackathonPage from "./pages/mainDashboard/sections/EditHackathonPage";
+import { ProjectArchive } from "./pages/mainDashboard/partipantDashboard/ProjectArchive";
+import CreatedHackathons from "./pages/mainDashboard/organizerDashboard/Created-hackathons";
+import EditHackathonPage from "./pages/mainDashboard/organizerDashboard/components/EditHackathonPage";
 import JudgeProjectGallery from "./pages/mainDashboard/judgeDashboard/JudgeProjectGallery";
 import AdminHackathonSubmissionsPage from "./pages/AdminDashboard/sections/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./pages/AdminDashboard/sections/AdminSubmissionDetailsPage";
 import PublicProfileView from "./pages/mainDashboard/PublicProfileView";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
-import TeamsParticipantsPage from "./pages/mainDashboard/sections/TeamsParticipantsPage";
+import TeamsParticipantsPage from "./pages/mainDashboard/partipantDashboard/components/TeamsParticipantsPage";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
@@ -58,54 +59,105 @@ function App() {
         {/* Dashboard */}
         <Route
           path="/dashboard"
-          element={<Navigate to="/dashboard/profile" replace />}
+          element={
+            <PrivateRoute>
+              <Navigate to="/dashboard/profile" replace />
+            </PrivateRoute>
+          }
         />
-        <Route path="/dashboard/:section" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/:section"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/dashboard/hackathon/:id"
-          element={<HackathonDetailsPage />}
+          element={
+            <PrivateRoute>
+              <HackathonDetailsPage />
+            </PrivateRoute>
+          }
         />
-        <Route path="/dashboard/blogs/:id" element={<DashboardPage />} />
-        <Route path="/dashboard/my-hackathons" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/blogs/:id"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard/my-hackathons"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/dashboard/my-hackathons/:projectId"
-          element={<DashboardPage />}
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
         />
         <Route
           path="/dashboard/my-submissions/:projectId"
-          element={<DashboardPage />}
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
         />
-        <Route path="/dashboard/project-archive" element={<DashboardPage />} />
-        <Route path="/dashboard/project-archive/:id" element={<DashboardPage />} />
+        <Route
+          path="/dashboard/project-archive"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard/project-archive/:id"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
 
         {/* Created Hackathons */}
-        <Route path="/dashboard/created-hackathons/:hackathonId/teams/:teamId" element={<TeamsParticipantsPage />} />
-        <Route path="/dashboard/created-hackathons/:hackathonId/teams" element={<TeamsParticipantsPage />} />
-        <Route path="/dashboard/created-hackathons/:hackathonId" element={<DashboardPage/>} />
-        <Route path="/dashboard/:section" element={<DashboardPage />} />
+        <Route path="/dashboard/created-hackathons/:hackathonId/teams/:teamId" element={<PrivateRoute><TeamsParticipantsPage /></PrivateRoute>} />
+        <Route path="/dashboard/created-hackathons/:hackathonId/teams" element={<PrivateRoute><TeamsParticipantsPage /></PrivateRoute>} />
+        <Route path="/dashboard/created-hackathons/:hackathonId" element={<PrivateRoute><DashboardPage/></PrivateRoute>} />
+        <Route path="/dashboard/:section" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
 
         {/* Edit Hackathon Full Page */}
-        <Route path="/dashboard/edit-hackathon/:id" element={<EditHackathonPage />} />
+        <Route path="/dashboard/edit-hackathon/:id" element={<PrivateRoute><EditHackathonPage /></PrivateRoute>} />
 
         {/* Explore */}
-        <Route path="/explore" element={<ExploreHackathons />} />
-        <Route path="/explore/:id" element={<HackathonDetailsPage />} />
+        <Route path="/explore" element={<PrivateRoute><ExploreHackathons /></PrivateRoute>} />
+        <Route path="/explore/:id" element={<PrivateRoute><HackathonDetailsPage /></PrivateRoute>} />
 
         {/* Profile */}
-        <Route path="/dashboard/profile" element={<DashboardPage />} />
-        <Route path="/dashboard/profile/:id" element={<DashboardPage />} />
-        <Route path="/dashboard/profile/edit" element={<DashboardPage />} />
+        <Route path="/dashboard/profile" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/dashboard/profile/:id" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/dashboard/profile/edit" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
         <Route
           path="/dashboard/profile/account-settings"
-          element={<DashboardPage />}
+          element={<PrivateRoute><DashboardPage /></PrivateRoute>}
         />
         <Route
           path="/dashboard/profile/privacy-security"
-          element={<DashboardPage />}
+          element={<PrivateRoute><DashboardPage /></PrivateRoute>}
         />
         <Route
           path="/dashboard/profile/help-support"
-          element={<DashboardPage />}
+          element={<PrivateRoute><DashboardPage /></PrivateRoute>}
         />
         <Route path="/profile/:userId" element={<PublicProfileViewWrapper />} />
         <Route path="/invite/:inviteId" element={<InviteAccept />} />
@@ -113,9 +165,9 @@ function App() {
 
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
-        <Route path="/judge" element={<JudgePanel />} />
+        <Route path="/judge" element={<PrivateRoute><JudgePanel /></PrivateRoute>} />
         {/* Move JudgeProjectGallery under dashboard */}
-        <Route path="/dashboard/judge/hackathon/:hackathonId/gallery" element={<DashboardPage />} />
+        <Route path="/dashboard/judge/hackathon/:hackathonId/gallery" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       </Routes>
     </>
   );

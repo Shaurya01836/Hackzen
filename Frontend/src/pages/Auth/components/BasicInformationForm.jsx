@@ -2,7 +2,7 @@ import { Input } from "../../../components/CommonUI/input"
 import { Label } from "../../../components/CommonUI/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/CommonUI/select"
 
-export default function BasicInformationForm({ formData, errors, onChange }) {
+export default function BasicInformationForm({ formData, errors, onChange, emailReadOnly }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -55,6 +55,7 @@ export default function BasicInformationForm({ formData, errors, onChange }) {
           className={`border-gray-200 focus:border-[#4F46E5] focus:ring-[#4F46E5] ${
             errors.email ? "border-red-500 focus:border-red-500 focus:ring-red-500" : ""
           }`}
+          readOnly={!!emailReadOnly}
         />
         {errors.email && (
           <p className="text-red-500 text-sm">{errors.email}</p>

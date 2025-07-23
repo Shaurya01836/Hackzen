@@ -164,12 +164,6 @@ function Navbar() {
               )}
             </div>
 
-            <Link
-              to="/dashboard/organization-hub"
-              className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
-            >
-              Organisation Hub
-            </Link>
             {/* Resources Dropdown */}
             <div
               className="relative"
@@ -196,6 +190,7 @@ function Navbar() {
                 </div>
               )}
             </div>
+
             <Link
               to="/about"
               className="text-[#1b0c3f] hover:text-primary font-medium hover:rotate-3"
@@ -381,12 +376,6 @@ function Navbar() {
               className="text-gray-800 hover:text-indigo-600 font-medium"
             >
               Blogs
-            </Link>
-            <Link
-              to="/dashboard/organization-hub"
-              className="text-gray-800 hover:text-indigo-600 font-medium"
-            >
-              Organisation Hub
             </Link>
             <Link
               to="/about"

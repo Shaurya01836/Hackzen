@@ -6,7 +6,8 @@ const PendingUserSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   verificationCode: { type: String, required: true },
   codeExpiresAt: { type: Date, required: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  role: { type: String, enum: ['participant', 'organizer', 'mentor', 'judge', 'admin'], default: 'participant' }
 });
 
 const PendingUser = mongoose.models.PendingUser || mongoose.model('PendingUser', PendingUserSchema);
