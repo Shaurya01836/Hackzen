@@ -1,14 +1,13 @@
 const Score = require("../model/ScoreModel");
-const Project = require("../model/ProjectModel");
-const RoleInvite = require("../model/RoleInviteModel");
 const Submission = require("../model/SubmissionModel");
+const RoleInvite = require("../model/RoleInviteModel");
 
 exports.createOrUpdateScore = async (req, res) => {
   const judge = req.user._id;
-  const { project, hackathon, scores, feedback } = req.body;
+  const { submission, scores, feedback } = req.body;
 
   try {
-    let existing = await Score.findOne({ project, judge });
+    let existing = await Score.findOne({ submission, judge });
 
     if (existing) {
       existing.scores = scores;
@@ -17,11 +16,11 @@ exports.createOrUpdateScore = async (req, res) => {
       return res.json({ message: "Score updated successfully" });
     }
 
-    const newScore = new Score({ project, hackathon, judge, scores, feedback });
+    const newScore = new Score({ submission, judge, scores, feedback });
     await newScore.save();
 
-    // Optionally: Push the score ref to Project
-    await Project.findByIdAndUpdate(project, {
+    // Optional: Link score to the submission (if needed)
+    await Submission.findByIdAndUpdate(submission, {
       $addToSet: { scores: newScore._id }
     });
 
@@ -31,112 +30,106 @@ exports.createOrUpdateScore = async (req, res) => {
     res.status(500).json({ message: "Error submitting score" });
   }
 };
-exports.getMyScoredProjects = async (req, res) => {
+
+exports.getMyScoredSubmissions = async (req, res) => {
   try {
-    const scores = await Score.find({ judge: req.user._id }).select("project");
-    const projectIds = scores.map(score => score.project.toString());
-    res.json(projectIds);
+    const scores = await Score.find({ judge: req.user._id }).select("submission");
+    const submissionIds = scores.map(score => score.submission.toString());
+    res.json(submissionIds);
   } catch (err) {
-    console.error("Failed to get judged project IDs", err);
-    res.status(500).json({ message: "Failed to fetch judged projects" });
+    console.error("Failed to get judged submission IDs", err);
+    res.status(500).json({ message: "Failed to fetch judged submissions" });
   }
 };
 
-exports.getScoresForProject = async (req, res) => {
+exports.getScoresForSubmission = async (req, res) => {
   try {
-    const projectId = req.params.projectId;
-    const scores = await Score.find({ project: projectId }).populate("judge", "name email");
+    const submissionId = req.params.submissionId;
+    const scores = await Score.find({ submission: submissionId }).populate("judge", "name email");
     res.json(scores);
   } catch (err) {
     res.status(500).json({ message: "Failed to get scores" });
   }
 };
 
-exports.getProjectsToScore = async (req, res) => {
+exports.getSubmissionsToScore = async (req, res) => {
   try {
     const judge = req.user._id;
     const hackathonId = req.params.hackathonId;
 
-    const projects = await Project.find({ hackathon: hackathonId }).populate("submittedBy");
-    const scored = await Score.find({ hackathon: hackathonId, judge });
+    const submissions = await Submission.find({ hackathonId, status: "submitted" })
+      .populate("submittedBy", "name email")
+      .populate("projectId", "title type")
+      .populate("selectedMembers", "name email");
 
+    const scored = await Score.find({ judge }).select("submission");
     const scoredMap = {};
-    scored.forEach(s => scoredMap[s.project.toString()] = true);
+    scored.forEach(s => scoredMap[s.submission.toString()] = true);
 
-    const data = projects.map(p => ({
-      ...p.toObject(),
-      alreadyScored: scoredMap[p._id.toString()] || false,
+    const data = submissions.map(s => ({
+      ...s.toObject(),
+      alreadyScored: scoredMap[s._id.toString()] || false,
     }));
 
     res.json(data);
   } catch (err) {
-    res.status(500).json({ message: "Failed to get projects" });
+    console.error("Error in getSubmissionsToScore:", err);
+    res.status(500).json({ message: "Failed to get submissions" });
   }
 };
 
 exports.getAllScoresForHackathon = async (req, res) => {
   try {
     const hackathonId = req.params.hackathonId;
-    // Find all scores for this hackathon, populate judge, project, and project.team
-    const scores = await Score.find({ hackathon: hackathonId })
+
+    const scores = await Score.find()
       .populate("judge", "name email role")
       .populate({
-        path: "project",
-        select: "title team type",
-        populate: { path: "team", select: "name" }
+        path: "submission",
+        match: { hackathonId },
+        populate: [
+          { path: "submittedBy", select: "name email" },
+          { 
+            path: "projectId", 
+            select: "title type team",
+            populate: { path: "team", select: "name" } // Ensure team is populated
+          },
+          { path: "selectedMembers", select: "name email" }
+        ]
       });
 
-    // For each score, fetch the problem statement from Submission
-    const scoresWithProblem = await Promise.all(scores.map(async (score) => {
-      let problemStatement = null;
-      let team = null;
-      if (score.project && score.project._id) {
-        const submission = await Submission.findOne({
-          projectId: score.project._id,
-          hackathonId
-        }).populate({ path: "team", select: "name" });
-        problemStatement = submission?.problemStatement || null;
-        // If team is not set on project, try to get from submission
-        team = score.project.team || submission?.team || null;
+    const validScores = scores.filter(s => s.submission); // Filter out unmatched (null) ones
+
+    const allJudged = validScores.map(s => {
+      const sub = s.submission;
+      let teamObj = null;
+      // If project has a team, use that
+      if (sub.projectId && sub.projectId.team && sub.projectId.team.name) {
+        teamObj = { name: sub.projectId.team.name };
+      } else if (sub.selectedMembers && sub.selectedMembers.length > 0) {
+        // Fallback: use member names
+        teamObj = { name: sub.selectedMembers.map(m => m.name || m.email).join(", ") };
+      } else if (sub.submittedBy) {
+        teamObj = { name: sub.submittedBy.name || sub.submittedBy.email };
       }
+
       return {
-        ...score.toObject(),
-        problemStatement,
-        team: team ? (team.name ? { name: team.name } : team) : null
+        _id: s._id,
+        judge: s.judge,
+        submissionId: sub._id,
+        team: teamObj,
+        project: sub.projectId || null,
+        problemStatement: sub.problemStatement || null,
+        pptFile: sub.pptFile || null,
+        feedback: s.feedback,
+        scores: s.scores,
+        submittedAt: sub.submittedAt
       };
-    }));
-
-    // --- Add PPT-only reviewed submissions ---
-    // Find all reviewed PPT submissions for this hackathon (no projectId, has pptFile, status reviewed)
-    const pptReviewed = await Submission.find({
-      hackathonId,
-      pptFile: { $exists: true, $ne: null },
-      status: "reviewed"
-    })
-      .populate({ path: "selectedMembers", select: "name email" })
-      .populate({ path: "team", select: "name" });
-
-    // Map to a similar structure as scoresWithProblem
-    const pptJudged = pptReviewed.map((ppt) => ({
-      _id: ppt._id,
-      isPPT: true,
-      judge: null, // If you have a judge, add here
-      project: null,
-      team: ppt.team ? { name: ppt.team.name } : null,
-      problemStatement: ppt.problemStatement || null,
-      scores: ppt.scores || null, // If you store scores for PPT, add here
-      feedback: ppt.feedback || null, // If you store feedback for PPT, add here
-      submittedBy: ppt.submittedBy,
-      selectedMembers: ppt.selectedMembers,
-      pptFile: ppt.pptFile,
-      submittedAt: ppt.submittedAt
-    }));
-
-    // Combine both arrays
-    const allJudged = [...scoresWithProblem, ...pptJudged];
+    });
 
     res.json(allJudged);
   } catch (err) {
+    console.error("Error in getAllScoresForHackathon:", err);
     res.status(500).json({ message: "Failed to get all scores for hackathon" });
   }
 };

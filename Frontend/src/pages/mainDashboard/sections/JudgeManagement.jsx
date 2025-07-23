@@ -53,7 +53,7 @@ import ProjectScoresList from '../../../components/CommonUI/ProjectScoresList';
 
 import axios from "axios";
 
-export default function JudgeManagement({ hackathonId }) {
+export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack }) {
   const { token } = useAuth();
   const [hackathon, setHackathon] = useState(null);
   const [hackathons, setHackathons] = useState([]);
@@ -392,32 +392,39 @@ export default function JudgeManagement({ hackathonId }) {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Judge Management
           </h1>
-          <div className="flex items-center gap-4 mt-2">
-            <Label htmlFor="hackathon-select" className="text-sm font-medium text-gray-700">
-              Select Hackathon:
-            </Label>
-            <Select
-              value={selectedHackathonId || ""}
-              onValueChange={(value) => setSelectedHackathonId(value)}
-            >
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Choose a hackathon" />
-              </SelectTrigger>
-              <SelectContent>
-                {hackathons.map((hack) => (
-                  <SelectItem key={hack._id} value={hack._id}>
-                    {hack.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!hideHackathonSelector && (
+            <div className="flex items-center gap-4 mt-2">
+              <Label htmlFor="hackathon-select" className="text-sm font-medium text-gray-700">
+                Select Hackathon:
+              </Label>
+              <Select
+                value={selectedHackathonId || ""}
+                onValueChange={(value) => setSelectedHackathonId(value)}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Choose a hackathon" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hackathons.map((hack) => (
+                    <SelectItem key={hack._id} value={hack._id}>
+                      {hack.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {hackathon && (
             <p className="text-base text-gray-500 mt-1">
               Managing judges for: <span className="font-medium">{hackathon.title}</span>
             </p>
           )}
         </div>
+        {hideHackathonSelector && typeof onBack === 'function' && (
+          <Button variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        )}
         {selectedHackathonId && (
           <div className="flex gap-3">
             <Dialog open={showAddPSDialog} onOpenChange={setShowAddPSDialog}>
@@ -802,8 +809,19 @@ export default function JudgeManagement({ hackathonId }) {
                         }
                         return (
                           <tr key={score._id} className="border-b">
-                            <td className="p-2 border">{score.project?.team?.name || "-"}</td>
-                            <td className="p-2 border">{score.problemStatement || "-"}</td>
+                            <td className="p-2 border">
+                              {/* Show all member names if available, else team name, else "-" */}
+                              {score.team?.name ||
+                               (score.team?.members
+                                 ? score.team.members.map(m => m.name || m.email).join(", ")
+                                 : "-")}
+                            </td>
+                            <td className="p-2 border">
+                              {/* Show statement if object, else string, else "-" */}
+                              {typeof score.problemStatement === "object"
+                                ? score.problemStatement?.statement || "-"
+                                : score.problemStatement || "-"}
+                            </td>
                             <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
                             <td className="p-2 border">{avgScore}</td>
                             <td className="p-2 border">
@@ -1149,16 +1167,8 @@ export default function JudgeManagement({ hackathonId }) {
         </TabsContent>
       </Tabs>
 
-      {/* Example integration for demonstration, replace with real projectId as needed */}
-      {/* <ProjectScoresList projectId={hackathon?.problemStatements?.[0]?._id || ''} /> */}
-
-      {/* For demonstration, add a section at the bottom: */}
-      {hackathon?.problemStatements?.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-2">Demo: Project Scores Table</h2>
-          <ProjectScoresList projectId={hackathon.problemStatements[0]._id} />
-        </div>
-      )}
+      
+      
     </div>
   );
 } 

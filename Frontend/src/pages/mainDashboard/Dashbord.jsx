@@ -197,12 +197,7 @@ export default function HackZenDashboard() {
       key: "create-hackathon", // ✅ FIX this key!
       onClick: () => changeView("create-hackathon"),
     },
-    {
-      title: "Judge Management",
-      icon: Gavel,
-      key: "judge-management",
-      onClick: () => changeView("judge-management"),
-    },
+  
     {
       title: "Announcements",
       icon: MessageSquare,

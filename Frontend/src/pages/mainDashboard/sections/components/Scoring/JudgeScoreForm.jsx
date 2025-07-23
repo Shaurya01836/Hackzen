@@ -11,7 +11,7 @@ const CRITERIA = [
   { key: "presentation", label: "Presentation" },
 ];
 
-export default function JudgeScoreForm({ projectId, hackathonId, onSubmitted }) {
+export default function JudgeScoreForm({ submissionId, onSubmitted }) {
   const [scores, setScores] = useState({
     innovation: "",
     impact: "",
@@ -24,7 +24,6 @@ export default function JudgeScoreForm({ projectId, hackathonId, onSubmitted }) 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    // Only allow numbers and empty string
     if (/^\d{0,2}$/.test(value)) {
       setScores({ ...scores, [name]: value });
       setErrors({ ...errors, [name]: undefined });
@@ -53,8 +52,7 @@ export default function JudgeScoreForm({ projectId, hackathonId, onSubmitted }) 
       await axios.post(
         "http://localhost:3000/api/scores",
         {
-          project: projectId,
-          hackathon: hackathonId,
+          submission: submissionId,
           scores: {
             innovation: Number(scores.innovation),
             impact: Number(scores.impact),
@@ -83,7 +81,7 @@ export default function JudgeScoreForm({ projectId, hackathonId, onSubmitted }) 
         <span role="img" aria-label="trophy">🏅</span> Judge Evaluation
       </h2>
       <p className="text-gray-600 text-sm mb-4">
-        Score this project based on the hackathon criteria. Each score must be between <b>0</b> and <b>10</b>.
+        Score this submission based on the hackathon criteria. Each score must be between <b>0</b> and <b>10</b>.
       </p>
       <form
         onSubmit={e => {

@@ -18,16 +18,16 @@ function getInitials(nameOrEmail) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function ProjectScoresList({ projectId }) {
+export default function ProjectScoresList({ submissionId }) {
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!submissionId) return;
     setLoading(true);
     setError("");
-    fetch(`/api/scores/project/${projectId}`, {
+    fetch(`http://localhost:3000/api/scores/submission/${submissionId}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     })
       .then((res) => res.json())
@@ -39,7 +39,7 @@ export default function ProjectScoresList({ projectId }) {
         setError("Failed to load scores");
         setLoading(false);
       });
-  }, [projectId]);
+  }, [submissionId]);
 
   // Calculate average score (across all criteria and judges)
   const averageScore =

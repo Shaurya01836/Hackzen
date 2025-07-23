@@ -26,35 +26,39 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
           }
         );
         const submissions = submissionsRes.data.submissions || [];
-        // 2. Get unique projectIds from submissions
-        const projectIds = [
-          ...new Set(
-            submissions
-              .filter((s) => s.projectId)
-              .map((s) => (typeof s.projectId === "object" ? s.projectId._id : s.projectId))
-          ),
-        ];
-        // 3. Fetch project details for each projectId
-        const projectPromises = projectIds.map((id) =>
-          axios.get(`/api/projects/${id}`).then((res) => ({ ...res.data, type: "project" }))
-        );
+
+        // 2. Get all project-backed submissions
+        const projectBackedSubmissions = submissions.filter((s) => s.projectId);
+        const projectPromises = projectBackedSubmissions.map((s) => {
+          const id = typeof s.projectId === "object" ? s.projectId._id : s.projectId;
+          return axios.get(`/api/projects/${id}`).then((res) => ({
+            ...res.data,
+            type: "project",
+            __submission: s, // ✅ attach corresponding submission
+          }));
+        });
+
         const projectsData = await Promise.all(projectPromises);
-        // 4. Add PPT submissions (those with pptFile and no projectId)
+
+        // 3. Add standalone PPT submissions
         const pptSubmissions = submissions
           .filter((s) => s.pptFile && !s.projectId)
           .map((s) => ({
             ...s,
-            type: 'PPT',
-            title: s.title || s.originalName || 'PPT Submission',
-            name: s.teamName || (s.team && s.team.name) || '-',
-            status: s.status || 'Submitted',
+            type: "ppt",
+            title: s.title || s.originalName || "PPT Submission",
+            name: s.teamName || (s.team && s.team.name) || "-",
+            status: s.status || "Submitted",
             submittedBy: s.submittedBy,
             submittedAt: s.submittedAt,
             pptFile: s.pptFile,
             logo: { url: "/assets/default-banner.png" },
             likes: s.likes || 0,
             views: s.views || 0,
+            __submission: s, // ✅ attach itself as submission
           }));
+
+        // 4. Combine and set
         setProjects([...projectsData, ...pptSubmissions]);
       } catch (err) {
         console.error("Error fetching submitted projects for hackathon", err);
@@ -63,6 +67,7 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         setLoading(false);
       }
     };
+
     if (hackathonId) fetchSubmittedProjects();
   }, [hackathonId]);
 
@@ -76,19 +81,22 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         });
         const currentUser = userRes.data;
         setUser(currentUser);
+
         if (currentUser.role === "judge") {
           const scoreRes = await axios.get("http://localhost:3000/api/scores/my-scored-projects", {
             headers: { Authorization: `Bearer ${token}` },
           });
-          setJudgeScores(scoreRes.data); // Array of project IDs
+          setJudgeScores(scoreRes.data); // Array of submission IDs
         }
       } catch (err) {
         console.error("Failed to fetch user or judge scores", err);
       }
     };
+
     fetchUserAndScores();
   }, []);
 
+  // Show skeletons while loading
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -105,18 +113,16 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
     );
   }
 
-  // Filter projects by selectedType if provided
-  const filteredProjects = selectedType && selectedType !== ""
-    ? projects.filter((project) => {
-        // If project.type exists, use it (case-insensitive)
-        if (project.type) {
-          return project.type.toLowerCase() === selectedType.toLowerCase();
-        }
-        // If no type, treat all as 'project' for filtering
-        if (selectedType.toLowerCase() === "project") return true;
-        return false;
-      })
-    : projects;
+  // Filter by selected type
+  const filteredProjects =
+    selectedType && selectedType !== ""
+      ? projects.filter((project) => {
+          if (project.type) {
+            return project.type.toLowerCase() === selectedType.toLowerCase();
+          }
+          return selectedType.toLowerCase() === "project";
+        })
+      : projects;
 
   if (filteredProjects.length === 0) {
     return <p className="text-center text-gray-500">No projects submitted yet.</p>;
@@ -130,7 +136,13 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
           project={project}
           user={user}
           judgeScores={judgeScores}
-          onClick={onProjectClick ? onProjectClick : (p) => navigate(`/dashboard/project-archive/${p._id}`)}
+          onClick={() => {
+            if (onProjectClick) {
+              onProjectClick({ project, submission: project.__submission }); // ✅ Pass both
+            } else {
+              navigate(`/dashboard/project-archive/${project._id}`);
+            }
+          }}
         />
       ))}
     </div>
