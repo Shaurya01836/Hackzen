@@ -10,8 +10,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../../../../../components/DashboardUI/alert-dialog";
-import { useToast } from "../../../../../../hooks/use-toast";
+} from "../../../../../../../components/DashboardUI/alert-dialog";
+import { useToast } from "../../../../../../../hooks/use-toast";
 
 export default function RevokeInviteDialog({ open, invite, onClose, onRevoked }) {
   const [loading, setLoading] = useState(false);

@@ -1,5 +1,5 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../../../components/CommonUI/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../../../../components/CommonUI/card";
 import { Target } from "lucide-react";
 
 export default function HackathonProblems({ hackathon, sectionRef }) {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/CommonUI/button";
-import HackathonProjectsGallery from "../sections/components/Hackathon/HackathonProjectsGallery";
+import HackathonProjectsGallery from "../partipantDashboard/components/HackathonComponent/Hackathon/HackathonProjectsGallery";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { ArrowLeft, Filter, LayoutGrid, FileText, Folder } from "lucide-react";
 import {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "../../../../../../components/CommonUI/button";
+import { Button } from "../../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
 import { useEffect, useState } from "react";
 

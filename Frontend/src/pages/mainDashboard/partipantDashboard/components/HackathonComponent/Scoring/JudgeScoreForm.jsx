@@ -1,8 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
-import { Button } from "../../../../../components/CommonUI/button";
-import { Input } from "../../../../../components/CommonUI/input";
-import { Textarea } from "../../../../../components/CommonUI/textarea";
+import { Button } from "../../../../../../components/CommonUI/button";
+import { Input } from "../../../../../../components/CommonUI/input";
+import { Textarea } from "../../../../../../components/CommonUI/textarea";
 
 const CRITERIA = [
   { key: "innovation", label: "Innovation" },

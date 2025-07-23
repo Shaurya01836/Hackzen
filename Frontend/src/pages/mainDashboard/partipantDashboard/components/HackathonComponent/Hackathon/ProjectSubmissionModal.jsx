@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import BaseModal from "./TeamModals/BaseModal";
-import { Button } from "../../../../../components/CommonUI/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../../components/CommonUI/select";
-import { useToast } from '../../../../../hooks/use-toast';
+import { Button } from "../../../../../../components/CommonUI/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../../../components/CommonUI/select";
+import { useToast } from '../../../../../../hooks/use-toast';
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   AlertDialog,
@@ -13,7 +13,7 @@ import {
   AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
-} from '../../../../../components/DashboardUI/alert-dialog';
+} from '../../../../../../components/DashboardUI/alert-dialog';
 import ReactDOM from "react-dom";
 
 export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission, projectSubmissions = [], setEditingSubmission }) {

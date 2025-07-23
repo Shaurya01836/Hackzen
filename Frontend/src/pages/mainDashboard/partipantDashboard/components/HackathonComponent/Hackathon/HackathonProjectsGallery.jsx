@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Card, CardContent } from "../../../../../components/CommonUI/card";
-import { Skeleton } from "../../../../../components/DashboardUI/skeleton";
-import { ProjectCard } from "../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
+import { Card, CardContent } from "../../../../../../components/CommonUI/card";
+import { Skeleton } from "../../../../../../components/DashboardUI/skeleton";
+import { ProjectCard } from "../../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
 
 export default function HackathonProjectsGallery({ hackathonId, onProjectClick, selectedType }) {
   const [projects, setProjects] = useState([]);

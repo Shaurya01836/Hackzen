@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../DashboardUI/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card";
 import { useToast } from "../../hooks/use-toast";
-import JudgeScoreForm from "../../pages/mainDashboard/sections/components/Scoring/JudgeScoreForm";
+import JudgeScoreForm from "../../pages/mainDashboard/partipantDashboard/components/HackathonComponent/Scoring/JudgeScoreForm";
 import {
   Dialog,
   DialogContent,

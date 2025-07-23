@@ -1,8 +1,8 @@
 "use client";
 import { ArrowLeft, Heart, Share2 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "../../../../../components/CommonUI/button";
-import { Badge } from "../../../../../components/CommonUI/badge";
+import { Button } from "../../../../../../components/CommonUI/button";
+import { Badge } from "../../../../../../components/CommonUI/badge";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -13,7 +13,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "../../../../../components/DashboardUI/alert-dialog";
+} from "../../../../../../components/DashboardUI/alert-dialog";
 
 export default function HeaderSection({
   hackathon,

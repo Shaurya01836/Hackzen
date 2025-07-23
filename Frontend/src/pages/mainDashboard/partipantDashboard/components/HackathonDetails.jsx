@@ -1,23 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useToast } from "../../../hooks/use-toast";
-import { useAuth } from "../../../context/AuthContext";
+import { useToast } from "../../../../hooks/use-toast";
+import { useAuth } from "../../../../context/AuthContext";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
-import HeaderSection from "./components/Hackathon/HeaderSection";
-import HackathonHero from "./components/Hackathon/HackathonHero";
-import HackathonOverview from "./components/Hackathon/HackathonOverview";
-import HackathonTimeline from "./components/Hackathon/HackathonTimeline";
-import HackathonProblems from "./components/Hackathon/HackathonProblems";
-import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
-import { HackathonRegistration } from "../partipantDashboard/components/RegistrationHackathon";
-import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
-import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
-import TeamManagementSection from "./components/Hackathon/TeamManagementSection";
-import { SmartCountdown } from "../../../components/DashboardUI/countdown";
-import BaseModal from "./components/Hackathon/TeamModals/BaseModal";
-import { fetchHackathonParticipants } from "../../../lib/api";
+import HeaderSection from "./HackathonComponent/Hackathon/HeaderSection";
+import HackathonHero from "./HackathonComponent/Hackathon/HackathonHero";
+import HackathonOverview from "./HackathonComponent/Hackathon/HackathonOverview";
+import HackathonTimeline from "./HackathonComponent/Hackathon/HackathonTimeline";
+import HackathonProblems from "./HackathonComponent/Hackathon/HackathonProblems";
+import HackathonCommunity from "./HackathonComponent/Hackathon/HackathonCommunity";
+import { HackathonRegistration } from "./RegistrationHackathon";
+import HorizontalTabNav from "./HackathonComponent/Hackathon/HorizontalTabNav";
+import HackathonProjectsGallery from "./HackathonComponent/Hackathon/HackathonProjectsGallery";
+import TeamManagementSection from "./HackathonComponent/Hackathon/TeamManagementSection";
+import { SmartCountdown } from "../../../../components/DashboardUI/countdown";
+import BaseModal from "./HackathonComponent/Hackathon/TeamModals/BaseModal";
+import { fetchHackathonParticipants } from "../../../../lib/api";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();

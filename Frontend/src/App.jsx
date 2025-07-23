@@ -24,7 +24,7 @@ import { Blogs } from "./pages/mainDashboard/partipantDashboard/Blogs";
 import InviteAccept from "./pages/InviteAccept";
 import InviteRole from "./pages/InviteRole";
 // import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
-import { HackathonDetails } from "./pages/mainDashboard/sections/HackathonDetails";
+import { HackathonDetails } from "./pages/AdminDashboard/sections/HackathonDetails";
 import JudgePanel from "./pages/mainDashboard/judgeDashboard/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/partipantDashboard/ProjectArchive";
 import CreatedHackathons from "./pages/mainDashboard/organizerDashboard/Created-hackathons";

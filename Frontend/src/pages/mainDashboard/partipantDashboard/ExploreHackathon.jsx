@@ -44,7 +44,7 @@ import {
 } from "../../../components/CommonUI/tabs";
 import { cn } from "../../../lib/utils";
 import { HackathonRegistration } from "./components/RegistrationHackathon";
-import { HackathonDetails } from "../../mainDashboard/sections/HackathonDetails";
+import { HackathonDetails } from "./components/HackathonDetails";
 
 export function ExploreHackathons() {
   const navigate = useNavigate();

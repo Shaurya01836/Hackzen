@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../../../../../../components/CommonUI/button";
+import { Button } from "../../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
 
 export default function EditDescriptionModal({

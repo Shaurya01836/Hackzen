@@ -2,20 +2,20 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Button } from "../../../../../components/CommonUI/button";
+import { Button } from "../../../../../../components/CommonUI/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../../../components/CommonUI/card";
+} from "../../../../../../components/CommonUI/card";
 import { AlertCircle, Users, UserPlus, Copy, Edit, LogOut } from "lucide-react";
-import { Badge } from "../../../../../components/CommonUI/badge";
+import { Badge } from "../../../../../../components/CommonUI/badge";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "../../../../../components/DashboardUI/avatar";
+} from "../../../../../../components/DashboardUI/avatar";
 
 import InviteModal from "./TeamModals/InviteModal";
 import JoinTeamModal from "./TeamModals/JoinTeamModal";
@@ -32,10 +32,10 @@ import {
   AlertDialogFooter,
   AlertDialogAction,
   AlertDialogCancel,
-} from "../../../../../components/DashboardUI/alert-dialog";
+} from "../../../../../../components/DashboardUI/alert-dialog";
 import { Trash2 } from "lucide-react";
-import { HackathonRegistration } from "../../../partipantDashboard/components/RegistrationHackathon";
-import { Input } from "../../../../../components/CommonUI/input";
+import { HackathonRegistration } from "../../../components/RegistrationHackathon";
+import { Input } from "../../../../../../components/CommonUI/input";
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 

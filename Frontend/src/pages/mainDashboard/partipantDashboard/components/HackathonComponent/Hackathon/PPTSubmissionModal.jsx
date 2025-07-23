@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import BaseModal from "./TeamModals/BaseModal";
-import { uploadPPTFile, savePPTSubmission } from '../../../../../lib/api';
-import { useToast } from '../../../../../hooks/use-toast';
+import { uploadPPTFile, savePPTSubmission } from '../../../../../../lib/api';
+import { useToast } from '../../../../../../hooks/use-toast';
 
 export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, roundIndex, onSuccess, hackathon, editingSubmission }) {
   const [file, setFile] = useState(null);

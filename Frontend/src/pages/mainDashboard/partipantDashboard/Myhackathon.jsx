@@ -36,7 +36,7 @@ import ProjectSubmission from "./components/ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 import ParticipantSubmissionForm from "./components/ParticipantSubmitForm";
-import { HackathonDetails } from "../../mainDashboard/sections/HackathonDetails";
+import { HackathonDetails } from "./components/HackathonDetails";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
 
 export default function MyHackathons() {

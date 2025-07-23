@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from '../../../../hooks/use-toast';
 import { fetchHackathonParticipants } from "../../../../lib/api";
 import ChatModal from '../../components/ChatModal';
-import BaseModal from "../../sections/components/Hackathon/TeamModals/BaseModal";
+import BaseModal from "../../partipantDashboard/components/HackathonComponent/Hackathon/TeamModals/BaseModal";
 import CustomSubmissionForm from "./CustomSubmissionForm";
 
 export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {

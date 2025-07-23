@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Input } from "../../../../../../components/CommonUI/input";
-import { Button } from "../../../../../../components/CommonUI/button";
+import { Input } from "../../../../../../../components/CommonUI/input";
+import { Button } from "../../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
 import { Copy } from "lucide-react";
-import { useToast } from "../../../../../../hooks/use-toast";
+import { useToast } from "../../../../../../../hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 export default function InviteModal({ onInvite, team, hackathon, project, show, onClose }) {

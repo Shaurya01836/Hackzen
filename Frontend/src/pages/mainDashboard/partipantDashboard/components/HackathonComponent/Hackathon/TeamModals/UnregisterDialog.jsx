@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../../../../../components/DashboardUI/alert-dialog";
+} from "../../../../../../../components/DashboardUI/alert-dialog";
 
 export default function UnregisterDialog({
   open,

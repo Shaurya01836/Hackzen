@@ -10,7 +10,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "../../../../../../components/DashboardUI/alert-dialog";
+} from "../../../../../../../components/DashboardUI/alert-dialog";
 import { X } from "lucide-react";
 import { Children } from "react";
 

@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-} from "../../../../../components/CommonUI/card";
+} from "../../../../../../components/CommonUI/card";
 
 export default function HackathonCommunity({ sectionRef }) {
   return (

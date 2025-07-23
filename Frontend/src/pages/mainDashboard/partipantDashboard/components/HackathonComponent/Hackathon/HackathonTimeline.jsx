@@ -6,16 +6,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../../../components/CommonUI/card";
+} from "../../../../../../components/CommonUI/card";
 // import { format } from "date-fns"; // Uncomment if date-fns is available
 import {
   uploadPPTFile,
   savePPTSubmission,
   fetchUserPPTSubmissions,
   deletePPTSubmission,
-} from "../../../../../lib/api";
-import { useToast } from "../../../../../hooks/use-toast";
-import { useAuth } from "../../../../../context/AuthContext";
+} from "../../../../../../lib/api";
+import { useToast } from "../../../../../../hooks/use-toast";
+import { useAuth } from "../../../../../../context/AuthContext";
 import { useEffect, useRef } from "react";
 import PPTSubmissionModal from "./PPTSubmissionModal";
 import ProjectSubmissionModal from "./ProjectSubmissionModal";
@@ -29,7 +29,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "../../../../../components/DashboardUI/alert-dialog";
+} from "../../../../../../components/DashboardUI/alert-dialog";
 
 export default function HackathonTimeline({
   hackathon,

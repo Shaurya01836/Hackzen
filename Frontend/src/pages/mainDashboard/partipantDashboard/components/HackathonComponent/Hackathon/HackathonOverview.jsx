@@ -1,9 +1,9 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../../components/CommonUI/card";
-import { Badge } from "../../../../../components/CommonUI/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../components/CommonUI/card";
+import { Badge } from "../../../../../../components/CommonUI/badge";
 import { Building, MapPin, Target, Award, Users, AlertCircle, CheckCircle, Globe, MessageSquare } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../../../../../components/DashboardUI/avatar";
-import { Button } from "../../../../../components/CommonUI/button";
+import { Avatar, AvatarFallback, AvatarImage } from "../../../../../../components/DashboardUI/avatar";
+import { Button } from "../../../../../../components/CommonUI/button";
 
 export default function HackathonOverview({ hackathon, sectionRef, user, onShowParticipants }) {
   const getDifficultyColor = (difficulty) => {

@@ -1,12 +1,12 @@
 "use client";
-import { Badge } from "../../../../../components/CommonUI/badge";
+import { Badge } from "../../../../../../components/CommonUI/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../../../components/CommonUI/card";
-import { Progress } from "../../../../../components/DashboardUI/progress";
+} from "../../../../../../components/CommonUI/card";
+import { Progress } from "../../../../../../components/DashboardUI/progress";
 import {
   Calendar,
   Star,
@@ -20,9 +20,9 @@ import {
   Send,
   MessageCircle,
 } from "lucide-react";
-import { Button } from "../../../../../components/CommonUI/button";
+import { Button } from "../../../../../../components/CommonUI/button";
 import { useState, useEffect } from "react";
-import { useAuth } from "../../../../../context/AuthContext";
+import { useAuth } from "../../../../../../context/AuthContext";
 import React from "react"; // Added for React.Fragment
 
 // Helper to auto-link URLs in text (preserves line breaks)
