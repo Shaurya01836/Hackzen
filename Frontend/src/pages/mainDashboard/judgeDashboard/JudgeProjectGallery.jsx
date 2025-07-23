@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/CommonUI/button";
-import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
+import HackathonProjectsGallery from "../sections/components/Hackathon/HackathonProjectsGallery";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 
 export default function JudgeProjectGallery() {
@@ -26,7 +26,7 @@ export default function JudgeProjectGallery() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto w-full p-6">
+    <div className="max-w-7xl mx-auto w-full p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       {!selectedProject ? (
         <>
           <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">Back</Button>

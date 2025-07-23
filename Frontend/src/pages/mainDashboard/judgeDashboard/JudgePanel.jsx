@@ -107,7 +107,7 @@ export default function JudgePanel() {
   }
 
   return (
-    <div className="p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       <div className="flex items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Judge Panel</h1>
@@ -238,7 +238,7 @@ export default function JudgePanel() {
       </div>
 
       {/* Hackathons You're Judging */}
-      <h2 className="text-xl font-semibold mt-12 mb-4">
+      <h2 className="text-xl font-semibold mt-12 mb-4 ml-4">
         Hackathons You're Judging
       </h2>
       {loadingHackathons ? (
@@ -248,7 +248,7 @@ export default function JudgePanel() {
           ))}
         </div>
       ) : hackathons && hackathons.filter(h => h && h._id).length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ml-4">
           {hackathons.filter(h => h && h._id).map((hackathon) => (
             <HackathonCard
               key={hackathon._id || hackathon.title || Math.random()}
@@ -263,9 +263,14 @@ export default function JudgePanel() {
           ))}
         </div>
       ) : (
-        <p className="text-gray-500">
-          You're not assigned to judge any hackathons yet.
-        </p>
+        <Card className="w-full h-[40vh] flex items-center justify-center mt-8 shadow-none border-2 border-dashed border-gray-200 bg-white">
+          <div className="flex flex-col items-center justify-center">
+            <Gavel className="w-16 h-16 text-gray-300 mb-4" />
+            <span className="text-lg text-gray-500 font-medium">
+              You're not assigned to judge any hackathons yet.
+            </span>
+          </div>
+        </Card>
       )}
     </div>
   );

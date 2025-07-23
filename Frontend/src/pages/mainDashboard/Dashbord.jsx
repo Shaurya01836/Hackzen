@@ -55,11 +55,11 @@ import { OrganizationHub } from "./sections/OrganizationHub";
 import { Blogs } from "./sections/Blogs";
 import { ProjectArchive } from "./sections/ProjectArchive";
 import MyHackathon from "./sections/Myhackthon";
-import DashboardJudgePanel from "./sections/JudgePanel";
+import DashboardJudgePanel from "./judgeDashboard/JudgePanel";
 import CertificatesPage from "./sections/CertificatePage";
 import SponsoredPS from "./SponsoredPS";
 import JudgeManagement from "./sections/JudgeManagement";
-import JudgeProjectGallery from "./sections/JudgeProjectGallery";
+import JudgeProjectGallery from "./judgeDashboard/JudgeProjectGallery";
 
 export default function HackZenDashboard() {
   const location = useLocation();
