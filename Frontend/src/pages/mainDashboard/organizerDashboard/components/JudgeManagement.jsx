@@ -6,25 +6,25 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card";
-import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
-import { Input } from "../../../components/CommonUI/input";
-import { Label } from "../../../components/CommonUI/label";
-import { Textarea } from "../../../components/CommonUI/textarea";
+} from "../../../../components/CommonUI/card";
+import { Button } from "../../../../components/CommonUI/button";
+import { Badge } from "../../../../components/CommonUI/badge";
+import { Input } from "../../../../components/CommonUI/input";
+import { Label } from "../../../../components/CommonUI/label";
+import { Textarea } from "../../../../components/CommonUI/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../components/CommonUI/select";
+} from "../../../../components/CommonUI/select";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../components/CommonUI/tabs";
+} from "../../../../components/CommonUI/tabs";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "../../../components/DashboardUI/dialog";
+} from "../../../../components/DashboardUI/dialog";
 import {
   Users,
   Gavel,
@@ -48,9 +48,9 @@ import {
   User,
   ArrowLeft,
 } from "lucide-react";
-import { useAuth } from "../../../context/AuthContext";
-import { MultiSelect } from "../../../components/CommonUI/multiselect";
-import ProjectScoresList from '../../../components/CommonUI/ProjectScoresList';
+import { useAuth } from "../../../../context/AuthContext";
+import { MultiSelect } from "../../../../components/CommonUI/multiselect";
+import ProjectScoresList from '../../../../components/CommonUI/ProjectScoresList';
 
 import axios from "axios";
 

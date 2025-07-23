@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
-import { HackathonRegistration } from "./mainDashboard/sections/RegistrationHackathon";
+import { HackathonRegistration } from "./mainDashboard/partipantDashboard/components/RegistrationHackathon";
 
 function getUserFromStorage() {
   try {

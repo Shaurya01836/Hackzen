@@ -5,7 +5,7 @@ import { Card, CardContent } from "../../../components/CommonUI/card";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Plus, Upload, Info } from "lucide-react";
-import CertificateEditor from "./CertificateEditor";
+import CertificateEditor from "./components/CertificateEditor";
 
 export default function CertificatesPage() {
   const [templates, setTemplates] = useState([]);

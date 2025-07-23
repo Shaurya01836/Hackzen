@@ -1,7 +1,7 @@
 import { X } from "lucide-react";
 import { Dialog } from "@headlessui/react"; // Or your modal lib
-import { Badge } from "../../../components/CommonUI/badge";
-import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../../components/CommonUI/badge";  
+import { Button } from "../../../../components/CommonUI/button";
 
 export default function HackathonDetailModal({ isOpen, onClose, hackathon }) {
   if (!hackathon) return null;

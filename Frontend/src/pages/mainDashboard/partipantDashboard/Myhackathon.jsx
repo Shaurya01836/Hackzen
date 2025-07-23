@@ -29,14 +29,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
-import { Skeleton } from "../../../components/DashboardUI/skeleton";
+import { Skeleton } from "../../../components/DashboardUI/skeleton"; 
 
 // Import the ProjectSubmission component
-import ProjectSubmission from "./ProjectSubmission";
+import ProjectSubmission from "./components/ProjectSubmission";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
-import ParticipantSubmissionForm from "./ParticipantSubmitForm";
-import { HackathonDetails } from "./HackathonDetails";
+import ParticipantSubmissionForm from "./components/ParticipantSubmitForm";
+import { HackathonDetails } from "../../mainDashboard/sections/HackathonDetails";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
 
 export default function MyHackathons() {

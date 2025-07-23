@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { useAuth } from "../../../context/AuthContext"
+import { useAuth } from "../../../../context/AuthContext"
 import {
   ArrowLeft,
   Upload,
@@ -24,22 +24,22 @@ import {
   Award,
   Shield
 } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
-import { Button } from "../../../components/CommonUI/button"
-import { Input } from "../../../components/CommonUI/input"
-import { Label } from "../../../components/CommonUI/label"
-import { Textarea } from "../../../components/CommonUI/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/CommonUI/card"
+import { Button } from "../../../../components/CommonUI/button"
+import { Input } from "../../../../components/CommonUI/input"
+import { Label } from "../../../../components/CommonUI/label"
+import { Textarea } from "../../../../components/CommonUI/textarea"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from "../../../components/CommonUI/select"
-import { Checkbox } from "../../../components/DashboardUI/checkbox"
-import { Badge } from "../../../components/CommonUI/badge"
-import { Progress } from "../../../components/DashboardUI/progress"
-import { useToast } from "../../../hooks/use-toast"
+} from "../../../../components/CommonUI/select"
+import { Checkbox } from "../../../../components/DashboardUI/checkbox"
+import { Badge } from "../../../../components/CommonUI/badge"
+import { Progress } from "../../../../components/DashboardUI/progress"
+import { useToast } from "../../../../hooks/use-toast"
 
 function generateTeamCode(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

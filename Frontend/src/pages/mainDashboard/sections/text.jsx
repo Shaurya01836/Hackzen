@@ -43,7 +43,7 @@ import {
   AvatarImage,
 } from "../../../components/DashboardUI/avatar";
 import { Progress } from "../../../components/DashboardUI/progress";
-import { HackathonRegistration } from "./RegistrationHackathon";
+import { HackathonRegistration } from "../partipantDashboard/components/RegistrationHackathon";
 import axios from "axios";
 import { useToast } from '../../../hooks/use-toast';
 import { useAuth } from '../../../context/AuthContext';

@@ -39,10 +39,10 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { Progress } from "../../../components/DashboardUI/progress";
-import HackathonDetailModal from "./HackathonDetailModal";
-import HackathonEditModal from "./HackathonEditModal"; // Adjust path
-import CustomSubmissionForm from "./CustomSubmissionForm";
-import InnerCreatedCard from "./InnerCreatedCard"; // Adjust path
+import HackathonDetailModal from "./components/HackathonDetailModal";
+import HackathonEditModal from "./components/HackathonEditModal"; // Adjust path
+import CustomSubmissionForm from "./components/CustomSubmissionForm";
+import InnerCreatedCard from "./components/InnerCreatedCard"; // Adjust path
 import { cn } from "../../../lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 // import { Modal } from '../../../components/CommonUI/modal'; // If you have a modal component, else use a div

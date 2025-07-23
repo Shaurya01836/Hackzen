@@ -1,6 +1,6 @@
 import { Dialog } from "@headlessui/react";
 import { useState } from "react";
-import CreateHackathon from "./Create-hackathon";
+import CreateHackathon from "../Create-hackathon";
 import { X } from "lucide-react";
 
 export default function HackathonEditModal({ hackathon, onClose, onUpdated }) {

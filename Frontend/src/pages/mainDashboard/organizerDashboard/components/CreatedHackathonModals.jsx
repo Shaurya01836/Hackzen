@@ -1,7 +1,7 @@
 import React from "react";
-import { Button } from "../../../components/CommonUI/button";
-import ChatModal from '../components/ChatModal';
-import BaseModal from "./components/Hackathon/TeamModals/BaseModal";
+import { Button } from "../../../../components/CommonUI/button";
+import ChatModal from '../../components/ChatModal';
+import BaseModal from "../../../mainDashboard/sections/components/Hackathon/TeamModals/BaseModal";
 
 export default function CreatedHackathonModals({
   showDeleteDialog,

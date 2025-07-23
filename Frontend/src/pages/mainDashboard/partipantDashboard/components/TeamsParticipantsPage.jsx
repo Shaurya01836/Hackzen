@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../../components/AdminUI/table";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "../../../../components/AdminUI/table";
 
 export default function TeamsParticipantsPage() {
   const { hackathonId, teamId } = useParams();

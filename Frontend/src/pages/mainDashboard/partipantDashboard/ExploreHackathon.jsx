@@ -43,8 +43,8 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { cn } from "../../../lib/utils";
-import { HackathonRegistration } from "./RegistrationHackathon";
-import { HackathonDetails } from "./HackathonDetails";
+import { HackathonRegistration } from "./components/RegistrationHackathon";
+import { HackathonDetails } from "../../mainDashboard/sections/HackathonDetails";
 
 export function ExploreHackathons() {
   const navigate = useNavigate();

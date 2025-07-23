@@ -1,21 +1,21 @@
 "use client";
 import { useState } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../../context/AuthContext";
 import { ArrowLeft, Plus, X, Upload, Save, Send, Clock } from "lucide-react";
-import { Button } from "../../../components/CommonUI/button";
-import { Input } from "../../../components/CommonUI/input";
-import { Card, CardContent } from "../../../components/CommonUI/card";
-import { Badge } from "../../../components/CommonUI/badge";
-import { Separator } from "../../../components/CommonUI/separator";
-import { Textarea } from "../../../components/CommonUI/textarea";
-import { Label } from "../../../components/CommonUI/label";
+import { Button } from "../../../../components/CommonUI/button";
+import { Input } from "../../../../components/CommonUI/input";
+import { Card, CardContent } from "../../../../components/CommonUI/card";
+import { Badge } from "../../../../components/CommonUI/badge";
+import { Separator } from "../../../../components/CommonUI/separator";
+import { Textarea } from "../../../../components/CommonUI/textarea";
+import { Label } from "../../../../components/CommonUI/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../components/CommonUI/select";
+} from "../../../../components/CommonUI/select";
 
 export function WriteArticle({ onBack, onSubmit }) {
   const [formData, setFormData] = useState({

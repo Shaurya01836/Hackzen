@@ -31,7 +31,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import CreateHackathon from "../../mainDashboard/sections/Create-hackathon";
+import CreateHackathon from "../../mainDashboard/organizerDashboard/Create-hackathon";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { useNavigate } from "react-router-dom";
 

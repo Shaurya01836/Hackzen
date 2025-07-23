@@ -7,9 +7,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card";
-import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
+} from "../../../../components/CommonUI/card";
+import { Button } from "../../../../components/CommonUI/button";
+import { Badge } from "../../../../components/CommonUI/badge";
 import {
   Gavel,
   Target,
@@ -23,7 +23,7 @@ import {
   Shield,
   Mail,
 } from "lucide-react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../../../context/AuthContext";
 
 export default function JudgeInvitation() {
   const { assignmentId } = useParams();

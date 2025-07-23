@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import CreateHackathon from "./Create-hackathon";
+import CreateHackathon from "../Create-hackathon";
 
 export default function EditHackathonPage() {
   const { id } = useParams();

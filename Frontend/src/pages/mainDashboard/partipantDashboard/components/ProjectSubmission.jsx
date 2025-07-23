@@ -14,31 +14,31 @@ import {
   Calendar,
   Tag,
 } from "lucide-react";
-import { Button } from "../../../components/CommonUI/button";
-import { Input } from "../../../components/CommonUI/input";
-import { Badge } from "../../../components/CommonUI/badge";
+import { Button } from "../../../../components/CommonUI/button";
+import { Input } from "../../../../components/CommonUI/input";
+import { Badge } from "../../../../components/CommonUI/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card";
+} from "../../../../components/CommonUI/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../components/CommonUI/select";
+} from "../../../../components/CommonUI/select";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../components/CommonUI/tabs";
-import { Label } from "../../../components/CommonUI/label";
+} from "../../../../components/CommonUI/tabs";
+import { Label } from "../../../../components/CommonUI/label";
 import RichTextEditor from "./RichTextEditor";
-import { Textarea } from "../../../components/CommonUI/textarea";
+import { Textarea } from "../../../../components/CommonUI/textarea";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const categories = [

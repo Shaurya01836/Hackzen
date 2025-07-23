@@ -45,20 +45,20 @@ import {
 import { useAuth } from "../../context/AuthContext";
 // Sections
 import { ProfileSection } from "./ProfileSection";
-import { MySubmissions } from "./sections/MySubmissions";
-import { CreatedHackathons } from "./sections/Created-hackathons";
-import { Announcements } from "./sections/Announcements";
-import { OrganizerTools } from "./sections/OrganizerTools";
-import { ExploreHackathons } from "./sections/ExploreHackathon";
-import CreateHackathon from "./sections/Create-hackathon";
+import { MySubmissions } from "./partipantDashboard/MySubmissions";
+import { CreatedHackathons } from "./organizerDashboard/Created-hackathons";
+import { Announcements } from "./organizerDashboard/Announcements";
+import { OrganizerTools } from "./organizerDashboard/OrganizerTools";
+import { ExploreHackathons } from "./partipantDashboard/ExploreHackathon";
+import CreateHackathon from "./organizerDashboard/Create-hackathon";
 import { OrganizationHub } from "./sections/OrganizationHub";
-import { Blogs } from "./sections/Blogs";
-import { ProjectArchive } from "./sections/ProjectArchive";
-import MyHackathon from "./sections/Myhackthon";
+import { Blogs } from "./partipantDashboard/Blogs";
+import { ProjectArchive } from "./partipantDashboard/ProjectArchive";
+import MyHackathon from "./partipantDashboard/Myhackathon";
 import DashboardJudgePanel from "./judgeDashboard/JudgePanel";
-import CertificatesPage from "./sections/CertificatePage";
+import CertificatesPage from "./organizerDashboard/CertificatePage";
 import SponsoredPS from "./SponsoredPS";
-import JudgeManagement from "./sections/JudgeManagement";
+import JudgeManagement from "./organizerDashboard/components/JudgeManagement";
 import JudgeProjectGallery from "./judgeDashboard/JudgeProjectGallery";
 
 export default function HackZenDashboard() {

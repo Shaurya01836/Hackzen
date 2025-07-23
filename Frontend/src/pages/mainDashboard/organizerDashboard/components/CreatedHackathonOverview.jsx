@@ -1,14 +1,14 @@
 import React, { useState } from "react";
-import { Badge } from "../../../components/CommonUI/badge";
-import { Button } from "../../../components/CommonUI/button";
+import { Badge } from "../../../../components/CommonUI/badge";
+import { Button } from "../../../../components/CommonUI/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card";
-import { Separator } from "../../../components/CommonUI/separator";
-import { ACard, ACardContent } from "../../../components/DashboardUI/AnimatedCard";
+} from "../../../../components/CommonUI/card";
+import { Separator } from "../../../../components/CommonUI/separator";
+import { ACard, ACardContent } from "../../../../components/DashboardUI/AnimatedCard";
 import {
   ArrowLeft,
   Edit3,
@@ -28,7 +28,7 @@ import {
   LucideJoystick,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import JudgeManagement from './JudgeManagement'; // adjust path
+import JudgeManagement from '../components/JudgeManagement'; // adjust path
 
 export default function CreatedHackathonOverview({
   hackathon,

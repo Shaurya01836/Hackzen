@@ -34,7 +34,7 @@ import {
   AlertDialogCancel,
 } from "../../../../../components/DashboardUI/alert-dialog";
 import { Trash2 } from "lucide-react";
-import { HackathonRegistration } from "../../RegistrationHackathon";
+import { HackathonRegistration } from "../../../partipantDashboard/components/RegistrationHackathon";
 import { Input } from "../../../../../components/CommonUI/input";
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';

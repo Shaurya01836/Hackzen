@@ -11,7 +11,7 @@ import HackathonOverview from "./components/Hackathon/HackathonOverview";
 import HackathonTimeline from "./components/Hackathon/HackathonTimeline";
 import HackathonProblems from "./components/Hackathon/HackathonProblems";
 import HackathonCommunity from "./components/Hackathon/HackathonCommunity";
-import { HackathonRegistration } from "./RegistrationHackathon";
+import { HackathonRegistration } from "../partipantDashboard/components/RegistrationHackathon";
 import HorizontalTabNav from "./components/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./components/Hackathon/HackathonProjectsGallery";
 import TeamManagementSection from "./components/Hackathon/TeamManagementSection";

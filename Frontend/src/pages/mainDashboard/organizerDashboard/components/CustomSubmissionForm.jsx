@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Button } from "../../../components/CommonUI/button";
-import { Input } from "../../../components/CommonUI/input";
-import { Label } from "../../../components/CommonUI/label";
-import { Textarea } from "../../../components/CommonUI/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card";
-import { Separator } from "../../../components/CommonUI/separator";
+import { Button } from "../../../../components/CommonUI/button";
+import { Input } from "../../../../components/CommonUI/input";
+import { Label } from "../../../../components/CommonUI/label";
+import { Textarea } from "../../../../components/CommonUI/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/CommonUI/card";
+import { Separator } from "../../../../components/CommonUI/separator";
 import { Plus, Trash2, ArrowLeft, Save, FileText, HelpCircle } from "lucide-react";
 
 export default function CustomSubmissionForm({ hackathon, onCancel }) {

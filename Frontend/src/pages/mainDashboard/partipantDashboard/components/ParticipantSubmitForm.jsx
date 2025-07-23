@@ -7,28 +7,28 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "../../../components/CommonUI/card";
-import { Button } from "../../../components/CommonUI/button";
+} from "../../../../components/CommonUI/card";
+import { Button } from "../../../../components/CommonUI/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../../components/CommonUI/select";
-import { Textarea } from "../../../components/CommonUI/textarea";
-import { Label } from "../../../components/CommonUI/label";
+} from "../../../../components/CommonUI/select";
+import { Textarea } from "../../../../components/CommonUI/textarea";
+import { Label } from "../../../../components/CommonUI/label";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../../components/CommonUI/tabs";
+} from "../../../../components/CommonUI/tabs";
 import { ArrowLeft, ChevronRight, ChevronLeft } from "lucide-react";
 import axios from "axios";
-import { useAchievements } from '../../../hooks/useAchievements';
-import { useToast } from '../../../hooks/use-toast';
-import ProjectTeamManagement from './components/ProjectTeamManagement';
+import { useAchievements } from '../../../../hooks/useAchievements';
+import { useToast } from '../../../../hooks/use-toast';
+import ProjectTeamManagement from '../components/TeamsParticipantsPage';
 
 export default function ProjectSubmissionForm({
   hackathon,

@@ -34,7 +34,7 @@ import { Badge } from "../../../components/CommonUI/badge";
 import {
   Avatar,
   AvatarFallback,
-  AvatarImage,
+  AvatarImage,  
 } from "../../../components/DashboardUI/avatar";
 import { Separator } from "../../../components/CommonUI/separator";
 import {
@@ -50,7 +50,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../components/DashboardUI/dialog";
-import { WriteArticle } from "./WriteArticle";
+import { WriteArticle } from "./components/WriteArticle";
 
 export function Blogs() {
   const [searchTerm, setSearchTerm] = useState("");
