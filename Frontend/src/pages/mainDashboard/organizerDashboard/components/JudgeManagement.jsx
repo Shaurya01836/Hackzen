@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -100,6 +100,10 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
 
   const [judgedSubmissions, setJudgedSubmissions] = useState([]);
 
+  // Add state for teams and assignment mode loading
+  const [teams, setTeams] = useState([]);
+  const [assignmentModeLoading, setAssignmentModeLoading] = useState(false);
+
   useEffect(() => {
     fetchHackathons();
   }, []);
@@ -135,6 +139,24 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
 
   useEffect(() => {
     fetchJudged();
+  }, [selectedHackathonId]);
+
+  // Fetch teams for the selected hackathon
+  useEffect(() => {
+    if (!selectedHackathonId) return;
+    const fetchTeams = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:3000/api/teams/hackathon/${selectedHackathonId}/all`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setTeams(Array.isArray(data) ? data : []);
+      } catch (err) {
+        setTeams([]);
+      }
+    };
+    fetchTeams();
   }, [selectedHackathonId]);
 
   const fetchHackathons = async () => {
@@ -279,6 +301,97 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
       console.error("Error removing judge assignment:", error);
     }
   };
+
+  // Handler to set assignment mode for a round or problem statement
+  const setAssignmentMode = async (type, index, mode) => {
+    setAssignmentModeLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/judge-management/hackathons/${selectedHackathonId}/${type}/${index}/assignment-mode`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mode }),
+      });
+      if (res.ok) {
+        fetchJudgeAssignments();
+      }
+    } finally {
+      setAssignmentModeLoading(false);
+    }
+  };
+
+  // Handler to assign teams to a judge
+  const assignTeamsToJudge = async (assignmentId, teamIds) => {
+    console.log("Assigning teams:", teamIds);
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:3000/api/judge-management/judge-assignments/${assignmentId}/assign-teams`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ teamIds }),
+    });
+    if (!res.ok) {
+      let error;
+      try {
+        error = await res.json();
+      } catch (e) {
+        error = { message: "Unknown error" };
+      }
+      alert(`Error: ${error.message || JSON.stringify(error)}`);
+      console.error("Assign Teams Error:", error, "Status:", res.status);
+      return;
+    }
+    fetchJudgeAssignments();
+  };
+
+  // Handler to auto-distribute teams among judges
+  const autoDistributeTeams = async (type, index, judgeAssignmentIds, teamIds, forceOverwrite = false) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:3000/api/judge-management/hackathons/${selectedHackathonId}/${type}/${index}/auto-distribute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ judgeAssignmentIds, teamIds, forceOverwrite }), // Pass forceOverwrite
+    });
+    if (!res.ok) {
+      let error;
+      try {
+        error = await res.json();
+      } catch (e) {
+        error = { message: "Unknown error" };
+      }
+      // Check if the error is due to already assigned teams
+      if (res.status === 400 && error.message && error.message.includes('Some teams are already assigned to judges')) {
+        const confirmOverwrite = window.confirm(
+          `Some teams are already assigned to judges. Do you want to overwrite existing assignments and proceed with auto-distribution?`
+        );
+        if (confirmOverwrite) {
+          // Retry the auto-distribution with forceOverwrite set to true
+          await autoDistributeTeams(type, index, judgeAssignmentIds, teamIds, true);
+        } else {
+          alert("Auto-distribution cancelled.");
+        }
+      } else {
+        alert(`Error: ${error.message || JSON.stringify(error)}`);
+      }
+      console.error("Auto-Distribute Error:", error, "Status:", res.status);
+      return;
+    }
+    fetchJudgeAssignments();
+  };
+
+  // Memoize all judge assignments flat
+  const allJudgeAssignments = useMemo(() =>
+    [
+      ...judgeAssignments.platform,
+      ...judgeAssignments.sponsor,
+      ...judgeAssignments.hybrid,
+    ], [judgeAssignments]);
+
+  // State for assignment UI
+  const [selectedJudgeAssignmentId, setSelectedJudgeAssignmentId] = useState("");
+  const [selectedAssignmentType, setSelectedAssignmentType] = useState("round");
+  const [selectedAssignmentIndex, setSelectedAssignmentIndex] = useState(0);
+  const [selectedTeamIds, setSelectedTeamIds] = useState([]);
+  const [autoDistributeLoading, setAutoDistributeLoading] = useState(false);
 
   const getJudgeTypeIcon = (type) => {
     switch (type) {
@@ -520,141 +633,141 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                         </div>
                       </div>
                     </DialogContent>
-                  </Dialog>
+                    </Dialog>
 
-                  <Dialog open={showAddJudgeDialog} onOpenChange={setShowAddJudgeDialog}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-green-600 hover:bg-green-700">
-                        <Users className="w-4 h-4 mr-2" />
-                        Assign Judge
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>Assign Judge</DialogTitle>
-                        <DialogDescription>
-                          Assign a judge to problem statements and rounds.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="judgeEmail">Judge Email</Label>
-                          <Input
-                            id="judgeEmail"
-                            type="email"
-                            value={newJudgeAssignment.judgeEmail}
-                            onChange={(e) =>
-                              setNewJudgeAssignment({
-                                ...newJudgeAssignment,
-                                judgeEmail: e.target.value,
-                              })
-                            }
-                            placeholder="judge@example.com"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="judgeType">Judge Type</Label>
-                          <Select
-                            value={newJudgeAssignment.judgeType}
-                            onValueChange={(value) =>
-                              setNewJudgeAssignment({
-                                ...newJudgeAssignment,
-                                judgeType: value,
-                              })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="platform">Platform Judge</SelectItem>
-                              <SelectItem value="sponsor">Sponsor Judge</SelectItem>
-                              <SelectItem value="hybrid">Hybrid Judge</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {newJudgeAssignment.judgeType === "sponsor" && (
+                    <Dialog open={showAddJudgeDialog} onOpenChange={setShowAddJudgeDialog}>
+                      <DialogTrigger asChild>
+                        <Button className="bg-green-600 hover:bg-green-700">
+                          <Users className="w-4 h-4 mr-2" />
+                          Assign Judge
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Assign Judge</DialogTitle>
+                          <DialogDescription>
+                            Assign a judge to problem statements and rounds.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
                           <div>
-                            <Label htmlFor="sponsorCompany">Sponsor Company</Label>
+                            <Label htmlFor="judgeEmail">Judge Email</Label>
                             <Input
-                              id="sponsorCompany"
-                              value={newJudgeAssignment.sponsorCompany}
+                              id="judgeEmail"
+                              type="email"
+                              value={newJudgeAssignment.judgeEmail}
                               onChange={(e) =>
                                 setNewJudgeAssignment({
                                   ...newJudgeAssignment,
-                                  sponsorCompany: e.target.value,
+                                  judgeEmail: e.target.value,
                                 })
                               }
-                              placeholder="Enter sponsor company name"
+                              placeholder="judge@example.com"
                             />
                           </div>
-                        )}
-                        {newJudgeAssignment.judgeType === "platform" && (
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="canJudgeSponsoredPS"
-                              checked={newJudgeAssignment.canJudgeSponsoredPS}
+                          <div>
+                            <Label htmlFor="judgeType">Judge Type</Label>
+                            <Select
+                              value={newJudgeAssignment.judgeType}
+                              onValueChange={(value) =>
+                                setNewJudgeAssignment({
+                                  ...newJudgeAssignment,
+                                  judgeType: value,
+                                })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="platform">Platform Judge</SelectItem>
+                                <SelectItem value="sponsor">Sponsor Judge</SelectItem>
+                                <SelectItem value="hybrid">Hybrid Judge</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          {newJudgeAssignment.judgeType === "sponsor" && (
+                            <div>
+                              <Label htmlFor="sponsorCompany">Sponsor Company</Label>
+                              <Input
+                                id="sponsorCompany"
+                                value={newJudgeAssignment.sponsorCompany}
+                                onChange={(e) =>
+                                  setNewJudgeAssignment({
+                                    ...newJudgeAssignment,
+                                    sponsorCompany: e.target.value,
+                                  })
+                                }
+                                placeholder="Enter sponsor company name"
+                              />
+                            </div>
+                          )}
+                          {newJudgeAssignment.judgeType === "platform" && (
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="canJudgeSponsoredPS"
+                                checked={newJudgeAssignment.canJudgeSponsoredPS}
+                                onChange={(e) =>
+                                  setNewJudgeAssignment({
+                                    ...newJudgeAssignment,
+                                    canJudgeSponsoredPS: e.target.checked,
+                                  })
+                                }
+                              />
+                              <Label htmlFor="canJudgeSponsoredPS">
+                                Can also judge sponsored problem statements
+                              </Label>
+                            </div>
+                          )}
+                          <div>
+                            <Label>Assign to Problem Statement(s) (optional)</Label>
+                            <MultiSelect
+                              options={hackathon?.problemStatements?.map(ps => ({
+                                value: ps._id,
+                                label: ps.statement,
+                              })) || []}
+                              value={newJudgeAssignment.problemStatementIds}
+                              onChange={ids => setNewJudgeAssignment(prev => ({
+                                ...prev,
+                                problemStatementIds: ids,
+                              }))}
+                              placeholder="Select problem statements (leave blank for all eligible)"
+                            />
+                            <small className="text-gray-500">Leave blank to assign to all eligible problem statements.</small>
+                          </div>
+
+
+                          <div>
+                            <Label htmlFor="maxSubmissions">Max Submissions per Judge</Label>
+                            <Input
+                              id="maxSubmissions"
+                              type="number"
+                              value={newJudgeAssignment.maxSubmissionsPerJudge}
                               onChange={(e) =>
                                 setNewJudgeAssignment({
                                   ...newJudgeAssignment,
-                                  canJudgeSponsoredPS: e.target.checked,
+                                  maxSubmissionsPerJudge: parseInt(e.target.value),
                                 })
                               }
+                              min="1"
+                              max="100"
                             />
-                            <Label htmlFor="canJudgeSponsoredPS">
-                              Can also judge sponsored problem statements
-                            </Label>
                           </div>
-                        )}
-                        <div>
-                          <Label>Assign to Problem Statement(s) (optional)</Label>
-                          <MultiSelect
-                            options={hackathon?.problemStatements?.map(ps => ({
-                              value: ps._id,
-                              label: ps.statement,
-                            })) || []}
-                            value={newJudgeAssignment.problemStatementIds}
-                            onChange={ids => setNewJudgeAssignment(prev => ({
-                              ...prev,
-                              problemStatementIds: ids,
-                            }))}
-                            placeholder="Select problem statements (leave blank for all eligible)"
-                          />
-                          <small className="text-gray-500">Leave blank to assign to all eligible problem statements.</small>
+                          <div className="flex justify-end gap-3">
+                            <Button
+                              variant="outline"
+                              onClick={() => setShowAddJudgeDialog(false)}
+                            >
+                              Cancel
+                            </Button>
+                            <Button onClick={assignJudge}>Assign Judge</Button>
+                          </div>
                         </div>
-
-
-                        <div>
-                          <Label htmlFor="maxSubmissions">Max Submissions per Judge</Label>
-                          <Input
-                            id="maxSubmissions"
-                            type="number"
-                            value={newJudgeAssignment.maxSubmissionsPerJudge}
-                            onChange={(e) =>
-                              setNewJudgeAssignment({
-                                ...newJudgeAssignment,
-                                maxSubmissionsPerJudge: parseInt(e.target.value),
-                              })
-                            }
-                            min="1"
-                            max="100"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-3">
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowAddJudgeDialog(false)}
-                          >
-                            Cancel
-                          </Button>
-                          <Button onClick={assignJudge}>Assign Judge</Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </>
-              )}
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
               </div>
             </div>
             {/* Second row: Hackathon selector and subtitle */}
@@ -681,7 +794,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                   </Select>
                 </div>
               )}
-           
+            
             </div>
           </CardContent>
         </Card>
@@ -829,9 +942,9 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                                   <td className="p-2 border">
                                     {/* Show all member names if available, else team name, else "-" */}
                                     {score.team?.name ||
-                                     (score.team?.members
-                                       ? score.team.members.map(m => m.name || m.email).join(", ")
-                                       : "-")}
+                                      (score.team?.members
+                                        ? score.team.members.map(m => m.name || m.email).join(", ")
+                                        : "-")}
                                   </td>
                                   <td className="p-2 border">
                                     {/* Show statement if object, else string, else "-" */}
@@ -1083,104 +1196,206 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                       Judge Assignments
                     </CardTitle>
                     <CardDescription>
-                      Detailed view of judge assignments to problem statements and rounds
+                      Assign teams to judges and manage assignment mode for rounds/problem statements.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      {Object.entries(judgeAssignments).map(([type, assignments]) => (
-                        <div key={type}>
-                          <h3 className="text-lg font-semibold mb-4 capitalize">
-                            {type} Judge Assignments
-                          </h3>
-                          <div className="space-y-4">
-                            {assignments.map((assignment) => (
-                              <div
-                                key={assignment._id}
-                                className="p-4 border rounded-lg bg-white mb-6"
-                              >
-                                <div className="flex items-center justify-between mb-4">
-                                  <div className="flex items-center gap-3">
-                                    {getJudgeTypeIcon(assignment.judge.type)}
-                                    <div>
-                                      <p className="font-medium">{assignment.judge.email}</p>
-                                      <p className="text-sm text-gray-600">
-                                        {getJudgeTypeLabel(assignment.judge.type)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  {getStatusBadge(assignment.status)}
-                                </div>
-                                {/* Problem Statement Assignments */}
-                                {assignment.assignedProblemStatements?.length > 0 && (
-                                  <div className="mb-4">
-                                    <h4 className="font-medium mb-2">Assigned Problem Statements:</h4>
-                                    <div className="space-y-2">
-                                      {assignment.assignedProblemStatements.map((ps, index) => (
-                                        <div
-                                          key={index}
-                                          className="flex items-center gap-2 text-sm"
-                                        >
-                                          <Target className="w-4 h-4 text-gray-400" />
-                                          <span className="flex-1">{ps.problemStatement}</span>
-                                          <Badge variant="outline" className="text-xs">
-                                            {ps.type}
-                                          </Badge>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {/* Round Assignments */}
-                                {assignment.assignedRounds?.length > 0 && (
-                                  <div className="mb-4">
-                                    <h4 className="font-medium mb-2">Assigned Rounds:</h4>
-                                    <div className="space-y-2">
-                                      {assignment.assignedRounds.map((round, index) => (
-                                        <div
-                                          key={index}
-                                          className="flex items-center gap-2 text-sm"
-                                        >
-                                          <Award className="w-4 h-4 text-gray-400" />
-                                          <span>{round.roundName}</span>
-                                          <Badge variant="outline" className="text-xs">
-                                            {round.roundType}
-                                          </Badge>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                                {/* Metrics */}
-                                <div className="grid grid-cols-3 gap-4 text-sm mb-4">
-                                  <div>
-                                    <p className="text-gray-600">Submissions Judged</p>
-                                    <p className="font-medium">
-                                      {assignment.metrics?.totalSubmissionsJudged || 0}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-gray-600">Avg Score</p>
-                                    <p className="font-medium">
-                                      {assignment.metrics?.averageScoreGiven?.toFixed(1) || "N/A"}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-gray-600">Time Spent</p>
-                                    <p className="font-medium">
-                                      {assignment.metrics?.totalTimeSpent || 0} min
-                                    </p>
-                                  </div>
-                                </div>
-                                {/* Project Scores Table (if project exists) */}
-                                {assignment.project && assignment.project._id && (
-                                  <ProjectScoresList projectId={assignment.project._id} />
-                                )}
-                              </div>
-                            ))}
+                    {/* Assignment Mode Toggles */}
+                    <div className="mb-6">
+                      <h4 className="font-semibold mb-2">Assignment Mode</h4>
+                      <div className="flex flex-wrap gap-6">
+                        {hackathon?.rounds?.map((round, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="font-medium">Round: {round.name || `#${idx + 1}`}</span>
+                            <Select
+                              value={round.assignmentMode || "open"}
+                              onValueChange={mode => setAssignmentMode("round", idx, mode)}
+                              disabled={assignmentModeLoading}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="assigned">Assigned</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                        {hackathon?.problemStatements?.map((ps, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="font-medium">PS: {ps.statement.slice(0, 20)}...</span>
+                            <Select
+                              value={ps.assignmentMode || "open"}
+                              onValueChange={mode => setAssignmentMode("problemStatement", idx, mode)}
+                              disabled={assignmentModeLoading}
+                            >
+                              <SelectTrigger className="w-28">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="open">Open</SelectItem>
+                                <SelectItem value="assigned">Assigned</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Judge/Assignment/Team Selection */}
+                    <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label>Judge Assignment</Label>
+                        <Select
+                          value={selectedJudgeAssignmentId}
+                          onValueChange={setSelectedJudgeAssignmentId}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select Judge" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allJudgeAssignments.map(a => (
+                              <SelectItem key={a._id} value={a._id}>
+                                {a.judge.email} ({getJudgeTypeLabel(a.judge.type)})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Assignment Scope</Label>
+                        <Select
+                          value={selectedAssignmentType}
+                          onValueChange={setSelectedAssignmentType}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="round">Round</SelectItem>
+                            <SelectItem value="problemStatement">Problem Statement</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={String(selectedAssignmentIndex)}
+                          onValueChange={v => setSelectedAssignmentIndex(Number(v))}
+                          className="mt-2"
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={selectedAssignmentType === "round" ? "Select Round" : "Select PS"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(selectedAssignmentType === "round"
+                              ? hackathon?.rounds || []
+                              : hackathon?.problemStatements || []
+                            ).map((item, idx) => (
+                              <SelectItem key={idx} value={String(idx)}>
+                                {selectedAssignmentType === "round"
+                                  ? item.name || `Round #${idx + 1}`
+                                  : item.statement.slice(0, 30) + (item.statement.length > 30 ? "..." : "")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Teams</Label>
+                        <MultiSelect
+                          options={teams.map(t => ({ value: t._id, label: t.name }))}
+                          value={selectedTeamIds}
+                          onChange={setSelectedTeamIds}
+                          placeholder="Select teams to assign"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-4 mb-6">
+                      <Button
+                        disabled={!selectedJudgeAssignmentId || selectedTeamIds.length === 0}
+                        onClick={() => {
+                          if (!selectedJudgeAssignmentId) {
+                            // Using a custom message box instead of alert()
+                            // For this example, I'll use window.alert as a quick placeholder
+                            // In a full application, you'd integrate a proper UI component (e.g., a toast or modal)
+                            window.alert("Please select a judge assignment first.");
+                            return;
+                          }
+                          if (selectedTeamIds.length === 0) {
+                            window.alert("Please select at least one team to assign.");
+                            return;
+                          }
+                          assignTeamsToJudge(selectedJudgeAssignmentId, selectedTeamIds);
+                        }}
+                      >
+                        Assign Selected Teams
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={autoDistributeLoading || allJudgeAssignments.length === 0 || teams.length === 0}
+                        onClick={async () => {
+                          setAutoDistributeLoading(true);
+                          // Call autoDistributeTeams without forceOverwrite initially
+                          await autoDistributeTeams(
+                            selectedAssignmentType,
+                            selectedAssignmentIndex,
+                            allJudgeAssignments.map(a => a._id),
+                            teams.map(t => t._id)
+                          );
+                          setAutoDistributeLoading(false);
+                        }}
+                      >
+                        Auto-Distribute Teams
+                      </Button>
+                    </div>
+                    {/* Current Assignments Table */}
+                    <div>
+                      <h4 className="font-semibold mb-4 text-lg flex items-center gap-2">
+                        <Users className="w-4 h-4 text-indigo-500" />
+                        Current Team Assignments
+                      </h4>
+                      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="p-3 border-b font-semibold text-left">Judge</th>
+                              <th className="p-3 border-b font-semibold text-left">Type</th>
+                              <th className="p-3 border-b font-semibold text-left">Assigned Teams</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allJudgeAssignments.map(a => (
+                              <tr key={a._id} className="border-b hover:bg-indigo-50/30 transition">
+                                <td className="p-3 border-b">{a.judge.email}</td>
+                                <td className="p-3 border-b">{getJudgeTypeLabel(a.judge.type)}</td>
+                                <td className="p-3 border-b">
+                                  {Array.isArray(a.assignedTeams) && a.assignedTeams.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2 items-center">
+                                      {a.assignedTeams.map(teamId => {
+                                        const team = teams.find(t => t._id === teamId);
+                                        return (
+                                          <span key={teamId} className="inline-block bg-indigo-100 text-indigo-800 rounded px-2 py-1 text-xs font-medium">
+                                            {team ? team.name : teamId}
+                                          </span>
+                                        );
+                                      })}
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="ml-2 text-red-600 hover:bg-red-50 border border-red-200 px-2 py-1"
+                                        title="Unassign all teams from this judge"
+                                        onClick={() => assignTeamsToJudge(a._id, [])}
+                                      >
+                                        Unassign
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-400">None</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

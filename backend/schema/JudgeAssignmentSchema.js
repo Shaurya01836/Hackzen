@@ -39,6 +39,9 @@ const JudgeAssignmentSchema = new Schema({
     isAssigned: { type: Boolean, default: true }
   }],
 
+  // Assigned teams/projects for this judge assignment
+  assignedTeams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
+
   // Judge permissions and settings
   permissions: {
     canJudgeGeneralPS: { type: Boolean, default: true },

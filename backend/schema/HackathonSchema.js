@@ -44,7 +44,8 @@ const HackathonSchema = new Schema({
   problemStatements: [
     {
       statement: { type: String, required: true },
-      type: { type: String, required: true }
+      type: { type: String, required: true },
+      assignmentMode: { type: String, enum: ['open', 'assigned'], default: 'open' } // New field
     }
   ],
   problemStatementTypes: [String], // <-- NEW FIELD
@@ -61,7 +62,8 @@ const HackathonSchema = new Schema({
     type: { type: String }, // <-- Added type field for round type
     description: { type: String },
     startDate: { type: Date },
-    endDate: { type: Date }
+    endDate: { type: Date },
+    assignmentMode: { type: String, enum: ['open', 'assigned'], default: 'open' } // New field
   }],
 
   // Track which participants/teams advance per round

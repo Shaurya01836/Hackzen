@@ -12,6 +12,15 @@ router.get('/hackathons/:hackathonId/judge-assignments', protect, isOrganizerOrA
 router.put('/judge-assignments/:assignmentId', protect, isOrganizerOrAdmin, judgeManagementController.updateJudgeAssignment);
 router.delete('/judge-assignments/:assignmentId', protect, isOrganizerOrAdmin, judgeManagementController.removeJudgeAssignment);
 
+// Assign teams to a judge assignment
+router.post('/judge-assignments/:assignmentId/assign-teams', protect, isOrganizerOrAdmin, judgeManagementController.assignTeamsToJudge);
+
+// Set assignment mode for a round or problem statement
+router.post('/hackathons/:hackathonId/:type/:index/assignment-mode', protect, isOrganizerOrAdmin, judgeManagementController.setAssignmentMode);
+
+// Auto-distribute teams among judges
+router.post('/hackathons/:hackathonId/:type/:index/auto-distribute', protect, isOrganizerOrAdmin, judgeManagementController.autoDistributeTeams);
+
 // 🎯 Judge Availability and Permissions
 router.get('/hackathons/:hackathonId/problem-statements/:problemStatementId/available-judges', protect, isOrganizerOrAdmin, judgeManagementController.getAvailableJudges);
 
