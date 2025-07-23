@@ -802,8 +802,19 @@ export default function JudgeManagement({ hackathonId }) {
                         }
                         return (
                           <tr key={score._id} className="border-b">
-                            <td className="p-2 border">{score.project?.team?.name || "-"}</td>
-                            <td className="p-2 border">{score.problemStatement || "-"}</td>
+                            <td className="p-2 border">
+                              {/* Show all member names if available, else team name, else "-" */}
+                              {score.team?.name ||
+                               (score.team?.members
+                                 ? score.team.members.map(m => m.name || m.email).join(", ")
+                                 : "-")}
+                            </td>
+                            <td className="p-2 border">
+                              {/* Show statement if object, else string, else "-" */}
+                              {typeof score.problemStatement === "object"
+                                ? score.problemStatement?.statement || "-"
+                                : score.problemStatement || "-"}
+                            </td>
                             <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
                             <td className="p-2 border">{avgScore}</td>
                             <td className="p-2 border">
@@ -1149,16 +1160,8 @@ export default function JudgeManagement({ hackathonId }) {
         </TabsContent>
       </Tabs>
 
-      {/* Example integration for demonstration, replace with real projectId as needed */}
-      {/* <ProjectScoresList projectId={hackathon?.problemStatements?.[0]?._id || ''} /> */}
-
-      {/* For demonstration, add a section at the bottom: */}
-      {hackathon?.problemStatements?.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-2">Demo: Project Scores Table</h2>
-          <ProjectScoresList projectId={hackathon.problemStatements[0]._id} />
-        </div>
-      )}
+      
+      
     </div>
   );
 } 

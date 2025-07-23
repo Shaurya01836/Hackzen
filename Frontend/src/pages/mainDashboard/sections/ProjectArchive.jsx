@@ -24,6 +24,7 @@ import { io } from "socket.io-client";
 
 export function ProjectArchive() {
   const navigate = useNavigate();
+  const { hackathonId } = useParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedProject, setSelectedProject] = useState(null);
@@ -159,6 +160,7 @@ export function ProjectArchive() {
         project={selectedProject}
         onBack={handleBackToProjects}
         backButtonLabel="Back to Project Archive"
+        fallbackHackathonId={hackathonId}
       />
     );
   }

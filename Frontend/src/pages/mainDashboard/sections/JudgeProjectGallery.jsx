@@ -8,16 +8,19 @@ export default function JudgeProjectGallery() {
   const { hackathonId } = useParams();
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [selectedType, setSelectedType] = useState("");
 
   // Handler for clicking a project card
-  const handleProjectClick = (project) => {
+  const handleProjectClick = ({ project, submission }) => {
     setSelectedProject(project);
+    setSelectedSubmission(submission);
   };
 
   // Handler for back button in ProjectDetail
   const handleBackToGallery = () => {
     setSelectedProject(null);
+    setSelectedSubmission(null);
   };
 
   // Handler for dropdown change
@@ -29,10 +32,18 @@ export default function JudgeProjectGallery() {
     <div className="max-w-7xl mx-auto w-full p-6">
       {!selectedProject ? (
         <>
-          <Button variant="outline" onClick={() => navigate(-1)} className="mb-4">Back</Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate(-1)}
+            className="mb-4"
+          >
+            Back
+          </Button>
           <h1 className="text-2xl font-bold mb-6">Project Gallery</h1>
           <div className="mb-4">
-            <label htmlFor="typeDropdown" className="mr-2 font-medium">Filter by Type:</label>
+            <label htmlFor="typeDropdown" className="mr-2 font-medium">
+              Filter by Type:
+            </label>
             <select
               id="typeDropdown"
               value={selectedType}
@@ -46,11 +57,21 @@ export default function JudgeProjectGallery() {
               <option value="demo">Demo</option>
             </select>
           </div>
-          <HackathonProjectsGallery hackathonId={hackathonId} onProjectClick={handleProjectClick} selectedType={selectedType} />
+          <HackathonProjectsGallery
+            hackathonId={hackathonId}
+            onProjectClick={handleProjectClick}
+            selectedType={selectedType}
+          />
         </>
       ) : (
-        <ProjectDetail project={selectedProject} onBack={handleBackToGallery} backButtonLabel="Back to Project Gallery" />
+        <ProjectDetail
+          project={selectedProject}
+          submission={selectedSubmission}
+          onBack={handleBackToGallery}
+          backButtonLabel="Back to Project Gallery"
+          fallbackHackathonId={hackathonId}
+        />
       )}
     </div>
   );
-} 
+}

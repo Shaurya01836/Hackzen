@@ -50,6 +50,7 @@ import axios from "axios";
 
 export function ProjectDetail({
   project,
+  submission, // require submission object
   onBack,
   backButtonLabel,
   hideBackButton = false,
@@ -293,7 +294,7 @@ export function ProjectDetail({
               </div>
             </CardContent>
           </Card>
-          {user?.role === "judge" && (
+          {user?.role === "judge" && submission && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
@@ -308,8 +309,7 @@ export function ProjectDetail({
                   <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
                 </div>
                 <JudgeScoreForm
-                  projectId={project._id}
-                  hackathonId={project.hackathon?._id}
+                  submissionId={submission._id}
                   onSubmitted={() => {
                     toast({ title: "✅ Score Submitted", duration: 2000 });
                   }}
@@ -915,35 +915,30 @@ export function ProjectDetail({
                 </Card>
               )}
 
-              {user?.role === "judge" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
-                      <Award className="w-4 h-4 text-yellow-500" /> Judge
-                      Evaluation
-                    </CardTitle>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Score this project based on the hackathon criteria. Your
-                      feedback helps determine the winners!
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Progress bar placeholder for visual feedback */}
-                    <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
-                      {/* You can connect this to actual progress if available */}
-                      <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
-                    </div>
-                    <JudgeScoreForm
-                      projectId={project._id}
-                      hackathonId={project.hackathon?._id}
-                      onSubmitted={() => {
-                        toast({ title: "✅ Score Submitted", duration: 2000 });
-                      }}
-                    />
-                    {/* Enhanced submit button inside JudgeScoreForm is recommended for full effect */}
-                  </CardContent>
-                </Card>
-              )}
+{user?.role === "judge" && submission && (
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+        <Award className="w-4 h-4 text-yellow-500" /> Judge Evaluation
+      </CardTitle>
+      <p className="text-xs text-gray-500 mt-1">
+        Score this project based on the hackathon criteria. Your feedback helps determine the winners!
+      </p>
+    </CardHeader>
+    <CardContent>
+      <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
+        <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
+      </div>
+      <JudgeScoreForm
+        submissionId={submission._id}
+        onSubmitted={() => {
+          toast({ title: "✅ Score Submitted", duration: 2000 });
+        }}
+      />
+    </CardContent>
+  </Card>
+)}
+
             </div>
           </div>
         </Tabs>
