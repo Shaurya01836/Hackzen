@@ -7,6 +7,7 @@ const HackathonRegistration = require('../model/HackathonRegistrationModel');
 const nodemailer = require('nodemailer');
 const RoleInvite = require('../model/RoleInviteModel');
 const JudgeAssignment = require('../model/JudgeAssignmentModel');
+const Notification = require('../model/NotificationModel');
 
 // POST /api/team-invites
 const createInvite = async (req, res) => {
@@ -55,6 +56,21 @@ const createInvite = async (req, res) => {
 
     if (!hackathon && !project) {
       return res.status(404).json({ error: 'Hackathon or project not found' });
+    }
+
+    // === Create in-app notification for team invite ===
+    if (user) {
+      const notificationMessage = `${inviter.name} invited you to join ${team.name} in ${hackathon ? hackathon.title : project.title}`;
+      await Notification.create({
+        type: 'team-invite',
+        sender: inviter._id,
+        recipient: user._id,
+        team: team._id,
+        hackathon: hackathon ? hackathon._id : undefined,
+        message: notificationMessage,
+        status: 'pending',
+        link: `/team/invites/${invite._id}`
+      });
     }
 
     const inviteLink = `http://localhost:5173/invite/${invite._id}`;
@@ -179,7 +195,17 @@ const respondToInvite = async (req, res) => {
     
     await invite.save();
 
+    // === Update notification status for this invite if declined ===
     if (status === 'declined') {
+      await Notification.findOneAndUpdate(
+        {
+          type: 'team-invite',
+          recipient: userId,
+          team: invite.team,
+          status: 'pending'
+        },
+        { $set: { status: 'declined' } }
+      );
       return res.json({ message: 'You have declined the invitation.' });
     }
 
@@ -322,6 +348,17 @@ const acceptInviteById = async (req, res) => {
       await team.save();
     }
 
+    // === Update notification status for this invite ===
+    await Notification.findOneAndUpdate(
+      {
+        type: 'team-invite',
+        recipient: userId,
+        team: team._id,
+        status: 'pending'
+      },
+      { $set: { status: 'accepted' } }
+    );
+
     res.json({ message: 'Invite accepted and user added to team. Please complete registration.' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to accept invite', details: err.message });
@@ -409,8 +446,23 @@ const getInviteById = async (req, res) => {
     if (!invite) {
       return res.status(404).json({ error: 'Invite not found' });
     }
-    
-    res.json(invite);
+
+    // Determine userId for registration check
+    let userId = req.user?._id;
+    if (!userId && invite.invitedUser) userId = invite.invitedUser;
+    // If still no userId, try to find by invitedEmail
+    if (!userId && invite.invitedEmail) {
+      const User = require('../model/UserModel');
+      const user = await User.findOne({ email: invite.invitedEmail });
+      if (user) userId = user._id;
+    }
+    let isRegistered = false;
+    if (userId && invite.hackathon) {
+      const reg = await HackathonRegistration.findOne({ hackathonId: invite.hackathon._id, userId });
+      isRegistered = !!reg;
+    }
+
+    res.json({ ...invite.toObject(), isRegistered });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch invite', details: err.message });
   }

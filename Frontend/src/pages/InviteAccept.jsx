@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
@@ -16,6 +16,7 @@ function getUserFromStorage() {
 
 export function InviteAccept() {
   const { inviteId } = useParams();
+  const location = useLocation();
   const [status, setStatus] = useState("loading");
   const [message, setMessage] = useState("");
   const [inviteData, setInviteData] = useState(null);
@@ -56,6 +57,8 @@ export function InviteAccept() {
       const invite = await inviteRes.json();
       setInviteData(invite);
       const userObj = getUserFromStorage();
+      const searchParams = new URLSearchParams(location.search);
+      const forceRegister = searchParams.get('register') === '1';
       if (!userObj) {
         setShowLoginModal(true);
         setShowAcceptModal(false);
@@ -69,8 +72,16 @@ export function InviteAccept() {
         setMessage(`You are logged in as ${userObj.email}. Please log out and log in as ${invite.invitedEmail} to accept this invite.`);
         return;
       }
-      // Already accepted or already a member
-      if (invite.status === 'accepted' || (invite.team && invite.team.members && invite.team.members.some(m => m.email === userObj.email))) {
+      // If already accepted and forceRegister is set, show registration form only if not already registered
+      if (invite.status === 'accepted' && forceRegister && invite.isRegistered === false) {
+        setShowLoginModal(false);
+        setShowAcceptModal(false);
+        setShowRegistrationForm(true);
+        setStatus("register");
+        return;
+      }
+      // Already accepted or already a member, but NOT if forceRegister is set
+      if (!forceRegister && (invite.status === 'accepted' || (invite.team && invite.team.members && invite.team.members.some(m => m.email === userObj.email)))) {
         setShowLoginModal(false);
         setShowAcceptModal(false);
         setStatus("accepted");
@@ -85,7 +96,7 @@ export function InviteAccept() {
       setStatus("error");
       setMessage("❌ Failed to process invitation.");
     }
-  }, [inviteId]);
+  }, [inviteId, location.search]);
 
   useEffect(() => {
     checkInvite();

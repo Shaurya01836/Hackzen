@@ -131,6 +131,7 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
   return (
     <BaseModal
       title="Invite Team Member"
+      description="Enter the email address of the person you want to invite to your team. They will receive an email and, if they already have an account, an in-app notification."
       open={show}
       onOpenChange={handleClose}
       content={

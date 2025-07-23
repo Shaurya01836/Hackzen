@@ -12,7 +12,8 @@ router.get('/me', protect, controller.getMyNotifications);
 
 // ✅ Mark a notification as read
 router.put('/:id/read', protect, controller.markAsRead);
-
+// ✅ Mark a notification as unread
+router.put('/:id/unread', protect, controller.markAsUnread);
 // ❌ Delete a notification
 router.delete('/:id', protect, controller.deleteNotification);
 

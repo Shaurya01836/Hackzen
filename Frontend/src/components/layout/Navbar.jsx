@@ -14,28 +14,29 @@ import { InteractiveHoverButton } from "../Magic UI/HoverButton";
 import { AnimatedList } from "../Magic UI/AnimatedList";
 import SignOutModal from "../SignOutModal";
 import useDropdownTimeout from "../../hooks/useDropdownTimeout";
+import { useToast } from '../../hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../DashboardUI/dialog';
+import NotificationBell from '../DashboardUI/NotificationBell';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [showNotificationDropdown, setShowNotificationDropdown] =
-    useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showHackathonDropdown, setShowHackathonDropdown] = useState(false);
   const [showResourceDropdown, setShowResourceDropdown] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null, notification: null });
+  const [successDialog, setSuccessDialog] = useState({ open: false, message: '' });
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
   // Check URL search parameters for modal state
   const searchParams = new URLSearchParams(location.search);
   const showLogin = searchParams.get("modal") === "login";
   const showRegister = searchParams.get("modal") === "register";
 
-  const { handleMouseEnter: notifEnter, handleMouseLeave: notifLeave } =
-    useDropdownTimeout(setShowNotificationDropdown);
   const { handleMouseEnter: profileEnter, handleMouseLeave: profileLeave } =
     useDropdownTimeout(setShowProfileDropdown);
   const { handleMouseEnter: hackathonEnter, handleMouseLeave: hackathonLeave } =
@@ -72,23 +73,78 @@ function Navbar() {
     navigate("/");
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/notifications/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data) {
-        setNotifications(data.filter((n) => !n.read));
+  // Accept team invite
+  const handleAcceptInvite = (notification) => {
+    setConfirmDialog({ open: true, action: 'accept', notification });
+  };
+
+  // Decline team invite
+  const handleDeclineInvite = (notification) => {
+    setConfirmDialog({ open: true, action: 'decline', notification });
+  };
+
+  const handleConfirmAction = async () => {
+    const { action, notification } = confirmDialog;
+    if (!notification) return;
+    setConfirmDialog({ open: false, action: null, notification: null });
+    if (action === 'accept') {
+      try {
+        const token = localStorage.getItem('token');
+        const inviteId = notification.link.split('/').pop();
+        const res = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/accept`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast({ title: 'Invite Accepted', description: data.message || 'You’ve joined the team!' });
+          // Immediately redirect to registration form
+          navigate(`/invite/${inviteId}?register=1`);
+        } else {
+          toast({ title: 'Error', description: data.error || 'Failed to accept invite.' });
+        }
+      } catch (err) {
+        toast({ title: 'Error', description: 'Failed to accept invite.' });
       }
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
+    } else if (action === 'decline') {
+      try {
+        const token = localStorage.getItem('token');
+        const inviteId = notification.link.split('/').pop();
+        const res = await fetch(`http://localhost:3000/api/team-invites/${inviteId}/respond`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: 'declined' })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setSuccessDialog({ open: true, message: data.message || 'You have declined the invite.' });
+        } else {
+          toast({ title: 'Error', description: data.error || 'Failed to decline invite.' });
+        }
+      } catch (err) {
+        toast({ title: 'Error', description: 'Failed to decline invite.' });
+      }
+    }
+  };
+
+  const handleSuccessDialogClose = () => {
+    setSuccessDialog({ open: false, message: '' });
+    if (confirmDialog.action === 'accept' && confirmDialog.notification) {
+      // Extract inviteId from notification link
+      const inviteId = confirmDialog.notification.link.split('/').pop();
+      navigate(`/invite/${inviteId}?register=1`);
+    } else {
+      navigate('/dashboard/my-hackathons');
     }
   };
 
   useEffect(() => {
-    if (user) fetchNotifications();
+    if (user) {
+      // fetchNotifications(); // Removed as per edit hint
+    }
   }, [user]);
 
   return (
@@ -201,52 +257,8 @@ function Navbar() {
 
           {/* Right Section */}
           <div className="hidden md:flex items-center gap-4">
-            {/* Notifications */}
-            <div
-              className="relative"
-              onMouseEnter={notifEnter}
-              onMouseLeave={notifLeave}
-            >
-              <button>
-                <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-              {showNotificationDropdown && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl z-50 border border-gray-200 bg-white/20 backdrop-blur-lg text-sm overflow-hidden">
-                  <div className="p-4 border-b border-black/10 font-semibold text-lg">
-                    Notifications
-                  </div>
-                  <div className="max-h-80 min-h-80 overflow-y-auto px-2 py-1 scrollbar-hide">
-                    {notifications.length === 0 ? (
-                      <div className="p-4 text-center text-gray-300">
-                        No new notifications
-                      </div>
-                    ) : (
-                      <AnimatedList>
-                        {[...notifications].map((n) => (
-                          <div
-                            key={n._id}
-                            className="group bg-white/30 rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%]"
-                          >
-                            <div className="font-medium text-black ">
-                              {n.message}
-                            </div>
-                            <div className="text-xs text-gray-700 mt-1">
-                              {new Date(n.createdAt).toLocaleString()}
-                            </div>
-                          </div>
-                        ))}
-                      </AnimatedList>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
+            {/* Notification Bell */}
+            <NotificationBell />
             {/* Auth Buttons */}
             {!user ? (
               <>
@@ -417,6 +429,37 @@ function Navbar() {
           </div>
         )}
       </nav>
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={open => setConfirmDialog({ ...confirmDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              {confirmDialog.action === 'accept'
+                ? 'Do you want to accept this team invite? You will join the team.'
+                : 'Do you want to decline this team invite? You will not be able to join this team unless re-invited.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-4 justify-end mt-4">
+            <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setConfirmDialog({ open: false, action: null, notification: null })}>Cancel</button>
+            <button className={`px-4 py-2 rounded text-white ${confirmDialog.action === 'accept' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`} onClick={handleConfirmAction}>
+              {confirmDialog.action === 'accept' ? 'Accept' : 'Decline'}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Success Dialog */}
+      <Dialog open={successDialog.open} onOpenChange={handleSuccessDialogClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Success</DialogTitle>
+            <DialogDescription>{successDialog.message}</DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-4">
+            <button className="px-4 py-2 bg-indigo-600 text-white rounded" onClick={handleSuccessDialogClose}>Go to My Hackathons</button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

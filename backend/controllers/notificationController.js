@@ -24,6 +24,7 @@ exports.getMyNotifications = async (req, res) => {
     // 1. Get user-specific notifications
     const personal = await Notification.find({ recipient: userId })
       .sort({ createdAt: -1 })
+      .populate('sender', 'name email role')
       .lean();
 
     // 2. Get relevant announcements as notifications
@@ -62,6 +63,22 @@ exports.markAsRead = async (req, res) => {
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.id, recipient: req.user._id },
       { read: true },
+      { new: true }
+    );
+
+    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+
+    res.json(notification);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update notification', details: err.message });
+  }
+};
+
+exports.markAsUnread = async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.id, recipient: req.user._id },
+      { read: false },
       { new: true }
     );
 
