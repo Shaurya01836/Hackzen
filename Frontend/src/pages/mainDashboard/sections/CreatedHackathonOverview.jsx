@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "../../../components/CommonUI/badge";
 import { Button } from "../../../components/CommonUI/button";
 import {
@@ -28,6 +28,7 @@ import {
   LucideJoystick,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import JudgeManagement from './JudgeManagement'; // adjust path
 
 export default function CreatedHackathonOverview({
   hackathon,
@@ -50,10 +51,17 @@ export default function CreatedHackathonOverview({
   // onFetchSponsorProposals,
 }) {
   const navigate = useNavigate();
+  const [showJudgeManagement, setShowJudgeManagement] = useState(false);
 
   const handleBack = () => {
     navigate('/dashboard/created-hackathons');
   };
+
+  if (showJudgeManagement) {
+    return (
+      <JudgeManagement hackathonId={hackathon._id} hideHackathonSelector={true} onBack={() => setShowJudgeManagement(false)} />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -151,7 +159,10 @@ export default function CreatedHackathonOverview({
                     <p className="text-xs text-gray-400">Click to view submissions</p>
                   </ACardContent>
                 </ACard>
-                <ACard className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]" onClick={onShowSubmissionsView}>
+                <ACard
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                  onClick={() => setShowJudgeManagement(true)}
+                >
                   <ACardContent className="pt-6 flex flex-col items-center justify-center py-8">
                     <div className="p-3 bg-green-50 rounded-full mb-4">
                       <LucideJoystick className="w-8 h-8 text-green-500" />

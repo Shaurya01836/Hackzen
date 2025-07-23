@@ -53,7 +53,7 @@ import ProjectScoresList from '../../../components/CommonUI/ProjectScoresList';
 
 import axios from "axios";
 
-export default function JudgeManagement({ hackathonId }) {
+export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack }) {
   const { token } = useAuth();
   const [hackathon, setHackathon] = useState(null);
   const [hackathons, setHackathons] = useState([]);
@@ -392,32 +392,39 @@ export default function JudgeManagement({ hackathonId }) {
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Judge Management
           </h1>
-          <div className="flex items-center gap-4 mt-2">
-            <Label htmlFor="hackathon-select" className="text-sm font-medium text-gray-700">
-              Select Hackathon:
-            </Label>
-            <Select
-              value={selectedHackathonId || ""}
-              onValueChange={(value) => setSelectedHackathonId(value)}
-            >
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Choose a hackathon" />
-              </SelectTrigger>
-              <SelectContent>
-                {hackathons.map((hack) => (
-                  <SelectItem key={hack._id} value={hack._id}>
-                    {hack.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!hideHackathonSelector && (
+            <div className="flex items-center gap-4 mt-2">
+              <Label htmlFor="hackathon-select" className="text-sm font-medium text-gray-700">
+                Select Hackathon:
+              </Label>
+              <Select
+                value={selectedHackathonId || ""}
+                onValueChange={(value) => setSelectedHackathonId(value)}
+              >
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Choose a hackathon" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hackathons.map((hack) => (
+                    <SelectItem key={hack._id} value={hack._id}>
+                      {hack.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           {hackathon && (
             <p className="text-base text-gray-500 mt-1">
               Managing judges for: <span className="font-medium">{hackathon.title}</span>
             </p>
           )}
         </div>
+        {hideHackathonSelector && typeof onBack === 'function' && (
+          <Button variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        )}
         {selectedHackathonId && (
           <div className="flex gap-3">
             <Dialog open={showAddPSDialog} onOpenChange={setShowAddPSDialog}>
