@@ -74,125 +74,67 @@ exports.assignJudges = async (req, res) => {
     const results = [];
 
     for (const assignment of judgeAssignments) {
-      let { judgeEmail, judgeType, sponsorCompany, problemStatementIds, roundIndices } = assignment;
+      let { judgeEmail, judgeType, sponsorCompany, canJudgeSponsoredPS, maxSubmissionsPerJudge } = assignment;
 
-      // If problemStatementIds is empty or not provided, assign all eligible PS
-      if (!Array.isArray(problemStatementIds) || problemStatementIds.length === 0) {
-        if (judgeType === 'platform') {
-          // All general problem statements
-          problemStatementIds = hackathon.problemStatements
-            .filter(ps => ps.type === 'general')
-            .map(ps => ps._id.toString());
-        } else if (judgeType === 'sponsor') {
-          // All sponsored PS for their company
-          problemStatementIds = hackathon.problemStatements
-            .filter(ps => ps.type === 'sponsored' && ps.sponsorCompany === sponsorCompany)
-            .map(ps => ps._id.toString());
-        } else if (judgeType === 'hybrid') {
-          // All problem statements
-          problemStatementIds = hackathon.problemStatements.map(ps => ps._id.toString());
-        }
-      }
-
-      // Validate judge type and permissions
-      const validationResult = validateJudgeAssignment(
-        judgeType,
-        sponsorCompany,
-        problemStatementIds,
-        hackathon.problemStatements
-      );
-
-      if (!validationResult.isValid) {
+      // Only create a JudgeAssignment for the judge, no assignedProblemStatements or assignedRounds
+      // Check if assignment already exists for this judge and hackathon
+      const existing = await JudgeAssignment.findOne({
+        hackathon: hackathonId,
+        'judge.email': judgeEmail
+      });
+      if (existing) {
         results.push({
           judgeEmail,
           success: false,
-          error: validationResult.error
+          error: 'Judge already invited to this hackathon'
         });
         continue;
       }
+      const judgeAssignment = await JudgeAssignment.create({
+        hackathon: hackathonId,
+        judge: {
+          email: judgeEmail,
+          type: judgeType,
+          sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
+          canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && canJudgeSponsoredPS)
+        },
+        assignedProblemStatements: [],
+        assignedRounds: [],
+        permissions: {
+          canJudgeGeneralPS: judgeType !== 'sponsor',
+          canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || canJudgeSponsoredPS,
+          canJudgeAllRounds: true,
+          maxSubmissionsPerJudge: maxSubmissionsPerJudge || 50
+        },
+        assignedBy: req.user.id,
+        status: 'pending'
+      });
 
-      // For each problem statement, create a separate assignment if not already exists
-      for (const psId of problemStatementIds) {
-        // Check if assignment already exists for this judge, hackathon, and problem statement
-        const existing = await JudgeAssignment.findOne({
-          hackathon: hackathonId,
-          'judge.email': judgeEmail,
-          'assignedProblemStatements.problemStatementId': psId
-        });
-        if (existing) {
-          results.push({
-            judgeEmail,
-            problemStatementId: psId,
-            success: false,
-            error: 'Assignment already exists for this problem statement'
-          });
-          continue;
-        }
-        const ps = hackathon.problemStatements.find(p => p._id.toString() === psId);
-        const judgeAssignment = await JudgeAssignment.create({
-          hackathon: hackathonId,
-          judge: {
-            email: judgeEmail,
-            type: judgeType,
-            sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
-            canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && assignment.canJudgeSponsoredPS)
-          },
-          assignedProblemStatements: [{
-            problemStatementId: psId,
-            problemStatement: ps.statement,
-            type: ps.type,
-            sponsorCompany: ps.sponsorCompany,
-            isAssigned: true
-          }],
-          assignedRounds: Array.isArray(roundIndices) && roundIndices.length > 0 ? roundIndices.map((roundIndex, idx) => {
-            const round = hackathon.rounds[roundIndex];
-            return {
-              roundId: round?._id?.toString() || null,
-              roundName: round?.name || `Round ${roundIndex + 1}`,
-              roundType: round?.type || 'project',
-              isAssigned: true
-            };
-          }) : [],
-          permissions: {
-            canJudgeGeneralPS: judgeType !== 'sponsor',
-            canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || assignment.canJudgeSponsoredPS,
-            canJudgeAllRounds: true,
-            maxSubmissionsPerJudge: assignment.maxSubmissionsPerJudge || 50
-          },
-          assignedBy: req.user.id,
-          status: 'pending'
-        });
-
-        // === Unified RoleInvite System ===
-        // Check if RoleInvite exists for this judge/hackathon/role
-        let invite = await RoleInvite.findOne({
+      // === Unified RoleInvite System ===
+      let invite = await RoleInvite.findOne({
+        email: judgeEmail,
+        hackathon: hackathonId,
+        role: 'judge',
+        status: 'pending'
+      });
+      if (!invite) {
+        const token = crypto.randomBytes(32).toString('hex');
+        invite = await RoleInvite.create({
           email: judgeEmail,
           hackathon: hackathonId,
           role: 'judge',
-          status: 'pending'
+          token
         });
-        if (!invite) {
-          // Generate invite token
-          const token = crypto.randomBytes(32).toString('hex');
-          invite = await RoleInvite.create({
-            email: judgeEmail,
-            hackathon: hackathonId,
-            role: 'judge',
-            token
-          });
-          // Send invite email using the unified system
-          await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
-        } else {
-          console.log(`Judge invite already exists for: ${judgeEmail}`);
-        }
-
-        results.push({
-          judgeEmail,
-          problemStatementId: psId,
-          success: true,
-          assignmentId: judgeAssignment._id
-        });
+        await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
+      } else {
+        console.log(`Judge invite already exists for: ${judgeEmail}`);
       }
+
+      results.push({
+        judgeEmail,
+        success: true,
+        assignmentId: judgeAssignment._id
+      });
     }
 
     res.status(200).json({
@@ -749,6 +691,84 @@ exports.autoDistributeTeams = async (req, res) => {
     console.error('Error auto-distributing teams:', error);
     res.status(500).json({ message: 'Failed to auto-distribute teams' });
   }
+};
+
+// Assign rounds to a judge assignment (additive)
+exports.assignRoundsToJudge = async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { roundIds } = req.body; // Array of round _id strings
+
+    const assignment = await JudgeAssignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    // Organizer permission check
+    const hackathon = await Hackathon.findById(assignment.hackathon);
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign rounds' });
+    }
+
+    // Validate roundIds
+    if (!Array.isArray(roundIds)) {
+      return res.status(400).json({ message: 'roundIds must be an array' });
+    }
+    const validRounds = hackathon.rounds.filter(r => roundIds.includes(r._id.toString()));
+    // Merge: keep only selected rounds, remove unselected, add new
+    assignment.assignedRounds = validRounds.map((r, idx) => ({
+      roundIndex: hackathon.rounds.findIndex(rr => rr._id.toString() === r._id.toString()),
+      roundId: r._id.toString(),
+      roundName: r.name || `Round #${idx + 1}`,
+      roundType: r.type || 'project',
+      isAssigned: true
+    }));
+    // Do NOT touch assignedProblemStatements
+    await assignment.save();
+    res.status(200).json({ message: 'Rounds assigned to judge', assignment });
+  } catch (error) {
+    console.error('Error assigning rounds to judge:', error);
+    res.status(500).json({ message: 'Failed to assign rounds to judge' });
+  }
+};
+
+// Assign problem statements to a judge assignment (additive)
+exports.assignProblemStatementsToJudge = async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { problemStatementIds } = req.body; // Array of PS _id strings
+
+    const assignment = await JudgeAssignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    // Organizer permission check
+    const hackathon = await Hackathon.findById(assignment.hackathon);
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign problem statements' });
+    }
+
+    // Validate problemStatementIds
+    if (!Array.isArray(problemStatementIds)) {
+      return res.status(400).json({ message: 'problemStatementIds must be an array' });
+    }
+    const validPS = hackathon.problemStatements.filter(ps => problemStatementIds.includes(ps._id.toString()));
+    // Merge: keep only selected PS, remove unselected, add new
+    assignment.assignedProblemStatements = validPS.map(ps => ({
+      problemStatementId: ps._id.toString(),
+      problemStatement: ps.statement,
+      type: ps.type,
+      sponsorCompany: ps.sponsorCompany,
+      isAssigned: true
+    }));
+    // Do NOT touch assignedRounds
+    await assignment.save();
+    res.status(200).json({ message: 'Problem statements assigned to judge', assignment });
+  } catch (error) {
+    console.error('Error assigning problem statements to judge:', error);
+    res.status(500).json({ message: 'Failed to assign problem statements to judge' });
+  }
 };
 
 // 🔧 Helper Functions

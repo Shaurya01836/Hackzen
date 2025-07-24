@@ -3,6 +3,7 @@ const Hackathon = require("../model/HackathonModel");
 const Project = require("../model/ProjectModel");
 const Submission = require("../model/SubmissionModel");
 const Team = require('../model/TeamModel');
+const JudgeAssignment = require("../model/JudgeAssignmentModel");
 
 exports.saveHackathonForm = async (req, res) => {
   try {
@@ -405,5 +406,36 @@ exports.viewSubmission = async (req, res) => {
     res.status(200).json({ views: submission.views });
   } catch (err) {
     res.status(500).json({ message: 'Error incrementing view', error: err.message });
+  }
+};
+exports.getSubmissionsForJudge = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const judgeId = req.user.id;
+
+    // Find all team assignments for this judge in this hackathon
+    const assignments = await JudgeAssignment.find({ hackathonId, judge: judgeId });
+    const assignedTeamIds = assignments.flatMap(a => a.teamIds || []);
+
+    // If no teams assigned
+    if (assignedTeamIds.length === 0) {
+      return res.status(200).json({ submissions: [] });
+    }
+
+    // Fetch submissions for the assigned teams
+    const submissions = await Submission.find({
+      hackathonId,
+      team: { $in: assignedTeamIds },
+      status: "submitted"
+    })
+      .populate("projectId")
+      .populate("team")
+      .populate("submittedBy");
+
+    return res.status(200).json({ submissions });
+
+  } catch (error) {
+    console.error("Error in getSubmissionsForJudge:", error);
+    return res.status(500).json({ message: "Failed to fetch submissions." });
   }
 };

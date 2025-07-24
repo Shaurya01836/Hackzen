@@ -34,6 +34,7 @@ const JudgeAssignmentSchema = new Schema({
   // Round assignments (for multi-round hackathons)
   assignedRounds: [{
     roundIndex: { type: Number, required: true },
+    roundId: { type: String }, // Add roundId for robust filtering
     roundName: { type: String, required: true },
     roundType: { type: String, required: true }, // 'project', 'pitch', 'quiz', etc.
     isAssigned: { type: Boolean, default: true }

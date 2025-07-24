@@ -15,6 +15,11 @@ router.delete('/judge-assignments/:assignmentId', protect, isOrganizerOrAdmin, j
 // Assign teams to a judge assignment
 router.post('/judge-assignments/:assignmentId/assign-teams', protect, isOrganizerOrAdmin, judgeManagementController.assignTeamsToJudge);
 
+// Assign rounds to a judge assignment
+router.post('/judge-assignments/:assignmentId/assign-rounds', protect, isOrganizerOrAdmin, judgeManagementController.assignRoundsToJudge);
+// Assign problem statements to a judge assignment
+router.post('/judge-assignments/:assignmentId/assign-problem-statements', protect, isOrganizerOrAdmin, judgeManagementController.assignProblemStatementsToJudge);
+
 // Set assignment mode for a round or problem statement
 router.post('/hackathons/:hackathonId/:type/:index/assignment-mode', protect, isOrganizerOrAdmin, judgeManagementController.setAssignmentMode);
 

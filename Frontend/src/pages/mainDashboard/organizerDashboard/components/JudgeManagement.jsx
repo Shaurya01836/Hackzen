@@ -57,6 +57,7 @@ import JudgeManagementOverview from './JudgeManagementOverview';
 import JudgeManagementProblemStatements from './JudgeManagementProblemStatements';
 import JudgeManagementJudges from './JudgeManagementJudges';
 import JudgeManagementAssignments from './JudgeManagementAssignments';
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack }) {
   const { token } = useAuth();
@@ -107,6 +108,9 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
   // Add state for teams and assignment mode loading
   const [teams, setTeams] = useState([]);
   const [assignmentModeLoading, setAssignmentModeLoading] = useState(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchHackathons();
@@ -266,7 +270,13 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            judgeAssignments: [newJudgeAssignment],
+            judgeAssignments: [{
+              judgeEmail: newJudgeAssignment.judgeEmail,
+              judgeType: newJudgeAssignment.judgeType,
+              sponsorCompany: newJudgeAssignment.sponsorCompany,
+              canJudgeSponsoredPS: newJudgeAssignment.canJudgeSponsoredPS,
+              maxSubmissionsPerJudge: newJudgeAssignment.maxSubmissionsPerJudge,
+            }],
           }),
         }
       );
@@ -440,6 +450,22 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
         return <Badge className="bg-gray-500 text-white">{status}</Badge>;
     }
   };
+
+  // Persist tab state in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab && tab !== activeTab) setActiveTab(tab);
+    // eslint-disable-next-line
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (activeTab !== params.get("tab")) {
+      params.set("tab", activeTab);
+      navigate({ search: params.toString() }, { replace: true });
+    }
+    // eslint-disable-next-line
+  }, [activeTab]);
 
   if (loadingHackathons) {
     return (
@@ -664,9 +690,9 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                       </DialogTrigger>
                       <DialogContent className="max-w-2xl">
                         <DialogHeader>
-                          <DialogTitle>Assign Judge</DialogTitle>
+                          <DialogTitle>Invite Judge</DialogTitle>
                           <DialogDescription>
-                            Assign a judge to problem statements and rounds.
+                            Invite a judge to your hackathon. You can assign them to rounds or problem statements later in the Assignments tab.
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
@@ -722,42 +748,6 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                               />
                             </div>
                           )}
-                          {newJudgeAssignment.judgeType === "platform" && (
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="canJudgeSponsoredPS"
-                                checked={newJudgeAssignment.canJudgeSponsoredPS}
-                                onChange={(e) =>
-                                  setNewJudgeAssignment({
-                                    ...newJudgeAssignment,
-                                    canJudgeSponsoredPS: e.target.checked,
-                                  })
-                                }
-                              />
-                              <Label htmlFor="canJudgeSponsoredPS">
-                                Can also judge sponsored problem statements
-                              </Label>
-                            </div>
-                          )}
-                          <div>
-                            <Label>Assign to Problem Statement(s) (optional)</Label>
-                            <MultiSelect
-                              options={hackathon?.problemStatements?.map(ps => ({
-                                value: ps._id,
-                                label: ps.statement,
-                              })) || []}
-                              value={newJudgeAssignment.problemStatementIds}
-                              onChange={ids => setNewJudgeAssignment(prev => ({
-                                ...prev,
-                                problemStatementIds: ids,
-                              }))}
-                              placeholder="Select problem statements (leave blank for all eligible)"
-                            />
-                            <small className="text-gray-500">Leave blank to assign to all eligible problem statements.</small>
-                          </div>
-
-
                           <div>
                             <Label htmlFor="maxSubmissions">Max Submissions per Judge</Label>
                             <Input
@@ -781,7 +771,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                             >
                               Cancel
                             </Button>
-                            <Button onClick={assignJudge}>Assign Judge</Button>
+                            <Button onClick={assignJudge}>Invite Judge</Button>
                           </div>
                         </div>
                       </DialogContent>
@@ -877,6 +867,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                   setSelectedTeamIds={setSelectedTeamIds}
                   assignTeamsToJudge={assignTeamsToJudge}
                   autoDistributeTeams={autoDistributeTeams}
+                  fetchJudgeAssignments={fetchJudgeAssignments}
                 />
               </TabsContent>
             </Tabs>
