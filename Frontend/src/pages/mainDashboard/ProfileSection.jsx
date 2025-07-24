@@ -182,6 +182,72 @@ export function ProfileSection({ viewUserId }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
+  // Move fetchUserProfile above useEffect
+  const fetchUserProfile = async () => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      const userId = storedUser ? JSON.parse(storedUser)._id : null;
+      const token = localStorage.getItem("token");
+
+      if (!userId || !token) {
+        console.warn("Missing user ID or token.");
+        return;
+      }
+
+      const res = await axios.get(`http://localhost:3000/api/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = res.data;
+
+      setEditForm({
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        location: data.location || "",
+        bio: data.bio || "",
+        website: data.website || "",
+        github: data.github || "",
+        linkedin: data.linkedin || "",
+        profileImage: data.profileImage || "",
+        bannerImage: data.bannerImage || "",
+        // New fields from CompleteProfile
+        gender: data.gender || "prefer-not-to-say",
+        userType: data.userType || "",
+        domain: data.domain || "",
+        course: data.course || "",
+        courseDuration: data.courseDuration || "",
+        collegeName: data.collegeName || "",
+        country: data.country || "",
+        city: data.city || "",
+        courseSpecialization: data.courseSpecialization || "",
+        companyName: data.companyName || "",
+        jobTitle: data.jobTitle || "",
+        yearsOfExperience: data.yearsOfExperience || "",
+        currentYear: data.currentYear || "",
+        skills: data.skills ? data.skills.join(", ") : "",
+        interests: data.interests ? data.interests.join(", ") : "",
+        twitter: data.twitter || "",
+        instagram: data.instagram || "",
+        portfolio: data.portfolio || "",
+        preferredHackathonTypes: data.preferredHackathonTypes
+          ? data.preferredHackathonTypes.join(", ")
+          : "",
+        teamSizePreference: data.teamSizePreference || "any",
+        telegram: data.telegram || "",
+      });
+
+      // Optional: update local context
+      const updatedUser = { ...data };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      login(updatedUser, token);
+    } catch (err) {
+      console.error("Failed to load user profile", err);
+    }
+  };
+
   // All useEffect hooks must be called at the top level
   useEffect(() => {
     const newView = getCurrentViewFromPath(location.pathname);
@@ -365,71 +431,6 @@ export function ProfileSection({ viewUserId }) {
       } else {
         console.error("Failed to fetch streaks:", err.message);
       }
-    }
-  };
-
-  const fetchUserProfile = async () => {
-    try {
-      const storedUser = localStorage.getItem("user");
-      const userId = storedUser ? JSON.parse(storedUser)._id : null;
-      const token = localStorage.getItem("token");
-
-      if (!userId || !token) {
-        console.warn("Missing user ID or token.");
-        return;
-      }
-
-      const res = await axios.get(`http://localhost:3000/api/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = res.data;
-
-      setEditForm({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        location: data.location || "",
-        bio: data.bio || "",
-        website: data.website || "",
-        github: data.github || "",
-        linkedin: data.linkedin || "",
-        profileImage: data.profileImage || "",
-        bannerImage: data.bannerImage || "",
-        // New fields from CompleteProfile
-        gender: data.gender || "prefer-not-to-say",
-        userType: data.userType || "",
-        domain: data.domain || "",
-        course: data.course || "",
-        courseDuration: data.courseDuration || "",
-        collegeName: data.collegeName || "",
-        country: data.country || "",
-        city: data.city || "",
-        courseSpecialization: data.courseSpecialization || "",
-        companyName: data.companyName || "",
-        jobTitle: data.jobTitle || "",
-        yearsOfExperience: data.yearsOfExperience || "",
-        currentYear: data.currentYear || "",
-        skills: data.skills ? data.skills.join(", ") : "",
-        interests: data.interests ? data.interests.join(", ") : "",
-        twitter: data.twitter || "",
-        instagram: data.instagram || "",
-        portfolio: data.portfolio || "",
-        preferredHackathonTypes: data.preferredHackathonTypes
-          ? data.preferredHackathonTypes.join(", ")
-          : "",
-        teamSizePreference: data.teamSizePreference || "any",
-        telegram: data.telegram || "",
-      });
-
-      // Optional: update local context
-      const updatedUser = { ...data };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      login(updatedUser, token);
-    } catch (err) {
-      console.error("Failed to load user profile", err);
     }
   };
 
