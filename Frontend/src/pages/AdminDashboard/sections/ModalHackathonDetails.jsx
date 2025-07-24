@@ -17,7 +17,7 @@ export default function ModalHackathonDetails({ isOpen, onClose, hackathon }) {
             <X className="w-5 h-5" />
           </button>
 
-          <HackathonDetails hackathon={hackathon} onBack={onClose} />
+          <HackathonDetails hackathon={hackathon} onClose={onClose} />
         </Dialog.Panel>
       </div>
     </Dialog>

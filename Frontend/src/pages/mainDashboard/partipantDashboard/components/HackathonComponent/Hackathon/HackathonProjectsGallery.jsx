@@ -52,7 +52,7 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
             submittedBy: s.submittedBy,
             submittedAt: s.submittedAt,
             pptFile: s.pptFile,
-            logo: { url: "/assets/default-banner.png" },
+            logo: { url: "/assets/ppt.png" },
             likes: s.likes || 0,
             views: s.views || 0,
             __submission: s, // ✅ attach itself as submission

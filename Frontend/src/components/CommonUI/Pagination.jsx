@@ -58,7 +58,8 @@ export function Pagination({
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  // Only hide pagination when there are no items at all
+  if (totalItems === 0) return null;
 
   return (
     <div className={`space-y-4 ${className}`}>

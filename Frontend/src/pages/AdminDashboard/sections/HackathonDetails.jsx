@@ -194,7 +194,15 @@ export function HackathonDetails({ hackathon, onClose }) {
                       <Card key={idx}>
                         <CardContent className="py-4">
                           <p className="font-medium">Problem {idx + 1}</p>
-                          <p className="text-gray-700">{problem}</p>
+                          <p className="text-gray-700">
+                            {typeof problem === 'string' ? problem : problem?.statement}
+                          </p>
+                          {problem?.type && (
+                            <p className="text-xs text-gray-500 mt-1">Type: {problem.type}</p>
+                          )}
+                          {problem?.assignmentMode && (
+                            <p className="text-xs text-gray-500 mt-1">Assignment: {problem.assignmentMode}</p>
+                          )}
                         </CardContent>
                       </Card>
                     ))

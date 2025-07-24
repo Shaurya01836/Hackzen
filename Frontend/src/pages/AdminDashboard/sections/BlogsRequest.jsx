@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import axios from "axios"
 
 import {
@@ -29,6 +29,7 @@ import {
 import { Search, Filter, Eye, Check, Clock, FileText, ActivityIcon } from "lucide-react"
 
 import ModalBlogDetails from "./ModalBlogDetails"
+import { Pagination } from "../../../components/CommonUI/Pagination";
 
 export function BlogManage() {
   const [articles, setArticles] = useState([])
@@ -36,6 +37,10 @@ export function BlogManage() {
   const [statusFilter, setStatusFilter] = useState("All")
   const [loading, setLoading] = useState(true)
   const [selectedBlog, setSelectedBlog] = useState(null)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -73,14 +78,35 @@ export function BlogManage() {
     }
   }
 
-  const filteredArticles = articles.filter(a => {
-    const matchesSearch =
-      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.author?.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus =
-      statusFilter === "All" || a.status === statusFilter.toLowerCase()
-    return matchesSearch && matchesStatus
-  })
+  // Memoize filtered articles to prevent unnecessary re-computation
+  const filteredArticles = useMemo(() => {
+    return articles.filter(a => {
+      const matchesSearch =
+        a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.author?.name.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus =
+        statusFilter === "All" || a.status === statusFilter.toLowerCase()
+      return matchesSearch && matchesStatus
+    })
+  }, [articles, searchTerm, statusFilter])
+
+  // Reset page when filters change, but not when data is updated
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Manual pagination calculation
+  const totalItems = filteredArticles.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + itemsPerPage);
+
+  // Ensure current page is valid
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const getStatusColor = status => {
     switch (status) {
@@ -142,83 +168,113 @@ export function BlogManage() {
         </DropdownMenu>
       </div>
 
-      <Card className="border shadow-sm">
+      <Card className="border shadow-sm min-h-[550px]">
         <CardHeader>
           <CardTitle className="text-black text-lg">
-            Articles ({filteredArticles.length})
+            Articles ({totalItems})
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-black">Author</TableHead>
-                <TableHead className="text-black">Title</TableHead>
-                <TableHead className="text-black">Status</TableHead>
-                <TableHead className="text-black">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredArticles.map(article => (
-                <TableRow key={article._id} className="hover:bg-gray-50">
-                  <TableCell className="text-black font-medium">
-                    {article.author?.name || "Anonymous"}
-                  </TableCell>
-                  <TableCell className="text-black font-medium">
-                    {article.title}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(article.status)}>
-                      {article.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <ActivityIcon className="w-4 h-4 text-black" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+        <CardContent className="flex flex-col justify-between min-h-[500px]">
+  {totalItems === 0 ? (
+    <div className="text-center py-8">
+      <div className="text-gray-500 text-lg">No articles found</div>
+      <div className="text-gray-400 text-sm mt-1">
+        Try adjusting your search or filter criteria
+      </div>
+    </div>
+  ) : (
+    <>
+      <div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-black w-12">#</TableHead>
+              <TableHead className="text-black">Author</TableHead>
+              <TableHead className="text-black">Title</TableHead>
+              <TableHead className="text-black">Status</TableHead>
+              <TableHead className="text-black">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedArticles.map((article, idx) => (
+              <TableRow key={article._id} className="hover:bg-gray-50">
+                <TableCell className="font-bold text-indigo-700 text-lg">
+                  {startIndex + idx + 1}
+                </TableCell>
+                <TableCell className="text-black font-medium">
+                  {article.author?.name || "Anonymous"}
+                </TableCell>
+                <TableCell className="text-black font-medium">
+                  {article.title}
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(article.status)}>
+                    {article.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <ActivityIcon className="w-4 h-4 text-black" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onClick={() => setSelectedBlog(article)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" /> View
+                      </DropdownMenuItem>
+                      {article.status !== "published" && (
                         <DropdownMenuItem
-                          onClick={() => setSelectedBlog(article)}
+                          onClick={() =>
+                            updateStatus(article._id, "published")
+                          }
+                          className="text-green-600"
                         >
-                          <Eye className="w-4 h-4 mr-2" /> View
+                          <Check className="w-4 h-4 mr-2" /> Publish
                         </DropdownMenuItem>
-                        {article.status !== "published" && (
-                          <DropdownMenuItem
-                            onClick={() =>
-                              updateStatus(article._id, "published")
-                            }
-                            className="text-green-600"
-                          >
-                            <Check className="w-4 h-4 mr-2" /> Publish
-                          </DropdownMenuItem>
-                        )}
-                        {article.status !== "draft" && (
-                          <DropdownMenuItem
-                            onClick={() => updateStatus(article._id, "draft")}
-                            className="text-gray-600"
-                          >
-                            <Clock className="w-4 h-4 mr-2" /> Mark Draft
-                          </DropdownMenuItem>
-                        )}
-                        {article.status !== "pending" && (
-                          <DropdownMenuItem
-                            onClick={() => updateStatus(article._id, "pending")}
-                            className="text-yellow-600"
-                          >
-                            <Clock className="w-4 h-4 mr-2" /> Mark Pending
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+                      )}
+                      {article.status !== "draft" && (
+                        <DropdownMenuItem
+                          onClick={() => updateStatus(article._id, "draft")}
+                          className="text-gray-600"
+                        >
+                          <Clock className="w-4 h-4 mr-2" /> Mark Draft
+                        </DropdownMenuItem>
+                      )}
+                      {article.status !== "pending" && (
+                        <DropdownMenuItem
+                          onClick={() =>
+                            updateStatus(article._id, "pending")
+                          }
+                          className="text-yellow-600"
+                        >
+                          <Clock className="w-4 h-4 mr-2" /> Mark Pending
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="mt-auto flex justify-center pt-6">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={setCurrentPage}
+          itemsPerPage={itemsPerPage}
+        />
+      </div>
+    </>
+  )}
+</CardContent>
+
       </Card>
 
       {selectedBlog && (

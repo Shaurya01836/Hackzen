@@ -125,6 +125,10 @@ router.get("/debug/registration", async (req, res) => {
   }
 });
 
+// Add like and view endpoints for PPT submissions
+router.patch('/:id/like', protect, require('../controllers/submissionFormController').likeSubmission);
+router.patch('/:id/view', protect, require('../controllers/submissionFormController').viewSubmission);
+
 // Admin: Get total submissions stats for dashboard
 router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionFormController").getAdminSubmissionStats);
 

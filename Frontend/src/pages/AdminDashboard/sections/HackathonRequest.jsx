@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import {
   Card,
@@ -53,6 +53,7 @@ import {
   AlertDialogTitle,
 } from "../../../components/DashboardUI/alert-dialog";
 import { useToast } from "../../../hooks/use-toast";
+import { Pagination } from "../../../components/CommonUI/Pagination";
 
 export function HackathonRequest() {
   const [organizerRequests, setOrganizerRequests] = useState([]);
@@ -140,14 +141,31 @@ export function HackathonRequest() {
   // Sort requests by createdAt descending (recent first)
   const sortedRequests = [...organizerRequests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-  const filteredRequests = sortedRequests.filter((request) => {
-    const matchesSearch =
-      request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" || request.approvalStatus === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  // Memoize filtered requests to prevent unnecessary re-computation
+  const filteredRequests = useMemo(() => {
+    return sortedRequests.filter((request) => {
+      const matchesSearch =
+        request.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.organizer?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus =
+        statusFilter === "All" || request.approvalStatus === statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    });
+  }, [sortedRequests, searchTerm, statusFilter]);
+
+  // Reset page when filters change, but not when data is updated
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Manual pagination calculation
+  const itemsPerPage = 5;
+  const totalItems = filteredRequests.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
   // Calculate statistics
   const stats = {
@@ -217,159 +235,180 @@ export function HackathonRequest() {
       </div>
 
       {/* Filters and Search */}
- 
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
-            {/* Search */}
-            <div className="flex-1 w-full">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
-                <Input
-                  placeholder="Search by event or organizer..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 bg-white text-black text-base"
-                />
-              </div>
-            </div>
-            {/* Filter Buttons */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="text-black">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Status: {statusFilter}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                  >
-                    {status}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className="flex flex-col lg:flex-row gap-4 items-center">
+        {/* Search */}
+        <div className="flex-1 w-full">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-black w-4 h-4" />
+            <Input
+              placeholder="Search by event or organizer..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 bg-white text-black text-base"
+            />
           </div>
-      
+        </div>
+        {/* Filter Buttons */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="text-black">
+              <Filter className="w-4 h-4 mr-2" />
+              Status: {statusFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            {['All', 'Pending', 'Approved', 'Rejected'].map((status) => (
+              <DropdownMenuItem
+                key={status}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Results Table */}
       <Card className="border shadow-sm">
         <CardHeader>
           <CardTitle className="text-black text-lg">
-            Requests ({filteredRequests.length})
+            Requests ({totalItems})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-black w-12">#</TableHead>
-                <TableHead className="text-black">Organizer</TableHead>
-                <TableHead className="text-black">Event</TableHead>
-                <TableHead className="text-black">Status</TableHead>
-                <TableHead className="text-black">Quick Info</TableHead>
-                <TableHead className="text-black">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRequests.map((req, idx) => (
-                <TableRow key={req._id} className="hover:bg-gray-50">
-                  <TableCell className="font-bold text-indigo-700 text-lg">{idx + 1}</TableCell>
-                  <TableCell>
-                    <div className="text-black font-medium">
-                      {req.organizer?.name || "Unknown"}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {req.organizer?.email || "No email"}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-black font-medium">{req.title}</div>
-                    <div className="text-sm text-gray-500">
-                      {req.category} • {req.difficultyLevel}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={`${getStatusColor(req.approvalStatus)} flex items-center gap-1`}>
-                      {getStatusIcon(req.approvalStatus)}
-                      {req.approvalStatus || "pending"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(req.startDate).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Trophy className="w-3 h-3" />
-                        ${req.prizePool?.amount?.toLocaleString() || "TBA"}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {req.maxParticipants || "Unlimited"}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {req.location || "N/A"}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {/* Quick Preview Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSelectedHackathon(req)}
-                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        Preview
-                      </Button>
-                      {/* Action Buttons for Pending Requests */}
-                      {req.approvalStatus === "pending" && (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleAction(req, "approved")}
-                            disabled={actionLoading[req._id]}
-                            className="bg-green-600 hover:bg-green-700 text-white"
-                          >
-                            {actionLoading[req._id] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
+          {totalItems === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-500 text-lg">No requests found</div>
+              <div className="text-gray-400 text-sm mt-1">
+                Try adjusting your search or filter criteria
+              </div>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-black w-12">#</TableHead>
+                    <TableHead className="text-black">Organizer</TableHead>
+                    <TableHead className="text-black">Event</TableHead>
+                    <TableHead className="text-black">Status</TableHead>
+                    <TableHead className="text-black">Quick Info</TableHead>
+                    <TableHead className="text-black">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedRequests.map((req, idx) => (
+                      <TableRow key={req._id} className="hover:bg-gray-50">
+                        <TableCell className="font-bold text-indigo-700 text-lg">
+                          {startIndex + idx + 1}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-black font-medium">
+                            {req.organizer?.name || "Unknown"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {req.organizer?.email || "No email"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-black font-medium">{req.title}</div>
+                          <div className="text-sm text-gray-500">
+                            {req.category} • {req.difficultyLevel}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(req.approvalStatus)} flex items-center gap-1`}>
+                            {getStatusIcon(req.approvalStatus)}
+                            {req.approvalStatus || "pending"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 text-sm">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {new Date(req.startDate).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Trophy className="w-3 h-3" />
+                              ${req.prizePool?.amount?.toLocaleString() || "TBA"}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {req.maxParticipants || "Unlimited"}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {req.location || "N/A"}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {/* Quick Preview Button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedHackathon(req)}
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Preview
+                            </Button>
+                            {/* Action Buttons for Pending Requests */}
+                            {req.approvalStatus === "pending" && (
                               <>
-                                <Check className="w-4 h-4 mr-1" />
-                                Approve
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => handleAction(req, "approved")}
+                                  disabled={actionLoading[req._id]}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  {actionLoading[req._id] ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Check className="w-4 h-4 mr-1" />
+                                      Approve
+                                    </>
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => handleAction(req, "rejected")}
+                                  disabled={actionLoading[req._id]}
+                                >
+                                  {actionLoading[req._id] ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <X className="w-4 h-4 mr-1" />
+                                      Reject
+                                    </>
+                                  )}
+                                </Button>
                               </>
                             )}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleAction(req, "rejected")}
-                            disabled={actionLoading[req._id]}
-                          >
-                            {actionLoading[req._id] ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <X className="w-4 h-4 mr-1" />
-                                Reject
-                              </>
-                            )}
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+              
+              {/* Pagination Component */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={totalItems}
+                className="mt-6"
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 
