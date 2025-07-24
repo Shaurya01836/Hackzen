@@ -28,7 +28,6 @@ import { HackathonDetails } from "./pages/AdminDashboard/sections/HackathonDetai
 import JudgePanel from "./pages/mainDashboard/judgeDashboard/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/partipantDashboard/ProjectArchive";
 import CreatedHackathons from "./pages/mainDashboard/organizerDashboard/Created-hackathons";
-import EditHackathonPage from "./pages/mainDashboard/organizerDashboard/components/EditHackathonPage";
 import JudgeProjectGallery from "./pages/mainDashboard/judgeDashboard/JudgeProjectGallery";
 import AdminHackathonSubmissionsPage from "./pages/AdminDashboard/sections/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./pages/AdminDashboard/sections/AdminSubmissionDetailsPage";
@@ -137,7 +136,7 @@ function App() {
         <Route path="/dashboard/:section" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
 
         {/* Edit Hackathon Full Page */}
-        <Route path="/dashboard/edit-hackathon/:id" element={<PrivateRoute><EditHackathonPage /></PrivateRoute>} />
+        <Route path="/dashboard/edit-hackathon/:id" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
 
         {/* Explore */}
         <Route path="/explore" element={<PrivateRoute><ExploreHackathons /></PrivateRoute>} />

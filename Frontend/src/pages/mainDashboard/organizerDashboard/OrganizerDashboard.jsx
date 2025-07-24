@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { cn } from "../../../lib/utils";
 import {
@@ -14,12 +14,21 @@ import { OrganizerTools } from "./OrganizerTools";
 import CreateHackathon from "./Create-hackathon";
 import CertificatesPage from "./CertificatePage";
 import JudgeManagement from "./components/JudgeManagement";
+import EditHackathonPage from "./components/EditHackathonPage";
 
 export default function OrganizerDashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
   const [currentView, setCurrentView] = useState("organizer-tools");
+
+  // Sync currentView with URL for direct navigation
+  useEffect(() => {
+    const match = location.pathname.match(/^\/dashboard\/(\w+-?\w*)/);
+    if (match && match[1] && match[1] !== currentView) {
+      setCurrentView(match[1]);
+    }
+  }, [location.pathname]);
 
   const changeView = (viewKey) => {
     setCurrentView(viewKey);
@@ -48,6 +57,8 @@ export default function OrganizerDashboard() {
         return <CertificatesPage onBack={() => changeView("organizer-tools")} />;
       case "judge-management":
         return <JudgeManagement hackathonId={params.hackathonId} onBack={() => changeView("organizer-tools")} />;
+      case "edit-hackathon":
+        return <EditHackathonPage />;
       default:
         return <OrganizerTools onBack={() => changeView("organizer-tools")} />;
     }
