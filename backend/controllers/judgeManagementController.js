@@ -111,13 +111,25 @@ exports.assignJudges = async (req, res) => {
         continue;
       }
 
-      // Create or update judge assignment
-      const judgeAssignment = await JudgeAssignment.findOneAndUpdate(
-        {
+      // For each problem statement, create a separate assignment if not already exists
+      for (const psId of problemStatementIds) {
+        // Check if assignment already exists for this judge, hackathon, and problem statement
+        const existing = await JudgeAssignment.findOne({
           hackathon: hackathonId,
-          'judge.email': judgeEmail
-        },
-        {
+          'judge.email': judgeEmail,
+          'assignedProblemStatements.problemStatementId': psId
+        });
+        if (existing) {
+          results.push({
+            judgeEmail,
+            problemStatementId: psId,
+            success: false,
+            error: 'Assignment already exists for this problem statement'
+          });
+          continue;
+        }
+        const ps = hackathon.problemStatements.find(p => p._id.toString() === psId);
+        const judgeAssignment = await JudgeAssignment.create({
           hackathon: hackathonId,
           judge: {
             email: judgeEmail,
@@ -125,62 +137,62 @@ exports.assignJudges = async (req, res) => {
             sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
             canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && assignment.canJudgeSponsoredPS)
           },
-          assignedProblemStatements: problemStatementIds.map(psId => {
-            const ps = hackathon.problemStatements.find(p => p._id.toString() === psId);
-            return {
-              problemStatementId: psId,
-              problemStatement: ps.statement,
-              type: ps.type,
-              sponsorCompany: ps.sponsorCompany,
-              isAssigned: true
-            };
-          }),
-          assignedRounds: roundIndices ? roundIndices.map((roundIndex, idx) => ({
-            roundIndex,
-            roundName: hackathon.rounds[roundIndex]?.name || `Round ${roundIndex + 1}`,
-            roundType: hackathon.rounds[roundIndex]?.type || 'project',
+          assignedProblemStatements: [{
+            problemStatementId: psId,
+            problemStatement: ps.statement,
+            type: ps.type,
+            sponsorCompany: ps.sponsorCompany,
             isAssigned: true
-          })) : [],
-          permissions: {
-            canJudgeGeneralPS: judgeType !== 'sponsor',
-            canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || assignment.canJudgeSponsoredPS,
-            canJudgeAllRounds: true,
-            maxSubmissionsPerJudge: assignment.maxSubmissionsPerJudge || 50
-          },
-          assignedBy: req.user.id,
-          status: 'pending'
-        },
-        { upsert: true, new: true }
-      );
+          }],
+          assignedRounds: Array.isArray(roundIndices) && roundIndices.length > 0 ? roundIndices.map((roundIndex, idx) => {
+            const round = hackathon.rounds[roundIndex];
+            return {
+              roundId: round?._id?.toString() || null,
+              roundName: round?.name || `Round ${roundIndex + 1}`,
+              roundType: round?.type || 'project',
+              isAssigned: true
+            };
+          }) : [],
+          permissions: {
+            canJudgeGeneralPS: judgeType !== 'sponsor',
+            canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || assignment.canJudgeSponsoredPS,
+            canJudgeAllRounds: true,
+            maxSubmissionsPerJudge: assignment.maxSubmissionsPerJudge || 50
+          },
+          assignedBy: req.user.id,
+          status: 'pending'
+        });
 
-      // === Unified RoleInvite System ===
-      // Check if RoleInvite exists for this judge/hackathon/role
-      let invite = await RoleInvite.findOne({
-        email: judgeEmail,
-        hackathon: hackathonId,
-        role: 'judge',
-        status: 'pending'
-      });
-      if (!invite) {
-        // Generate invite token
-        const token = crypto.randomBytes(32).toString('hex');
-        invite = await RoleInvite.create({
+        // === Unified RoleInvite System ===
+        // Check if RoleInvite exists for this judge/hackathon/role
+        let invite = await RoleInvite.findOne({
           email: judgeEmail,
           hackathon: hackathonId,
           role: 'judge',
-          token
+          status: 'pending'
         });
-        // Send invite email using the unified system
-        await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
-      } else {
-        console.log(`Judge invite already exists for: ${judgeEmail}`);
-      }
+        if (!invite) {
+          // Generate invite token
+          const token = crypto.randomBytes(32).toString('hex');
+          invite = await RoleInvite.create({
+            email: judgeEmail,
+            hackathon: hackathonId,
+            role: 'judge',
+            token
+          });
+          // Send invite email using the unified system
+          await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
+        } else {
+          console.log(`Judge invite already exists for: ${judgeEmail}`);
+        }
 
-      results.push({
-        judgeEmail,
-        success: true,
-        assignmentId: judgeAssignment._id
-      });
+        results.push({
+          judgeEmail,
+          problemStatementId: psId,
+          success: true,
+          assignmentId: judgeAssignment._id
+        });
+      }
     }
 
     res.status(200).json({
@@ -534,28 +546,6 @@ exports.assignTeamsToJudge = async (req, res) => {
       }
     }
 
-    // Check assignment mode (must be 'assigned' for the relevant round/PS)
-    // This check should only apply if we are actually assigning teams (teamIds is not empty).
-    if (teamIds.length > 0) { 
-      let modeOk = false;
-      // Check all assigned rounds and problem statements for this assignment
-      if (assignment.assignedRounds && assignment.assignedRounds.length > 0) {
-        modeOk = assignment.assignedRounds.every(r => {
-          const round = hackathon.rounds[r.roundIndex];
-          return round && round.assignmentMode === 'assigned';
-        });
-      }
-      if (assignment.assignedProblemStatements && assignment.assignedProblemStatements.length > 0) {
-        modeOk = assignment.assignedProblemStatements.every(ps => {
-          const idx = hackathon.problemStatements.findIndex(p => p._id.toString() === ps.problemStatementId);
-          return idx !== -1 && hackathon.problemStatements[idx].assignmentMode === 'assigned';
-        });
-      }
-      if (!modeOk) {
-        return res.status(400).json({ message: 'Assignment mode must be "assigned" to assign teams' });
-      }
-    }
-
     // Optionally: Prevent duplicate team assignment to multiple judges in assigned mode
     // This check should only apply when adding teams, not when clearing all teams.
     if (teamIds.length > 0) { 
@@ -582,6 +572,55 @@ exports.assignTeamsToJudge = async (req, res) => {
     console.error('Error assigning teams to judge:', error);
     res.status(500).json({ message: 'Failed to assign teams to judge' });
   }
+};
+
+// Unassign judge from a specific problem statement or round in a JudgeAssignment
+exports.unassignScopeFromJudge = async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { problemStatementId, roundId } = req.body;
+
+    const assignment = await JudgeAssignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    // Organizer permission check
+    const hackathon = await Hackathon.findById(assignment.hackathon);
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can unassign judges' });
+    }
+
+    let changed = false;
+    if (problemStatementId) {
+      const before = assignment.assignedProblemStatements.length;
+      assignment.assignedProblemStatements = assignment.assignedProblemStatements.filter(
+        ps => String(ps.problemStatementId) !== String(problemStatementId)
+      );
+      if (assignment.assignedProblemStatements.length !== before) changed = true;
+    }
+    if (roundId) {
+      const before = assignment.assignedRounds.length;
+      assignment.assignedRounds = assignment.assignedRounds.filter(
+        r => String(r.roundId) !== String(roundId)
+      );
+      if (assignment.assignedRounds.length !== before) changed = true;
+    }
+    if (!changed) {
+      return res.status(400).json({ message: 'Nothing to unassign' });
+    }
+    // If both arrays are empty, delete the assignment
+    if (assignment.assignedProblemStatements.length === 0 && assignment.assignedRounds.length === 0) {
+      await JudgeAssignment.findByIdAndDelete(assignmentId);
+      return res.status(200).json({ message: 'Assignment deleted (no more scopes left)' });
+    } else {
+      await assignment.save();
+      return res.status(200).json({ message: 'Scope unassigned from judge', assignment });
+    }
+  } catch (error) {
+    console.error('Error unassigning scope from judge:', error);
+    res.status(500).json({ message: 'Failed to unassign scope from judge' });
+  }
 };
 
 // Set assignment mode for a round or problem statement
@@ -667,23 +706,6 @@ exports.autoDistributeTeams = async (req, res) => {
     const judgeAssignments = await JudgeAssignment.find({ _id: { $in: judgeAssignmentIds }, hackathon: hackathonId });
     if (judgeAssignments.length !== judgeAssignmentIds.length) {
       return res.status(400).json({ message: 'Some judgeAssignmentIds are invalid' });
-    }
-
-    // Check assignment mode (must be 'assigned')
-    let modeOk = false;
-    if (type === 'round') {
-      if (!hackathon.rounds[index] || hackathon.rounds[index].assignmentMode !== 'assigned') {
-        return res.status(400).json({ message: 'Assignment mode must be "assigned" for this round' });
-      }
-      modeOk = true;
-    } else if (type === 'problemStatement') {
-      if (!hackathon.problemStatements[index] || hackathon.problemStatements[index].assignmentMode !== 'assigned') {
-        return res.status(400).json({ message: 'Assignment mode must be "assigned" for this problem statement' });
-      }
-      modeOk = true;
-    }
-    if (!modeOk) {
-      return res.status(400).json({ message: 'Assignment mode must be "assigned"' });
     }
 
     // Prevent duplicate team assignment to multiple judges, UNLESS forceOverwrite is true
