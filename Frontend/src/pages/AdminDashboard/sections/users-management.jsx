@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import ChangeRoleDialog from "../../../components/AdminUI/ChangeRoleDialog";
 import axios from "axios";
@@ -11,7 +10,6 @@ import {
 } from "../../../components/CommonUI/card";
 import { Input } from "../../../components/CommonUI/input";
 import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
 import {
   Table,
   TableBody,
@@ -67,31 +65,36 @@ export function UsersManagement() {
 
   const formatRole = (role) => role.charAt(0).toUpperCase() + role.slice(1);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-500 text-white border-green-500/30";
-      case "Inactive":
-        return "bg-yellow-500 text-white border-yellow-500/30";
-      case "Banned":
-        return "bg-red-500 text-white border-red-500/30";
-      default:
-        return "bg-gray-500 text-white border-gray-500/30";
-    }
-  };
+const getRoleColor = (role) => {
+  switch (role?.toLowerCase()) {
+    case "admin":
+      return "text-red-600 font-semibold";
+    case "organizer":
+      return "text-indigo-600 font-semibold";
+    case "mentor":
+       return "text-indigo-600 font-semibold";
+    case "judge":
+    return "text-indigo-600 font-semibold";
+    case "participant":
+      return "text-gray-600 font-semibold";
+    default:
+      return "text-gray-600 font-semibold";
+  }
+};
 
-  const getRoleVariant = (role) => {
-    switch (role?.toLowerCase()) {
-      case "organizer":
-      case "mentor":
-      case "judge":
-        return "secondary";
-      case "admin":
-        return "destructive";
-      default:
-        return "outline";
-    }
-  };
+const getStatusColor = (status) => {
+  switch (status) {
+    case "Active":
+      return "text-gray-600 font-semibold";
+    case "Inactive":
+      return "text-yellow-600 font-semibold";
+    case "Banned":
+      return "text-red-600 font-semibold";
+    default:
+      return "text-gray-600 font-semibold";
+  }
+};
+
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -197,71 +200,76 @@ export function UsersManagement() {
                 <TableHead className="text-gray-800">Actions</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {paginatedUsers.map((user) => (
-                <TableRow
-                  key={user._id}
-                  className="border-purple-500/20 hover:bg-white/5"
-                >
-                  <TableCell className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
-                      {user.name?.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <div className="text-gray-700 font-medium">
-                        {user.name}
-                      </div>
-                      <div className="text-gray-400 text-sm">{user.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getRoleVariant(user.role)}>
-                      {formatRole(user.role)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-black">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor("Active")}>Active</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-gray-400 hover:text-black"
-                        >
-                          <Shuffle className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent >
-                        <DropdownMenuItem className="" onClick={() => navigate(`/admin/users/${user._id}`)}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Profile
-                        </DropdownMenuItem>
-                        <ChangeRoleDialog
-                          userId={user._id}
-                          currentRole={user.role}
-                          onRoleUpdate={(newRole) => {
-                            setUsers((prev) =>
-                              prev.map((u) =>
-                                u._id === user._id ? { ...u, role: newRole } : u
-                              )
-                            );
-                          }}
-                        />
-                        <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
-                          <Ban className="w-4 h-4 mr-2" />
-                          Ban User
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
+           <TableBody>
+  {paginatedUsers.map((user) => (
+    <TableRow
+      key={user._id}
+      className="border-purple-500/20 hover:bg-white/5"
+    >
+      <TableCell className="flex items-center space-x-3">
+        <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
+          {user.name?.slice(0, 2).toUpperCase()}
+        </div>
+        <div>
+          <div className="text-gray-700 font-medium">
+            {user.name}
+          </div>
+          <div className="text-gray-400 text-sm">{user.email}</div>
+        </div>
+      </TableCell>
+      <TableCell>
+        {/* Replace Badge with colored text */}
+        <span className={getRoleColor(user.role)}>
+          {formatRole(user.role)}
+        </span>
+      </TableCell>
+      <TableCell className="text-black">
+        {new Date(user.createdAt).toLocaleDateString()}
+      </TableCell>
+      <TableCell>
+        {/* Replace Badge with colored text */}
+        <span className={getStatusColor("Active")}>
+          Active
+        </span>
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-black"
+            >
+              <Shuffle className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem className="" onClick={() => navigate(`/admin/users/${user._id}`)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Profile
+            </DropdownMenuItem>
+            <ChangeRoleDialog
+              userId={user._id}
+              currentRole={user.role}
+              onRoleUpdate={(newRole) => {
+                setUsers((prev) =>
+                  prev.map((u) =>
+                    u._id === user._id ? { ...u, role: newRole } : u
+                  )
+                );
+              }}
+            />
+            <DropdownMenuItem className="text-red-400 hover:bg-red-500/10">
+              <Ban className="w-4 h-4 mr-2" />
+              Ban User
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  ))}
+</TableBody>
+
           </Table>
 
           {/* Pagination Controls */}

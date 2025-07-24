@@ -94,7 +94,7 @@ export default function ChangeRoleDialog({ userId, currentRole, onRoleUpdate }) 
               className={cn(
                 "cursor-pointer rounded-lg border p-4 transition-all duration-200",
                 selectedRole === role
-                  ? "border-purple-600 bg-purple-100 shadow"
+                  ? "border-indigo-600 bg-indigo-100 shadow"
                   : "border-gray-300 hover:bg-gray-100"
               )}
             >
@@ -111,7 +111,7 @@ export default function ChangeRoleDialog({ userId, currentRole, onRoleUpdate }) 
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            className="w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-500 hover:to-indigo-700"
           >
             {loading ? "Updating..." : "Update Role"}
           </Button>

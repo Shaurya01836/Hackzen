@@ -43,7 +43,6 @@ import { Dashboard } from "./sections/dashboard";
 import { UsersManagement } from "./sections/users-management";
 import { HackathonsPage } from "./sections/hackathons-page";
 import { AnnouncementsPanel } from "./sections/announcements-panel";
-import { OrganizerRequestsPage } from "./sections/organizer-requests-V1";
 import { HackathonRequest } from "./sections/HackathonRequest";
 import { AnalyticsPage } from "./sections/analytics-page";
 import { RevenuePage } from "./sections/revenue-page";
@@ -52,7 +51,6 @@ import { FlaggedContentPage } from "./sections/flagged-content-page";
 import { SupportInboxPage } from "./sections/support-inbox-page";
 import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
-import { PendingChangesPage } from "./sections/pending-changes-page";
 import AddCertificateForm from "./sections/AddCertificateForm";
 import AdminHackathonSubmissionsPage from "./sections/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./sections/AdminSubmissionDetailsPage";
@@ -118,12 +116,7 @@ export default function AdminPanel() {
   ];
 
   const moderationMenuItems = [
-    {
-      title: "Organizer Requests",
-      icon: UserCheck,
-      key: "organizers",
-      onClick: () => setActiveSection("organizers"),
-    },
+  
     {
       title: "Hackathon Requests",
       icon: Building,
@@ -136,12 +129,7 @@ export default function AdminPanel() {
       key: "blogs",
       onClick: () => setActiveSection("blogs"),
     },
-    {
-      title: "Organizer Changes",
-      icon: Clock,
-      key: "pending-changes",
-      onClick: () => setActiveSection("pending-changes"),
-    },
+   
     {
       title: "Flagged Content",
       icon: Flag,
@@ -225,12 +213,8 @@ export default function AdminPanel() {
         return <AnnouncementsPanel />;
       case "hackathonRequest":
         return <HackathonRequest />;
-      case "organizers":
-        return <OrganizerRequestsPage />;
       case "blogs":
         return <BlogManage />;
-      case "pending-changes":
-        return <PendingChangesPage />;
       case "newsletter":
         return <NewsletterSender />;
       case "analytics":

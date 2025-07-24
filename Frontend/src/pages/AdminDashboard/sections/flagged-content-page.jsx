@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
 import { Input } from "../../../components/CommonUI/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/AdminUI/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../components/AdminUI/dropdown-menu"
@@ -79,45 +78,45 @@ export function FlaggedContentPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Under Review":
-        return "bg-yellow-500 text-white border-yellow-500/30"
+        return "text-yellow-600 font-semibold"
       case "Confirmed":
-        return "bg-red-500 text-white border-red-500/30"
+        return "text-red-600 font-semibold"
       case "Resolved":
-        return "bg-green-500 text-white border-green-500/30"
+        return "text-green-600 font-semibold"
       case "Dismissed":
-        return "bg-orange-500 text-white border-gray-500/30"
+        return "text-orange-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
   const getSeverityColor = (severity) => {
     switch (severity) {
       case "Critical":
-        return "bg-red-500 text-white border-red-500/30"
+        return "text-red-600 font-semibold"
       case "High":
-        return "bg-orange-500 text-white border-orange-500/30"
+        return "text-orange-600 font-semibold"
       case "Medium":
-        return "bg-yellow-500 text-white border-yellow-500/30"
+        return "text-yellow-600 font-semibold"
       case "Low":
-        return "bg-blue-500 text-white border-blue-500/30"
+        return "text-blue-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
   const getTypeColor = (type) => {
     switch (type) {
       case "Comment":
-        return "bg-purple-500 text-white border-purple-500/30"
+        return "text-purple-600 font-semibold"
       case "Submission":
-        return "bg-blue-500 text-white border-blue-500/30"
+        return "text-blue-600 font-semibold"
       case "Profile":
-        return "bg-green-500 text-white border-green-500/30"
+        return "text-green-600 font-semibold"
       case "Chat Message":
-        return "bg-orange-500 text-white border-orange-500/30"
+        return "text-orange-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
@@ -126,10 +125,10 @@ export function FlaggedContentPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">Flagged Content Management</h1>
         <div className="flex items-center space-x-2">
-          <Badge className="bg-red-500 text-white border-red-500">
+          <span className="flex items-center text-red-600 font-semibold">
             <AlertTriangle className="w-3 h-3 mr-1" />
             {flaggedContent.filter((item) => item.status === "Under Review").length} Pending Review
-          </Badge>
+          </span>
         </div>
       </div>
 
@@ -186,55 +185,55 @@ export function FlaggedContentPage() {
       </div>
 
       {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
-              <Input
-                placeholder="Search by content, user, or reason..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className=" text-black hover:bg-white/5">
-                  <Filter className="w-4 h-4 mr-2" />
-                  Status: {statusFilter}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                {["All", "Under Review", "Confirmed", "Resolved", "Dismissed"].map((status) => (
-                  <DropdownMenuItem
-                    key={status}
-                    onClick={() => setStatusFilter(status)}
-                    className="text-white hover:bg-white/5"
-                  >
-                    {status}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="text-black hover:bg-white/5">
-                  <AlertTriangle className="w-4 h-4 mr-2" />
-                  Severity: {severityFilter}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                {["All", "Critical", "High", "Medium", "Low"].map((severity) => (
-                  <DropdownMenuItem
-                    key={severity}
-                    onClick={() => setSeverityFilter(severity)}
-                    className="text-white hover:bg-white/5"
-                  >
-                    {severity}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 w-4 h-4" />
+          <Input
+            placeholder="Search by content, user, or reason..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
+          />
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className=" text-black hover:bg-white/5">
+              <Filter className="w-4 h-4 mr-2" />
+              Status: {statusFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+            {["All", "Under Review", "Confirmed", "Resolved", "Dismissed"].map((status) => (
+              <DropdownMenuItem
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className="text-white hover:bg-white/5"
+              >
+                {status}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="text-black hover:bg-white/5">
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Severity: {severityFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+            {["All", "Critical", "High", "Medium", "Low"].map((severity) => (
+              <DropdownMenuItem
+                key={severity}
+                onClick={() => setSeverityFilter(severity)}
+                className="text-white hover:bg-white/5"
+              >
+                {severity}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       {/* Flagged Content Table */}
       <Card>
@@ -258,7 +257,7 @@ export function FlaggedContentPage() {
               {filteredContent.map((item) => (
                 <TableRow key={item.id} className="border-purple-500/20 hover:bg-white/5">
                   <TableCell>
-                    <Badge className={getTypeColor(item.type)}>{item.type}</Badge>
+                    <span className={getTypeColor(item.type)}>{item.type}</span>
                   </TableCell>
                   <TableCell>
                     <div className="max-w-xs">
@@ -274,10 +273,10 @@ export function FlaggedContentPage() {
                   </TableCell>
                   <TableCell className="text-gray-700">{item.reason}</TableCell>
                   <TableCell>
-                    <Badge className={getSeverityColor(item.severity)}>{item.severity}</Badge>
+                    <span className={getSeverityColor(item.severity)}>{item.severity}</span>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(item.status)}>{item.status}</Badge>
+                    <span className={getStatusColor(item.status)}>{item.status}</span>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

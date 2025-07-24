@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/CommonUI/card"
 import { RCard, RCardContent, RCardHeader, RCardTitle } from "../../../components/CommonUI/RippleCard"
 import { Button } from "../../../components/CommonUI/button"
-import { Badge } from "../../../components/CommonUI/badge"
 import { Input } from "../../../components/CommonUI/input"
 import { Textarea } from "../../../components/CommonUI/textarea"
 import { Avatar, AvatarFallback } from "../../../components/DashboardUI/avatar"
@@ -84,45 +83,45 @@ export function SupportInboxPage() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Open":
-        return "bg-blue-500 text-white border-blue-500/30"
+        return "text-blue-600 font-semibold"
       case "In Progress":
-        return "bg-yellow-500 text-white border-yellow-500/30"
+        return "text-yellow-600 font-semibold"
       case "Resolved":
-        return "bg-green-500 text-white border-green-500/30"
+        return "text-green-600 font-semibold"
       case "Closed":
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
   const getPriorityColor = (priority) => {
     switch (priority) {
       case "Critical":
-        return "bg-red-500 text-white border-red-500/30"
+        return "text-red-600 font-semibold"
       case "High":
-        return "bg-orange-500 text-white border-orange-500/30"
+        return "text-orange-600 font-semibold"
       case "Medium":
-        return "bg-yellow-500 text-white border-yellow-500/30"
+        return "text-yellow-600 font-semibold"
       case "Low":
-        return "bg-green-500 text-white border-green-500/30"
+        return "text-green-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
   const getCategoryColor = (category) => {
     switch (category) {
       case "Technical":
-        return "bg-purple-500 text-white border-purple-500/30"
+        return "text-purple-600 font-semibold"
       case "Billing":
-        return "bg-green-500 text-white border-green-500/30"
+        return "text-green-600 font-semibold"
       case "Account":
-        return "bg-blue-500 text-white border-blue-500/30"
+        return "text-blue-600 font-semibold"
       case "General":
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
       default:
-        return "bg-gray-500 text-white border-gray-500/30"
+        return "text-gray-600 font-semibold"
     }
   }
 
@@ -130,15 +129,15 @@ export function SupportInboxPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-black">Support Inbox</h1>
-        <div className="flex items-center space-x-2">
-          <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30">
+        <div className="flex items-center space-x-4">
+          <span className="flex items-center text-blue-600 font-semibold">
             <Inbox className="w-3 h-3 mr-1" />
             {supportTickets.filter((t) => t.status === "Open").length} Open
-          </Badge>
-          <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30">
+          </span>
+          <span className="flex items-center text-yellow-600 font-semibold">
             <Clock className="w-3 h-3 mr-1" />
             {supportTickets.filter((t) => t.status === "In Progress").length} In Progress
-          </Badge>
+          </span>
         </div>
       </div>
 
@@ -198,43 +197,43 @@ export function SupportInboxPage() {
         {/* Tickets List */}
         <div className="lg:col-span-2 space-y-4">
           {/* Filters */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search tickets by subject, user, or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
-                  />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="border-purple-500/20 text-black hover:bg-white/5">
-                      <Filter className="w-4 h-4 mr-2" />
-                      Status: {statusFilter}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
-                    {["All", "Open", "In Progress", "Resolved", "Closed"].map((status) => (
-                      <DropdownMenuItem
-                        key={status}
-                        onClick={() => setStatusFilter(status)}
-                        className="text-white hover:bg-white/5"
-                      >
-                        {status}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search tickets by subject, user, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white/5 border-purple-500/20 text-black placeholder-gray-600"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="border-purple-500/20 text-black hover:bg-white/5">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Status: {statusFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-black/90 backdrop-blur-xl border-purple-500/20">
+                {["All", "Open", "In Progress", "Resolved", "Closed"].map((status) => (
+                  <DropdownMenuItem
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className="text-white hover:bg-white/5"
+                  >
+                    {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           {/* Tickets */}
           <div className="space-y-3">
             {filteredTickets.map((ticket) => (
               <Card
                 key={ticket.id}
-                className={` transition-all duration-300 cursor-pointer ${
+                className={`transition-all duration-300 cursor-pointer ${
                   selectedTicket === ticket.id ? "border-purple-500/60 bg-purple-500/5" : ""
                 }`}
                 onClick={() => setSelectedTicket(ticket.id)}
@@ -263,10 +262,10 @@ export function SupportInboxPage() {
                     </DropdownMenu>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Badge className={getStatusColor(ticket.status)}>{ticket.status}</Badge>
-                      <Badge className={getPriorityColor(ticket.priority)}>{ticket.priority}</Badge>
-                      <Badge className={getCategoryColor(ticket.category)}>{ticket.category}</Badge>
+                    <div className="flex items-center space-x-3">
+                      <span className={getStatusColor(ticket.status)}>{ticket.status}</span>
+                      <span className={getPriorityColor(ticket.priority)}>{ticket.priority}</span>
+                      <span className={getCategoryColor(ticket.category)}>{ticket.category}</span>
                     </div>
                     <div className="text-xs text-gray-700">
                       {ticket.messages} messages • {ticket.lastReply}
@@ -289,7 +288,7 @@ export function SupportInboxPage() {
                   </CardTitle>
                   <div className="flex items-center space-x-2">
                     <Avatar>
-                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                      <AvatarFallback className="bg-indigo-500 text-white">
                         {supportTickets
                           .find((t) => t.id === selectedTicket)
                           ?.user.split(" ")
@@ -347,7 +346,7 @@ export function SupportInboxPage() {
                     rows={4}
                   />
                   <div className="flex space-x-2">
-                    <Button className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                    <Button className="flex-1 bg-indigo-600 hover:bg-indigo-700">
                       <Send className="w-4 h-4 mr-2" />
                       Send Reply
                     </Button>

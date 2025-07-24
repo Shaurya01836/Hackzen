@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "../../../components/CommonUI/card";
 import { Button } from "../../../components/CommonUI/button";
-import { Badge } from "../../../components/CommonUI/badge";
 import { Input } from "../../../components/CommonUI/input";
 import {
   Table,
@@ -178,28 +177,32 @@ export function HackathonRequest() {
   const getStatusColor = (status) => {
     switch (status) {
       case "approved":
-        return "bg-green-500 text-white";
+        return "text-green-600 font-semibold";
       case "pending":
-        return "bg-yellow-500 text-white";
+        return "text-yellow-600 font-semibold";
       case "rejected":
-        return "bg-red-500 text-white";
+        return "text-red-600 font-semibold";
       default:
-        return "bg-gray-500 text-white";
+        return "text-gray-600 font-semibold";
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "approved":
-        return <Check className="w-4 h-4" />;
+  const getStatsColor = (type) => {
+    switch (type) {
       case "pending":
-        return <Clock className="w-4 h-4" />;
+        return "text-yellow-600 bg-yellow-50 border-yellow-200";
+      case "approved":
+        return "text-green-600 bg-green-50 border-green-200";
       case "rejected":
-        return <X className="w-4 h-4" />;
+        return "text-red-600 bg-red-50 border-red-200";
+      case "total":
+        return "text-indigo-600 bg-indigo-50 border-indigo-200";
       default:
-        return <Info className="w-4 h-4" />;
+        return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
+
+ 
 
   if (loading)
     return (
@@ -215,22 +218,22 @@ export function HackathonRequest() {
       <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
         <h1 className="text-3xl font-bold text-black">Hackathon Requests</h1>
         <div className="flex gap-2">
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200" variant="outline">
+          <div className={`px-3 py-1 rounded-md border ${getStatsColor("pending")} flex items-center`}>
             <Clock className="w-4 h-4 mr-1" />
-            {stats.pending} Pending
-          </Badge>
-          <Badge className="bg-green-100 text-green-800 border-green-200" variant="outline">
+            <span className="font-semibold">{stats.pending} Pending</span>
+          </div>
+          <div className={`px-3 py-1 rounded-md border ${getStatsColor("approved")} flex items-center`}>
             <Check className="w-4 h-4 mr-1" />
-            {stats.approved} Approved
-          </Badge>
-          <Badge className="bg-red-100 text-red-800 border-red-200" variant="outline">
+            <span className="font-semibold">{stats.approved} Approved</span>
+          </div>
+          <div className={`px-3 py-1 rounded-md border ${getStatsColor("rejected")} flex items-center`}>
             <X className="w-4 h-4 mr-1" />
-            {stats.rejected} Rejected
-          </Badge>
-          <Badge className="bg-indigo-100 text-indigo-800 border-indigo-200" variant="outline">
+            <span className="font-semibold">{stats.rejected} Rejected</span>
+          </div>
+          <div className={`px-3 py-1 rounded-md border ${getStatsColor("total")} flex items-center`}>
             <Info className="w-4 h-4 mr-1" />
-            {stats.total} Total
-          </Badge>
+            <span className="font-semibold">{stats.total} Total</span>
+          </div>
         </div>
       </div>
 
@@ -300,7 +303,7 @@ export function HackathonRequest() {
                 <TableBody>
                   {paginatedRequests.map((req, idx) => (
                       <TableRow key={req._id} className="hover:bg-gray-50">
-                        <TableCell className="font-bold text-indigo-700 text-lg">
+                        <TableCell className="font-semibold">
                           {startIndex + idx + 1}
                         </TableCell>
                         <TableCell>
@@ -318,10 +321,10 @@ export function HackathonRequest() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${getStatusColor(req.approvalStatus)} flex items-center gap-1`}>
-                            {getStatusIcon(req.approvalStatus)}
+                          <span className={`${getStatusColor(req.approvalStatus)} flex items-center gap-1`}>
+                         
                             {req.approvalStatus || "pending"}
-                          </Badge>
+                          </span>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1 text-sm">
