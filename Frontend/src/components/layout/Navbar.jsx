@@ -315,6 +315,14 @@ function Navbar() {
                         Organizer Tools
                       </Link>
                     )}
+                    {user?.role === "judge" && (
+                      <Link
+                        to="/dashboard/judge-panel"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                      >
+                        Judge Panel
+                      </Link>
+                    )}
                     <Link
                       to="/dashboard/profile/privacy-security"
                       className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
