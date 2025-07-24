@@ -364,3 +364,46 @@ exports.getSubmissionByIdAdmin = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch submission', details: err.message });
   }
 };
+
+// Like a PPT submission
+exports.likeSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id?.toString();
+    if (!userId) return res.status(401).json({ message: 'You must be logged in to like submissions.' });
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ message: 'Submission not found' });
+    const hasLiked = submission.likedBy.map(String).includes(userId);
+    if (hasLiked) {
+      submission.likes = Math.max(0, submission.likes - 1);
+      submission.likedBy = submission.likedBy.filter(l => String(l) !== userId);
+      await submission.save();
+      return res.status(200).json({ liked: false, likes: submission.likes, message: 'Like removed.' });
+    }
+    submission.likes++;
+    submission.likedBy.push(userId);
+    await submission.save();
+    res.status(200).json({ liked: true, likes: submission.likes, message: 'Submission liked!' });
+  } catch (err) {
+    res.status(500).json({ message: 'Error liking submission', error: err.message });
+  }
+};
+
+// View a PPT submission
+exports.viewSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?._id?.toString();
+    if (!userId) return res.status(401).json({ message: 'You must be logged in to view submissions.' });
+    const submission = await Submission.findById(id);
+    if (!submission) return res.status(404).json({ message: 'Submission not found' });
+    if (!submission.viewedBy.map(String).includes(userId)) {
+      submission.views++;
+      submission.viewedBy.push(userId);
+      await submission.save();
+    }
+    res.status(200).json({ views: submission.views });
+  } catch (err) {
+    res.status(500).json({ message: 'Error incrementing view', error: err.message });
+  }
+};

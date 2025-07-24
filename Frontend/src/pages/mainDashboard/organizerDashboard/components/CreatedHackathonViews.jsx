@@ -34,6 +34,15 @@ export default function CreatedHackathonViews({
   setShowTeamsView = () => {},
   user,
 }) {
+  // Filtering logic for submissions
+  const filteredSubmissions = selectedType === 'All'
+    ? submissions
+    : selectedType === 'Project'
+      ? submissions.filter(s => s.type?.toLowerCase() === 'project' || (!s.pptFile && !s.type))
+      : selectedType === 'PPT'
+        ? submissions.filter(s => s.type?.toLowerCase() === 'ppt' || s.pptFile)
+        : submissions;
+
   // Submissions View
   if (showSubmissionsView) {
     return (
@@ -76,26 +85,31 @@ export default function CreatedHackathonViews({
           {/* Enhanced Content Area */}
           <div className="space-y-6">
             {selectedSubmissionId ? (
-              <Card className="overflow-hidden">
-                  <CardContent className="p-6 pt-6">
-                  <Button
-                    variant="ghost"
-                    className="mb-6 flex items-center gap-2"
-                    onClick={() => setSelectedSubmissionId(null)}
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back to Submissions
-                  </Button>
-                  <ProjectDetail
-                    project={{
-                      ...submissions.find(s => s._id === selectedSubmissionId),
-                      ...(sub?.projectId && typeof sub.projectId === 'object' ? sub.projectId : {}),
-                    }}
-                    hideBackButton={true}
-                    onlyOverview={false}
-                  />
-                </CardContent>
-              </Card>
+              (() => {
+                const sub = submissions.find(s => s._id === selectedSubmissionId);
+                return (
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-6 pt-6">
+                      <Button
+                        variant="ghost"
+                        className="mb-6 flex items-center gap-2"
+                        onClick={() => setSelectedSubmissionId(null)}
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Submissions
+                      </Button>
+                      <ProjectDetail
+                        project={{
+                          ...sub,
+                          ...(sub?.projectId && typeof sub.projectId === 'object' && sub.type !== 'ppt' ? sub.projectId : {}),
+                        }}
+                        hideBackButton={true}
+                        onlyOverview={false}
+                      />
+                    </CardContent>
+                  </Card>
+                );
+              })()
             ) : (
               <>
                 {/* Stats Overview */}
@@ -166,7 +180,7 @@ export default function CreatedHackathonViews({
                 </div>
 
                 {/* Submissions Grid */}
-                {submissions.length === 0 ? (
+                {filteredSubmissions.length === 0 ? (
                   <Card className="overflow-hidden">
                     <CardContent className="text-center py-12 pt-12">
                       <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
@@ -178,7 +192,7 @@ export default function CreatedHackathonViews({
                   </Card>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {submissions.map((sub, idx) => (
+                    {filteredSubmissions.map((sub, idx) => (
                       <ProjectCard
                         key={sub._id ? String(sub._id) : `submission-${idx}`}
                         project={{
@@ -186,11 +200,12 @@ export default function CreatedHackathonViews({
                           ...(sub.projectId && typeof sub.projectId === 'object' ? sub.projectId : {}),
                           title: sub.title || sub.originalName || (sub.projectId && sub.projectId.title) || 'Untitled',
                           name: sub.teamName || (sub.team && sub.team.name) || '-',
-                          type: sub.type ? sub.type.toUpperCase() : (sub.pptFile ? 'PPT' : 'Project'),
+                          type: sub.type ? sub.type.toLowerCase() : (sub.pptFile ? 'ppt' : 'project'),
                           status: sub.status || 'Submitted',
                           submittedBy: sub.submittedBy,
                           submittedAt: sub.submittedAt,
                           pptFile: sub.pptFile,
+                          ...(sub.type === 'ppt' || sub.pptFile ? { logo: { url: '/assets/ppt.png' }, views: sub.views ?? 0 } : {}),
                         }}
                         onClick={() => setSelectedSubmissionId(sub._id)}
                         user={user}

@@ -16,6 +16,7 @@ import {
   UserPlus,
   Copy,
   Globe,
+  Eye,
 } from "lucide-react";
 import { Button } from "./button";
 import { Badge } from "./badge";
@@ -69,6 +70,7 @@ export function ProjectDetail({
       : null
   );
   const [pptLoading, setPptLoading] = useState(true);
+  const [viewCount, setViewCount] = useState(project.views || 0);
 
   // On mount, check if this project is liked in localStorage
   useEffect(() => {
@@ -77,42 +79,6 @@ export function ProjectDetail({
     );
     setIsLiked(!!likedProjects[project._id]);
   }, [project._id]);
-
-  // Fetch user teams for this project's hackathon
-  useEffect(() => {
-    if (project?.hackathon?._id) {
-      // REMOVE: fetchUserTeams();
-    }
-  }, [project]);
-
-  // Fetch project teams (independent of hackathon)
-  useEffect(() => {
-    if (project?._id) {
-      // REMOVE: fetchProjectTeams();
-    }
-  }, [project]);
-
-  // Fetch full hackathon if needed
-  useEffect(() => {
-    async function fetchHackathonIfNeeded() {
-      if (!project.hackathon) return;
-      // If already have full object with images, use it
-      if (typeof project.hackathon === "object" && project.hackathon.images) {
-        setFullHackathon(project.hackathon);
-        return;
-      }
-      // If it's just an ID or missing images, fetch
-      const hackathonId = typeof project.hackathon === "string" ? project.hackathon : project.hackathon._id || project.hackathon.id;
-      if (!hackathonId) return;
-      try {
-        const res = await axios.get(`http://localhost:3000/api/hackathons/${hackathonId}`);
-        setFullHackathon(res.data);
-      } catch (err) {
-        setFullHackathon(null);
-      }
-    }
-    fetchHackathonIfNeeded();
-  }, [project.hackathon]);
 
   // Like handler (public, no login required)
   const handleLike = async () => {
@@ -126,17 +92,31 @@ export function ProjectDetail({
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(
-        `http://localhost:3000/api/projects/${project._id}/like`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!res.ok) throw new Error("Failed to like project");
+      let res;
+      if (project.type && project.type.toLowerCase() === "ppt") {
+        res = await fetch(
+          `http://localhost:3000/api/submission-form/${project._id}/like`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } else {
+        res = await fetch(
+          `http://localhost:3000/api/projects/${project._id}/like`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+      if (!res.ok) throw new Error("Failed to like");
       const data = await res.json();
       setIsLiked(data.liked);
       setLikeCount(data.likes);
@@ -160,7 +140,7 @@ export function ProjectDetail({
     } catch {
       toast({
         title: "Error",
-        description: "Failed to like project",
+        description: "Failed to like",
         duration: 2000,
       });
     }
@@ -249,14 +229,32 @@ export function ProjectDetail({
         <div className="px-6 pt-8 max-w-3xl mx-auto">
           <Card className="mb-6">
             <CardContent className="py-6 flex flex-col gap-4">
-              <div className="flex items-center gap-4">
-                <img
-                  src={project.logo?.url || "/assets/default-banner.png"}
-                  alt="PPT"
-                  className="w-12 h-12" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h1>
-                  <div className="text-sm text-gray-500">Team: {teamName}</div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <img
+                    src={project.logo?.url || "/assets/default-banner.png"}
+                    alt="PPT"
+                    className="w-12 h-12"
+                  />
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h1>
+                    <div className="text-sm text-gray-500">Team: {teamName}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <Button
+                    variant={isLiked ? "solid" : "outline"}
+                    size="sm"
+                    className={`flex items-center gap-2 rounded-full px-3 py-2 transition-all ${isLiked ? "bg-pink-100 text-red-500" : "bg-gray-100 hover:bg-pink-50"}`}
+                    onClick={handleLike}
+                  >
+                    <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+                    {likeCount}
+                  </Button>
+                  <div className="flex items-center gap-1 text-gray-500 text-sm">
+                    <Eye className="w-4 h-4" />
+                    {viewCount}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-4 mt-2">
@@ -375,7 +373,7 @@ export function ProjectDetail({
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
       {/* Improved Header */}
       <header className=" px-6 py-4 sticky top-0 z-20 ">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center max-w-7xl mx-auto">
           {!hideBackButton && (
             <Button
               variant="ghost"
@@ -386,7 +384,7 @@ export function ProjectDetail({
               <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
             </Button>
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <Button
               variant={isLiked ? "solid" : "outline"}
               size="sm"

@@ -4,6 +4,7 @@ import { BellIcon, Check, Eye, EyeOff, Filter } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { AnimatedList } from "../Magic UI/AnimatedList";
 import { useToast } from '../../hooks/use-toast';
+import useDropdownTimeout from '../../hooks/useDropdownTimeout';
 
 const ROLE_OPTIONS = [
   { value: "all", label: "All Roles" },
@@ -28,6 +29,7 @@ function NotificationBell() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { handleMouseEnter: bellEnter, handleMouseLeave: bellLeave } = useDropdownTimeout(setShowNotificationDropdown);
 
   // Fetch notifications
   const fetchNotifications = async () => {
@@ -171,7 +173,7 @@ function NotificationBell() {
   });
 
   return (
-    <div className="relative">
+    <div className="relative" onMouseEnter={bellEnter} onMouseLeave={bellLeave}>
       <button onClick={handleBellClick}>
         <BellIcon className="w-6 h-6 text-[#1b0c3f]" />
         {notifications.filter(n => !n.read).length > 0 && (
@@ -181,7 +183,7 @@ function NotificationBell() {
         )}
       </button>
       {showNotificationDropdown && (
-        <div className="absolute right-0 mt-2 w-96 rounded-xl shadow-2xl z-50 border border-gray-200 bg-white/20 backdrop-blur-lg text-sm overflow-hidden">
+        <div className="absolute right-0 mt-2 w-96 rounded-xl shadow-2xl z-50 border border-gray-200 bg-white text-sm overflow-hidden">
           <div className="p-4 border-b border-black/10 font-semibold text-lg flex items-center gap-2 justify-between">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 mr-1" />
@@ -232,7 +234,7 @@ function NotificationBell() {
                 {filteredNotifications.map((n) => (
                   <div
                     key={n._id}
-                    className={`group bg-white/30 rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%] ${n.read ? 'opacity-60' : ''}`}
+                    className={`group bg-white rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%] ${n.read ? 'opacity-60' : ''}`}
                   >
                     <div className="flex justify-between items-center">
                       <div className="font-medium text-black ">
