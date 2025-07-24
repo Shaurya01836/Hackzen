@@ -53,6 +53,10 @@ import { MultiSelect } from "../../../../components/CommonUI/multiselect";
 import ProjectScoresList from '../../../../components/CommonUI/ProjectScoresList';
 
 import axios from "axios";
+import JudgeManagementOverview from './JudgeManagementOverview';
+import JudgeManagementProblemStatements from './JudgeManagementProblemStatements';
+import JudgeManagementJudges from './JudgeManagementJudges';
+import JudgeManagementAssignments from './JudgeManagementAssignments';
 
 export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack }) {
   const { token } = useAuth();
@@ -336,7 +340,8 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
       } catch (e) {
         error = { message: "Unknown error" };
       }
-      alert(`Error: ${error.message || JSON.stringify(error)}`);
+      // Using window.alert for now, replace with a custom modal/toast in a real app
+      window.alert(`Error: ${error.message || JSON.stringify(error)}`);
       console.error("Assign Teams Error:", error, "Status:", res.status);
       return;
     }
@@ -367,10 +372,12 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
           // Retry the auto-distribution with forceOverwrite set to true
           await autoDistributeTeams(type, index, judgeAssignmentIds, teamIds, true);
         } else {
-          alert("Auto-distribution cancelled.");
+          // Using window.alert for now, replace with a custom modal/toast in a real app
+          window.alert("Auto-distribution cancelled.");
         }
       } else {
-        alert(`Error: ${error.message || JSON.stringify(error)}`);
+        // Using window.alert for now, replace with a custom modal/toast in a real app
+        window.alert(`Error: ${error.message || JSON.stringify(error)}`);
       }
       console.error("Auto-Distribute Error:", error, "Status:", res.status);
       return;
@@ -389,7 +396,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
   // State for assignment UI
   const [selectedJudgeAssignmentId, setSelectedJudgeAssignmentId] = useState("");
   const [selectedAssignmentType, setSelectedAssignmentType] = useState("round");
-  const [selectedAssignmentIndex, setSelectedAssignmentIndex] = useState(0);
+  const [selectedRoundId, setSelectedRoundId] = useState("");
   const [selectedTeamIds, setSelectedTeamIds] = useState([]);
   const [autoDistributeLoading, setAutoDistributeLoading] = useState(false);
 
@@ -498,6 +505,19 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
       </div>
     );
   }
+
+  // In JudgeManagement component, add handler for unassigning a single team
+  const handleUnassignSingleTeam = (assignmentId, teamId) => {
+    const assignment = allJudgeAssignments.find(a => a._id === assignmentId);
+    if (!assignment) return;
+    const newTeams = assignment.assignedTeams.filter(id => id !== teamId);
+    assignTeamsToJudge(assignmentId, newTeams);
+  };
+
+  // Add debug logs before rendering assignment cards
+  console.log('allJudgeAssignments:', allJudgeAssignments);
+  console.log('hackathon.rounds:', hackathon?.rounds);
+  console.log('hackathon.problemStatements:', hackathon?.problemStatements);
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
@@ -812,596 +832,211 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
 
               {/* Overview Tab */}
               <TabsContent value="overview" className="space-y-6 p-6">
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Judges</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{summary.total}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {summary.active} active, {summary.pending} pending
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Platform Judges</CardTitle>
-                      <Globe className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{summary.platform}</div>
-                      <p className="text-xs text-muted-foreground">
-                        Can judge general PS
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Sponsor Judges</CardTitle>
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{summary.sponsor}</div>
-                      <p className="text-xs text-muted-foreground">
-                        Company-specific PS only
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Hybrid Judges</CardTitle>
-                      <Shield className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{summary.hybrid}</div>
-                      <p className="text-xs text-muted-foreground">
-                        Can judge all PS types
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Problem Statements Overview */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="w-5 h-5" />
-                      Problem Statements Overview
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {hackathon?.problemStatements?.map((ps, index) => (
-                        <div
-                          key={index}
-                          className="p-4 border rounded-lg bg-white"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <Badge
-                              variant={ps.type === "sponsored" ? "default" : "secondary"}
-                            >
-                              {ps.type === "sponsored" ? "Sponsored" : "General"}
-                            </Badge>
-                            {ps.type === "sponsored" && (
-                              <span className="text-sm text-gray-600">
-                                {ps.sponsorCompany}
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-700 line-clamp-3">
-                            {typeof ps === "object" ? ps.statement : ps}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Judged Submissions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Judged Submissions</CardTitle>
-                    <div className="flex justify-end">
-                      <Button size="sm" variant="outline" onClick={fetchJudged}>Refresh</Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {judgedSubmissions.length === 0 ? (
-                      <p className="text-gray-500">No submissions have been judged yet.</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm border">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="p-2 border">Team Name</th>
-                              <th className="p-2 border">Problem Statement</th>
-                              <th className="p-2 border">Judge</th>
-                              <th className="p-2 border">Avg Score</th>
-                              <th className="p-2 border">Scores</th>
-                              <th className="p-2 border">Feedback</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {judgedSubmissions.map((score) => {
-                              // Calculate average score
-                              let avgScore = "N/A";
-                              if (score.scores) {
-                                const vals = Object.values(score.scores);
-                                if (vals.length > 0) {
-                                  avgScore = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
-                                }
-                              }
-                              return (
-                                <tr key={score._id} className="border-b">
-                                  <td className="p-2 border">
-                                    {/* Show all member names if available, else team name, else "-" */}
-                                    {score.team?.name ||
-                                      (score.team?.members
-                                        ? score.team.members.map(m => m.name || m.email).join(", ")
-                                        : "-")}
-                                  </td>
-                                  <td className="p-2 border">
-                                    {/* Show statement if object, else string, else "-" */}
-                                    {typeof score.problemStatement === "object"
-                                      ? score.problemStatement?.statement || "-"
-                                      : score.problemStatement || "-"}
-                                  </td>
-                                  <td className="p-2 border">{score.judge?.name || score.judge?.email || "-"}</td>
-                                  <td className="p-2 border">{avgScore}</td>
-                                  <td className="p-2 border">
-                                    {score.scores && Object.entries(score.scores).map(([k, v]) => (
-                                      <div key={k}>{k}: {v}</div>
-                                    ))}
-                                  </td>
-                                  <td className="p-2 border">{score.feedback || "-"}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <JudgeManagementOverview
+                  summary={summary}
+                  hackathon={hackathon}
+                  judgedSubmissions={judgedSubmissions}
+                  fetchJudged={fetchJudged}
+                />
               </TabsContent>
 
               {/* Problem Statements Tab */}
               <TabsContent value="problem-statements" className="space-y-6 p-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="w-5 h-5" />
-                      Problem Statements
-                    </CardTitle>
-                    <CardDescription>
-                      Manage problem statements for the hackathon
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {hackathon?.problemStatements?.map((ps, index) => (
-                        <div
-                          key={index}
-                          className="p-4 border rounded-lg bg-white flex items-start justify-between"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge
-                                variant={ps.type === "sponsored" ? "default" : "secondary"}
-                              >
-                                {ps.type === "sponsored" ? "Sponsored" : "General"}
-                              </Badge>
-                              {ps.type === "sponsored" && (
-                                <span className="text-sm text-gray-600">
-                                  {ps.sponsorCompany}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-gray-700">
-                              {typeof ps === "object" ? ps.statement : ps}
-                            </p>
-                          </div>
-                          <div className="flex gap-2 ml-4">
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="outline" className="text-red-600">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <JudgeManagementProblemStatements
+                  hackathon={hackathon}
+                  onEdit={(ps, idx) => {/* TODO: implement edit logic */}}
+                  onDelete={(ps, idx) => {/* TODO: implement delete logic */}}
+                />
               </TabsContent>
 
               {/* Judges Tab */}
               <TabsContent value="judges" className="space-y-6 p-6">
-                {/* Platform Judges */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Globe className="w-5 h-5 text-blue-500" />
-                      Platform Judges ({judgeAssignments.platform.length})
-                    </CardTitle>
-                    <CardDescription>
-                      Judges who can evaluate general problem statements
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {judgeAssignments.platform.map((assignment) => (
-                        <div
-                          key={assignment._id}
-                          className="p-4 border rounded-lg bg-white flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              {getJudgeTypeIcon(assignment.judge.type)}
-                              <div>
-                                <p className="font-medium">{assignment.judge.email}</p>
-                                <p className="text-sm text-gray-600">
-                                  {getJudgeTypeLabel(assignment.judge.type)}
-                                </p>
-                              </div>
-                            </div>
-                            {getStatusBadge(assignment.status)}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600"
-                              onClick={() => removeJudgeAssignment(assignment._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      {judgeAssignments.platform.length === 0 && (
-                        <p className="text-gray-500 text-center py-8">
-                          No platform judges assigned yet
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Sponsor Judges */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="w-5 h-5 text-green-500" />
-                      Sponsor Judges ({judgeAssignments.sponsor.length})
-                    </CardTitle>
-                    <CardDescription>
-                      Judges who can only evaluate their company's sponsored problem statements
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {judgeAssignments.sponsor.map((assignment) => (
-                        <div
-                          key={assignment._id}
-                          className="p-4 border rounded-lg bg-white flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              {getJudgeTypeIcon(assignment.judge.type)}
-                              <div>
-                                <p className="font-medium">{assignment.judge.email}</p>
-                                <p className="text-sm text-gray-600">
-                                  {assignment.judge.sponsorCompany}
-                                </p>
-                              </div>
-                            </div>
-                            {getStatusBadge(assignment.status)}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600"
-                              onClick={() => removeJudgeAssignment(assignment._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      {judgeAssignments.sponsor.length === 0 && (
-                        <p className="text-gray-500 text-center py-8">
-                          No sponsor judges assigned yet
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Hybrid Judges */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-purple-500" />
-                      Hybrid Judges ({judgeAssignments.hybrid.length})
-                    </CardTitle>
-                    <CardDescription>
-                      Judges who can evaluate both general and sponsored problem statements
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {judgeAssignments.hybrid.map((assignment) => (
-                        <div
-                          key={assignment._id}
-                          className="p-4 border rounded-lg bg-white flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-2">
-                              {getJudgeTypeIcon(assignment.judge.type)}
-                              <div>
-                                <p className="font-medium">{assignment.judge.email}</p>
-                                <p className="text-sm text-gray-600">
-                                  {getJudgeTypeLabel(assignment.judge.type)}
-                                </p>
-                              </div>
-                            </div>
-                            {getStatusBadge(assignment.status)}
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600"
-                              onClick={() => removeJudgeAssignment(assignment._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                      {judgeAssignments.hybrid.length === 0 && (
-                        <p className="text-gray-500 text-center py-8">
-                          No hybrid judges assigned yet
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <JudgeManagementJudges
+                  judgeAssignments={judgeAssignments}
+                  getJudgeTypeIcon={getJudgeTypeIcon}
+                  getJudgeTypeLabel={getJudgeTypeLabel}
+                  getStatusBadge={getStatusBadge}
+                  removeJudgeAssignment={removeJudgeAssignment}
+                />
               </TabsContent>
 
-              {/* Assignments Tab */}
+              {/* Assignments Tab - Card-based UI */}
               <TabsContent value="assignments" className="space-y-6 p-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Gavel className="w-5 h-5" />
-                      Judge Assignments
-                    </CardTitle>
-                    <CardDescription>
-                      Assign teams to judges and manage assignment mode for rounds/problem statements.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {/* Assignment Mode Toggles */}
-                    <div className="mb-6">
-                      <h4 className="font-semibold mb-2">Assignment Mode</h4>
-                      <div className="flex flex-wrap gap-6">
-                        {hackathon?.rounds?.map((round, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="font-medium">Round: {round.name || `#${idx + 1}`}</span>
-                            <Select
-                              value={round.assignmentMode || "open"}
-                              onValueChange={mode => setAssignmentMode("round", idx, mode)}
-                              disabled={assignmentModeLoading}
-                            >
-                              <SelectTrigger className="w-28">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="assigned">Assigned</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                        {hackathon?.problemStatements?.map((ps, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <span className="font-medium">PS: {ps.statement.slice(0, 20)}...</span>
-                            <Select
-                              value={ps.assignmentMode || "open"}
-                              onValueChange={mode => setAssignmentMode("problemStatement", idx, mode)}
-                              disabled={assignmentModeLoading}
-                            >
-                              <SelectTrigger className="w-28">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="open">Open</SelectItem>
-                                <SelectItem value="assigned">Assigned</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Judge/Assignment/Team Selection */}
-                    <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label>Judge Assignment</Label>
-                        <Select
-                          value={selectedJudgeAssignmentId}
-                          onValueChange={setSelectedJudgeAssignmentId}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select Judge" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allJudgeAssignments.map(a => (
-                              <SelectItem key={a._id} value={a._id}>
-                                {a.judge.email} ({getJudgeTypeLabel(a.judge.type)})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Assignment Scope</Label>
-                        <Select
-                          value={selectedAssignmentType}
-                          onValueChange={setSelectedAssignmentType}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="round">Round</SelectItem>
-                            <SelectItem value="problemStatement">Problem Statement</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={String(selectedAssignmentIndex)}
-                          onValueChange={v => setSelectedAssignmentIndex(Number(v))}
-                          className="mt-2"
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={selectedAssignmentType === "round" ? "Select Round" : "Select PS"} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(selectedAssignmentType === "round"
-                              ? hackathon?.rounds || []
-                              : hackathon?.problemStatements || []
-                            ).map((item, idx) => (
-                              <SelectItem key={idx} value={String(idx)}>
-                                {selectedAssignmentType === "round"
-                                  ? item.name || `Round #${idx + 1}`
-                                  : item.statement.slice(0, 30) + (item.statement.length > 30 ? "..." : "")}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Teams</Label>
-                        <MultiSelect
-                          options={teams.map(t => ({ value: t._id, label: t.name }))}
-                          value={selectedTeamIds}
-                          onChange={setSelectedTeamIds}
-                          placeholder="Select teams to assign"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-4 mb-6">
-                      <Button
-                        disabled={!selectedJudgeAssignmentId || selectedTeamIds.length === 0}
-                        onClick={() => {
-                          if (!selectedJudgeAssignmentId) {
-                            // Using a custom message box instead of alert()
-                            // For this example, I'll use window.alert as a quick placeholder
-                            // In a full application, you'd integrate a proper UI component (e.g., a toast or modal)
-                            window.alert("Please select a judge assignment first.");
-                            return;
-                          }
-                          if (selectedTeamIds.length === 0) {
-                            window.alert("Please select at least one team to assign.");
-                            return;
-                          }
-                          assignTeamsToJudge(selectedJudgeAssignmentId, selectedTeamIds);
-                        }}
-                      >
-                        Assign Selected Teams
-                      </Button>
-                      <Button
-                        variant="outline"
-                        disabled={autoDistributeLoading || allJudgeAssignments.length === 0 || teams.length === 0}
-                        onClick={async () => {
-                          setAutoDistributeLoading(true);
-                          // Call autoDistributeTeams without forceOverwrite initially
-                          await autoDistributeTeams(
-                            selectedAssignmentType,
-                            selectedAssignmentIndex,
-                            allJudgeAssignments.map(a => a._id),
-                            teams.map(t => t._id)
-                          );
-                          setAutoDistributeLoading(false);
-                        }}
-                      >
-                        Auto-Distribute Teams
-                      </Button>
-                    </div>
-                    {/* Current Assignments Table */}
-                    <div>
-                      <h4 className="font-semibold mb-4 text-lg flex items-center gap-2">
-                        <Users className="w-4 h-4 text-indigo-500" />
-                        Current Team Assignments
-                      </h4>
-                      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-                        <table className="min-w-full text-sm">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="p-3 border-b font-semibold text-left">Judge</th>
-                              <th className="p-3 border-b font-semibold text-left">Type</th>
-                              <th className="p-3 border-b font-semibold text-left">Assigned Teams</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {allJudgeAssignments.map(a => (
-                              <tr key={a._id} className="border-b hover:bg-indigo-50/30 transition">
-                                <td className="p-3 border-b">{a.judge.email}</td>
-                                <td className="p-3 border-b">{getJudgeTypeLabel(a.judge.type)}</td>
-                                <td className="p-3 border-b">
-                                  {Array.isArray(a.assignedTeams) && a.assignedTeams.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2 items-center">
-                                      {a.assignedTeams.map(teamId => {
-                                        const team = teams.find(t => t._id === teamId);
-                                        return (
-                                          <span key={teamId} className="inline-block bg-indigo-100 text-indigo-800 rounded px-2 py-1 text-xs font-medium">
-                                            {team ? team.name : teamId}
-                                          </span>
-                                        );
-                                      })}
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="ml-2 text-red-600 hover:bg-red-50 border border-red-200 px-2 py-1"
-                                        title="Unassign all teams from this judge"
-                                        onClick={() => assignTeamsToJudge(a._id, [])}
-                                      >
-                                        Unassign
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <span className="text-gray-400">None</span>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <JudgeManagementAssignments
+                  key={selectedAssignmentType + selectedRoundId}
+                  selectedJudgeAssignmentId={selectedJudgeAssignmentId}
+                  setSelectedJudgeAssignmentId={setSelectedJudgeAssignmentId}
+                  allJudgeAssignments={allJudgeAssignments}
+                  selectedAssignmentType={selectedAssignmentType}
+                  setSelectedAssignmentType={setSelectedAssignmentType}
+                  selectedRoundId={selectedRoundId}
+                  setSelectedRoundId={setSelectedRoundId}
+                  hackathon={hackathon}
+                  teams={teams}
+                  selectedTeamIds={selectedTeamIds}
+                  setSelectedTeamIds={setSelectedTeamIds}
+                  assignTeamsToJudge={assignTeamsToJudge}
+                  autoDistributeTeams={autoDistributeTeams}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JudgeAssignmentCard({ assignment, teams, onAssignTeams, onUnassignTeams, onUnassignSingleTeam, onAutoDistribute, getJudgeTypeIcon, getJudgeTypeLabel, getStatusBadge, removeJudgeAssignment }) {
+  if (!assignment || !assignment.judge) {
+    return (
+      <div className="bg-red-100 text-red-800 p-4 rounded-md">
+        Judge not found for assignment ID: {assignment?._id}
+      </div>
+    );
+  }
+  const [selectedTeamIds, setSelectedTeamIds] = React.useState([]);
+  const ps = assignment.assignedProblemStatements?.[0];
+  const round = assignment.assignedRounds?.[0];
+  // Only show teams not already assigned for assignment
+  const unassignedTeams = teams.filter(t => !assignment.assignedTeams?.includes(t._id));
+
+  // Debug log
+  console.log("Rendering Card UI for:", assignment._id);
+
+  // Strong debug visual
+  return (
+    <div style={{ background: '#f0f', padding: 20, border: '2px solid red', margin: 8 }}>
+      <div className="w-full bg-white border rounded-2xl shadow-lg flex flex-col md:flex-row items-stretch md:items-center gap-6 p-8 transition hover:shadow-xl">
+        {/* Judge Info */}
+        <div className="flex items-center gap-4 min-w-[220px]">
+          {/* Avatar placeholder */}
+          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-xl font-bold text-indigo-600">
+            {assignment.judge.email?.[0]?.toUpperCase() || <User className="w-6 h-6" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">
+                {assignment.judge?.name || 'Unknown Judge'} ({assignment.judge?.email || 'No Email'})
+              </h3>
+              {getJudgeTypeIcon(assignment.judge.type)}
+              <Badge className="ml-1" variant={assignment.judge.type === 'platform' ? 'secondary' : assignment.judge.type === 'sponsor' ? 'default' : 'outline'}>
+                {getJudgeTypeLabel(assignment.judge.type)}
+              </Badge>
+            </div>
+            {assignment.judge.sponsorCompany && (
+              <span className="text-xs text-gray-500">{assignment.judge.sponsorCompany}</span>
+            )}
+          </div>
+        </div>
+        {/* Assignment Scope */}
+        <div className="flex flex-col gap-2 min-w-[220px]">
+          {ps ? (
+            <div className="flex items-center gap-2">
+              <Badge variant={ps.type === "sponsored" ? "default" : "secondary"}>
+                {ps.type === "sponsored" ? "Sponsored" : "General"}
+              </Badge>
+              <span className="text-sm font-medium">{typeof ps.problemStatement === 'string' ? ps.problemStatement.slice(0, 40) : '-'}</span>
+              {ps.sponsorCompany && <span className="text-xs text-gray-500">({ps.sponsorCompany})</span>}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-gray-100 text-gray-600">No problem statement assigned</Badge>
+            </div>
+          )}
+          {round ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">Round</Badge>
+              <span className="text-sm font-medium">{round.roundName}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-gray-100 text-gray-600">No round assigned</Badge>
+            </div>
+          )}
+        </div>
+        {/* Teams Section */}
+        <div className="flex-1 flex flex-col gap-2 min-w-[260px]">
+          <span className="font-medium text-sm text-gray-700 mb-1">Teams:</span>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {Array.isArray(assignment.assignedTeams) && assignment.assignedTeams.length > 0 ? (
+              assignment.assignedTeams.map(teamId => {
+                const team = teams.find(t => t._id === teamId);
+                return (
+                  <span key={teamId} className="inline-flex items-center bg-indigo-100 text-indigo-800 rounded px-2 py-1 text-xs font-medium">
+                    {team ? team.name : teamId}
+                    <button
+                      className="ml-1 text-red-500 hover:text-red-700 focus:outline-none"
+                      title="Unassign this team"
+                      onClick={() => onUnassignSingleTeam(assignment._id, teamId)}
+                    >
+                      ×
+                    </button>
+                  </span>
+                );
+              })
+            ) : (
+              <span className="text-gray-400">None</span>
+            )}
+          </div>
+          {/* Multi-select for assigning more teams */}
+          <div className="flex gap-2 items-center">
+            <MultiSelect
+              options={unassignedTeams.map(t => ({ value: t._id, label: t.name }))}
+              value={selectedTeamIds}
+              onChange={setSelectedTeamIds}
+              placeholder="Assign more teams..."
+            />
+            <Button
+              size="sm"
+              className="ml-2"
+              onClick={() => {
+                if (selectedTeamIds.length > 0) onAssignTeams([...(assignment.assignedTeams || []), ...selectedTeamIds]);
+                setSelectedTeamIds([]);
+              }}
+              disabled={selectedTeamIds.length === 0}
+              title="Assign selected teams"
+            >
+              Assign
+            </Button>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onUnassignTeams}
+              disabled={!(Array.isArray(assignment.assignedTeams) && assignment.assignedTeams.length > 0)}
+              title="Unassign all teams"
+            >
+              Unassign All
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAutoDistribute}
+              title="Auto-distribute teams among judges for this group"
+            >
+              Auto-Distribute
+            </Button>
+          </div>
+        </div>
+        {/* Actions & Status */}
+        <div className="flex flex-col gap-3 items-end min-w-[120px]">
+          {getStatusBadge(assignment.status)}
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" title="Edit assignment">
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-600"
+              onClick={() => removeJudgeAssignment(assignment._id)}
+              title="Remove assignment"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
