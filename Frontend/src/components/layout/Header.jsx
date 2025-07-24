@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 function Header() {
   return (
-    <section className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative overflow-hidden">
+    <section className="h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
@@ -17,9 +17,9 @@ function Header() {
       {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 bg-grid-pattern"></div>
 
-      <div className="container mx-auto px-6 lg:px-8 relative z-10 flex flex-col lg:flex-row items-center justify-between min-h-screen py-20">
+      <div className="container mx-auto px-6 lg:px-8 relative z-10 h-full flex flex-col lg:flex-row items-center justify-center lg:justify-between">
         {/* Left Side: Main Content */}
-        <div className="w-full lg:w-3/5 flex flex-col space-y-12">
+        <div className="w-full lg:w-3/5 flex flex-col justify-center space-y-5 lg:space-y-6 xl:space-y-12 max-h-full">
           {/* Badge */}
           <BoxReveal boxColor="#6366f1" duration={0.3}>
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 text-sm font-medium border border-indigo-200 w-fit">
@@ -30,15 +30,15 @@ function Header() {
 
           {/* Main Headline */}
           <BoxReveal boxColor="#6366f1" duration={0.5}>
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold text-gray-900 leading-[1.1] tracking-tight">
               Build the{" "}
-              <span className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 bg-clip-text text-transparent animate-gradient">
+              <span className="bg-gradient-to-r from-indigo-500 to-indigo-600 bg-clip-text text-transparent animate-gradient">
                 Future
               </span>{" "}
               of Tech
-              <div className="flex items-center mt-4">
+              <div className="flex items-center mt-2 lg:mt-3 xl:mt-4">
                 <span className="text-slate-600">One</span>
-                <div className="mx-4 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-3xl lg:text-4xl font-bold shadow-lg transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                <div className="mx-4 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg text-2xl lg:text-3xl xl:text-4xl font-bold shadow-lg transform rotate-1 hover:rotate-0 transition-transform duration-300">
                   Hack
                 </div>
                 <span className="text-slate-600">at a Time</span>
@@ -48,7 +48,7 @@ function Header() {
 
           {/* Subtitle */}
           <BoxReveal boxColor="#6366f1" duration={0.5}>
-            <p className="text-xl lg:text-2xl text-slate-600 leading-relaxed max-w-2xl">
+            <p className="text-lg lg:text-xl xl:text-xl 2xl:text-2xl text-slate-600 leading-relaxed max-w-2xl">
               Join thousands of innovators building breakthrough solutions. From
               idea to deployment, we provide the platform where
               <span className="font-semibold text-indigo-600">
@@ -61,7 +61,7 @@ function Header() {
 
           {/* Stats */}
           <BoxReveal boxColor="#6366f1" duration={0.5}>
-            <div className="flex flex-wrap gap-8 text-sm">
+            <div className="flex flex-wrap gap-6 lg:gap-7 xl:gap-8 text-sm">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-slate-600">500+ Active Projects</span>
@@ -79,9 +79,9 @@ function Header() {
 
           {/* CTA Buttons */}
           <BoxReveal boxColor="#6366f1" duration={0.5}>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-3 lg:pt-4">
               <Link to="dashboard/explore-hackathons">
-                <InteractiveHoverButton className="bg-[#1b0c3f] hover:bg-[#2d1a5f] text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto text-center border-2 border-transparent hover:border-indigo-200 group">
+                <InteractiveHoverButton className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 w-full sm:w-auto text-center border-2 border-transparent hover:border-indigo-200 group">
                   <span className="flex items-center justify-center space-x-2">
                     <span>View Hackathons</span>
                   </span>
@@ -92,8 +92,8 @@ function Header() {
         </div>
 
         {/* Right Side: Enhanced Floating Tech Cards */}
-        <div className="w-full lg:w-2/5 items-center justify-center mt-16 lg:mt-0 hidden lg:flex">
-          <div className="relative w-[500px] h-[500px]">
+        <div className="w-full lg:w-2/5 items-center justify-center mt-6 lg:mt-0 hidden lg:flex">
+          <div className="relative w-[380px] h-[380px] xl:w-[420px] xl:h-[420px] 2xl:w-[500px] 2xl:h-[500px]">
             {/* AI/ML Card */}
             <div className="absolute top-[15%] left-[64%] glassmorphism rounded-xl p-4 shadow-xl animate-float animation-delay-500">
               <div className="flex items-center space-x-2">
@@ -101,7 +101,7 @@ function Header() {
                 <div className="text-xs font-mono text-gray-700">AI/ML</div>
               </div>
               <div className="mt-2 flex space-x-1">
-                <div className="w-8 h-1 bg-gradient-to-r from-green-300 to-emerald-400 rounded"></div>
+                <div className="w-7 h-1 bg-gradient-to-r from-green-300 to-emerald-400 rounded"></div>
                 <div className="w-4 h-1 bg-gradient-to-r from-emerald-300 to-green-400 rounded"></div>
               </div>
             </div>
@@ -121,7 +121,7 @@ function Header() {
               <div className="text-2xl mb-2">🌐</div>
               <div className="text-xs font-mono text-gray-700">Web3</div>
               <div className="mt-1">
-                <div className="w-10 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded animate-pulse"></div>
+                <div className="w-9 h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded animate-pulse"></div>
               </div>
             </div>
 
@@ -173,14 +173,14 @@ function Header() {
               <div className="text-lg mb-1">🥽</div>
               <div className="text-xs font-mono text-gray-700">AR/VR</div>
               <div className="mt-1">
-                <div className="w-8 h-1 bg-gradient-to-r from-violet-400 to-purple-500 rounded animate-pulse"></div>
+                <div className="w-7 h-1 bg-gradient-to-r from-violet-400 to-purple-500 rounded animate-pulse"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="absolute top-32 right-32 hidden xl:block">
+      <div className="absolute top-20 lg:top-28 xl:top-32 right-20 lg:right-28 xl:right-32 hidden xl:block">
         <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-gray-200 animate-fade-in-up animation-delay-500">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>

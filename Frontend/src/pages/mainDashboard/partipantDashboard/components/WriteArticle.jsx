@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // Add this import
 import { useAuth } from "../../../../context/AuthContext";
 import { ArrowLeft, Plus, X, Upload, Save, Send, Clock } from "lucide-react";
 import { Button } from "../../../../components/CommonUI/button";
@@ -18,6 +19,7 @@ import {
 } from "../../../../components/CommonUI/select";
 
 export function WriteArticle({ onBack, onSubmit }) {
+  const navigate = useNavigate(); // Add this hook
   const [formData, setFormData] = useState({
     title: "",
     excerpt: "",
@@ -38,6 +40,15 @@ export function WriteArticle({ onBack, onSubmit }) {
     "Mobile",
     "DevOps",
   ];
+
+  // Add this handler for the back button
+  const handleBackToBlog = () => {
+    if (onBack) {
+      onBack(); // Call the onBack prop if provided
+    } else {
+      navigate('/dashboard/blogs'); // Navigate to blogs page
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -135,7 +146,8 @@ export function WriteArticle({ onBack, onSubmit }) {
       <header className="bg-white/20 border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="default" size="sm" onClick={onBack} className="flex items-center gap-2">
+            {/* Updated the onClick handler */}
+            <Button variant="default" size="sm" onClick={handleBackToBlog} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Blogs
             </Button>
@@ -331,7 +343,7 @@ export function WriteArticle({ onBack, onSubmit }) {
                     )}
                     <h4 className="text-xl font-bold text-gray-900 mb-2">{formData.title}</h4>
                     {formData.excerpt && (
-                      <div className="text-gray-600 mb-4">{formData.excerpt}</div> // ✅ Corrected: use div instead of p
+                      <div className="text-gray-600 mb-4">{formData.excerpt}</div>
                     )}
                     <div className="flex items-center gap-4 text-sm text-gray-500">
                       {formData.category && <Badge variant="outline">{formData.category}</Badge>}

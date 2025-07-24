@@ -98,16 +98,27 @@ export function Blogs() {
     fetchBlogs();
   }, []);
 
-  // Handle write article navigation
-  const handleWriteArticle = () => {
+  useEffect(() => {
+  if (location.pathname === '/dashboard/blogs/write') {
     setCurrentView("write");
-  };
-
-  const handleArticleSubmit = (article) => {
-    setSubmittedArticle(article);
+  } else if (location.pathname === '/dashboard/blogs') {
     setCurrentView("list");
-    setShowApprovalDialog(true);
-  };
+  }
+}, [location.pathname]);
+
+
+  // Handle write article navigation
+const handleWriteArticle = () => {
+  navigate('/dashboard/blogs/write'); 
+};
+
+
+ const handleArticleSubmit = (article) => {
+  setSubmittedArticle(article);
+  setShowApprovalDialog(true);
+  navigate('/dashboard/blogs');
+};
+
 
   // Only show published blogs in the main view
   const publishedBlogs = blogs.filter((blog) => blog.status === "published");
@@ -179,12 +190,15 @@ export function Blogs() {
     }
   };
 
-  // If we're in write mode, show the write article component
-  if (currentView === "write") {
-    return (
-      <WriteArticle onBack={handleBackToBlogs} onSubmit={handleArticleSubmit} />
-    );
-  }
+ if (currentView === "write") {
+  return (
+    <WriteArticle 
+      onBack={() => navigate('/dashboard/blogs')} // Explicit navigation
+      onSubmit={handleArticleSubmit} 
+    />
+  );
+}
+
 
   const featuredBlogs = publishedBlogs.filter((blog) => blog.featured);
   const trendingBlogs = [...publishedBlogs]

@@ -90,6 +90,15 @@ function App() {
           }
         />
         <Route
+          path="/dashboard/blogs/write"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
           path="/dashboard/my-hackathons"
           element={
             <PrivateRoute>
@@ -166,6 +175,7 @@ function App() {
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
         <Route path="/judge" element={<PrivateRoute><JudgePanel /></PrivateRoute>} />
+        
         {/* Move JudgeProjectGallery under dashboard */}
         <Route path="/dashboard/judge/hackathon/:hackathonId/gallery" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
       </Routes>
