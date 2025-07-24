@@ -27,7 +27,7 @@ import {
 } from "../../../components/AdminUI/dropdown-menu"
 import { Search, Filter, Eye, Check, Clock, FileText, ActivityIcon } from "lucide-react"
 
-import ModalBlogDetails from "./ModalBlogDetails"
+import ModalBlogDetails from "../components/ModalBlogDetails"
 import { Pagination } from "../../../components/CommonUI/Pagination";
 
 export function BlogManage() {

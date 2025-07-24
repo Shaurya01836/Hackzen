@@ -40,7 +40,7 @@ import {
   MapPin,
   Loader2,
 } from "lucide-react";
-import ModalHackathonDetails from "./ModalHackathonDetails";
+import ModalHackathonDetails from "../components/ModalHackathonDetails";
 import {
   AlertDialog,
   AlertDialogAction,

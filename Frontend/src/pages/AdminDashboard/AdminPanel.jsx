@@ -20,6 +20,7 @@ import {
   Wrench,
   Clock,
   LayoutTemplateIcon,
+  LucideBadgeDollarSign,
 } from "lucide-react";
 
 import {
@@ -52,10 +53,11 @@ import { SupportInboxPage } from "./sections/support-inbox-page";
 import { BlogManage } from "./sections/BlogsRequest";
 import NewsletterSender from "./sections/NewsletterSender";
 import AddCertificateForm from "./sections/AddCertificateForm";
-import AdminHackathonSubmissionsPage from "./sections/AdminHackathonSubmissionsPage";
-import AdminSubmissionDetailsPage from "./sections/AdminSubmissionDetailsPage";
-import HackathonDetailsPage from "./sections/HackathonDetailsPage";
+import AdminHackathonSubmissionsPage from "./components/AdminHackathonSubmissionsPage";
+import AdminSubmissionDetailsPage from "./components/AdminSubmissionDetailsPage";
+import HackathonDetailsPage from "./components/HackathonDetailsPage";
 import PublicProfileView from "../mainDashboard/PublicProfileView";
+import { SiMoneygram } from "react-icons/si";
 
 export default function AdminPanel() {
   const navigate = useNavigate();
@@ -137,7 +139,7 @@ export default function AdminPanel() {
       onClick: () => setActiveSection("flagged"),
     },
     {
-      title: "Certifiacte Templates",
+      title: "Certificate Templates",
       icon: LayoutTemplateIcon,
       key: "certificateTemplate",
       onClick: () => setActiveSection("certificateTemplate"),
@@ -150,6 +152,12 @@ export default function AdminPanel() {
       icon: BarChart3,
       key: "analytics",
       onClick: () => setActiveSection("analytics"),
+    },
+    {
+      title: "Revenue",
+      icon: LucideBadgeDollarSign,
+      key: "revenue",
+      onClick: () => setActiveSection("revenue"),
     },
   ];
 
