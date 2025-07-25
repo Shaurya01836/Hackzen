@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../../../../../../components/CommonUI/card";
-import { AlertCircle, Users, UserPlus, Copy, Edit, LogOut } from "lucide-react";
+import { AlertCircle, Users, UserPlus, Copy, Edit, LogOut, Plus, UserCheck, X } from "lucide-react";
 import { Badge } from "../../../../../../components/CommonUI/badge";
 import {
   Avatar,
@@ -64,7 +64,7 @@ export default function TeamManagementSection({
   const [showJoinByCodeModal, setShowJoinByCodeModal] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joiningTeam, setJoiningTeam] = useState(false);
-  const [pendingTeam, setPendingTeam] = useState(null); // team object after join, before registration
+  const [pendingTeam, setPendingTeam] = useState(null);
   const [showJoinRegistration, setShowJoinRegistration] = useState(false);
   const [joinError, setJoinError] = useState("");
   const navigate = useNavigate();
@@ -87,7 +87,6 @@ export default function TeamManagementSection({
 
   useEffect(() => {
     if (!hackathon || !hackathon._id) return;
-    // Poll every 10 seconds
     const interval = setInterval(() => {
       fetchTeamInvites();
     }, 10000);
@@ -134,7 +133,7 @@ export default function TeamManagementSection({
       navigate("/dashboard/my-hackathons");
     } catch (err) {
       toast({ title: "Error", description: err?.response?.data?.message || "Registration failed" });
-      navigate("/dashboard/my-hackathons"); // Always navigate for debug
+      navigate("/dashboard/my-hackathons");
     }
   };
 
@@ -147,11 +146,9 @@ export default function TeamManagementSection({
       toast({ title: "Deleted", description: "Team has been deleted" });
       await fetchUserTeams();
       await refreshRegistrationStatus();
-      setUserTeams([]); // Clear teams after deletion
+      setUserTeams([]);
       setTimeout(() => {
         toast({ title: "No Team", description: "You are no longer part of any team for this hackathon." });
-        // Optionally redirect:
-        // navigate("/dashboard/my-hackathons");
       }, 500);
     } catch (err) {
       toast({
@@ -320,7 +317,7 @@ export default function TeamManagementSection({
       toast({ title: "Updated", description: "Team description updated" });
       setEditingTeam(null);
       fetchUserTeams();
-    } catch (err) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update team description",
@@ -352,200 +349,156 @@ export default function TeamManagementSection({
 
   return (
     <section ref={sectionRef} className="space-y-8">
-      <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
-        Team Management
-      </h2>
-
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-500" />
-                My Teams
-              </span>
-              {userTeams.length === 0 && (
-                <div className="flex justify-center gap-4 mb-4">
-                  <Button
-                    onClick={() => setShowCreateTeam(true)}
-                    variant="primary"
-                    size="sm"
-                  >
-                    Create Team
-                  </Button>
-                  <Button
-                    onClick={() => setShowJoinTeam(true)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Join Team
-                  </Button>
-                </div>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {userTeams.length > 0 && (
-              <div className="mb-4 text-green-700 text-center font-medium">
-                You already have a team for this hackathon. Manage your team below.
-              </div>
-            )}
-            {userTeams.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                You are not part of any team yet.
-              </div>
-            ) : (
+      {/* Header matching reference */}
+      <Card className="">
+        {/* Main content area */}
+        <div className="p-6">
+          {/* Create team section */}
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-700 mb-4">Create a team</h3>
+            
+            {userTeams.length > 0 ? (
+              // Show existing team
               userTeams.map((team) => (
-                <div
-                  key={team._id}
-                  className="mb-4 p-4 border rounded-lg bg-gray-50"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h4 className="font-semibold text-lg flex items-center gap-2">
-                        {team.name}
+                <div key={team._id} className="bg-gray-50 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                        Team Name: {team.name}
                         {team.leader._id?.toString() === user?._id?.toString() && (
                           <Button size="xs" variant="ghost" onClick={() => setEditingTeamName(team)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                         )}
                       </h4>
-                      <p className="text-sm text-gray-500">
-                        Code:{" "}
-                        <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-                          {team.teamCode}
-                        </span>
-                      </p>
                     </div>
-                    <Badge variant="default">
-                      {team.members.length}/{team.maxMembers}
-                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700"
+                      onClick={() => setShowUnregisterDialog(true)}
+                    >
+                      Cancel Team
+                    </Button>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    {team.members.map((member) => (
-                      <div
-                        key={member._id}
-                        className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border relative"
-                      >
-                        <Avatar className="w-6 h-6">
-                          <AvatarImage src={member.avatar} />
-                          <AvatarFallback>{member.name?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{member.name}</span>
-                        {member._id === team.leader._id && (
-                          <Badge variant="secondary">Leader</Badge>
-                        )}
-                        {/* Remove button for leader, Leave button for self */}
-                        {team.leader._id?.toString() === user?._id?.toString() && member._id !== team.leader._id && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                  {/* Team members section */}
+                  <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">
+                        Teammates ({team.members.length}/{team.maxMembers})
+                      </span>
+                    </div>
+                  
+
+                    {/* Current team member (leader) */}
+                    <div className="flex items-center justify-between p-3 bg-white rounded-lg border mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <span className="text-green-600 font-semibold text-sm">N</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{team.leader.name}</p>
+                        
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-indigo-500">Leader</span>
+                      </div>
+                    </div>
+
+                    {/* Other team members */}
+                    {team.members
+                      .filter(member => member._id !== team.leader._id)
+                      .map((member) => (
+                        <div key={member._id} className="flex items-center justify-between p-3 bg-white rounded-lg border mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-600 font-semibold text-sm">
+                                {member.name?.[0]?.toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{member.name}</p>
+                              <p className="text-sm text-gray-500">{member.email}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                      
+                            {team.leader._id?.toString() === user?._id?.toString() && (
                               <Button
                                 size="sm"
-                                variant="destructive"
-                                className="ml-2 flex items-center gap-1"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-700 ml-2"
+                                onClick={() => handleRemoveMember(team._id, member._id)}
                               >
-                                <Trash2 className="w-4 h-4" /> Remove
+                                <X className="w-4 h-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Remove {member.name}?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to remove <span className="font-semibold">{member.name}</span> from the team? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleRemoveMember(team._id, member._id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                  Yes, Remove
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
 
-                  {team.description && (
-                    <p className="text-sm text-gray-700 mt-2">
-                      <span className="font-medium text-gray-600">
-                        Description:
-                      </span>{" "}
-                      {team.description}
-                    </p>
-                  )}
-
-                  <div className="flex gap-2 mt-3 flex-wrap">
+                    {/* Add member button */}
                     {team.leader._id?.toString() === user?._id?.toString() && team.members.length < team.maxMembers && (
                       <Button
-                        size="sm"
                         variant="outline"
+                        size="sm"
+                        className="w-full border-dashed border-2 border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600"
                         onClick={() => handleShowInviteModal(team)}
                       >
-                        <UserPlus className="w-4 h-4 mr-2" />
-                        Invite
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add another Member
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        navigator.clipboard.writeText(team.teamCode);
-                        setCopiedTeamId(team._id);
-                        toast("Code copied!");
-                        setTimeout(() => setCopiedTeamId(null), 1500);
-                      }}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      Copy Code
-                    </Button>
+                  </div>
 
-                    {team.leader._id?.toString() === user?._id?.toString() ? (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditingTeam(team)}
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex items-center gap-1"
-                            >
-                              <Trash2 className="w-4 h-4" /> Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Team?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete the team <span className="font-semibold">{team.name}</span>? This action cannot be undone and all members will be removed from the team.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTeam(team._id)}
-                                className="bg-red-600 hover:bg-red-700 text-white"
-                              >
-                                Yes, Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </>
-                    ) : (
+                  {/* Action buttons */}
+                  <div className="flex gap-2 mt-4">
+              
+<Button
+  size="sm"
+  variant="outline"
+  onClick={() => {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(team.teamCode).then(() => {
+        setCopiedTeamId(team._id);
+        // Use react-hot-toast directly instead of the prop
+        toast.success("Team code copied to clipboard!");
+        setTimeout(() => setCopiedTeamId(null), 1500);
+      }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement("textarea");
+        textArea.value = team.teamCode;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopiedTeamId(team._id);
+        toast.success("Team code copied to clipboard!");
+        setTimeout(() => setCopiedTeamId(null), 1500);
+      });
+    } else {
+      // Fallback for browsers without clipboard API
+      const textArea = document.createElement("textarea");
+      textArea.value = team.teamCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopiedTeamId(team._id);
+      toast.success("Team code copied to clipboard!");
+      setTimeout(() => setCopiedTeamId(null), 1500);
+    }
+  }}
+>
+  <Copy className="w-4 h-4 mr-2" />
+  {copiedTeamId === team._id ? "Copied!" : "Copy Team Code"}
+</Button>
+
+                    
+                    {team.leader._id?.toString() !== user?._id?.toString() && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -579,64 +532,102 @@ export default function TeamManagementSection({
                   </div>
                 </div>
               ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Pending Invites */}
-        {pendingInvites.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Invites ({pendingInvites.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pendingInvites.map((invite) => (
-                <div
-                  key={invite._id}
-                  className="flex justify-between items-center border p-3 rounded-lg mb-2"
+            ) : (
+              // Show create team options
+              <div className="space-y-4">
+                <Button
+                  onClick={() => setShowCreateTeam(true)}
+                  variant="primary"
+                  size="lg"
+                  className="w-full"
                 >
-                  <div>
-                    <p className="font-medium">{invite.invitedEmail}</p>
-                    <p className="text-sm text-gray-500">
-                      Invited by <strong>{invite.invitedBy.name}</strong> to{" "}
-                      <strong>{invite.team.name}</strong>
-                    </p>
-                    <div className="mt-1">
-                      <Badge
-                        variant={
-                          invite.status === "pending"
-                            ? "default"
-                            : invite.status === "accepted"
-                            ? "success"
-                            : "destructive"
-                        }
-                      >
-                        {invite.status.charAt(0).toUpperCase() + invite.status.slice(1)}
-                      </Badge>
-                    </div>
-                  </div>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Team
+                </Button>
+                <div className="text-center text-gray-500">or</div>
+                <Button
+                  onClick={() => setShowJoinTeam(true)}
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Join Existing Team
+                </Button>
+              </div>
+            )}
+          </div>
 
-                  {invite.status === "pending" ? (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setRevokeInviteData(invite)}
-                    >
-                      Revoke
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="outline" disabled>
-                      {invite.status === "accepted" ? "Joined" : "Declined"}
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+          {/* Tabs section matching reference */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="flex space-x-8" aria-label="Tabs">
+              <button className="border-b-2 border-blue-500 text-blue-600 py-2 px-1 text-sm font-medium">
+               Pending Teammates
+              </button>
+            </nav>
+          </div>
+
+          {/* Suggestions section */}
+          <div className="space-y-4">
+
+        {/* Pending invites as suggestions */}
+{pendingInvites.map((invite) => {
+  // Debug logging
+  console.log("Invite debug:", {
+    inviteId: invite._id,
+    inviteEmail: invite.invitedEmail,
+    teamLeaderId: invite.team.leader?._id,
+    currentUserId: user?._id,
+    isLeader: invite.team.leader?._id?.toString() === user?._id?.toString()
+  });
+  
+  return (
+    <div key={invite._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
+          <span className="text-pink-600 font-semibold text-sm">
+            {invite.invitedEmail[0].toUpperCase()}
+          </span>
+        </div>
+        <div>
+          <p className="font-medium text-gray-800">
+            {invite.invitedEmail.split('@')[0]} ({invite.invitedEmail})
+          </p>
+          <p className="text-sm text-gray-500">Poornima College of Engineering</p>
+        </div>
       </div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
+          Pending
+        </span>
+       
+        {/* Cross button to remove pending invite */}
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
+          onClick={() => setRevokeInviteData(invite)}
+        >
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+})}
 
-      {/* Modals */}
+
+            {pendingInvites.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p>No pending invitations</p>
+              </div>
+            )}
+          </div>
+
+        
+        </div>
+      </Card>
+
+      {/* Modals - keeping all existing modals */}
       <InviteModal
         show={showInviteModal}
         onClose={() => setShowInviteModal(false)}
@@ -675,7 +666,7 @@ export default function TeamManagementSection({
             setEditingTeamName(null);
             fetchUserTeams();
             toast({ title: "Team name updated!", description: "Your team name has been updated.", variant: "success" });
-          } catch (err) {
+          } catch  {
             toast({ title: "Error", description: "Failed to update team name.", variant: "destructive" });
           } finally {
             setUpdatingTeamName(false);
@@ -690,7 +681,30 @@ export default function TeamManagementSection({
         onRevoked={fetchTeamInvites}
       />
 
-    
+      <AlertDialog open={showUnregisterDialog} onOpenChange={setShowUnregisterDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Team?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to cancel your team? This will delete the team and remove all members.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Team</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (userTeams[0]) {
+                  handleDeleteTeam(userTeams[0]._id);
+                }
+                setShowUnregisterDialog(false);
+              }}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Yes, Cancel Team
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

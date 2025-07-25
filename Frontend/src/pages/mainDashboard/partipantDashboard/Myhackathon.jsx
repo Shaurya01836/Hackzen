@@ -590,7 +590,7 @@ export default function MyHackathons() {
                 </div>
               ) : (
                 <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                  <CardContent className="flex flex-col items-center justify-center py-16 pt-16 text-center">
                     <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center mb-6">
                       <Heart className="w-8 h-8 text-pink-600" />
                     </div>
