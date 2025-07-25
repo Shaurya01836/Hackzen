@@ -4,8 +4,59 @@ const ChatRoom = require('../model/ChatRoomModel');
 const User = require('../model/UserModel');
 const RoleInvite = require('../model/RoleInviteModel');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const transporter = require('../config/mailer');
 const { awardOrganizerBadges } = require('../utils/badgeUtils');
+const HackathonRegistration = require('../model/HackathonRegistrationModel');
+const CertificatePage = require('../model/CertificatePageModel');
+const { createCanvas, loadImage } = require('canvas');
+const fs = require('fs'); // Add at the top
+
+// Helper: Send certificate email with personalized image
+async function sendCertificateEmail(transporter, to, buffer, hackathonTitle) {
+  return transporter.sendMail({
+    to,
+    subject: `Your Certificate for ${hackathonTitle}`,
+    text: `Congratulations! Please find your certificate attached.`,
+    attachments: [
+      {
+        filename: 'certificate.png',
+        content: buffer
+      }
+    ]
+  });
+}
+
+// Helper: Generate certificate image with personalized fields
+async function generateCertificateImage(template, personalizedFields) {
+  // template.preview can be a base64 data URL or a public URL
+  const img = await loadImage(template.preview);
+  const canvas = createCanvas(img.width, img.height);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, img.width, img.height);
+  console.log('Drawing fields:', personalizedFields); // Debug log
+  personalizedFields.forEach(field => {
+    ctx.save();
+    ctx.font = `${field.fontWeight} ${field.fontSize}px ${field.fontFamily}`;
+    ctx.fillStyle = field.color;
+    ctx.textAlign = field.textAlign;
+    ctx.textBaseline = 'top';
+    // Calculate x based on alignment
+    let drawX = field.x;
+    if (field.textAlign === 'center') {
+      drawX = field.x + field.width / 2;
+    } else if (field.textAlign === 'right') {
+      drawX = field.x + field.width;
+    }
+    // Add vertical offset for better alignment
+    const yOffset = field.y + (field.fontSize * 0.2);
+    ctx.fillText(field.content, drawX, yOffset);
+    ctx.restore();
+  });
+  const buffer = canvas.toBuffer('image/png');
+  // Save to disk for debugging (will overwrite each time)
+  fs.writeFileSync('debug-certificate.png', buffer);
+  return buffer;
+}
 
 // ✅ Create a new hackathon
 exports.createHackathon = async (req, res) => {
@@ -972,5 +1023,72 @@ exports.markRoundAdvancement = async (req, res) => {
   } catch (err) {
     console.error('Error in markRoundAdvancement:', err);
     res.status(500).json({ message: 'Server error updating round advancement' });
+  }
+};
+
+// POST /api/hackathons/:hackathonId/send-certificates
+exports.sendCertificates = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { templateId } = req.body;
+    const userId = req.user._id;
+    const userRole = req.user.role;
+    // Use your existing transporter config
+    // const transporter = nodemailer.createTransport(/* your SMTP config here, or use existing */);
+
+    // Fetch hackathon
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) return res.status(404).json({ error: 'Hackathon not found' });
+
+    // Only organizer or admin can send certificates
+    if (
+      userRole !== 'admin' &&
+      (!hackathon.organizer || hackathon.organizer.toString() !== userId.toString())
+    ) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    // Fetch all registrations for this hackathon with user details
+    const registrations = await HackathonRegistration.find({ hackathonId })
+      .populate('userId', 'name email');
+
+    if (!registrations.length) {
+      return res.status(400).json({ error: 'No registered participants found.' });
+    }
+
+    // Fetch certificate template
+    const template = await CertificatePage.findById(templateId);
+    if (!template) return res.status(404).json({ error: 'Certificate template not found' });
+
+    // Prepare sending certificates
+    let sentCount = 0;
+    let failed = [];
+    for (const reg of registrations) {
+      const participant = reg.userId;
+      // Replace placeholders in fields
+      const personalizedFields = template.fields.map(field => {
+        let content = field.content;
+        content = content.replace(/\{\{HACKATHON_NAME\}\}/g, hackathon.title || '');
+        content = content.replace(/\{\{PARTICIPANT_NAME\}\}/g, participant.name || '');
+        content = content.replace(/\{\{DATE\}\}/g, hackathon.endDate ? new Date(hackathon.endDate).toLocaleDateString() : new Date().toLocaleDateString());
+        return { ...field._doc, content };
+      });
+      try {
+        // 1. Generate certificate image
+        const buffer = await generateCertificateImage(template, personalizedFields);
+        // 2. Send email with image attachment
+        await sendCertificateEmail(transporter, participant.email, buffer, hackathon.title);
+        sentCount++;
+      } catch (err) {
+        failed.push({ email: participant.email, error: err.message });
+      }
+    }
+    return res.status(200).json({
+      message: `Certificates sent to ${sentCount} participants.`,
+      failed
+    });
+  } catch (err) {
+    console.error('Error sending certificates:', err);
+    res.status(500).json({ error: 'Failed to send certificates.' });
   }
 };

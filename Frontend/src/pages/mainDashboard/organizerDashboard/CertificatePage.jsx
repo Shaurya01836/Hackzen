@@ -4,12 +4,23 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "../../../components/CommonUI/card";
 import { Button } from "../../../components/CommonUI/button";
 import { Badge } from "../../../components/CommonUI/badge";
-import { Plus, Upload, Info } from "lucide-react";
+import { Plus, Upload, Info, Eye, Edit, Trash2 } from "lucide-react";
 import CertificateEditor from "./components/CertificateEditor";
+
+function replacePlaceholders(content, sampleData) {
+  return content
+    .replace(/\{\{HACKATHON_NAME\}\}/g, sampleData.hackathonName)
+    .replace(/\{\{PARTICIPANT_NAME\}\}/g, sampleData.participantName)
+    .replace(/\{\{DATE\}\}/g, sampleData.date);
+}
 
 export default function CertificatesPage() {
   const [templates, setTemplates] = useState([]);
   const [showEditor, setShowEditor] = useState(false);
+  const [editTemplate, setEditTemplate] = useState(null);
+  const [previewTemplate, setPreviewTemplate] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
  useEffect(() => {
   const token = localStorage.getItem("token"); // or from your Auth context
@@ -24,10 +35,48 @@ export default function CertificatesPage() {
     .catch((err) => console.error("Failed to load templates:", err));
 }, []);
 
+  const handleEdit = (template) => {
+    setEditTemplate(template);
+    setShowEditor(true);
+  };
+
+  const handlePreview = (template) => {
+    setPreviewTemplate(template);
+    setShowPreview(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this certificate?")) return;
+    const token = localStorage.getItem("token");
+    try {
+      await fetch(`http://localhost:3000/api/certificate-pages/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTemplates((prev) => prev.filter((t) => t._id !== id));
+    } catch (err) {
+      alert("Failed to delete certificate.");
+    }
+  };
 
   if (showEditor) {
-    return <CertificateEditor onBack={() => setShowEditor(false)} />;
+    return (
+      <CertificateEditor
+        onBack={() => {
+          setShowEditor(false);
+          setEditTemplate(null);
+        }}
+        template={editTemplate}
+      />
+    );
   }
+
+  // Sample data for preview
+  const sampleData = {
+    hackathonName: "Sample Hackathon",
+    participantName: "Jane Doe",
+    date: new Date().toLocaleDateString(),
+  };
 
   return (
     <div className="md:min-h-screen flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -77,12 +126,29 @@ export default function CertificatesPage() {
                       {template.description}
                     </p>
                   </div>
-                  <Button
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-lg"
-                    size="sm"
-                  >
-                    Use This Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      className="bg-white/90 text-indigo-700 hover:bg-indigo-100"
+                      size="sm"
+                      onClick={() => handlePreview(template)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" /> Preview
+                    </Button>
+                    <Button
+                      className="bg-white/90 text-green-700 hover:bg-green-100"
+                      size="sm"
+                      onClick={() => handleEdit(template)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" /> Edit
+                    </Button>
+                    <Button
+                      className="bg-white/90 text-red-700 hover:bg-red-100"
+                      size="sm"
+                      onClick={() => handleDelete(template._id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -133,6 +199,66 @@ export default function CertificatesPage() {
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && previewTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full relative">
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-800"
+              onClick={() => setShowPreview(false)}
+            >
+              &times;
+            </button>
+            <h2 className="text-xl font-bold mb-4">Certificate Preview</h2>
+            <div className="relative w-full max-w-xl mx-auto border shadow rounded-md overflow-hidden">
+              <img
+                src={previewTemplate.preview}
+                alt="Certificate Preview"
+                className="w-full object-contain"
+              />
+              {/* Overlay text fields */}
+              <div className="absolute inset-0">
+                {previewTemplate.fields.map((field, idx) => {
+                  let left = field.x;
+                  if (field.textAlign === 'center') {
+                    left = field.x + field.width / 2;
+                  } else if (field.textAlign === 'right') {
+                    left = field.x + field.width;
+                  }
+                  const top = field.y + field.fontSize * 0.2;
+                  let transform = 'none';
+                  if (field.textAlign === 'center') {
+                    transform = 'translateX(-50%)';
+                  } else if (field.textAlign === 'right') {
+                    transform = 'translateX(-100%)';
+                  }
+                  return (
+                    <div
+                      key={idx}
+                      className="absolute"
+                      style={{
+                        top,
+                        left,
+                        fontSize: field.fontSize,
+                        color: field.color,
+                        fontWeight: field.fontWeight,
+                        fontFamily: field.fontFamily,
+                        textAlign: field.textAlign,
+                        pointerEvents: 'none',
+                        whiteSpace: 'pre-wrap',
+                        transform,
+                      }}
+                    >
+                      {replacePlaceholders(field.content, sampleData)}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

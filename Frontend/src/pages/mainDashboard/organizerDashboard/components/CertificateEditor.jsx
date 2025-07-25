@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from "react"
+import React, { useRef, useState, useCallback, useEffect } from "react"
 import { ArrowLeft, Plus, Upload, Save, Eye, Trash2, Type } from "lucide-react"
 
 function getAverageColor(img, x, y, w, h) {
@@ -249,7 +249,7 @@ function DraggableTextField({
   )
 }
 
-export default function CertificateEditor({ onBack }) {
+export default function CertificateEditor({ onBack, template }) {
   const [fields, setFields] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedField, setSelectedField] = useState(null)
@@ -260,6 +260,16 @@ export default function CertificateEditor({ onBack }) {
   const [newFieldName, setNewFieldName] = useState("")
   const imgRef = useRef(null)
   const canvasRef = useRef(null)
+
+  // Initialize state from template if editing
+  useEffect(() => {
+    if (template) {
+      setFields(template.fields || []);
+      setSelectedImage(template.preview || null);
+      setCertificateTitle(template.title || "");
+      setCertificateDescription(template.description || "");
+    }
+  }, [template]);
 
   // Helper function to get field position relative to image
   const getImageRelativePosition = useCallback(field => {
@@ -308,7 +318,8 @@ export default function CertificateEditor({ onBack }) {
     }
   }
 
-  const addField = (fieldName = "Text Field") => {
+  // Update addField to accept a second argument for placeholder mode
+  const addField = (fieldName = "Text Field", isPlaceholder = false) => {
     const newField = {
       id: Date.now(),
       label: fieldName,
@@ -317,7 +328,7 @@ export default function CertificateEditor({ onBack }) {
       width: 200,
       height: 40,
       fontSize: 20,
-      content: fieldName === "Text Field" ? "Sample Text" : fieldName,
+      content: isPlaceholder ? fieldName : (fieldName === "Text Field" ? "Sample Text" : fieldName),
       color: "#222",
       fontFamily: "Arial, sans-serif",
       fontWeight: "normal",
@@ -384,20 +395,17 @@ export default function CertificateEditor({ onBack }) {
         return
       }
 
-      // Ensure all required field properties are present
-      const mappedFields = fields.map(f => ({
-        label: f.label || "Text Field",
-        x: f.x,
-        y: f.y,
-        width: f.width,
-        height: f.height,
-        fontSize: f.fontSize,
-        fontFamily: f.fontFamily,
-        fontWeight: f.fontWeight,
-        textAlign: f.textAlign,
-        color: f.color,
-        content: f.content || "Sample Text"
-      }))
+      // Save all fields as image-relative coordinates
+      const mappedFields = fields.map(f => {
+        const rel = getImageRelativePosition(f);
+        return {
+          ...f,
+          x: rel.x,
+          y: rel.y,
+          width: rel.width,
+          height: rel.height,
+        };
+      });
 
       const certificateData = {
         title: certificateTitle,
@@ -407,17 +415,34 @@ export default function CertificateEditor({ onBack }) {
         createdAt: new Date().toISOString()
       }
 
-      const response = await fetch(
-        "http://localhost:3000/api/certificate-pages",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}` // ✅ send the JWT token
-          },
-          body: JSON.stringify(certificateData)
-        }
-      )
+      let response;
+      if (template && template._id) {
+        // EDIT: Update existing template
+        response = await fetch(
+          `http://localhost:3000/api/certificate-pages/${template._id}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(certificateData)
+          }
+        );
+      } else {
+        // CREATE: New template
+        response = await fetch(
+          "http://localhost:3000/api/certificate-pages",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify(certificateData)
+          }
+        );
+      }
 
       if (response.ok) {
         alert("Certificate template saved successfully!")
@@ -609,6 +634,30 @@ export default function CertificateEditor({ onBack }) {
                 Add New Field
               </h3>
               <div className="space-y-3">
+                {/* Placeholder Buttons */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-mono border border-indigo-200 hover:bg-indigo-200 transition"
+                    onClick={() => addField("{{HACKATHON_NAME}}", true)}
+                  >
+                    {'{{HACKATHON_NAME}}'}
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-mono border border-indigo-200 hover:bg-indigo-200 transition"
+                    onClick={() => addField("{{PARTICIPANT_NAME}}", true)}
+                  >
+                    {'{{PARTICIPANT_NAME}}'}
+                  </button>
+                  <button
+                    type="button"
+                    className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-mono border border-indigo-200 hover:bg-indigo-200 transition"
+                    onClick={() => addField("{{DATE}}", true)}
+                  >
+                    {'{{DATE}}'}
+                  </button>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Field Name

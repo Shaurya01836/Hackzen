@@ -9,7 +9,8 @@ const {
   deleteHackathon,
   updateApprovalStatus,
   getAllHackathonsRaw,
-  getMyHackathons // ✅ ADD THIS
+  getMyHackathons, // ✅ ADD THIS
+  sendCertificates // <-- add this
 } = require('../controllers/hackathonController');
 
 
@@ -40,6 +41,9 @@ router.get('/my', protect, getMyHackathons);
 
 // Organizer/Admin: Mark which participants advance to a round
 router.patch('/:id/round-advancement', protect, isOrganizerOrAdmin, require('../controllers/hackathonController').markRoundAdvancement);
+
+// Add: Send certificates to registered participants
+router.post('/:hackathonId/send-certificates', protect, isOrganizerOrAdmin, sendCertificates);
 
 // 🆓 Public routes
 router.get('/', getAllHackathons);

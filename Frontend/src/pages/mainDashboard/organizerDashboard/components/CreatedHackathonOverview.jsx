@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import JudgeManagement from '../components/JudgeManagement'; // adjust path
+import SendCertificateModal from "./SendCertificateModal";
 
 export default function CreatedHackathonOverview({
   hackathon,
@@ -52,6 +53,7 @@ export default function CreatedHackathonOverview({
 }) {
   const navigate = useNavigate();
   const [showJudgeManagement, setShowJudgeManagement] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   const handleBack = () => {
     navigate('/dashboard/created-hackathons');
@@ -62,6 +64,9 @@ export default function CreatedHackathonOverview({
       <JudgeManagement hackathonId={hackathon._id} hideHackathonSelector={true} onBack={() => setShowJudgeManagement(false)} />
     );
   }
+
+  // Assume you have access to hackathonId from props or context
+  const hackathonId = hackathon._id;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
@@ -300,7 +305,7 @@ export default function CreatedHackathonOverview({
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-2 text-left bg-transparent"
-                    onClick={onSendCertificates}
+                    onClick={() => setShowSendModal(true)}
                   >
                     <Medal className="h-4 w-4" />
                     Send Certificates
@@ -343,6 +348,12 @@ export default function CreatedHackathonOverview({
           </div>
         </div>
       </div>
+      {showSendModal && (
+        <SendCertificateModal
+          hackathonId={hackathonId}
+          onClose={() => setShowSendModal(false)}
+        />
+      )}
     </div>
   );
 }

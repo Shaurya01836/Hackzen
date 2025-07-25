@@ -32,7 +32,7 @@ const buttonVariants = cva(
 )
 
 const Button = React.forwardRef(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
     const handleRipple = (e) => {
@@ -58,12 +58,16 @@ const Button = React.forwardRef(
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={loading || props.disabled}
         onClick={(e) => {
           handleRipple(e)
           props.onClick?.(e)
         }}
-        {...props}
-      />
+        {...props} // loading is not spread here
+      >
+        {loading ? <span className="animate-spin mr-2">⏳</span> : null}
+        {children}
+      </Comp>
     )
   }
 )
