@@ -173,6 +173,13 @@ function App() {
         
         {/* Move JudgeProjectGallery under dashboard */}
         <Route path="/dashboard/judge/hackathon/:hackathonId/gallery" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route
+          path="/dashboard/organizer/submission/:submissionId"
+          element={
+            <PrivateRoute>
+              <DashboardPage />
+            </PrivateRoute>
+      }/>
       </Routes>
     </>
   );

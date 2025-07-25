@@ -49,6 +49,7 @@ export default function CreatedHackathonOverview({
   onSendAnnouncements,
   onDeleteHackathon,
   onReviewSponsoredPS,
+  submissions = [], // <-- add this lin
   // onFetchSponsorProposals,
 }) {
   const navigate = useNavigate();
@@ -59,9 +60,10 @@ export default function CreatedHackathonOverview({
     navigate('/dashboard/created-hackathons');
   };
 
+
   if (showJudgeManagement) {
     return (
-      <JudgeManagement hackathonId={hackathon._id} hideHackathonSelector={true} onBack={() => setShowJudgeManagement(false)} />
+      <JudgeManagement hackathonId={hackathon._id} hideHackathonSelector={true} onBack={() => setShowJudgeManagement(false)} submissions={submissions}/>
     );
   }
 

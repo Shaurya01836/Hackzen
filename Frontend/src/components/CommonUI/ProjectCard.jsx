@@ -96,6 +96,9 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
         <h3 className="font-semibold text-sm line-clamp-2 text-gray-900 group-hover:text-indigo-600">
           {project.title}
         </h3>
+        {project.name && project.name !== '-' && (
+          <div className="text-xs text-gray-500 mb-1">Team: {project.name}</div>
+       )}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-2 pt-2">
             <Avatar className="w-6 h-6 ring-1 ring-gray-100">
