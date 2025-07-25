@@ -599,11 +599,10 @@ export default function HackathonTimeline({
 
                         {/* Eligibility notice */}
                         {!isRegistered && (
-                          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
-                            <div className="w-4 h-4 text-yellow-600">⚠️</div>
-                            <span className="text-sm text-yellow-700">
-                              You're not eligible to participate in this round.
-                            </span>
+                          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded ">
+                            <h1 className="text-sm text-yellow-700">
+                             You're not eligible to participate in this round.
+                            </h1>
                           </div>
                         )}
                       </div>

@@ -121,26 +121,7 @@ export default function HackathonOverview({ hackathon, sectionRef, user, onShowP
           </Card>
         </div>
 
-        {/* Additional Information Section - Full Width */}
-        {tags.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-purple-500" />
-                Technologies & Skills
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {tags.map((tag, index) => (
-                  <Badge key={index} variant="secondary" className="text-sm">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     </section>
   );

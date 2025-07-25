@@ -122,7 +122,6 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
     };
   }, [activeTab, sectionRefs, sections]);
 
-
   if (loading) {
     return <div className="p-10 text-center text-lg">Loading hackathon details...</div>;
   }
@@ -208,7 +207,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
           r.hackathonId?._id === hackathon._id
       );
       setIsRegistered(registered);
-    } catch (err) {
+    } catch  {
       setIsRegistered(false);
     }
   };
@@ -230,7 +229,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
         (r) => r.hackathonId === hackathon._id || r.hackathonId?._id === hackathon._id
       );
       if (reg) setRegistrationData(reg.formData);
-    } catch (err) {
+    } catch  {
       setRegistrationData(null);
     }
   };
@@ -259,7 +258,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
     try {
       const data = await fetchHackathonParticipants(hackathon._id);
       setParticipants(data.participants || []);
-    } catch (err) {
+    } catch  {
       setParticipantsError("Failed to fetch participants");
       setParticipants([]);
     } finally {
@@ -283,79 +282,70 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
     );
   }
 
-  const getDifficultyColor = (difficulty) => {
+  // Function to get difficulty text color (instead of background color)
+  const getDifficultyTextColor = (difficulty) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-500";
+        return "text-green-600";
       case "Intermediate":
-        return "bg-yellow-500";
+        return "text-yellow-600";
       case "Advanced":
-        return "bg-red-500";
+        return "text-red-600";
       default:
-        return "bg-gray-500";
+        return "text-gray-600";
     }
   };
 
   const RightSideContent = (
     <div className="space-y-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Event Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-              <Trophy className="h-6 w-6 text-yellow-500" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">{hackathon.prize}</p>
-              <p className="text-sm text-gray-500">Prize Pool</p>
-            </div>
-          </div>
+    <Card>
+  <CardHeader className="pb-3">
+    <CardTitle className="text-lg">Event Details</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-3">
+    <div className="flex items-center gap-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+        <Trophy className="h-5 w-5 text-yellow-500" />
+      </div>
+      <div>
+        <p className="text-xl font-bold text-green-600">{hackathon.prize}</p>
+        <p className="text-xs text-gray-500">Prize Pool</p>
+      </div>
+    </div>
 
-          <hr />
+    <hr />
 
-          <div className="flex items-center gap-4">
-             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-              <Users className="h-6 w-6 text-blue-500" />
-            </div>
-            <div>
-              <p className="font-semibold">{hackathon.participants} / {hackathon.maxParticipants}</p>
-              <p className="text-sm text-gray-500">Registered Participants</p>
-            </div>
-          </div>
+    <div className="flex items-center gap-3">
+       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+        <Users className="h-5 w-5 text-blue-500" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold">{hackathon.participants} / {hackathon.maxParticipants}</p>
+        <p className="text-xs text-gray-500">Registered Participants</p>
+      </div>
+    </div>
 
-          <div className="flex items-center gap-4">
-             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-              <Users className="h-6 w-6 text-gray-500" />
-            </div>
-            <div>
-              <p className="font-semibold">{hackathon.teamSize?.min || 1} - {hackathon.teamSize?.max || 4} members</p>
-              <p className="text-sm text-gray-500">Team Size</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-              <Award className="h-6 w-6 text-red-500" />
-            </div>
-            <div>
-              <Badge className={`${getDifficultyColor(hackathon.difficulty)} text-white`}>{hackathon.difficulty}</Badge>
-              <p className="text-sm text-gray-500 mt-1">Difficulty Level</p>
-            </div>
-          </div>
-
-           <div className="flex items-center gap-4">
-             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
-              <MapPin className="h-6 w-6 text-gray-500" />
-            </div>
-            <div>
-              <p className="font-semibold">{hackathon.location}</p>
-              <p className="text-sm text-gray-500">Location</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex items-center gap-3">
+       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+        <Users className="h-5 w-5 text-gray-500" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold">{hackathon.teamSize?.min || 1} - {hackathon.teamSize?.max || 4} members</p>
+        <p className="text-xs text-gray-500">Team Size</p>
+      </div>
+    </div>
+    
+    <div className="flex items-center gap-3">
+       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+        <MapPin className="h-5 w-5 text-gray-500" />
+      </div>
+      <div>
+        <p className="text-sm font-semibold">{hackathon.location || "TBA"}</p>
+        <p className="text-xs text-gray-500">Location</p>
+      </div>
+    </div>
+  </CardContent>
+</Card>
 
       <div>
           <SmartCountdown hackathon={hackathon} />

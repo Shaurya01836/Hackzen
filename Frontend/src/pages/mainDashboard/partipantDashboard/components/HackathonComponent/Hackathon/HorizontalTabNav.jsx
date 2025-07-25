@@ -12,27 +12,12 @@ export default function HorizontalTabNav({
 }) {
   return (
     <>
-      {/* Injected styles for the smooth slide-down animation */}
-      <style>{`
-        @keyframes slideInDown {
-          from {
-            transform: translateY(-100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in-down {
-          animation: slideInDown 0.3s ease-out forwards;
-        }
-      `}</style>
+     
       <div
         className={cn(
           "w-full z-30 border-b bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50",
           // When fixed, apply the animation and a shadow
-          isFixed && "fixed top-0 right-0 left-0 lg:left-[255px] shadow-md animate-slide-in-down"
+          isFixed && "fixed top-0 right-0 left-0 lg:left-[255px] border-b "
         )}
       >
         <div className="max-w-6xl px-4 flex items-center justify-between">

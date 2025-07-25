@@ -192,156 +192,107 @@ const handleWriteArticle = () => {
 }
 
   if (selectedPost) {
-    return (
-      <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-        {/* Header */}
-        <header className="bg-white/20 px-6 py-4 ">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+  return (
+    <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+      {/* Back Button/Header */}
+      <header className="bg-white/20 px-6 pt-2">
+        <button
+          variant="default"
+          size="sm"
+          onClick={handleBackToBlogs}
+          className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-2 py-1 transition-all duration-100 ease-in-out"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back
+        </button>
+      </header>
+
+      {/* Main Scrollable Area */}
+      <div className="flex-1 overflow-auto px-6 py-4">
+        <div className=" mx-auto space-y-8">
+
+          {/* 1) Title */}
+          <h1 className="text-4xl font-bold text-gray-900 leading-tight">
+            {selectedPost.title}
+          </h1>
+
+          {/* 2) Creator + Meta */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="w-10 h-10 ring-2 ring-indigo-100">
+                <AvatarImage src={selectedPost.author.avatar} />
+                <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm font-bold">
+                  {selectedPost.author.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {selectedPost.author.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {new Date(selectedPost.publishedAt).toLocaleDateString()} ·{" "}
+                  {selectedPost.readTime} min read
+                </p>
+              </div>
+            </div>
+
+            {/* 3) Like & Share */}
+            <div className="flex items-center gap-2">
               <Button
-                variant="default"
+                variant="outline"
                 size="sm"
-                onClick={handleBackToBlogs}
-                className="flex items-center gap-2"
+                onClick={handleLike}
+                className={`flex items-center gap-1 px-3 py-1 transition ${
+                  isLiked
+                    ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
               >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Blogs
+                <Heart
+                  className={`w-4 h-4 ${isLiked ? "fill-red-600" : ""}`}
+                />
+                <span className="text-sm">{likeCount}</span>
               </Button>
-              <Separator orientation="vertical" className="h-6" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(window.location.href)
+                    .then(() => toast.success("🔗 Copied!"))
+                    .catch(() => toast.error("❌ Copy failed"));
+                }}
+                className="flex items-center gap-1 px-3 py-1 text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition"
+              >
+                <Share2 className="w-4 h-4" />
+                <span className="text-sm">Share</span>
+              </Button>
             </div>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto px-6 py-8 ">
-          <div className="max-w-full mx-auto space-y-8">
-            {/* Cover Image */}
-            {selectedPost.image && (
-              <Card className="overflow-hidden rounded-xl shadow-lg">
-                <img
-                  src={selectedPost.image}
-                  alt={selectedPost.title}
-                  className="w-full h-96 object-cover"
-                />
-              </Card>
-            )}
+          {/* 4) Cover Image */}
+          {selectedPost.image && (
+            <div className="overflow-hidden rounded-lg shadow-sm">
+              <img
+                src={selectedPost.image}
+                alt={selectedPost.title}
+                className="w-full h-80 object-cover"
+              />
+            </div>
+          )}
 
-            {/* Article Meta & Title */}
-            <Card className="border border-gray-200 bg-white/70">
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <CardTitle className="text-3xl font-bold text-gray-900 mb-3">
-                      {selectedPost.title}
-                    </CardTitle>
-                    <CardDescription className="text-lg text-gray-600">
-                      {selectedPost.excerpt}
-                    </CardDescription>
-                  </div>
-
-                  {/* Like and Share buttons positioned at top right */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleLike}
-                      className={`flex gap-2 items-center transition-all ${
-                        isLiked
-                          ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                          : "text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${isLiked ? "fill-red-600" : ""}`}
-                      />
-                      {likeCount}
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-all"
-                      onClick={() => {
-                        navigator.clipboard
-                          .writeText(window.location.href)
-                          .then(() => {
-                            toast.success("🔗 Link copied to clipboard!");
-                          })
-                          .catch((err) => {
-                            toast.error("❌ Failed to copy link");
-                            console.error("Clipboard error:", err);
-                          });
-                      }}
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                {/* Author + Meta */}
-                <div className="flex items-center justify-between flex-wrap gap-4 my-6">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10 ring-2 ring-indigo-100">
-                      <AvatarImage src={selectedPost.author.avatar} />
-                      <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm font-bold">
-                        {selectedPost.author.name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {selectedPost.author.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {selectedPost.author.role}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />{" "}
-                      {new Date(selectedPost.publishedAt).toLocaleDateString()}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" /> {selectedPost.readTime} min
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />{" "}
-                      {selectedPost.views.toLocaleString()} views
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2">
-                  {selectedPost.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="outline"
-                      className="px-2 py-1 text-sm"
-                    >
-                      <Tag className="w-3 h-3 mr-1" /> {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Full Content */}
-            <Card className="border border-gray-200 bg-white/70 py-4">
-              <CardContent className="prose max-w-none text-gray-800 prose-lg leading-relaxed">
-                <div
-                  dangerouslySetInnerHTML={{ __html: selectedPost.content }}
-                />
-              </CardContent>
-            </Card>
+          {/* 5) Full Article Content */}
+          <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed">
+            <div
+              dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+            />
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">

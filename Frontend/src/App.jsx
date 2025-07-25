@@ -9,7 +9,6 @@ import {
 import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/Home/LandingPage";
 import NotFound from "./pages/Notfound";
-import Page from "./pages/AdminDashboard/AdminPanel";
 import LoginPage from "./pages/Auth/LoginPage";
 import RegistrationPage from "./pages/Auth/RegistrationPage";
 import DashboardPage from "./pages/mainDashboard/Page";
@@ -23,7 +22,6 @@ import { ProfileSection } from "./pages/mainDashboard/ProfileSection";
 import { Blogs } from "./pages/mainDashboard/partipantDashboard/Blogs";
 import InviteAccept from "./pages/InviteAccept";
 import InviteRole from "./pages/InviteRole";
-// import { MyHackathons } from "./pages/mainDashboard/sections/Myhackthon";
 import { HackathonDetails } from "./pages/AdminDashboard/components/HackathonDetails";
 import JudgePanel from "./pages/mainDashboard/judgeDashboard/JudgePanel";
 import { ProjectArchive } from "./pages/mainDashboard/partipantDashboard/ProjectArchive";
@@ -148,9 +146,6 @@ function App() {
         {/* Edit Hackathon Full Page */}
         <Route path="/dashboard/edit-hackathon/:id" element={<PrivateRoute><EditHackathonPage /></PrivateRoute>} />
 
-        {/* Explore */}
-        <Route path="/explore" element={<PrivateRoute><ExploreHackathons /></PrivateRoute>} />
-        <Route path="/explore/:id" element={<PrivateRoute><HackathonDetailsPage /></PrivateRoute>} />
 
         {/* Profile */}
         <Route path="/dashboard/profile" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

@@ -463,10 +463,13 @@ export function ExploreHackathons() {
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative">
       {/* Filter Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out",
-        showFilterSidebar ? "translate-x-0" : "translate-x-full"
-      )}>
+    <div className={cn(
+  "fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out",
+  showFilterSidebar ? "translate-x-0" : "translate-x-full",
+
+  !showFilterSidebar && "invisible"
+)}>
+
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-between p-6 border-b">
             <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
