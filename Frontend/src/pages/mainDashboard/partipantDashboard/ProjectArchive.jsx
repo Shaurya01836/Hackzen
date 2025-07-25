@@ -213,9 +213,7 @@ export function ProjectArchive() {
         </div>
 
         <Tabs value="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-1 rounded-lg px-5">
-            <TabsTrigger value="all">All Projects</TabsTrigger>
-          </TabsList>
+          
 
           <TabsContent value="all">
             {loading ? (

@@ -83,7 +83,7 @@ export function ProjectCard({ project, onClick , user, judgeScores = [] }) {
         <img
           src={coverImage}
           alt={project.title}
-          className="w-full h-full object-contain bg-white group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover bg-white group-hover:scale-105 transition-transform duration-300"
           onError={e => { e.target.onerror = null; e.target.src = '/assets/default-banner.png'; }}
         />
         {alreadyScored && (

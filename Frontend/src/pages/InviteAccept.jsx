@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, UserPlus, ArrowRight, XCircle, Mail, Users } from "lucide-react";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
 import { HackathonRegistration } from "./mainDashboard/partipantDashboard/components/RegistrationHackathon";
@@ -184,11 +184,17 @@ export function InviteAccept() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <h2 className="text-xl font-semibold mb-2">Processing Invitation</h2>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <Card className="w-full max-w-lg border-0 shadow-xl">
+          <CardContent className="p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 relative">
+              <div className="absolute inset-0 bg-indigo-100 rounded-full animate-pulse"></div>
+              <div className="absolute inset-2 bg-indigo-500 rounded-full animate-spin"></div>
+              <div className="absolute inset-4 bg-white rounded-full flex items-center justify-center">
+                <Mail className="w-4 h-4 text-indigo-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Processing Invitation</h2>
             <p className="text-gray-600">Please wait while we verify your invitation...</p>
           </CardContent>
         </Card>
@@ -198,27 +204,33 @@ export function InviteAccept() {
 
   if (status === "login") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="w-8 h-8 text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <Card className="w-full max-w-lg border-0 shadow-xl">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
+              <UserPlus className="w-10 h-10 text-indigo-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Join the Team!</CardTitle>
+            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">Join the Team!</CardTitle>
+            <p className="text-gray-600">You've received a special invitation</p>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 px-8 pb-8">
             {inviteData && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-blue-900 mb-2">Team Invitation</h3>
-                <p className="text-blue-800 text-sm">
-                  You've been invited to join <strong>{inviteData.team?.name}</strong> for{" "}
-                  <strong>{inviteData.hackathon?.title}</strong>
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                    <Users className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-indigo-900">Team Invitation</h3>
+                </div>
+                <p className="text-indigo-800">
+                  You've been invited to join <span className="font-bold">{inviteData.team?.name}</span> for{" "}
+                  <span className="font-bold">{inviteData.hackathon?.title}</span>
                 </p>
               </div>
             )}
             <div className="space-y-4">
-              <p className="text-gray-600">
-                To accept this invitation, you need to have an account. Please log in or create a new account.
+              <p className="text-gray-600 text-center leading-relaxed">
+                To accept this invitation, you need to have an account. Please log in or create a new account to continue.
               </p>
               <div className="space-y-3">
                 <Button 
@@ -226,9 +238,9 @@ export function InviteAccept() {
                     localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
                     navigate("/login");
                   }}
-                  className="w-full"
+                  className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
                 >
-                  <ArrowRight className="w-4 h-4 mr-2" />
+                  <ArrowRight className="w-5 h-5 mr-3" />
                   Login to Existing Account
                 </Button>
                 <Button 
@@ -237,14 +249,14 @@ export function InviteAccept() {
                     localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
                     navigate("/register");
                   }}
-                  className="w-full"
+                  className="w-full h-12 border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-medium rounded-lg"
                 >
-                  <UserPlus className="w-4 h-4 mr-2" />
+                  <UserPlus className="w-5 h-5 mr-3" />
                   Create New Account
                 </Button>
               </div>
             </div>
-            <div className="text-center">
+            <div className="text-center pt-4 border-t border-gray-100">
               <p className="text-sm text-gray-500">
                 After logging in, you'll be automatically redirected back here to accept the invitation.
               </p>
@@ -257,31 +269,38 @@ export function InviteAccept() {
 
   if (status === "wronguser") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-pink-50">
+        <Card className="w-full max-w-lg border-0 shadow-xl">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
+              <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Invitation Error</CardTitle>
+            <CardTitle className="text-3xl font-bold text-gray-900">Account Mismatch</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-center text-gray-600">{message}</p>
-            <Button 
-              onClick={() => {
-                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
-                localStorage.removeItem("user");
-                localStorage.removeItem("token");
-                navigate("/login");
-              }}
-              className="w-full"
-              variant="destructive"
-            >
-              Switch Account
-            </Button>
-            <Button onClick={() => navigate("/dashboard")} className="w-full" variant="outline">
-              Go to Dashboard
-            </Button>
+          <CardContent className="space-y-6 px-8 pb-8">
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 rounded-xl border border-red-100">
+              <p className="text-red-800 leading-relaxed">{message}</p>
+            </div>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => {
+                  localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                  localStorage.removeItem("user");
+                  localStorage.removeItem("token");
+                  navigate("/login");
+                }}
+                className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg"
+              >
+                Switch Account
+              </Button>
+              <Button 
+                onClick={() => navigate("/dashboard")} 
+                variant="outline"
+                className="w-full h-12 border-gray-200 text-gray-700 hover:bg-gray-50 font-medium rounded-lg"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -291,39 +310,41 @@ export function InviteAccept() {
   // Show login/register modal
   if (showLoginModal) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="w-8 h-8 text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <Card className="w-full max-w-lg border-0 shadow-xl">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
+              <UserPlus className="w-10 h-10 text-indigo-600" />
             </div>
-            <CardTitle className="text-2xl font-bold">Register or Log In</CardTitle>
+            <CardTitle className="text-3xl font-bold text-gray-900">Welcome!</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-gray-600 text-center">
+          <CardContent className="space-y-6 px-8 pb-8">
+            <p className="text-gray-600 text-center leading-relaxed">
               Please register or log in to accept this invitation and join the hackathon.
             </p>
-            <Button 
-              onClick={() => {
-                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
-                navigate("/login");
-              }}
-              className="w-full"
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Login to Existing Account
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => {
-                localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
-                navigate("/register");
-              }}
-              className="w-full"
-            >
-              <UserPlus className="w-4 h-4 mr-2" />
-              Create New Account
-            </Button>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => {
+                  localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                  navigate("/login");
+                }}
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
+              >
+                <ArrowRight className="w-5 h-5 mr-3" />
+                Login to Existing Account
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  localStorage.setItem("pendingInviteRedirect", `/invite/${inviteId}`);
+                  navigate("/register");
+                }}
+                className="w-full h-12 border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-medium rounded-lg"
+              >
+                <UserPlus className="w-5 h-5 mr-3" />
+                Create New Account
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -333,27 +354,39 @@ export function InviteAccept() {
   // Show accept/reject modal
   if (showAcceptModal && inviteData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="w-8 h-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Team Invitation</CardTitle>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <Card className="w-full max-w-lg border-0 shadow-xl">
+          <CardHeader className="text-center pb-4">
+           
+            <CardTitle className="text-3xl font-bold text-gray-900">Team Invitation</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-green-900 mb-2">You've been invited!</h3>
-              <p className="text-green-800 text-sm">
-                Join <strong>{inviteData.team?.name}</strong> for <strong>{inviteData.hackathon?.title}</strong>?
+          <CardContent className="space-y-6 px-8 pb-8">
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-indigo-900">You've been invited!</h3>
+              </div>
+              <p className="text-indigo-800 leading-relaxed">
+                Join <span className="font-bold">{inviteData.team?.name}</span> for <span className="font-bold">{inviteData.hackathon?.title}</span>
               </p>
             </div>
-            <div className="flex gap-3">
-              <Button onClick={handleAccept} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
-                <CheckCircle className="w-4 h-4 mr-2" /> Accept
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                onClick={handleAccept} 
+                className="h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
+              >
+                <CheckCircle className="w-5 h-5 mr-2" /> 
+                Accept
               </Button>
-              <Button onClick={handleReject} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
-                <XCircle className="w-4 h-4 mr-2" /> Reject
+              <Button 
+                onClick={handleReject} 
+                variant="outline"
+                className="h-12 border-red-200 text-red-700 hover:bg-red-50 font-medium rounded-lg"
+              >
+                <XCircle className="w-5 h-5 mr-2" /> 
+                Decline
               </Button>
             </div>
           </CardContent>
@@ -365,60 +398,99 @@ export function InviteAccept() {
   // Show registration form after accepting invite
   if (showRegistrationForm && inviteData && inviteData.hackathon) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="w-full max-w-2xl p-6">
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-            <p className="text-lg font-semibold text-blue-900">
-              {inviteData.invitedBy?.name || inviteData.invitedBy?.email || "A friend"} is inviting you to join the hackathon <span className="font-bold">{inviteData.hackathon?.title}</span>!
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8">
+        <div className="flex flex-col items-center justify-center">
+          <div className="w-full max-w-3xl px-6">
+            <div className="mb-8 p-6 bg-white rounded-xl shadow-lg border border-indigo-100">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-full flex items-center justify-center">
+                  <Users className="w-6 h-6 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Complete Your Registration</h2>
+                  <p className="text-gray-600">Join the hackathon and start building!</p>
+                </div>
+              </div>
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border border-indigo-100">
+                <p className="text-indigo-900 leading-relaxed">
+                  <span className="font-semibold">{inviteData.invitedBy?.name || inviteData.invitedBy?.email || "A friend"}</span> is inviting you to join <span className="font-bold">{inviteData.hackathon?.title}</span>!
+                </p>
+              </div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100">
+              <HackathonRegistration
+                hackathon={inviteData.hackathon}
+                onBack={() => setShowRegistrationForm(false)}
+                onSuccess={handleRegistrationSubmit}
+                inviteMode={true}
+              />
+            </div>
           </div>
-          <HackathonRegistration
-            hackathon={inviteData.hackathon}
-            onBack={() => setShowRegistrationForm(false)}
-            onSuccess={handleRegistrationSubmit}
-            inviteMode={true}
-          />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-            status === "accepted" ? "bg-green-100" : "bg-red-100"
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+      <Card className="w-full max-w-lg border-0 shadow-xl">
+        <CardHeader className="text-center pb-4">
+          <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-lg ${
+            status === "accepted" 
+              ? "bg-gradient-to-br from-green-100 to-green-200" 
+              : "bg-gradient-to-br from-red-100 to-red-200"
           }`}>
             {status === "accepted" ? (
-              <CheckCircle className="w-8 h-8 text-green-600" />
+              <CheckCircle className="w-10 h-10 text-green-600" />
             ) : (
-              <AlertCircle className="w-8 h-8 text-red-600" />
+              <AlertCircle className="w-10 h-10 text-red-600" />
             )}
           </div>
-          <CardTitle className="text-2xl font-bold">
-            {status === "accepted" ? "Welcome to the Team!" : "Invitation Error"}
+          <CardTitle className="text-3xl font-bold text-gray-900">
+            {status === "accepted" ? "Welcome to the Team!" : "Something went wrong"}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <p className="text-center text-gray-600">{message}</p>
+        <CardContent className="space-y-6 px-8 pb-8">
+          <div className={`p-6 rounded-xl border ${
+            status === "accepted" 
+              ? "bg-gradient-to-r from-green-50 to-emerald-50 border-green-100" 
+              : "bg-gradient-to-r from-red-50 to-pink-50 border-red-100"
+          }`}>
+            <p className={`leading-relaxed ${
+              status === "accepted" ? "text-green-800" : "text-red-800"
+            }`}>
+              {message}
+            </p>
+          </div>
           
           {status === "accepted" && (
-            <div className="space-y-4">
-              <div className="bg-green-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-green-900 mb-2">What's Next?</h3>
-                <ul className="text-green-800 text-sm space-y-1">
-                  <li>• Check your dashboard for team details</li>
-                  <li>• Connect with your teammates</li>
-                  <li>• Start working on your project</li>
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-100">
+                <h3 className="font-semibold text-indigo-900 mb-4 flex items-center gap-2">
+                  <ArrowRight className="w-5 h-5" />
+                  What's Next?
+                </h3>
+                <ul className="text-indigo-800 space-y-2">
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                    Check your dashboard for team details
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                    Connect with your teammates
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                    Start working on your project
+                  </li>
                 </ul>
               </div>
               
               <Button 
                 onClick={() => navigate("/dashboard/my-hackathons")}
-                className="w-full"
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
               >
-                <ArrowRight className="w-4 h-4 mr-2" />
+                <ArrowRight className="w-5 h-5 mr-3" />
                 Go to My Hackathons
               </Button>
             </div>
@@ -427,7 +499,7 @@ export function InviteAccept() {
           {status === "error" && (
             <Button 
               onClick={() => navigate("/dashboard")}
-              className="w-full"
+              className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg"
             >
               Go to Dashboard
             </Button>
@@ -438,4 +510,4 @@ export function InviteAccept() {
   );
 }
 
-export default InviteAccept; 
+export default InviteAccept;
