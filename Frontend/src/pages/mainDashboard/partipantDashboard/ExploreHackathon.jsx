@@ -13,6 +13,11 @@ import {
   Star,
   Heart,
   ExternalLink,
+  Filter,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import {
   Card,
@@ -36,12 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/CommonUI/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../components/CommonUI/tabs";
 import { cn } from "../../../lib/utils";
 import { HackathonRegistration } from "./components/RegistrationHackathon";
 import { HackathonDetails } from "./components/HackathonDetails";
@@ -58,6 +57,8 @@ export function ExploreHackathons() {
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
   const [registeredHackathonIds, setRegisteredHackathonIds] = useState([]);
+  const [showFilterSidebar, setShowFilterSidebar] = useState(false);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
 
   useEffect(() => {
     const fetchRegisteredHackathons = async () => {
@@ -74,7 +75,6 @@ export function ExploreHackathons() {
           }
         );
 
-        // Safely extract hackathon IDs from registrations, filtering out null values
         const registeredHackathonIds = res.data
           .filter(
             (registration) =>
@@ -86,7 +86,6 @@ export function ExploreHackathons() {
         setRegisteredHackathonIds(registeredHackathonIds);
       } catch (err) {
         console.error("Error fetching registered hackathons", err);
-        // Set empty array as fallback
         setRegisteredHackathonIds([]);
       }
     };
@@ -117,7 +116,6 @@ export function ExploreHackathons() {
     fetchHackathons();
   }, []);
 
-  // Check URL params on component mount and when hackathons are loaded
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const hackathonId = urlParams.get("hackathon");
@@ -128,7 +126,6 @@ export function ExploreHackathons() {
         const transformedHackathon = transformHackathonData(hackathon);
         setSelectedHackathon(transformedHackathon);
       } else {
-        // If hackathon ID is in URL but not found, clear the URL params
         const newParams = new URLSearchParams(location.search);
         newParams.delete("hackathon");
         newParams.delete("title");
@@ -139,7 +136,19 @@ export function ExploreHackathons() {
     }
   }, [hackathons, location.search, navigate, location.pathname]);
 
-  // Transform hackathon data helper function
+  // Auto-rotate carousel
+  useEffect(() => {
+    const featuredHackathons = hackathons.slice(0, 5); // Take first 5 as featured
+    if (featuredHackathons.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentCarouselIndex((prev) => 
+          prev === featuredHackathons.length - 1 ? 0 : prev + 1
+        );
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [hackathons]);
+
   const transformHackathonData = (hackathon) => {
     return {
       ...hackathon,
@@ -160,7 +169,6 @@ export function ExploreHackathons() {
           : hackathon.status === "ongoing"
           ? "Ongoing"
           : "Ended",
-      // Keep date fields as ISO strings for logic
       startDate: hackathon.startDate,
       endDate: hackathon.endDate,
       registrationDeadline: hackathon.registrationDeadline,
@@ -168,7 +176,6 @@ export function ExploreHackathons() {
       organizerLogo: hackathon.organizer?.logo || null,
       featured: hackathon.tags?.includes("featured") || false,
       sponsored: hackathon.tags?.includes("sponsored") || false,
-      // Add default data for HackathonDetails component
       requirements: hackathon.requirements || [
         "Valid student/professional ID",
         "Team size: 2-4 members",
@@ -187,7 +194,6 @@ export function ExploreHackathons() {
     };
   };
 
-  // If a hackathon is selected, show the details component
   if (selectedHackathon) {
     const urlParams = new URLSearchParams(location.search);
     const source = urlParams.get("source");
@@ -198,13 +204,11 @@ export function ExploreHackathons() {
         backButtonLabel={source === "my-hackathons" ? "Back to My Hackathons" : "Back to Explore"}
         onBack={() => {
           setSelectedHackathon(null);
-          // Remove hackathon parameter from URL but keep other params like view=explore-hackathons
           const newParams = new URLSearchParams(location.search);
           newParams.delete("hackathon");
           newParams.delete("title");
           newParams.delete("source");
           
-          // If source was my-hackathons, navigate back to my-hackathons page
           if (source === "my-hackathons") {
             navigate("/dashboard/my-hackathons", { replace: true });
           } else {
@@ -243,7 +247,6 @@ export function ExploreHackathons() {
     "Delhi",
   ];
 
-  // Filter hackathons based on search and filters
   const filteredHackathons = hackathons.filter((hackathon) => {
     const matchesSearch =
       hackathon.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -268,30 +271,17 @@ export function ExploreHackathons() {
     );
   });
 
-  const featuredHackathons = filteredHackathons.filter((h) =>
-    h.tags?.includes("featured")
-  );
-  const sponsoredHackathons = filteredHackathons.filter((h) =>
-    h.tags?.includes("sponsored")
-  );
-  const now = new Date();
-  const upcomingHackathons = filteredHackathons.filter(
-    (h) => new Date(h.registrationDeadline) > now
-  );
-  const closedHackathons = filteredHackathons.filter(
-    (h) => new Date(h.registrationDeadline) < now
-  );
+  // Get featured hackathons for carousel (first 5 hackathons)
+  const featuredHackathons = hackathons.slice(0, 5);
 
   const handleHackathonClick = (hackathon) => {
     const transformedHackathon = transformHackathonData(hackathon);
 
-    // Create URL-friendly slug from hackathon title
     const slug = hackathon.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // Update URL with hackathon parameters while preserving existing params
     const newParams = new URLSearchParams(location.search);
     newParams.set("hackathon", hackathon._id);
     newParams.set("title", slug);
@@ -301,6 +291,18 @@ export function ExploreHackathons() {
     });
     setSelectedHackathon(transformedHackathon);
   };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+    setSelectedDifficulty("all");
+    setSelectedLocation("all");
+  };
+
+  const hasActiveFilters = searchTerm || 
+    selectedCategory !== "all" || 
+    selectedDifficulty !== "all" || 
+    selectedLocation !== "all";
 
   const renderHackathonCard = (hackathon, featured = false) => {
     const registrationDeadline = new Date(hackathon.registrationDeadline);
@@ -323,7 +325,6 @@ export function ExploreHackathons() {
         )}
         onClick={() => handleHackathonClick(hackathon)}
       >
-        {/* Thumbnail */}
         <div className="relative h-40 w-full">
           <img
             src={
@@ -335,7 +336,6 @@ export function ExploreHackathons() {
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
 
-          {/* Prize Pool Badge */}
           <div className="absolute top-2 right-2">
             <Badge className="bg-yellow-400 text-yellow-900 font-semibold shadow-md">
               <Trophy className="w-3 h-3 mr-1" />
@@ -346,13 +346,10 @@ export function ExploreHackathons() {
           </div>
         </div>
 
-        {/* Content */}
         <div className="p-4 flex flex-col gap-2">
-          {/* Title */}
           <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-2 h-10">
             {hackathon.title}
           </h3>
-          {/* Location + Deadline */}
           <div className="text-xs text-gray-500 flex justify-between items-center">
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
@@ -364,7 +361,6 @@ export function ExploreHackathons() {
             </span>
           </div>
 
-          {/* Tags */}
           <div className="flex gap-1 overflow-hidden whitespace-nowrap text-ellipsis">
             {hackathon.tags?.slice(0, 3).map((tag) => (
               <Badge
@@ -380,6 +376,69 @@ export function ExploreHackathons() {
       </RCard>
     );
   };
+
+ const renderCarouselSlide = (hackathon, index) => {
+  const isActive = index === currentCarouselIndex;
+  
+  return (
+    <div
+      key={hackathon._id}
+      className={cn(
+        "absolute inset-0 transition-opacity duration-500",
+        isActive ? "opacity-100 z-10" : "opacity-0 z-0"
+      )}
+      style={{ pointerEvents: isActive ? 'auto' : 'none' }} // Disable pointer events for inactive slides
+    >
+      <div 
+        className="relative h-full w-full bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl overflow-hidden cursor-pointer group"
+        onClick={() => handleHackathonClick(hackathon)}
+      >
+        {/* Base image with overlay */}
+        <img
+          src={hackathon.images?.banner?.url || hackathon.images?.logo?.url || "/assets/default-banner.png"}
+          alt={hackathon.title}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        
+        {/* Additional black backdrop overlay on hover */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300" />
+        
+        {/* Content overlay - hidden by default, visible on hover */}
+        <div className="absolute inset-0 p-8 flex flex-col justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none group-hover:pointer-events-auto">
+          <div className="max-w-2xl">
+            <h2 className="text-4xl font-bold mb-4 leading-tight">
+              {hackathon.title}
+            </h2>
+            <p className="text-lg mb-6 opacity-90 line-clamp-2">
+              {hackathon.description || "Join this exciting hackathon and showcase your skills!"}
+            </p>
+            <div className="flex items-center gap-6 mb-6">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-400" />
+                <span className="font-semibold">
+                  {hackathon.prizePool?.amount
+                    ? `$${hackathon.prizePool.amount.toLocaleString()}`
+                    : "TBA"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                <span>{hackathon.location || "TBA"}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                <span>
+                  {Math.ceil((new Date(hackathon.registrationDeadline) - new Date()) / (1000 * 60 * 60 * 24))} days left
+                </span>
+              </div>
+            </div>
+       
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   if (loading)
     return (
@@ -402,229 +461,230 @@ export function ExploreHackathons() {
     );
 
   return (
-    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative">
+      {/* Filter Sidebar */}
+      <div className={cn(
+        "fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out",
+        showFilterSidebar ? "translate-x-0" : "translate-x-full"
+      )}>
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFilterSidebar(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+            {/* Category */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Category
+              </label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.slice(1).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Difficulty Level
+              </label>
+              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Levels</SelectItem>
+                  {difficulties.slice(1).map((difficulty) => (
+                    <SelectItem key={difficulty} value={difficulty}>
+                      {difficulty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Location
+              </label>
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.slice(1).map((location) => (
+                    <SelectItem key={location} value={location.toLowerCase()}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t bg-gray-50">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                Clear All
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => setShowFilterSidebar(false)}
+              >
+                Apply Filters
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Backdrop */}
+      {showFilterSidebar && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 !mt-0"
+          onClick={() => setShowFilterSidebar(false)}
+        />
+      )}
+
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
+          <h1 className="text-3xl font-bold text-gray-800">
             Explore Hackathons
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-gray-600 mt-1">
             Discover and join exciting hackathons from around the world
           </p>
         </div>
       </div>
 
-      {/* Search and Filters */}
+     {/* Featured Hackathons Carousel */}
+{featuredHackathons.length > 0 && (
+  <div className="relative h-80 rounded-xl overflow-hidden">
+    {featuredHackathons.map((hackathon, index) => 
+      renderCarouselSlide(hackathon, index)
+    )}
+    
+    {/* Only Dots Indicator - Always Visible */}
+    {featuredHackathons.length > 1 && (
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+        {featuredHackathons.map((_, index) => (
+          <button
+            key={index}
+            className={cn(
+              "w-3 h-3 rounded-full transition-all duration-300 shadow-lg",
+              index === currentCarouselIndex 
+                ? "bg-white scale-110" 
+                : "bg-white/70 hover:bg-white/90"
+            )}
+            onClick={() => setCurrentCarouselIndex(index)}
+          />
+        ))}
+      </div>
+    )}
+  </div>
+)}
 
-      <div className="pt-5 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="relative">
+
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        {/* Search Bar */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search hackathons..."
-            className="pl-10"
+            className="pl-10 h-12"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.slice(1).map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedDifficulty}
-          onValueChange={setSelectedDifficulty}
+        
+        {/* Filter Button */}
+        <Button
+          onClick={() => setShowFilterSidebar(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 px-6"
         >
-          <SelectTrigger >
-            <SelectValue placeholder="Difficulty" />
-          </SelectTrigger>
-          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-            <SelectItem value="all">All Levels</SelectItem>
-            {difficulties.slice(1).map((difficulty) => (
-              <SelectItem key={difficulty} value={difficulty}>
-                {difficulty}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-          <SelectTrigger>
-            <SelectValue placeholder="Location" />
-          </SelectTrigger>
-          <SelectContent className="bg-white text-black shadow-lg rounded-md border">
-            <SelectItem value="all">All Locations</SelectItem>
-            {locations.slice(1).map((location) => (
-              <SelectItem key={location} value={location.toLowerCase()}>
-                {location}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Filter className="w-4 h-4" />
+          Filters
+          {hasActiveFilters && (
+            <Badge className="bg-red-500 text-white ml-1 px-1.5 py-0.5 text-xs">
+              {[searchTerm, selectedCategory !== "all", selectedDifficulty !== "all", selectedLocation !== "all"]
+                .filter(Boolean).length}
+            </Badge>
+          )}
+        </Button>
       </div>
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Showing {filteredHackathons.length} of {hackathons.length} hackathons
+        <p className="text-gray-600">
+          Showing <span className="font-semibold">{filteredHackathons.length}</span> of{" "}
+          <span className="font-semibold">{hackathons.length}</span> hackathons
         </p>
-        {(searchTerm ||
-          selectedCategory !== "all" ||
-          selectedDifficulty !== "all" ||
-          selectedLocation !== "all") && (
+        {hasActiveFilters && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setSearchTerm("");
-              setSelectedCategory("all");
-              setSelectedDifficulty("all");
-              setSelectedLocation("all");
-            }}
+            onClick={clearFilters}
+            className="text-indigo-600 border-indigo-200 hover:bg-indigo-50"
           >
             Clear Filters
           </Button>
         )}
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="all" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="all">
-            All Hackathons ({filteredHackathons.length})
-          </TabsTrigger>
-          <TabsTrigger value="featured">
-            Featured ({featuredHackathons.length})
-          </TabsTrigger>
-          <TabsTrigger value="sponsored">
-            Sponsored ({sponsoredHackathons.length})
-          </TabsTrigger>
-          <TabsTrigger value="upcoming">
-            Registration Open ({upcomingHackathons.length})
-          </TabsTrigger>
-          <TabsTrigger value="closed">
-            Closed ({closedHackathons.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="space-y-4">
-          {filteredHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredHackathons.map((hackathon) =>
-                renderHackathonCard(hackathon)
+      {/* Hackathons Grid */}
+      <div className="space-y-4">
+        {filteredHackathons.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {filteredHackathons.map((hackathon) =>
+              renderHackathonCard(hackathon)
+            )}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <Search className="w-16 h-16 text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No Hackathons Found
+              </h3>
+              <p className="text-gray-500 text-center mb-4">
+                Try adjusting your search criteria or filters to find more hackathons.
+              </p>
+              {hasActiveFilters && (
+                <Button onClick={clearFilters} variant="outline">
+                  Clear All Filters
+                </Button>
               )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Search className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Hackathons Found
-                </h3>
-                <p className="text-gray-500 text-center">
-                  Try adjusting your search criteria or filters.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="featured" className="space-y-4">
-          {featuredHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {featuredHackathons.map((hackathon) =>
-                renderHackathonCard(hackathon, true)
-              )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Star className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Featured Hackathons
-                </h3>
-                <p className="text-gray-500 text-center">
-                  Check back later for featured events.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="sponsored" className="space-y-4">
-          {sponsoredHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {sponsoredHackathons.map((hackathon) =>
-                renderHackathonCard(hackathon)
-              )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Trophy className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Sponsored Hackathons
-                </h3>
-                <p className="text-gray-500 text-center">
-                  No sponsored events available at the moment.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="upcoming" className="space-y-4">
-          {upcomingHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {upcomingHackathons.map((hackathon) =>
-                renderHackathonCard(hackathon)
-              )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Clock className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Upcoming Hackathons
-                </h3>
-                <p className="text-gray-500 text-center">
-                  All hackathons are currently closed for registration.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="closed" className="space-y-4">
-          {closedHackathons.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {closedHackathons.map((hackathon) =>
-                renderHackathonCard(hackathon)
-              )}
-            </div>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Clock className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No Closed Hackathons
-                </h3>
-                <p className="text-gray-500 text-center">
-                  All hackathons are currently open for registration.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }

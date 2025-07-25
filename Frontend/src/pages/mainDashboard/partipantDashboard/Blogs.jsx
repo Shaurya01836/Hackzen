@@ -38,12 +38,6 @@ import {
 } from "../../../components/DashboardUI/avatar";
 import { Separator } from "../../../components/CommonUI/separator";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "../../../components/CommonUI/tabs";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -106,19 +100,16 @@ export function Blogs() {
   }
 }, [location.pathname]);
 
-
   // Handle write article navigation
 const handleWriteArticle = () => {
   navigate('/dashboard/blogs/write'); 
 };
-
 
  const handleArticleSubmit = (article) => {
   setSubmittedArticle(article);
   setShowApprovalDialog(true);
   navigate('/dashboard/blogs');
 };
-
 
   // Only show published blogs in the main view
   const publishedBlogs = blogs.filter((blog) => blog.status === "published");
@@ -149,6 +140,7 @@ const handleWriteArticle = () => {
   const handleBackToBlogs = () => {
     navigate("/dashboard/blogs");
   };
+  
   useEffect(() => {
     if (selectedPost) {
       setLikeCount(selectedPost.likes);
@@ -198,12 +190,6 @@ const handleWriteArticle = () => {
     />
   );
 }
-
-
-  const featuredBlogs = publishedBlogs.filter((blog) => blog.featured);
-  const trendingBlogs = [...publishedBlogs]
-    .sort((a, b) => b.views - a.views)
-    .slice(0, 5);
 
   if (selectedPost) {
     return (
@@ -457,150 +443,30 @@ const handleWriteArticle = () => {
             </div>
           </div>
 
-          {/* Tabs */}
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white/20 rounded-lg px-5">
-              <TabsTrigger
-                value="all"
-                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
-              >
-                All Posts
-              </TabsTrigger>
-              <TabsTrigger
-                value="featured"
-                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
-              >
-                Featured
-              </TabsTrigger>
-              <TabsTrigger
-                value="trending"
-                className="data-[state=active]:bg-[#1b0c3f] data-[state=active]:text-white"
-              >
-                Trending
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="mt-8 px-6">
-              {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[...Array(6)].map((_, i) => (
-                    <Card
-                      key={i}
-                      className="animate-pulse border-gray-200 rounded-xl"
-                    >
-                      <div className="h-48 bg-gray-200 rounded-t-xl"></div>
-                      <CardContent className="p-6 space-y-3">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-                        <div className="flex justify-between">
-                          <div className="h-3 bg-gray-200 rounded w-20"></div>
-                          <div className="h-3 bg-gray-200 rounded w-16"></div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredBlogs.map((blog) => (
-                    <Card
-                      key={blog._id}
-                      onClick={() => handleBlogClick(blog)}
-                      className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
-                    >
-                      {/* Image Section */}
-                      <div className="relative h-48 overflow-hidden rounded-t-2xl">
-                        <img
-                          src={blog.image || "/placeholder.svg"}
-                          alt={blog.title}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                        {blog.featured && (
-                          <Badge className="absolute top-3 left-3 bg-yellow-400 text-white text-xs shadow-md">
-                            ⭐ Featured
-                          </Badge>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      </div>
-
-                      {/* Content */}
-                      <CardContent className="p-5 space-y-4 pt-2">
-                        {/* Meta: Category + Read Time */}
-                        <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                          <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md">
-                            {blog.category}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>{blog.readTime} min read</span>
-                          </div>
-                        </div>
-
-                        {/* Title */}
-                        <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-snug group-hover:text-indigo-700 transition-colors">
-                          {blog.title}
-                        </h3>
-
-                        {/* Excerpt */}
-                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-1">
-                          {blog.excerpt}
-                        </p>
-
-                        {/* Tags */}
-                        {blog.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {blog.tags.slice(0, 3).map((tag) => (
-                              <span
-                                key={tag}
-                                className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Footer: Author + Stats */}
-                        <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
-                          {/* Author */}
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-9 h-9 ring-2 ring-white shadow-md">
-                              <AvatarImage
-                                src={blog.author.avatar || "/placeholder.svg"}
-                                alt={blog.author.name}
-                              />
-                              <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
-                                {blog.author.name[0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-800">
-                                {blog.author.name}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {blog.author.role}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Stats - Removed MessageCircle (comments) */}
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Heart className="w-4 h-4" />
-                              {blog.likes}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="featured" className="mt-8 px-6">
+          {/* All Blogs Section - REMOVED TABS */}
+          <div className="mt-8 px-6">
+            {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {featuredBlogs.map((blog) => (
+                {[...Array(6)].map((_, i) => (
+                  <Card
+                    key={i}
+                    className="animate-pulse border-gray-200 rounded-xl"
+                  >
+                    <div className="h-48 bg-gray-200 rounded-t-xl"></div>
+                    <CardContent className="p-6 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                      <div className="flex justify-between">
+                        <div className="h-3 bg-gray-200 rounded w-20"></div>
+                        <div className="h-3 bg-gray-200 rounded w-16"></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredBlogs.map((blog) => (
                   <Card
                     key={blog._id}
                     onClick={() => handleBlogClick(blog)}
@@ -681,121 +547,20 @@ const handleWriteArticle = () => {
                           </div>
                         </div>
 
-                        {/* Stats - Removed MessageCircle (comments) */}
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Heart className="w-4 h-4" />
-                            {blog.likes}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="trending" className="mt-8 px-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {trendingBlogs.map((blog, index) => (
-                  <Card
-                    key={blog._id}
-                    onClick={() => handleBlogClick(blog)}
-                    className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
-                  >
-                    <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg z-10">
-                      🔥 #{index + 1} Trending
-                    </Badge>
-
-                    {/* Image Section */}
-                    <div className="relative h-48 overflow-hidden rounded-t-2xl">
-                      <img
-                        src={blog.image || "/placeholder.svg"}
-                        alt={blog.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    </div>
-
-                    {/* Content */}
-                    <CardContent className="p-5 space-y-4 pt-2">
-                      {/* Meta: Category + Read Time */}
-                      <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
-                        <span className="bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md">
-                          {blog.category}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>{blog.readTime} min read</span>
-                        </div>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-lg font-bold text-gray-900 line-clamp-1 leading-snug group-hover:text-indigo-700 transition-colors">
-                        {blog.title}
-                      </h3>
-
-                      {/* Excerpt */}
-                      <p className="text-sm text-gray-600 leading-relaxed line-clamp-1">
-                        {blog.excerpt}
-                      </p>
-
-                      {/* Tags */}
-                      {blog.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {blog.tags.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Footer: Author + Stats */}
-                      <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-200">
-                        {/* Author */}
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-9 h-9 ring-2 ring-white shadow-md">
-                            <AvatarImage
-                              src={blog.author.avatar || "/placeholder.svg"}
-                              alt={blog.author.name}
-                            />
-                            <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-bold">
-                              {blog.author.name[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-semibold text-gray-800">
-                              {blog.author.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {blog.author.role}
-                            </p>
-                          </div>
-                        </div>
-
                         {/* Stats */}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Heart className="w-4 h-4" />
                             {blog.likes}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <MessageCircle className="w-4 h-4" />
-                            {blog.comments}
-                          </div>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </TabsContent>
-          </Tabs>
+            )}
+          </div>
         </div>
       </div>
     </div>

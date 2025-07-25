@@ -18,23 +18,8 @@ function LandingPage() {
       <section className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 ">
         <Header />
         <LogoCloud />
-
-        <section className="relative py-16 overflow-hidden">
-          {/* Grid Pattern Overlay */}
-          <div className="absolute inset-0 bg-grid-pattern2"></div>
-
-          {/* Main content container */}
-          <div className="relative z-10 max-w-6xl mx-auto px-4">
-            <h2 className="text-4xl sm:text-5xl font-heading1 font-bold mb-10 text-center text-indigo-500">
-              Featured Hackathons
-            </h2>
-
-            <FeaturedHackCards />
-          </div>
-        </section>
-
         {/* Join Community with Grid Background */}
-        <section className="relative pt-16 pb-2 overflow-hidden">
+        <section className="relative pb-2 overflow-hidden">
           {/* Grid Pattern Overlay */}
           <div className="absolute inset-0 bg-grid-pattern2"></div>
 
