@@ -104,26 +104,24 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
 
 
   return (
-    <Card
- 
-    >
+    <Card>
       <CardHeader className="pb-4">
         <CardTitle
-          className={`flex items-center gap-3 text-lg font-semibold ${styles.textColor}`}
+          className={`flex items-center text-lg font-semibold ${styles.textColor}`}
         >
           <div
-            className={`p-2 rounded-full bg-gradient-to-r ${
+            className={`p-2 rounded-full text-indigo-600 ${
               styles.gradient
-            } text-white shadow-md ${isUrgent ? "animate-bounce" : ""}`}
+            } ${isUrgent ? "animate-bounce" : ""}`}
           >
             {isUrgent ? (
               <AlertTriangle className="w-5 h-5" />
             ) : (
-              <Clock className="w-5 h-5" />
+              <Clock className="w-6 h-6 text-indigo-500" />
             )}
           </div>
           <div className="flex flex-col">
-            <span>{title}</span>
+            <span className="text-2xl font-semibold">{title}</span>
             {isUrgent && (
               <span className="text-sm font-normal text-red-600 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
@@ -139,7 +137,7 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
             className={`${styles.timeUnitBg} ${styles.timeUnitBorder} border rounded-xl p-3 text-center shadow-sm transition-all duration-200 hover:scale-105`}
           >
             <div
-              className={`text-2xl font-bold ${styles.timeUnitText} leading-none`}
+              className={`text-xl font-bold ${styles.timeUnitText} leading-none`}
             >
               {timeLeft.days.toString().padStart(2, "0")}
             </div>
@@ -153,7 +151,7 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
             className={`${styles.timeUnitBg} ${styles.timeUnitBorder} border rounded-xl p-3 text-center shadow-sm transition-all duration-200 hover:scale-105`}
           >
             <div
-              className={`text-2xl font-bold ${styles.timeUnitText} leading-none`}
+              className={`text-xl font-bold ${styles.timeUnitText} leading-none`}
             >
               {timeLeft.hours.toString().padStart(2, "0")}
             </div>
@@ -167,28 +165,28 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
             className={`${styles.timeUnitBg} ${styles.timeUnitBorder} border rounded-xl p-3 text-center shadow-sm transition-all duration-200 hover:scale-105`}
           >
             <div
-              className={`text-2xl font-bold ${styles.timeUnitText} leading-none`}
+              className={`text-xl font-bold ${styles.timeUnitText} leading-none`}
             >
               {timeLeft.minutes.toString().padStart(2, "0")}
             </div>
             <div
               className={`text-xs font-medium ${styles.timeUnitLabel} mt-1 uppercase tracking-wide`}
             >
-              Minutes
+              Min
             </div>
           </div>
           <div
             className={`${styles.timeUnitBg} ${styles.timeUnitBorder} border rounded-xl p-3 text-center shadow-sm transition-all duration-200 hover:scale-105`}
           >
             <div
-              className={`text-2xl font-bold ${styles.timeUnitText} leading-none`}
+              className={`text-xl font-bold ${styles.timeUnitText} leading-none`}
             >
               {timeLeft.seconds.toString().padStart(2, "0")}
             </div>
             <div
               className={`text-xs font-medium ${styles.timeUnitLabel} mt-1 uppercase tracking-wide`}
             >
-              Seconds
+              Sec
             </div>
           </div>
         </div>
@@ -440,29 +438,12 @@ export function SmartCountdown({ hackathon }) {
   }
 
   return (
-    <div className="relative py-10">
+    <div className="relative">
       <CountdownTimer
         deadline={currentCountdown.deadline}
         title={currentCountdown.title}
         type={currentCountdown.type}
       />
-
-      {/* Additional info about the current countdown */}
-      <div className="mt-3 p-3 bg-gray-50 rounded-lg border">
-        <div className="text-sm text-gray-600">
-          <div className="font-medium mb-1">
-            {currentCountdown.isUrgent && (
-              <span className="text-red-600 mr-2">⚠️ Urgent</span>
-            )}
-            {currentCountdown.description}
-          </div>
-          {currentCountdown.isActive && (
-            <div className="text-blue-600 text-xs">
-              🎯 This round is currently active - submit now!
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

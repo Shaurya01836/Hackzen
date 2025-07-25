@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useToast } from "../../../../hooks/use-toast";
 import { useAuth } from "../../../../context/AuthContext";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Zap } from "lucide-react";
 
 import HeaderSection from "./HackathonComponent/Hackathon/HeaderSection";
 import HackathonHero from "./HackathonComponent/Hackathon/HackathonHero";
@@ -15,9 +16,22 @@ import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./HackathonComponent/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./HackathonComponent/Hackathon/HackathonProjectsGallery";
 import TeamManagementSection from "./HackathonComponent/Hackathon/TeamManagementSection";
-import { SmartCountdown } from "../../../../components/DashboardUI/countdown";
 import BaseModal from "./HackathonComponent/Hackathon/TeamModals/BaseModal";
 import { fetchHackathonParticipants } from "../../../../lib/api";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../../../components/CommonUI/card";
+import { Badge } from "../../../../components/CommonUI/badge";
+import {
+  Trophy,
+  Users,
+  Award,
+  MapPin,
+} from "lucide-react";
+import { SmartCountdown } from "../../../../components/DashboardUI/countdown";
 
 export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonLabel }) {
   const { hackathonId } = useParams();
@@ -26,14 +40,89 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Use hackathon from location.state if available, else prop, else null
+  const headerRef = useRef(null);
+  const navRef = useRef(null);
+  const [isNavFixed, setIsNavFixed] = useState(false);
+  const [navHeight, setNavHeight] = useState(0);
+
   const stateHackathon = location.state?.hackathon;
   const source = location.state?.source;
   const [hackathon, setHackathon] = useState(stateHackathon || propHackathon || null);
   const [loading, setLoading] = useState(!stateHackathon && !propHackathon && !!hackathonId);
   const [error, setError] = useState(null);
 
-  // Defensive: loading/error/null checks at the very top
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const sections = [
+    { id: "overview", label: "Overview & Requirements" },
+    { id: "timeline", label: "Timeline" },
+    { id: "problems", label: "Problem Statements" },
+    { id: "team", label: "Team Management" },
+    { id: "community", label: "Community" },
+    { id: "projects", label: "Project Gallery" },
+  ];
+
+  const sectionRefs = {
+    overview: useRef(null),
+    timeline: useRef(null),
+    problems: useRef(null),
+    team: useRef(null),
+    community: useRef(null),
+    projects: useRef(null),
+  };
+
+  const handleSectionClick = (id) => {
+    const ref = sectionRefs[id];
+    if (ref && ref.current) {
+      ref.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  };
+  
+  useEffect(() => {
+    const measureNavHeight = () => {
+      if (navRef.current) {
+        setNavHeight(navRef.current.offsetHeight);
+      }
+    };
+    measureNavHeight();
+    window.addEventListener('resize', measureNavHeight);
+    return () => window.removeEventListener('resize', measureNavHeight);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerBottom = headerRef.current.getBoundingClientRect().bottom;
+        setIsNavFixed(headerBottom <= 0);
+      }
+
+      let current = "";
+      for (const section of sections) {
+        const ref = sectionRefs[section.id];
+        if (ref && ref.current) {
+          const rect = ref.current.getBoundingClientRect();
+          if (rect.top <= 100 && rect.bottom >= 100) {
+            current = section.id;
+            break;
+          }
+        }
+      }
+
+      if (current && activeTab !== current) {
+        setActiveTab(current);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [activeTab, sectionRefs, sections]);
+
+
   if (loading) {
     return <div className="p-10 text-center text-lg">Loading hackathon details...</div>;
   }
@@ -43,21 +132,10 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   if (!hackathon) {
     return <div className="p-10 text-center text-red-600 font-bold">Hackathon not found.</div>;
   }
-
-   // Debug: log the raw date fields
-  console.log('HackathonDetails - Raw Dates:', {
-    startDate: hackathon.startDate,
-    endDate: hackathon.endDate,
-    registrationDeadline: hackathon.registrationDeadline,
-    submissionDeadline: hackathon.submissionDeadline,
-  });
   
   const [isRegistered, setIsRegistered] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
-  const defaultTab = location.state?.defaultTab;
-  const [activeTab, setActiveTab] = useState(defaultTab || "overview");
-  const [showHeader, setShowHeader] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [editRegistration, setEditRegistration] = useState(false);
   const [registrationData, setRegistrationData] = useState(null);
@@ -66,17 +144,6 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   const [participantsLoading, setParticipantsLoading] = useState(false);
   const [participantsError, setParticipantsError] = useState(null);
 
-const sections = [
-  { id: "overview", label: "Overview & Requirements" },
-  { id: "problems", label: "Problem Statements" },
-  { id: "timeline", label: "Timeline" },
-  { id: "community", label: "Community" },
-  { id: "projects", label: "Project Gallery" },
-  { id: "team", label: "Team Management" },
-];
-
-
-  // Fetch hackathon by ID if not provided as prop or state
   useEffect(() => {
     if (!stateHackathon && !propHackathon && hackathonId) {
       setLoading(true);
@@ -124,7 +191,6 @@ const sections = [
 
   useEffect(() => {
     const currentScrollY = window.scrollY;
-    setShowHeader(currentScrollY < lastScrollY || currentScrollY < 10);
     setLastScrollY(currentScrollY);
   }, [lastScrollY]);
 
@@ -152,7 +218,6 @@ const sections = [
     refreshRegistrationStatus();
   }, [hackathon && hackathon._id]);
 
-  // Fetch user's registration for this hackathon if needed
   const fetchRegistrationData = async () => {
     if (!hackathon || !hackathon._id) return;
     const token = localStorage.getItem("token");
@@ -170,22 +235,18 @@ const sections = [
     }
   };
 
-  // Pass setShowRegistration to HeaderSection, but wrap to support edit mode
   const handleShowRegistration = async (edit = false) => {
     if (edit) {
-      // View Details - edit mode, start at case 3
       setEditRegistration(true);
-      await fetchRegistrationData(); // Wait for data to be set
+      await fetchRegistrationData();
       setShowRegistration(true);
     } else {
-      // Register - new registration, start at case 1
       setEditRegistration(false);
-      setRegistrationData(null); // Clear any previous data
+      setRegistrationData(null);
       setShowRegistration(true);
     }
   };
 
-  // Scroll to top when component mounts
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -222,70 +283,183 @@ const sections = [
     );
   }
 
+  const getDifficultyColor = (difficulty) => {
+    switch (difficulty) {
+      case "Beginner":
+        return "bg-green-500";
+      case "Intermediate":
+        return "bg-yellow-500";
+      case "Advanced":
+        return "bg-red-500";
+      default:
+        return "bg-gray-500";
+    }
+  };
+
+  const RightSideContent = (
+    <div className="space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Event Details</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+              <Trophy className="h-6 w-6 text-yellow-500" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-green-600">{hackathon.prize}</p>
+              <p className="text-sm text-gray-500">Prize Pool</p>
+            </div>
+          </div>
+
+          <hr />
+
+          <div className="flex items-center gap-4">
+             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+              <Users className="h-6 w-6 text-blue-500" />
+            </div>
+            <div>
+              <p className="font-semibold">{hackathon.participants} / {hackathon.maxParticipants}</p>
+              <p className="text-sm text-gray-500">Registered Participants</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+              <Users className="h-6 w-6 text-gray-500" />
+            </div>
+            <div>
+              <p className="font-semibold">{hackathon.teamSize?.min || 1} - {hackathon.teamSize?.max || 4} members</p>
+              <p className="text-sm text-gray-500">Team Size</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+              <Award className="h-6 w-6 text-red-500" />
+            </div>
+            <div>
+              <Badge className={`${getDifficultyColor(hackathon.difficulty)} text-white`}>{hackathon.difficulty}</Badge>
+              <p className="text-sm text-gray-500 mt-1">Difficulty Level</p>
+            </div>
+          </div>
+
+           <div className="flex items-center gap-4">
+             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 flex-shrink-0">
+              <MapPin className="h-6 w-6 text-gray-500" />
+            </div>
+            <div>
+              <p className="font-semibold">{hackathon.location}</p>
+              <p className="text-sm text-gray-500">Location</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div>
+          <SmartCountdown hackathon={hackathon} />
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
-      <HeaderSection
-        hackathon={hackathon}
-        onBack={onBack || (() => navigate("/dashboard/my-hackathons"))}
-        backButtonLabel={
-          backButtonLabel || (source === 'my-hackathons' ? 'Back to My Hackathons' : 'Back to Explore')
-        }
-        isSaved={isSaved}
-        isRegistered={isRegistered}
-        setShowRegistration={(edit) => handleShowRegistration(edit)}
-        showHeader={showHeader}
-        refreshRegistrationStatus={refreshRegistrationStatus}
-        setIsSaved={setIsSaved}
-      />
+      <div ref={headerRef}>
+        <HeaderSection
+          hackathon={hackathon}
+          onBack={onBack || (() => navigate("/dashboard/my-hackathons"))}
+          backButtonLabel={
+            backButtonLabel || (source === 'my-hackathons' ? 'Back to My Hackathons' : 'Back to Explore')
+          }
+          isSaved={isSaved}
+          isRegistered={isRegistered}
+          setShowRegistration={(edit) => handleShowRegistration(edit)}
+          refreshRegistrationStatus={refreshRegistrationStatus}
+          setIsSaved={setIsSaved}
+        />
+      </div>
 
-      <HorizontalTabNav
-        sections={sections}
-        activeSection={activeTab}
-        onSectionClick={(id) => setActiveTab(id)}
-      />
+      <div ref={navRef}>
+        <HorizontalTabNav
+          sections={sections}
+          activeSection={activeTab}
+          onSectionClick={handleSectionClick}
+          isFixed={isNavFixed}
+          isRegistered={isRegistered}
+          onRegisterClick={handleShowRegistration}
+        />
+      </div>
+
+      {isNavFixed && <div style={{ height: navHeight }} />}
 
       <main className="flex-1 ml-0 transition-all duration-300">
-        <div className="p-6 md:p-10 w-full mx-auto ">
-          {activeTab === "overview" && (
-            <>
-            
-              <HackathonHero
-                hackathon={hackathon}
-                isRegistered={isRegistered}
-                isSaved={isSaved}
-              />
-                <SmartCountdown hackathon={hackathon} />
-              <HackathonOverview
-                hackathon={hackathon}
-                user={user}
-                onShowParticipants={handleShowParticipants}
-              />
-            </>
-          )}
-          {activeTab === "problems" && (
-            <HackathonProblems hackathon={hackathon} />
-          )}
-          {activeTab === "timeline" && (
-            <HackathonTimeline hackathon={hackathon} isRegistered={isRegistered} />
-          )}
-          {activeTab === "community" && <HackathonCommunity />}
-          {activeTab === "projects" && (
-            <HackathonProjectsGallery hackathonId={hackathon._id} />
-          )}
-          {activeTab === "team" && (
-            <TeamManagementSection
-              hackathon={hackathon}
-              user={user}
-              isRegistered={isRegistered}
-              setIsRegistered={setIsRegistered}
-              refreshRegistrationStatus={refreshRegistrationStatus}
-              toast={toast}
-            />
-          )}
+        <div className="p-6 w-full mx-auto ">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-8">
+              <div ref={sectionRefs.overview} id="overview" className="py-8 border-b">
+                  <HackathonHero
+                    hackathon={hackathon}
+                    isRegistered={isRegistered}
+                    isSaved={isSaved}
+                  />
+                  <HackathonOverview
+                    hackathon={hackathon}
+                    user={user}
+                    onShowParticipants={handleShowParticipants}
+                  />
+              </div>
+              <div ref={sectionRefs.timeline} id="timeline" className="py-8 border-b">
+                <HackathonTimeline hackathon={hackathon} isRegistered={isRegistered} />
+              </div>
+              <div ref={sectionRefs.problems} id="problems" className="py-8 border-b">
+                <HackathonProblems hackathon={hackathon} />
+              </div>
+              <div ref={sectionRefs.team} id="team" className="py-8 border-b">
+                <TeamManagementSection
+                  hackathon={hackathon}
+                  user={user}
+                  isRegistered={isRegistered}
+                  setIsRegistered={setIsRegistered}
+                  refreshRegistrationStatus={refreshRegistrationStatus}
+                  toast={toast}
+                  setShowRegistration={handleShowRegistration}
+                />
+              </div>
+              <div ref={sectionRefs.community} id="community" className="py-8 border-b">
+                <HackathonCommunity />
+              </div>
+              <div ref={sectionRefs.projects} id="projects" className="py-8">
+                <HackathonProjectsGallery hackathonId={hackathon._id} />
+              </div>
+               <div className="py-8 mt-10 text-center border-t border-gray-200/75">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <p className="text-sm text-slate-600">Powered by</p>
+                  <a 
+                    href="https://hackzen.vercel.app/" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex items-center gap-1.5 font-semibold text-slate-800 hover:text-indigo-600 transition-colors"
+                  >
+                    <Zap className="w-4 h-4 text-indigo-500" />
+                    <span>HackZen</span>
+                  </a>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Copyright © {new Date().getFullYear()} HackZen Pvt. Ltd. - All rights reserved.
+                </p>
+              </div>
+            </div>
+
+            <div className="hidden lg:block">
+              <div className={`transition-all duration-300 ${isNavFixed ? 'fixed top-24 w-full max-w-sm' : ''}`}>
+                {RightSideContent}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 
-      {/* Participants Modal */}
       <BaseModal
         open={showParticipantsModal}
         onOpenChange={setShowParticipantsModal}

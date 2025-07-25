@@ -7,7 +7,7 @@ export default function HackathonProblems({ hackathon, sectionRef }) {
 
   return (
     <section ref={sectionRef} className="space-y-8">
-      <h2 className="text-3xl font-bold text-gray-800 border-b pb-4">
+      <h2 className="text-2xl font-bold text-gray-800 border-b pb-4">
         Problem Statements
       </h2>
       <Card>
