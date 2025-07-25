@@ -90,6 +90,18 @@ exports.markAsUnread = async (req, res) => {
   }
 };
 
+exports.markAllAsRead = async (req, res) => {
+  try {
+    await Notification.updateMany(
+      { recipient: req.user._id, read: false },
+      { $set: { read: true } }
+    );
+    res.json({ message: 'All notifications marked as read' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to mark all as read', details: err.message });
+  }
+};
+
 exports.deleteNotification = async (req, res) => {
   try {
     const result = await Notification.findOneAndDelete({ _id: req.params.id, recipient: req.user._id });

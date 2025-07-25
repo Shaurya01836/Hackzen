@@ -5,15 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { AnimatedList } from "../Magic UI/AnimatedList";
 import { useToast } from '../../hooks/use-toast';
 import useDropdownTimeout from '../../hooks/useDropdownTimeout';
+import { buildApiUrl } from '../../lib/api';
 
-const ROLE_OPTIONS = [
-  { value: "all", label: "All Roles" },
-  { value: "organizer", label: "Organizer" },
-  { value: "participant", label: "Participant" },
-  { value: "judge", label: "Judge" },
-  { value: "mentor", label: "Mentor" },
-  { value: "admin", label: "Admin" },
-];
 const READ_OPTIONS = [
   { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
@@ -24,7 +17,6 @@ function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
   const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState({ open: false, action: null, notification: null });
-  const [roleFilter, setRoleFilter] = useState("all");
   const [readFilter, setReadFilter] = useState("unread");
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,7 +27,7 @@ function NotificationBell() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:3000/api/notifications/me", {
+      const res = await fetch(buildApiUrl("/notifications/me"), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -51,7 +43,7 @@ function NotificationBell() {
   const markAsRead = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
+      await fetch(buildApiUrl(`/notifications/${id}/read`), {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -65,7 +57,7 @@ function NotificationBell() {
   const markAsUnread = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await fetch(`http://localhost:3000/api/notifications/${id}/unread`, {
+      await fetch(buildApiUrl(`/notifications/${id}/unread`), {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -79,13 +71,15 @@ function NotificationBell() {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem("token");
-      const unreadIds = notifications.filter(n => !n.read).map(n => n._id);
-      await Promise.all(unreadIds.map(id =>
-        fetch(`http://localhost:3000/api/notifications/${id}/read`, {
+      // Only mark user-specific notifications as read
+      const userNotifIds = notifications.filter(n => !n.read && !n.fromAnnouncement).map(n => n._id);
+      await Promise.all(userNotifIds.map(id =>
+        fetch(buildApiUrl(`/notifications/${id}/read`), {
           method: "PUT",
           headers: { Authorization: `Bearer ${token}` },
         })
       ));
+      setReadFilter("read"); // Switch to 'Read' tab after marking all as read
       fetchNotifications();
     } catch (err) {
       toast({ title: "Error", description: "Failed to mark all as read." });
@@ -162,13 +156,14 @@ function NotificationBell() {
 
   // Filtering logic
   const filteredNotifications = notifications.filter((n) => {
-    // Read/unread filter
+    // Only allow read/unread toggling for user-specific notifications
+    if (n.fromAnnouncement) {
+      // Announcements always show as unread
+      return readFilter !== 'read';
+    }
+    // Read/unread filter for user notifications
     if (readFilter === "read" && !n.read) return false;
     if (readFilter === "unread" && n.read) return false;
-    // Role filter
-    if (roleFilter !== "all") {
-      if (!n.sender || n.sender.role !== roleFilter) return false;
-    }
     return true;
   });
 
@@ -200,18 +195,6 @@ function NotificationBell() {
           {/* Filter UI */}
           <div className="flex gap-2 px-4 pb-2">
             <div>
-              <label className="block text-xs text-gray-600 mb-1">Role</label>
-              <select
-                className="border rounded px-2 py-1 text-xs"
-                value={roleFilter}
-                onChange={e => setRoleFilter(e.target.value)}
-              >
-                {ROLE_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label className="block text-xs text-gray-600 mb-1">Status</label>
               <select
                 className="border rounded px-2 py-1 text-xs"
@@ -234,7 +217,12 @@ function NotificationBell() {
                 {filteredNotifications.map((n) => (
                   <div
                     key={n._id}
-                    className={`group bg-white rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%] ${n.read ? 'opacity-60' : ''}`}
+                    className={`group bg-white rounded-lg px-4 py-3 mb-2 border border-black/10 transition hover:scale-[101%] ${n.read && !n.fromAnnouncement ? 'opacity-60' : ''}`}
+                    onMouseEnter={() => {
+                      if (!n.read && !n.fromAnnouncement) {
+                        markAsRead(n._id);
+                      }
+                    }}
                   >
                     <div className="flex justify-between items-center">
                       <div className="font-medium text-black ">
@@ -246,7 +234,7 @@ function NotificationBell() {
                         )}
                       </div>
                       <div className="flex gap-1 items-center">
-                        {n.read ? (
+                        {!n.fromAnnouncement && (n.read ? (
                           <button
                             title="Mark as Unread"
                             className="p-1 rounded hover:bg-gray-200"
@@ -262,7 +250,7 @@ function NotificationBell() {
                           >
                             <Eye className="w-4 h-4 text-gray-500" />
                           </button>
-                        )}
+                        ))}
                       </div>
                     </div>
                     <div className="text-xs text-gray-700 mt-1">

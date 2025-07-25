@@ -38,6 +38,7 @@ import { HackathonRegistration } from "../../../components/RegistrationHackathon
 import { Input } from "../../../../../../components/CommonUI/input";
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
+import EditTeamNameModal from "./TeamModals/EditTeamNameModal";
 
 export default function TeamManagementSection({
   hackathon,
@@ -67,6 +68,8 @@ export default function TeamManagementSection({
   const [showJoinRegistration, setShowJoinRegistration] = useState(false);
   const [joinError, setJoinError] = useState("");
   const navigate = useNavigate();
+  const [editingTeamName, setEditingTeamName] = useState(null);
+  const [updatingTeamName, setUpdatingTeamName] = useState(false);
 
   // Add this handler at the top with other handlers
   const handleShowInviteModal = (team) => {
@@ -400,7 +403,14 @@ export default function TeamManagementSection({
                 >
                   <div className="flex justify-between items-center mb-2">
                     <div>
-                      <h4 className="font-semibold text-lg">{team.name}</h4>
+                      <h4 className="font-semibold text-lg flex items-center gap-2">
+                        {team.name}
+                        {team.leader._id?.toString() === user?._id?.toString() && (
+                          <Button size="xs" variant="ghost" onClick={() => setEditingTeamName(team)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </h4>
                       <p className="text-sm text-gray-500">
                         Code:{" "}
                         <span className="font-mono bg-gray-100 px-2 py-1 rounded">
@@ -646,6 +656,31 @@ export default function TeamManagementSection({
         open={!!editingTeam}
         onClose={() => setEditingTeam(null)}
         onSave={(desc) => handleEditDescription(editingTeam._id, desc)}
+      />
+
+      <EditTeamNameModal
+        open={!!editingTeamName}
+        onClose={() => setEditingTeamName(null)}
+        defaultValue={editingTeamName?.name || ""}
+        loading={updatingTeamName}
+        onSave={async (newName) => {
+          setUpdatingTeamName(true);
+          try {
+            const token = localStorage.getItem("token");
+            await axios.put(
+              `http://localhost:3000/api/teams/${editingTeamName._id}/name`,
+              { name: newName },
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setEditingTeamName(null);
+            fetchUserTeams();
+            toast({ title: "Team name updated!", description: "Your team name has been updated.", variant: "success" });
+          } catch (err) {
+            toast({ title: "Error", description: "Failed to update team name.", variant: "destructive" });
+          } finally {
+            setUpdatingTeamName(false);
+          }
+        }}
       />
 
       <RevokeInviteDialog

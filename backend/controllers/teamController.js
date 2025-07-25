@@ -501,6 +501,43 @@ const updateTeamDescription = async (req, res) => {
   }
 };
 
+// PUT /api/teams/:teamId/name
+const updateTeamName = async (req, res) => {
+  try {
+    const { teamId } = req.params;
+    const { name } = req.body;
+    const userId = req.user._id;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Team name is required' });
+    }
+
+    const team = await Team.findById(new mongoose.Types.ObjectId(teamId));
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+
+    // Only the leader can update team name
+    if (team.leader.toString() !== userId.toString()) {
+      return res.status(403).json({ error: 'Only the team leader can update team name' });
+    }
+
+    team.name = name.trim();
+    await team.save();
+
+    const populatedTeam = await Team.findById(team._id)
+      .populate('members', 'name email avatar')
+      .populate('leader', 'name email')
+      .populate('hackathon', 'title');
+
+    res.json({ 
+      message: 'Team name updated successfully', 
+      team: populatedTeam 
+    });
+  } catch (err) {
+    console.error('Error updating team name:', err);
+    res.status(500).json({ error: 'Failed to update team name', details: err.message });
+  }
+};
+
 // DELETE /api/teams/:teamId/leave
 const leaveTeam = async (req, res) => {
   try {
@@ -567,5 +604,6 @@ module.exports = {
   removeMember,
   leaveTeam,
   updateTeamDescription,
+  updateTeamName,
   getAllTeamsByHackathon,
 };

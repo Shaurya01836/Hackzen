@@ -27,6 +27,9 @@ router.get('/:id', teamController.getTeamById);
 // Update team description (leader only)
 router.put('/:teamId/description', protect, teamController.updateTeamDescription);
 
+// Add: Update team name (leader only)
+router.put('/:teamId/name', protect, teamController.updateTeamName);
+
 // Delete a team (leader only)
 router.delete('/:id', protect, teamController.deleteTeam);
 

@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import BaseModal from "./TeamModals/BaseModal";
 import { uploadPPTFile, savePPTSubmission } from '../../../../../../lib/api';
 import { useToast } from '../../../../../../hooks/use-toast';
+import EditTeamNameModal from "./TeamModals/EditTeamNameModal";
+import { Edit } from "lucide-react";
+import { useAuth } from '../../../../../../context/AuthContext';
 
 export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, roundIndex, onSuccess, hackathon, editingSubmission }) {
   const [file, setFile] = useState(null);
@@ -9,6 +12,10 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
   const { toast } = useToast ? useToast() : { toast: () => {} };
   const [selectedProblem, setSelectedProblem] = useState("");
   const [isEditMode, setIsEditMode] = useState(false);
+  const [team, setTeam] = useState(null);
+  const [editingTeamName, setEditingTeamName] = useState(false);
+  const [updatingTeamName, setUpdatingTeamName] = useState(false);
+  const { user } = useAuth();
 
   // Prefill in edit mode
   useEffect(() => {
@@ -25,6 +32,24 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
 
   // Reset file and problem when modal closes
   // (already handled above)
+
+  // Fetch user's team for this hackathon
+  const fetchTeam = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathon?._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setTeam(Array.isArray(data) && data.length > 0 ? data[0] : null);
+    } catch {
+      setTeam(null);
+    }
+  };
+
+  useEffect(() => {
+    if (open && hackathon?._id) fetchTeam();
+  }, [open, hackathon?._id]);
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -112,6 +137,44 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
       description={isEditMode ? "Update your .pptx file or problem statement. Only one submission allowed per round." : "Upload your .pptx file. Only one submission allowed per round."}
       content={
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
+          {team && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="font-medium">Team Name:</span>
+              <span>{team.name}</span>
+              {team.leader?._id === user?._id && (
+                <button type="button" onClick={() => setEditingTeamName(true)}>
+                  <Edit className="w-4 h-4 text-blue-600 hover:underline" />
+                </button>
+              )}
+            </div>
+          )}
+          <EditTeamNameModal
+            open={editingTeamName}
+            onClose={() => setEditingTeamName(false)}
+            defaultValue={team?.name || ""}
+            loading={updatingTeamName}
+            onSave={async (newName) => {
+              setUpdatingTeamName(true);
+              try {
+                const token = localStorage.getItem("token");
+                await fetch(`http://localhost:3000/api/teams/${team._id}/name`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({ name: newName }),
+                });
+                setEditingTeamName(false);
+                fetchTeam();
+                toast({ title: "Team name updated!", description: "Your team name has been updated.", variant: "success" });
+              } catch (err) {
+                toast({ title: "Error", description: "Failed to update team name.", variant: "destructive" });
+              } finally {
+                setUpdatingTeamName(false);
+              }
+            }}
+          />
           {isEditMode && editingSubmission?.pptFile && (
             <div className="text-sm text-gray-700 flex flex-col gap-1">
               <span>Current PPT:</span>

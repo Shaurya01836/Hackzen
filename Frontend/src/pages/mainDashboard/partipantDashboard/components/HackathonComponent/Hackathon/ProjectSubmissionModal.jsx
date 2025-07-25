@@ -15,6 +15,9 @@ import {
   AlertDialogCancel,
 } from '../../../../../../components/DashboardUI/alert-dialog';
 import ReactDOM from "react-dom";
+import EditTeamNameModal from "./TeamModals/EditTeamNameModal";
+import { Edit } from "lucide-react";
+import { useAuth } from "../../../../../../context/AuthContext";
 
 export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission, projectSubmissions = [], setEditingSubmission }) {
   const [projects, setProjects] = useState([]);
@@ -35,6 +38,10 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
   // Add state for submit confirmation dialog
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [team, setTeam] = useState(null);
+  const [editingTeamName, setEditingTeamName] = useState(false);
+  const [updatingTeamName, setUpdatingTeamName] = useState(false);
+  const { user } = useAuth();
 
   // Helper to fetch projects
   const fetchProjects = async (autoSelectLatest = false) => {
@@ -104,6 +111,26 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
       setSelectedProblem("");
     }
   }, [editingSubmission, open]);
+
+  // Fetch user's team for this hackathon
+  const fetchTeam = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/teams/hackathon/${hackathon._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      // Assume user can only be in one team per hackathon
+      setTeam(Array.isArray(data) && data.length > 0 ? data[0] : null);
+    } catch {
+      setTeam(null);
+    }
+  };
+
+  // Fetch team when modal opens
+  useEffect(() => {
+    if (open && hackathon?._id) fetchTeam();
+  }, [open, hackathon?._id]);
 
   const handleRefresh = () => {
     fetchProjects();
@@ -359,21 +386,13 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
                 );
               })()
             )}
-            <Button variant="outline" className="w-full" onClick={handleRefresh}>
-              Refresh Projects
-            </Button>
+            
             {loading ? (
               <div>Loading your projects...</div>
             ) : projects.length === 0 ? (
               <>
                 <div className="text-gray-600 text-center">No previous projects.</div>
                 <Button onClick={handleCreateNew} className="w-full bg-blue-600 text-white mt-2">Create New Project</Button>
-                <Button variant="outline" className="w-full mt-2" onClick={() => setShowDebug(d => !d)}>
-                  {showDebug ? "Hide" : "Show"} Debug Project JSON
-                </Button>
-                {showDebug && (
-                  <pre className="text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-40">{JSON.stringify(projects, null, 2)}</pre>
-                )}
               </>
             ) : (
               <>
@@ -406,6 +425,45 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
               </Select>
               */}
                 <Button onClick={handleCreateNew} className="w-full bg-blue-600 text-white mt-2">Create New Project</Button>
+
+                {team && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="font-medium">Team Name:</span>
+                    <span>{team.name}</span>
+                    {team.leader?._id === user?._id && (
+                      <Button size="xs" variant="ghost" onClick={() => setEditingTeamName(true)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                <EditTeamNameModal
+                  open={editingTeamName}
+                  onClose={() => setEditingTeamName(false)}
+                  defaultValue={team?.name || ""}
+                  loading={updatingTeamName}
+                  onSave={async (newName) => {
+                    setUpdatingTeamName(true);
+                    try {
+                      const token = localStorage.getItem("token");
+                      await fetch(`http://localhost:3000/api/teams/${team._id}/name`, {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ name: newName }),
+                      });
+                      setEditingTeamName(false);
+                      fetchTeam();
+                      toast({ title: "Team name updated!", description: "Your team name has been updated.", variant: "success" });
+                    } catch (err) {
+                      toast({ title: "Error", description: "Failed to update team name.", variant: "destructive" });
+                    } finally {
+                      setUpdatingTeamName(false);
+                    }
+                  }}
+                />
 
                 {showProblemDropdown && (
                   <>
