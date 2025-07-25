@@ -375,13 +375,106 @@ export default function HackathonTimeline({
 
               // --- UI rendering for project submission ---
               let projectSubmissionUI = null;
-              if (isProjectSubmission) {
-                // 1. Single Project, Single Round
-                if (
-                  submissionType === "single-project" &&
-                  roundType2 === "single-round"
-                ) {
-                  if (isFirstProjectRound) {
+              
+              // Check if user is blocked from previous round
+              const blockedByPreviousRound = idx > 0 && isProjectSubmission;
+              
+              if (blockedByPreviousRound) {
+                projectSubmissionUI = (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
+                    You did not submit in the previous round, so you cannot submit in this round.
+                  </div>
+                );
+              } else {
+                // --- PPT round submission UI ---
+                if (isSubmission) {
+                  if (submission) {
+                    projectSubmissionUI = (
+                      <div className="flex gap-2 items-center">
+                        <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                          PPT Submitted
+                        </div>
+                        {isLive && canEdit(end) && (
+                          <button
+                            className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                            onClick={() => handleDeletePPT(idx)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    );
+                  } else if (isLive) {
+                    projectSubmissionUI = (
+                      <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                        onClick={() => {
+                          setPptModal({ open: true, roundIdx: idx });
+                        }}
+                        disabled={!isRegistered}
+                        title={
+                          isRegistered
+                            ? "Submit your PPT"
+                            : "Register for the hackathon to submit"
+                        }
+                      >
+                        Submit PPT
+                      </button>
+                    );
+                  }
+                }
+                // --- Project round submission UI ---
+                else if (isProjectSubmission) {
+                  // 1. Single Project, Single Round
+                  if (
+                    submissionType === "single-project" &&
+                    roundType2 === "single-round"
+                  ) {
+                    if (isLive && canEdit(end)) {
+                      projectSubmissionUI =
+                        projectSubmissionsForRound.length > 0 ? (
+                          <div className="flex gap-2 items-center">
+                            <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                              Project Submitted
+                            </div>
+                            <>
+                              <button
+                                className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                onClick={() =>
+                                  handleDeleteProjectSubmission(
+                                    projectSubmissionsForRound[0]
+                                  )
+                                }
+                              >
+                                Delete
+                              </button>
+                            </>
+                          </div>
+                        ) : (
+                          isLive && (
+                            <button
+                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                              onClick={() =>
+                                isRegistered && handleOpenNewSubmission(idx)
+                              }
+                              disabled={!isRegistered}
+                              title={
+                                isRegistered
+                                  ? "Submit your project"
+                                  : "Register for the hackathon to submit"
+                              }
+                            >
+                              Submit Project
+                            </button>
+                          )
+                        );
+                    }
+                  }
+                  // 2. Single Project, Multi Round
+                  else if (
+                    submissionType === "single-project" &&
+                    roundType2 === "multi-round"
+                  ) {
                     projectSubmissionUI =
                       projectSubmissionsForRound.length > 0 ? (
                         <div className="flex gap-2 items-center">
@@ -417,59 +510,98 @@ export default function HackathonTimeline({
                                 : "Register for the hackathon to submit"
                             }
                           >
-                            Submission
+                            Submit Project
                           </button>
                         )
                       );
                   }
-                }
-                // Continue with all other submission logic cases...
-                // (keeping all the same logic but with "Submission" button text)
-                else if (
-                  submissionType === "single-project" &&
-                  roundType2 === "multi-round"
-                ) {
-                  projectSubmissionUI =
-                    projectSubmissionsForRound.length > 0 ? (
-                      <div className="flex gap-2 items-center">
-                        <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                          Project Submitted
+                  // 3. Multi Project, Single Round
+                  else if (
+                    submissionType === "multi-project" &&
+                    roundType2 === "single-round"
+                  ) {
+                    if (isLive && canEdit(end)) {
+                      const submittedCount = projectSubmissionsForRound.length;
+                      const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
+                      const canSubmitMore = submittedCount < maxAllowed;
+                      
+                      projectSubmissionUI = (
+                        <div className="flex flex-col gap-2">
+                          {submittedCount > 0 && (
+                            <div className="text-sm text-gray-600">
+                              Submitted: {submittedCount}/{maxAllowed} projects
+                            </div>
+                          )}
+                          <div className="flex gap-2 items-center">
+                            {canSubmitMore ? (
+                              <button
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                onClick={() =>
+                                  isRegistered && handleOpenNewSubmission(idx)
+                                }
+                                disabled={!isRegistered}
+                                title={
+                                  isRegistered
+                                    ? "Submit another project"
+                                    : "Register for the hackathon to submit"
+                                }
+                              >
+                                Submit Project
+                              </button>
+                            ) : (
+                              <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
+                                Max Submissions Reached
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        {isLive && canEdit(end) && (
-                          <>
-                            <button
-                              className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
-                              onClick={() =>
-                                handleDeleteProjectSubmission(
-                                  projectSubmissionsForRound[0]
-                                )
-                              }
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    ) : (
-                      isLive && (
-                        <button
-                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                          onClick={() =>
-                            isRegistered && handleOpenNewSubmission(idx)
-                          }
-                          disabled={!isRegistered}
-                          title={
-                            isRegistered
-                              ? "Submit your project"
-                              : "Register for the hackathon to submit"
-                          }
-                        >
-                          Submission
-                        </button>
-                      )
-                    );
+                      );
+                    }
+                  }
+                  // 4. Multi Project, Multi Round
+                  else if (
+                    submissionType === "multi-project" &&
+                    roundType2 === "multi-round"
+                  ) {
+                    if (isLive && canEdit(end)) {
+                      const submittedCount = projectSubmissionsForRound.length;
+                      const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
+                      const canSubmitMore = submittedCount < maxAllowed;
+                      
+                      projectSubmissionUI = (
+                        <div className="flex flex-col gap-2">
+                          {submittedCount > 0 && (
+                            <div className="text-sm text-gray-600">
+                              Submitted: {submittedCount}/{maxAllowed} projects
+                            </div>
+                          )}
+                          <div className="flex gap-2 items-center">
+                            {canSubmitMore ? (
+                              <button
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                onClick={() =>
+                                  isRegistered && handleOpenNewSubmission(idx)
+                                }
+                                disabled={!isRegistered}
+                                title={
+                                  isRegistered
+                                    ? "Submit another project"
+                                    : "Register for the hackathon to submit"
+                                }
+                              >
+                                Submit Project
+                              </button>
+                            ) : (
+                              <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
+                                Max Submissions Reached
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
                 }
-                // Add remaining cases...
               }
 
               return (

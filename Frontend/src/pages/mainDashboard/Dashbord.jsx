@@ -62,6 +62,7 @@ import JudgeProjectGallery from "./judgeDashboard/JudgeProjectGallery";
 import NotificationBell from '../../components/DashboardUI/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/DashboardUI/avatar';
 import useDropdownTimeout from '../../hooks/useDropdownTimeout';
+import OrganizerSubmissionView from "./organizerDashboard/OrganizerSubmissionView";
 
 export default function HackZenDashboard() {
   const location = useLocation();
@@ -72,6 +73,7 @@ export default function HackZenDashboard() {
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
     // Extract section from /dashboard/section pattern
+    if (path.match(/^\/dashboard\/organizer\/submission\//)) return "organizer-submission";
     const match = path.match(/^\/dashboard\/([^/]+)/);
     return match ? match[1] : "profile";
   };
@@ -298,6 +300,8 @@ export default function HackZenDashboard() {
 
       case "certificate-page":
         return <CertificatesPage onBack={() => changeView("profile")} />;
+      case "organizer-submission":
+        return <OrganizerSubmissionView />;
       default:
         return (
           <ProfileSection

@@ -44,7 +44,7 @@ export async function uploadPPTFile(file) {
 } 
 
 // Save PPT submission for a round
-export async function savePPTSubmission({ hackathonId, roundIndex, pptFile }) {
+export async function savePPTSubmission({ hackathonId, roundIndex, pptFile, problemStatement, originalName }) {
   const url = buildApiUrl("/submission-form/ppt");
   const token = localStorage.getItem('token');
   const headers = { 'Content-Type': 'application/json' };
@@ -52,7 +52,7 @@ export async function savePPTSubmission({ hackathonId, roundIndex, pptFile }) {
   const response = await fetch(url, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ hackathonId, roundIndex, pptFile }),
+    body: JSON.stringify({ hackathonId, roundIndex, pptFile, problemStatement, originalName }),
   });
   if (!response.ok) {
     throw new Error((await response.json()).error || 'Failed to save PPT submission');

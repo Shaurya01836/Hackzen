@@ -45,10 +45,14 @@ exports.getMyScoredSubmissions = async (req, res) => {
 exports.getScoresForSubmission = async (req, res) => {
   try {
     const submissionId = req.params.submissionId;
+    if (!submissionId || !submissionId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "Invalid submissionId" });
+    }
     const scores = await Score.find({ submission: submissionId }).populate("judge", "name email");
     res.json(scores);
   } catch (err) {
-    res.status(500).json({ message: "Failed to get scores" });
+    console.error("getScoresForSubmission error:", err);
+    res.status(500).json({ message: "Failed to get scores", error: err.message });
   }
 };
 

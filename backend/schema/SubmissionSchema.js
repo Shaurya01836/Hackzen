@@ -26,6 +26,8 @@ const SubmissionSchema = new Schema({
   likedBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   views: { type: Number, default: 0 },
   viewedBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
+  teamName: { type: String },
 });
 
 module.exports = { SubmissionSchema }; 

@@ -4,6 +4,7 @@ const Project = require("../model/ProjectModel");
 const Submission = require("../model/SubmissionModel");
 const Team = require('../model/TeamModel');
 const JudgeAssignment = require("../model/JudgeAssignmentModel");
+const Score = require('../model/ScoreModel');
 
 exports.saveHackathonForm = async (req, res) => {
   try {
@@ -69,6 +70,7 @@ exports.submitProjectWithAnswers = async (req, res) => {
     const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
     if (team) teamName = team.name;
     // Create new submission
+    console.log('[DEBUG] Creating submission (project):', { hackathonId, projectId, userId, problemStatement });
     const submission = await Submission.create({
       hackathonId,
       projectId,
@@ -100,7 +102,7 @@ exports.submitProjectWithAnswers = async (req, res) => {
 exports.submitPPTForRound = async (req, res) => {
   console.log('submitPPTForRound called', req.body);
   try {
-    const { hackathonId, roundIndex, pptFile, originalName } = req.body;
+    const { hackathonId, roundIndex, pptFile, originalName, problemStatement } = req.body;
     const userId = req.user._id;
     if (!hackathonId || typeof roundIndex !== 'number' || !pptFile) {
       return res.status(400).json({ success: false, error: 'hackathonId, roundIndex, and pptFile are required' });
@@ -118,6 +120,7 @@ exports.submitPPTForRound = async (req, res) => {
       submission.pptFile = pptFile;
       submission.originalName = originalName;
       submission.submittedAt = new Date();
+      if (problemStatement) submission.problemStatement = problemStatement;
       await submission.save();
       return res.status(200).json({ success: true, submission, replaced: true });
     } else {
@@ -126,6 +129,7 @@ exports.submitPPTForRound = async (req, res) => {
       const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
       if (team) teamName = team.name;
       // Create new submission
+      console.log('[DEBUG] Creating submission (ppt):', { hackathonId, roundIndex, userId, problemStatement });
       submission = await Submission.create({
         hackathonId,
         roundIndex,
@@ -135,6 +139,7 @@ exports.submitPPTForRound = async (req, res) => {
         status: 'submitted',
         submittedAt: new Date(),
         teamName,
+        problemStatement,
       });
       return res.status(200).json({ success: true, submission, replaced: false });
     }
@@ -346,10 +351,15 @@ exports.getSubmissionsByHackathonAdmin = async (req, res) => {
 exports.getSubmissionByIdAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const submission = await Submission.findById(id)
+    let submission = await Submission.findById(id)
       .populate({
         path: 'projectId',
-        select: 'title description technologies links attachments',
+        select: 'title description repoLink websiteLink videoLink socialLinks logo category customCategory team submittedBy hackathon scores status submittedAt oneLineIntro skills teamIntro customAnswers createdAt likes likedBy views viewedBy',
+        populate: [
+          { path: 'team', populate: [ { path: 'members', select: 'name profileImage email' }, { path: 'leader', select: 'name profileImage email' } ] },
+          { path: 'submittedBy', select: 'name profileImage email' },
+          { path: 'hackathon', select: 'title' },
+        ]
       })
       .populate({
         path: 'hackathonId',
@@ -358,9 +368,40 @@ exports.getSubmissionByIdAdmin = async (req, res) => {
       .populate({
         path: 'submittedBy',
         select: 'name email',
+      })
+      .populate({
+        path: 'teamId',
+        select: 'name leader',
+        populate: { path: 'leader', select: 'name email' }
       });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
-    res.json({ submission });
+    // Attach teamName and leaderName for frontend
+    let teamName = submission.teamName;
+    let leaderName = null;
+    if (submission.teamId && typeof submission.teamId === 'object') {
+      teamName = submission.teamId.name || teamName;
+      if (submission.teamId.leader && typeof submission.teamId.leader === 'object') {
+        leaderName = submission.teamId.leader.name || submission.teamId.leader.email;
+      }
+    }
+    // If leaderName is still null, try to find the team by hackathonId and submittedBy
+    if (!leaderName && submission.hackathonId && submission.submittedBy) {
+      const team = await Team.findOne({ hackathon: submission.hackathonId._id || submission.hackathonId, members: submission.submittedBy._id || submission.submittedBy, status: 'active' }).populate('leader', 'name email');
+      if (team && team.leader) {
+        leaderName = team.leader.name || team.leader.email;
+        if (!teamName) teamName = team.name;
+      }
+    }
+    // Fallback to submittedBy name/email if still not found
+    if (!leaderName && submission.submittedBy) {
+      leaderName = submission.submittedBy.name || submission.submittedBy.email;
+    }
+    const submissionObj = submission.toObject();
+    submissionObj.teamName = teamName;
+    submissionObj.leaderName = leaderName;
+    submissionObj.problemStatement = submission.problemStatement;
+    console.log('[DEBUG] getSubmissionByIdAdmin:', { id, problemStatement: submission.problemStatement, submissionObj });
+    res.json({ submission: submissionObj });
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch submission', details: err.message });
   }
@@ -437,5 +478,42 @@ exports.getSubmissionsForJudge = async (req, res) => {
   } catch (error) {
     console.error("Error in getSubmissionsForJudge:", error);
     return res.status(500).json({ message: "Failed to fetch submissions." });
+  }
+};
+
+// Get all judge evaluations for a submission (for organizer view)
+exports.getJudgeEvaluationsForSubmission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const scores = await Score.find({ submission: id })
+      .populate({ path: 'judge', select: 'name email' });
+    if (!scores.length) return res.json({ evaluations: [], averages: null });
+    // Calculate averages
+    const total = { innovation: 0, impact: 0, technicality: 0, presentation: 0 };
+    scores.forEach(s => {
+      total.innovation += s.scores.innovation;
+      total.impact += s.scores.impact;
+      total.technicality += s.scores.technicality;
+      total.presentation += s.scores.presentation;
+    });
+    const count = scores.length;
+    const averages = {
+      innovation: +(total.innovation / count).toFixed(2),
+      impact: +(total.impact / count).toFixed(2),
+      technicality: +(total.technicality / count).toFixed(2),
+      presentation: +(total.presentation / count).toFixed(2),
+      overall: +((total.innovation + total.impact + total.technicality + total.presentation) / (count * 4)).toFixed(2)
+    };
+    res.json({
+      evaluations: scores.map(s => ({
+        judge: s.judge,
+        scores: s.scores,
+        feedback: s.feedback,
+        createdAt: s.createdAt
+      })),
+      averages
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch judge evaluations', details: err.message });
   }
 };

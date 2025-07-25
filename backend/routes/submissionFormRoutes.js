@@ -10,6 +10,7 @@ const {
   deletePPTSubmission,
   getSubmissionByIdAdmin,
   getSubmissionsForJudge ,
+  getJudgeEvaluationsForSubmission,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -130,6 +131,9 @@ router.get("/debug/registration", async (req, res) => {
 router.patch('/:id/like', protect, require('../controllers/submissionFormController').likeSubmission);
 router.patch('/:id/view', protect, require('../controllers/submissionFormController').viewSubmission);
 
+// Add this route for organizer/judge evaluation viewing
+router.get('/:id/judge-evaluations', protect, getJudgeEvaluationsForSubmission);
+
 // Admin: Get total submissions stats for dashboard
 router.get("/admin/stats", protect, isAdmin, require("../controllers/submissionFormController").getAdminSubmissionStats);
 
@@ -152,11 +156,8 @@ router.get("/admin/hackathon/:hackathonId", protect, async (req, res, next) => {
   return res.status(403).json({ message: "Access denied: Admins, Judges, or Hackathon Organizer only" });
 }, require("../controllers/submissionFormController").getSubmissionsByHackathonAdmin);
 
-// Admin: Get a single submission by ID
-router.get("/admin/submission/:id", protect, (req, res, next) => {
-  if (req.user?.role === "admin" || req.user?.role === "judge") return next();
-  return res.status(403).json({ message: "Access denied: Admins or Judges only" });
-}, getSubmissionByIdAdmin);
+// Admin/Organizer: Get a single submission by ID
+router.get("/admin/:id", protect, getSubmissionByIdAdmin);
 
 // Add endpoints for deleting and editing a submission by ID
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);

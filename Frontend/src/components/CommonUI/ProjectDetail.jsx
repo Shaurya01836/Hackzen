@@ -59,6 +59,8 @@ export function ProjectDetail({
   backButtonLabel,
   hideBackButton = false,
   onlyOverview = false,
+  evaluations = [],
+  averages = null,
 }) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -82,6 +84,13 @@ export function ProjectDetail({
     );
     setIsLiked(!!likedProjects[project._id]);
   }, [project._id]);
+
+  useEffect(() => {
+    console.log('[ProjectDetail] submission prop:', submission);
+    if (submission && submission._id) {
+      console.log('[ProjectDetail] submission._id:', submission._id);
+    }
+  }, [submission]);
 
   // Like handler (public, no login required)
   const handleLike = async () => {
@@ -259,9 +268,15 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                   <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
                     {project.title}
                   </h1>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium">Team: {teamName}</span>
+                  {/* Team/Leader/Problem Statement Info */}
+                  <div className="mb-2 mt-1 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                    <div className="flex flex-wrap gap-6 items-center text-sm text-gray-700">
+                      <div><span className="font-semibold">Team:</span> {project.teamName || project.submittedBy?.name || project.submittedBy?.email || "Unknown Team"}</div>
+                      <div><span className="font-semibold">Leader:</span> {project.leaderName || '--'}</div>
+                      {project.problemStatement && (
+                        <div className="w-full"><span className="font-semibold">Problem Statement:</span> <span className="whitespace-pre-line break-words">{project.problemStatement}</span></div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -293,6 +308,45 @@ if (project.type && project.type.toLowerCase() === "ppt") {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Judge Evaluations Card (for organizer view) - always show */}
+            <Card className="mb-8 bg-white/90 border border-indigo-200 shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-indigo-700">
+                  <Award className="w-5 h-5 text-yellow-500" />
+                  Judge Evaluations
+                </CardTitle>
+                {averages && evaluations.length > 0 && (
+                  <div className="mt-2 text-sm text-gray-700 flex flex-wrap gap-6">
+                    <div><span className="font-semibold">Innovation:</span> {averages.innovation}</div>
+                    <div><span className="font-semibold">Impact:</span> {averages.impact}</div>
+                    <div><span className="font-semibold">Technicality:</span> {averages.technicality}</div>
+                    <div><span className="font-semibold">Presentation:</span> {averages.presentation}</div>
+                    <div><span className="font-semibold">Overall:</span> {averages.overall}</div>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {evaluations.length === 0 ? (
+                  <div className="text-gray-500 italic text-center py-6">No evaluations yet.</div>
+                ) : (
+                  evaluations.map((ev, idx) => (
+                    <div key={idx} className="p-4 rounded-lg border border-gray-100 bg-indigo-50">
+                      <div className="flex flex-wrap gap-6 items-center text-sm text-gray-800 mb-2">
+                        <div><span className="font-semibold">Judge:</span> {ev.judge?.name || ev.judge?.email || 'Unknown'}</div>
+                        <div><span className="font-semibold">Innovation:</span> {ev.scores.innovation}</div>
+                        <div><span className="font-semibold">Impact:</span> {ev.scores.impact}</div>
+                        <div><span className="font-semibold">Technicality:</span> {ev.scores.technicality}</div>
+                        <div><span className="font-semibold">Presentation:</span> {ev.scores.presentation}</div>
+                        <div><span className="font-semibold">Date:</span> {new Date(ev.createdAt).toLocaleString()}</div>
+                      </div>
+                      {ev.feedback && (
+                        <div className="mt-2 text-gray-700"><span className="font-semibold">Feedback:</span> {ev.feedback}</div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
             {/* Download Actions */}
             <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
               <div className="p-2 bg-indigo-100 rounded-lg">
@@ -300,18 +354,9 @@ if (project.type && project.type.toLowerCase() === "ppt") {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-gray-900 mb-1">Access Presentation</h3>
-                <p className="text-sm text-gray-600">View or download the presentation file</p>
+                <p className="text-sm text-gray-600">Download the presentation file</p>
               </div>
               <div className="flex items-center gap-3">
-                <a
-                  href={project.pptFile}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  View Online
-                </a>
                 <a
                   href={project.pptFile}
                   download
@@ -322,6 +367,30 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 </a>
               </div>
             </div>
+            {/* Loader below download, above preview */}
+            {pptLoading && (
+              <div className="flex flex-col items-center gap-4 p-8">
+                <div className="relative">
+                  <svg className="animate-spin h-12 w-12 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                  </svg>
+                  <div className="absolute inset-0 animate-pulse">
+                    <FileText className="w-12 h-12 text-indigo-300" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-gray-800 mb-1">Loading Presentation</p>
+                  <p className="text-sm text-gray-600">
+                    Please wait while we prepare your presentation preview...
+                  </p>
+                </div>
+                {/* Loading progress indicator */}
+                <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            )}
 
             {/* PPT Preview */}
             <div className="relative">
@@ -333,31 +402,6 @@ if (project.type && project.type.toLowerCase() === "ppt") {
               </div>
               
               <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                {pptLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-10">
-                    <div className="flex flex-col items-center gap-4 p-8">
-                      <div className="relative">
-                        <svg className="animate-spin h-12 w-12 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                        </svg>
-                        <div className="absolute inset-0 animate-pulse">
-                          <FileText className="w-12 h-12 text-indigo-300" />
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-lg font-semibold text-gray-800 mb-1">Loading Presentation</p>
-                        <p className="text-sm text-gray-600">
-                          Please wait while we prepare your presentation preview...
-                        </p>
-                      </div>
-                      {/* Loading progress indicator */}
-                      <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <iframe
                   src={`https://docs.google.com/gview?url=${encodeURIComponent(project.pptFile)}&embedded=true`}
                   style={{ 

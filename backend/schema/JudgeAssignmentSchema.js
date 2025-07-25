@@ -37,7 +37,9 @@ const JudgeAssignmentSchema = new Schema({
     roundId: { type: String }, // Add roundId for robust filtering
     roundName: { type: String, required: true },
     roundType: { type: String, required: true }, // 'project', 'pitch', 'quiz', etc.
-    isAssigned: { type: Boolean, default: true }
+    isAssigned: { type: Boolean, default: true },
+    assignedSubmissions: [{ type: Schema.Types.ObjectId, ref: 'Submission' }], // Array of submission IDs
+    maxSubmissions: { type: Number, default: 50 } // Maximum submissions this judge can evaluate in this round
   }],
 
   // Assigned teams/projects for this judge assignment

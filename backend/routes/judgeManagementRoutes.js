@@ -26,6 +26,9 @@ router.post('/hackathons/:hackathonId/:type/:index/assignment-mode', protect, is
 // Auto-distribute teams among judges
 router.post('/hackathons/:hackathonId/:type/:index/auto-distribute', protect, isOrganizerOrAdmin, judgeManagementController.autoDistributeTeams);
 
+// 🎯 Bulk Assign Submissions to Evaluators
+router.post('/hackathons/:hackathonId/bulk-assign-submissions', protect, isOrganizerOrAdmin, judgeManagementController.bulkAssignSubmissionsToEvaluators);
+
 // 🎯 Judge Availability and Permissions
 router.get('/hackathons/:hackathonId/problem-statements/:problemStatementId/available-judges', protect, isOrganizerOrAdmin, judgeManagementController.getAvailableJudges);
 

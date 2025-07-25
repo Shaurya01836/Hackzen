@@ -74,7 +74,7 @@ exports.assignJudges = async (req, res) => {
     const results = [];
 
     for (const assignment of judgeAssignments) {
-      let { judgeEmail, judgeType, sponsorCompany, canJudgeSponsoredPS, maxSubmissionsPerJudge } = assignment;
+      let { judgeEmail, judgeType, sponsorCompany, canJudgeSponsoredPS, maxSubmissionsPerJudge, sendEmail } = assignment;
 
       // Only create a JudgeAssignment for the judge, no assignedProblemStatements or assignedRounds
       // Check if assignment already exists for this judge and hackathon
@@ -125,7 +125,9 @@ exports.assignJudges = async (req, res) => {
           role: 'judge',
           token
         });
-        await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
+        if (sendEmail) {
+          await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
+        }
       } else {
         console.log(`Judge invite already exists for: ${judgeEmail}`);
       }
@@ -895,3 +897,119 @@ async function sendRoleInviteEmail(email, role, token, hackathonData) {
     console.error('Role invite email sending failed:', emailError);
   }
 }
+
+// 🎯 Bulk Assign Submissions to Evaluators
+exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { 
+      submissionIds, 
+      evaluatorAssignments, 
+      assignmentMode = 'manual', // 'manual' or 'equal'
+      roundIndex 
+    } = req.body;
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign submissions' });
+    }
+
+    // Validate inputs
+    if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
+      return res.status(400).json({ message: 'At least one submission is required' });
+    }
+
+    if (!Array.isArray(evaluatorAssignments) || evaluatorAssignments.length === 0) {
+      return res.status(400).json({ message: 'At least one evaluator is required' });
+    }
+
+    const results = [];
+
+    // Get all evaluator assignments for this hackathon
+    const allEvaluators = await JudgeAssignment.find({ 
+      hackathon: hackathonId,
+      status: { $in: ['active', 'pending'] }
+    });
+
+    // Process each evaluator assignment
+    for (const assignment of evaluatorAssignments) {
+      const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
+      
+      // Find the evaluator assignment
+      const evaluatorAssignment = allEvaluators.find(e => 
+        e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
+      );
+      
+      if (!evaluatorAssignment) {
+        results.push({
+          evaluatorId,
+          success: false,
+          error: 'Evaluator not found'
+        });
+        continue;
+      }
+
+      // Calculate submissions to assign based on mode
+      let submissionsToAssign = [];
+      if (assignmentMode === 'equal') {
+        const equalCount = Math.ceil(submissionIds.length / evaluatorAssignments.length);
+        const startIndex = evaluatorAssignments.indexOf(assignment) * equalCount;
+        submissionsToAssign = submissionIds.slice(startIndex, startIndex + equalCount);
+      } else {
+        // Manual mode - assign based on maxSubmissions
+        const maxSubs = maxSubmissions || Math.ceil(submissionIds.length / evaluatorAssignments.length);
+        submissionsToAssign = submissionIds.slice(0, maxSubs);
+      }
+
+      // Update the judge assignment with new submissions for this round
+      const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+      
+      if (existingRoundIndex >= 0) {
+        // Update existing round assignment
+        evaluatorAssignment.assignedRounds[existingRoundIndex] = {
+          ...evaluatorAssignment.assignedRounds[existingRoundIndex],
+          assignedSubmissions: submissionsToAssign,
+          maxSubmissions: maxSubmissions || evaluatorAssignment.assignedRounds[existingRoundIndex].maxSubmissions || 50
+        };
+      } else {
+        // Add new round assignment
+        evaluatorAssignment.assignedRounds.push({
+          roundIndex,
+          roundId: hackathon.rounds[roundIndex]?._id?.toString(),
+          roundName: hackathon.rounds[roundIndex]?.name || `Round ${roundIndex + 1}`,
+          roundType: hackathon.rounds[roundIndex]?.type || 'project',
+          isAssigned: true,
+          assignedSubmissions: submissionsToAssign,
+          maxSubmissions: maxSubmissions || 50
+        });
+      }
+
+      await evaluatorAssignment.save();
+
+      results.push({
+        evaluatorId: evaluatorAssignment._id,
+        evaluatorEmail: evaluatorAssignment.judge.email,
+        evaluatorName: evaluatorAssignment.judge.name,
+        success: true,
+        assignedSubmissions: submissionsToAssign,
+        maxSubmissions: maxSubmissions || 50
+      });
+    }
+
+    res.status(200).json({
+      message: 'Bulk assignment completed successfully',
+      results,
+      totalSubmissions: submissionIds.length,
+      totalEvaluators: evaluatorAssignments.length
+    });
+
+  } catch (error) {
+    console.error('Error bulk assigning submissions:', error);
+    res.status(500).json({ message: 'Failed to bulk assign submissions' });
+  }
+};

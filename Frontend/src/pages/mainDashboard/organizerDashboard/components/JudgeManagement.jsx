@@ -59,7 +59,7 @@ import JudgeManagementJudges from './JudgeManagementJudges';
 import JudgeManagementAssignments from './JudgeManagementAssignments';
 import { useLocation, useNavigate } from "react-router-dom";
 
-export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack }) {
+export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack, submissions: propSubmissions = [] }) {
   const { token } = useAuth();
   const [hackathon, setHackathon] = useState(null);
   const [hackathons, setHackathons] = useState([]);
@@ -108,6 +108,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
   // Add state for teams and assignment mode loading
   const [teams, setTeams] = useState([]);
   const [assignmentModeLoading, setAssignmentModeLoading] = useState(false);
+  const [localSubmissions, setLocalSubmissions] = useState([]);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -167,6 +168,26 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
     fetchTeams();
   }, [selectedHackathonId]);
 
+  useEffect(() => {
+    async function fetchSubmissions() {
+      if (!selectedHackathonId) return;
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:3000/api/submission-form/admin/hackathon/${selectedHackathonId}`,
+          { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        setLocalSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+      } catch (err) {
+        setLocalSubmissions([]);
+      }
+    }
+    if (!propSubmissions || propSubmissions.length === 0) {
+      fetchSubmissions();
+    }
+  }, [selectedHackathonId, propSubmissions]);
+
+  const submissions = (propSubmissions && propSubmissions.length > 0) ? propSubmissions : localSubmissions;
+
   const fetchHackathons = async () => {
     try {
       const response = await fetch(
@@ -209,6 +230,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
         setHackathon(data.hackathon);
         setJudgeAssignments(data.assignments);
         setSummary(data.summary);
+        console.log('DEBUG: setHackathon called with', data.hackathon);
       } else {
         console.error("Failed to fetch judge assignments:", response.status);
         // Set empty data if the API fails
@@ -545,6 +567,9 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
   console.log('hackathon.rounds:', hackathon?.rounds);
   console.log('hackathon.problemStatements:', hackathon?.problemStatements);
 
+  // Before rendering JudgeManagementAssignments
+  console.log('DEBUG: JudgeManagement render hackathon', hackathon);
+
   return (
     <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
@@ -852,23 +877,28 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
 
               {/* Assignments Tab - Card-based UI */}
               <TabsContent value="assignments" className="space-y-6 p-6">
-                <JudgeManagementAssignments
-                  key={selectedAssignmentType + selectedRoundId}
-                  selectedJudgeAssignmentId={selectedJudgeAssignmentId}
-                  setSelectedJudgeAssignmentId={setSelectedJudgeAssignmentId}
-                  allJudgeAssignments={allJudgeAssignments}
-                  selectedAssignmentType={selectedAssignmentType}
-                  setSelectedAssignmentType={setSelectedAssignmentType}
-                  selectedRoundId={selectedRoundId}
-                  setSelectedRoundId={setSelectedRoundId}
-                  hackathon={hackathon}
-                  teams={teams}
-                  selectedTeamIds={selectedTeamIds}
-                  setSelectedTeamIds={setSelectedTeamIds}
-                  assignTeamsToJudge={assignTeamsToJudge}
-                  autoDistributeTeams={autoDistributeTeams}
-                  fetchJudgeAssignments={fetchJudgeAssignments}
-                />
+                {(hackathon && (hackathon._id || hackathon.id)) ? (
+                  <JudgeManagementAssignments
+                    key={selectedAssignmentType + selectedRoundId}
+                    selectedJudgeAssignmentId={selectedJudgeAssignmentId}
+                    setSelectedJudgeAssignmentId={setSelectedJudgeAssignmentId}
+                    allJudgeAssignments={allJudgeAssignments}
+                    selectedAssignmentType={selectedAssignmentType}
+                    setSelectedAssignmentType={setSelectedAssignmentType}
+                    selectedRoundId={selectedRoundId}
+                    setSelectedRoundId={setSelectedRoundId}
+                    hackathon={hackathon}
+                    teams={teams}
+                    selectedTeamIds={selectedTeamIds}
+                    setSelectedTeamIds={setSelectedTeamIds}
+                    assignTeamsToJudge={assignTeamsToJudge}
+                    autoDistributeTeams={autoDistributeTeams}
+                    fetchJudgeAssignments={fetchJudgeAssignments}
+                    submissions={submissions}
+                  />
+                ) : (
+                  <div className="p-8 text-center text-lg text-gray-500">Loading hackathon data...</div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
