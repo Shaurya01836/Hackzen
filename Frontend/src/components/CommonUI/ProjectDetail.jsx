@@ -17,6 +17,9 @@ import {
   Copy,
   Globe,
   Eye,
+  FileText,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "./button";
 import { Badge } from "./badge";
@@ -208,117 +211,206 @@ export function ProjectDetail({
 
   if (!project) return <p>Loading...</p>;
 
-  if (project.type && project.type.toLowerCase() === "ppt") {
-    const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 ">
-        <header className="px-6 py-4 sticky top-0 z-20 ">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            {!hideBackButton && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBack}
-                className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 text-gray-700 font-medium "
-              >
-                <ArrowLeft className="w-4 h-4" /> {backButtonLabel || "Back"}
-              </Button>
-            )}
+
+if (project.type && project.type.toLowerCase() === "ppt") {
+  const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
+  return (
+    <div className="min-h-screen">
+      {/* Enhanced Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-20 shadow-sm">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          {!hideBackButton && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onBack}
+              className="flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg px-4 py-2 text-gray-700 font-medium transition-all duration-200"
+            >
+              <ArrowLeft className="w-4 h-4" /> 
+              {backButtonLabel || "Back"}
+            </Button>
+          )}
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <FileText className="w-4 h-4" />
+            <span>PPT Submission</span>
           </div>
-        </header>
-        <div className="px-6 pt-8 max-w-3xl mx-auto">
-          <Card className="mb-6">
-            <CardContent className="py-6 flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="px-6 py-8 max-w-7xl mx-auto">
+        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg shadow-indigo-100/50">
+          {/* Project Header */}
+          <CardHeader className="pb-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              {/* Project Info */}
+              <div className="flex items-start gap-4">
+                <div className="relative">
                   <img
                     src={project.logo?.url || "/assets/default-banner.png"}
-                    alt="PPT"
-                    className="w-12 h-12"
+                    alt="Project Logo"
+                    className="w-16 h-16 rounded-xl object-cover shadow-md border border-gray-200"
                   />
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">{project.title}</h1>
-                    <div className="text-sm text-gray-500">Team: {teamName}</div>
+                  <div className="absolute -bottom-1 -right-1 bg-purple-100 p-1 rounded-full">
+                    <FileText className="w-3 h-3 text-purple-600" />
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant={isLiked ? "solid" : "outline"}
-                    size="sm"
-                    className={`flex items-center gap-2 rounded-full px-3 py-2 transition-all ${isLiked ? "bg-pink-100 text-red-500" : "bg-gray-100 hover:bg-pink-50"}`}
-                    onClick={handleLike}
-                  >
-                    <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-                    {likeCount}
-                  </Button>
-                  <div className="flex items-center gap-1 text-gray-500 text-sm">
-                    <Eye className="w-4 h-4" />
-                    {viewCount}
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2 leading-tight">
+                    {project.title}
+                  </h1>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4" />
+                    <span className="font-medium">Team: {teamName}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-4 mt-2">
+
+              {/* Actions & Stats */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2">
+                  <div className="flex items-center gap-1 text-gray-600">
+                    <Eye className="w-4 h-4" />
+                    <span className="font-medium">{viewCount}</span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300"></div>
+                  <Button
+                    variant={isLiked ? "solid" : "outline"}
+                    size="sm"
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-200 ${
+                      isLiked 
+                        ? "bg-red-50 text-red-600 border-red-200 hover:bg-red-100" 
+                        : "bg-white border-gray-300 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+                    }`}
+                    onClick={handleLike}
+                  >
+                    <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+                    <span className="font-medium">{likeCount}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Download Actions */}
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <Download className="w-5 h-5 text-indigo-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">Access Presentation</h3>
+                <p className="text-sm text-gray-600">View or download the presentation file</p>
+              </div>
+              <div className="flex items-center gap-3">
                 <a
                   href={project.pptFile}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 underline text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium"
                 >
+                  <ExternalLink className="w-4 h-4" />
+                  View Online
                 </a>
                 <a
                   href={project.pptFile}
                   download
-                  className="text-green-600 underline text-sm font-medium"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium"
                 >
-                  Download PPT
+                  <Download className="w-4 h-4" />
+                  Download
                 </a>
               </div>
-              <div className="mt-4">
+            </div>
+
+            {/* PPT Preview */}
+            <div className="relative">
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Presentation Preview</h3>
+                <p className="text-sm text-gray-600">
+                  Interactive preview of the presentation. Use the controls to navigate through slides.
+                </p>
+              </div>
+              
+              <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 {pptLoading && (
-                  <div className="flex items-center justify-center w-full h-64">
-                    <svg className="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-10">
+                    <div className="flex flex-col items-center gap-4 p-8">
+                      <div className="relative">
+                        <svg className="animate-spin h-12 w-12 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                        </svg>
+                        <div className="absolute inset-0 animate-pulse">
+                          <FileText className="w-12 h-12 text-indigo-300" />
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-semibold text-gray-800 mb-1">Loading Presentation</p>
+                        <p className="text-sm text-gray-600">
+                          Please wait while we prepare your presentation preview...
+                        </p>
+                      </div>
+                      {/* Loading progress indicator */}
+                      <div className="w-48 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full animate-pulse"></div>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <iframe
                   src={`https://docs.google.com/gview?url=${encodeURIComponent(project.pptFile)}&embedded=true`}
-                  style={{ width: "100%", height: "500px", border: "none", display: pptLoading ? 'none' : 'block' }}
+                  style={{ 
+                    width: "100%", 
+                    height: "600px", 
+                    border: "none", 
+                    display: pptLoading ? 'none' : 'block' 
+                  }}
                   title="PPT Preview"
                   allowFullScreen
                   onLoad={() => setPptLoading(false)}
+                  className="rounded-lg"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Judge Evaluation Section */}
+        {user?.role === "judge" && submission && (
+          <Card className="mt-8 bg-white/70 border-0">
+            <CardHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-yellow-100 rounded-lg">
+                  <Award className="w-5 h-5 text-yellow-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-semibold text-gray-900">
+                    Judge Evaluation
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Score this submission based on the hackathon criteria. Your feedback helps determine the winners!
+                  </p>
+                </div>
+              </div>
+              
+            
+            </CardHeader>
+            
+            <CardContent>
+              <JudgeScoreForm
+                submissionId={submission._id}
+                onSubmitted={() => {
+                  toast({ title: "✅ Score Submitted", duration: 2000 });
+                }}
+              />
             </CardContent>
           </Card>
-          {user?.role === "judge" && submission && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
-                  <Award className="w-4 h-4 text-yellow-500" /> Judge Evaluation
-                </CardTitle>
-                <p className="text-xs text-gray-500 mt-1">
-                  Score this submission based on the hackathon criteria. Your feedback helps determine the winners!
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
-                </div>
-                <JudgeScoreForm
-                  submissionId={submission._id}
-                  onSubmitted={() => {
-                    toast({ title: "✅ Score Submitted", duration: 2000 });
-                  }}
-                />
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   const sharePlatforms = [
     {

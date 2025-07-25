@@ -322,7 +322,7 @@ export default function JudgePanel() {
             </div>
           ) : (
             <Card className="border-2 border-dashed border-gray-200 bg-white/50 backdrop-blur-sm shadow-sm">
-              <CardContent className="flex flex-col items-center justify-center py-16">
+              <CardContent className="flex flex-col items-center justify-center py-16 pt-16">
                 <div className="p-4 bg-gray-100 rounded-full mb-4">
                   <Gavel className="w-12 h-12 text-gray-400" />
                 </div>
