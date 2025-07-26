@@ -2691,9 +2691,10 @@ exports.performShortlisting = async (req, res) => {
       submissionsToShortlist = submissionIds;
     } else {
       // Get leaderboard data - handle both roundIndex 0 and 1 for Round 1 shortlisting
+      // Include both submitted and shortlisted submissions to handle cases where submissions are already shortlisted
       const submissions = await Submission.find({ 
         hackathonId: hackathonId, 
-        status: 'submitted',
+        status: { $in: ['submitted', 'shortlisted'] },
         $or: [
           { roundIndex: parseInt(roundIndex) },
           { roundIndex: 0 }, // Many submissions are in round 0
@@ -2738,7 +2739,16 @@ exports.performShortlisting = async (req, res) => {
             scoresObject = score.scores;
           }
           
-          const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+          // Handle nested score structure { criteria: { score: 5, maxScore: 10, weight: 1 } }
+          const criteriaScores = [];
+          Object.values(scoresObject).forEach(value => {
+            if (typeof value === 'number') {
+              criteriaScores.push(value);
+            } else if (value && typeof value === 'object' && value.score !== undefined) {
+              criteriaScores.push(value.score);
+            }
+          });
+          
           if (criteriaScores.length > 0) {
             const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
             totalScore += submissionScore;
@@ -2867,7 +2877,7 @@ exports.performShortlisting = async (req, res) => {
       console.log('🔍 Backend - Shortlisted submissions:', submissionsToShortlist);
       console.log('🔍 Backend - Mode:', mode);
       
-      await sendShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
+      await exports.sendShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
       console.log('🔍 Backend - Email notifications sent successfully');
     } catch (emailError) {
       console.error('🔍 Backend - Error sending shortlisting emails:', emailError);
@@ -3422,7 +3432,7 @@ async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, s
 }
 
 // 🎯 Send shortlisting notifications to participants
-async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortlistedSubmissions, mode) {
+exports.sendShortlistingNotifications = async function(hackathon, shortlistedTeams, shortlistedSubmissions, mode) {
   try {
     // Check email configuration
     if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
@@ -3437,9 +3447,10 @@ async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortl
     const Team = require('../model/TeamModel');
     const Submission = require('../model/SubmissionModel');
     
-    // Get all participants who submitted to this hackathon - handle both roundIndex 0 and 1 for Round 1
-    const allSubmissions = await Submission.find({ 
+    // Get shortlisted submissions to identify shortlisted participants
+    const shortlistedSubs = await Submission.find({
       hackathonId: hackathon._id,
+      status: 'shortlisted',
       $or: [
         { roundIndex: 1 }, // Round 1 submissions
         { roundIndex: 0 }, // Many submissions are in round 0
@@ -3449,17 +3460,30 @@ async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortl
       .populate('teamId', 'name members')
       .lean();
 
-    // Get all unique participants
-    const allParticipants = new Set();
-    const participantDetails = new Map();
+    // Get non-shortlisted submissions to identify non-shortlisted participants
+    const nonShortlistedSubs = await Submission.find({
+      hackathonId: hackathon._id,
+      status: { $ne: 'shortlisted' },
+      $or: [
+        { roundIndex: 1 }, // Round 1 submissions
+        { roundIndex: 0 }, // Many submissions are in round 0
+        { roundIndex: { $exists: false } } // Some submissions have no roundIndex
+      ]
+    }).populate('submittedBy', 'name email')
+      .populate('teamId', 'name members')
+      .lean();
 
-    allSubmissions.forEach(submission => {
+    // Get shortlisted participants
+    const shortlistedParticipants = new Set();
+    const shortlistedParticipantDetails = new Map();
+
+    shortlistedSubs.forEach(submission => {
       if (submission.teamId) {
-        // Team submission
+        // Team submission - add all team members
         submission.teamId.members.forEach(memberId => {
-          allParticipants.add(memberId.toString());
+          shortlistedParticipants.add(memberId.toString());
         });
-        participantDetails.set(submission.teamId._id.toString(), {
+        shortlistedParticipantDetails.set(submission.teamId._id.toString(), {
           type: 'team',
           name: submission.teamId.name,
           submissionTitle: submission.projectTitle || submission.title,
@@ -3467,8 +3491,8 @@ async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortl
         });
       } else if (submission.submittedBy) {
         // Individual submission
-        allParticipants.add(submission.submittedBy._id.toString());
-        participantDetails.set(submission.submittedBy._id.toString(), {
+        shortlistedParticipants.add(submission.submittedBy._id.toString());
+        shortlistedParticipantDetails.set(submission.submittedBy._id.toString(), {
           type: 'individual',
           name: submission.submittedBy.name || submission.submittedBy.email,
           submissionTitle: submission.projectTitle || submission.title,
@@ -3477,41 +3501,66 @@ async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortl
       }
     });
 
-    // Get user details for all participants
-    const users = await User.find({ 
-      _id: { $in: Array.from(allParticipants) } 
-    }).select('name email').lean();
-
-    const userMap = new Map(users.map(user => [user._id.toString(), user]));
-
-    // Separate shortlisted and non-shortlisted participants
-    const shortlistedParticipants = new Set();
+    // Get non-shortlisted participants
     const nonShortlistedParticipants = new Set();
+    const nonShortlistedParticipantDetails = new Map();
 
-    allParticipants.forEach(participantId => {
-      const participantDetail = participantDetails.get(participantId);
-      if (participantDetail) {
-        if (shortlistedTeams.includes(participantDetail.type === 'team' ? participantDetail.name : participantId)) {
-          shortlistedParticipants.add(participantId);
-        } else {
-          nonShortlistedParticipants.add(participantId);
-        }
+    nonShortlistedSubs.forEach(submission => {
+      if (submission.teamId) {
+        // Team submission - add all team members
+        submission.teamId.members.forEach(memberId => {
+          nonShortlistedParticipants.add(memberId.toString());
+        });
+        nonShortlistedParticipantDetails.set(submission.teamId._id.toString(), {
+          type: 'team',
+          name: submission.teamId.name,
+          submissionTitle: submission.projectTitle || submission.title,
+          submissionType: submission.pptFile ? 'PPT' : 'Project'
+        });
+      } else if (submission.submittedBy) {
+        // Individual submission
+        nonShortlistedParticipants.add(submission.submittedBy._id.toString());
+        nonShortlistedParticipantDetails.set(submission.submittedBy._id.toString(), {
+          type: 'individual',
+          name: submission.submittedBy.name || submission.submittedBy.email,
+          submissionTitle: submission.projectTitle || submission.title,
+          submissionType: submission.pptFile ? 'PPT' : 'Project'
+        });
       }
     });
 
+    // Get user details for shortlisted participants
+    const shortlistedUsers = await User.find({ 
+      _id: { $in: Array.from(shortlistedParticipants) } 
+    }).select('name email').lean();
+
+    // Get user details for non-shortlisted participants
+    const nonShortlistedUsers = await User.find({ 
+      _id: { $in: Array.from(nonShortlistedParticipants) } 
+    }).select('name email').lean();
+
+    const shortlistedUserMap = new Map(shortlistedUsers.map(user => [user._id.toString(), user]));
+    const nonShortlistedUserMap = new Map(nonShortlistedUsers.map(user => [user._id.toString(), user]));
+
+    console.log('🔍 Backend - Email sending results:');
+    console.log(`  - Shortlisted participants: ${shortlistedParticipants.size}`);
+    console.log(`  - Non-shortlisted participants: ${nonShortlistedParticipants.size}`);
+    
     // Send emails to shortlisted participants
     for (const participantId of shortlistedParticipants) {
-      const user = userMap.get(participantId);
+      const user = shortlistedUserMap.get(participantId);
       if (user && user.email) {
-        await sendShortlistedEmail(user.email, user.name, hackathon, participantDetails.get(participantId), mode);
+        console.log(`🔍 Backend - Sending shortlisted email to: ${user.email}`);
+        await exports.sendShortlistedEmail(user.email, user.name, hackathon, shortlistedParticipantDetails.get(participantId), mode);
       }
     }
 
     // Send emails to non-shortlisted participants
     for (const participantId of nonShortlistedParticipants) {
-      const user = userMap.get(participantId);
+      const user = nonShortlistedUserMap.get(participantId);
       if (user && user.email) {
-        await sendNotShortlistedEmail(user.email, user.name, hackathon, participantDetails.get(participantId));
+        console.log(`🔍 Backend - Sending not shortlisted email to: ${user.email}`);
+        await exports.sendNotShortlistedEmail(user.email, user.name, hackathon, nonShortlistedParticipantDetails.get(participantId));
       }
     }
 
@@ -3523,7 +3572,7 @@ async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortl
 }
 
 // 🎯 Send email to shortlisted participants
-async function sendShortlistedEmail(userEmail, userName, hackathon, participantDetail, mode) {
+exports.sendShortlistedEmail = async function(userEmail, userName, hackathon, participantDetail, mode) {
   try {
     const transporter = require('../config/mailer');
     
@@ -3602,7 +3651,7 @@ async function sendShortlistedEmail(userEmail, userName, hackathon, participantD
 }
 
 // 🎯 Send email to non-shortlisted participants
-async function sendNotShortlistedEmail(userEmail, userName, hackathon, participantDetail) {
+exports.sendNotShortlistedEmail = async function(userEmail, userName, hackathon, participantDetail) {
   try {
     const transporter = require('../config/mailer');
     
