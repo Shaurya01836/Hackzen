@@ -2,13 +2,15 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../components/CommonUI/card";
 import { Badge } from "../../../../../../components/CommonUI/badge";
-import { Building, MapPin, Target, Award, Users, AlertCircle, CheckCircle, Globe, MessageSquare } from "lucide-react";
+import { Building, MapPin, Target, Award, Users, AlertCircle, Globe, MessageSquare, ArrowRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "../../../../../../components/DashboardUI/avatar";
 import { Button } from "../../../../../../components/CommonUI/button";
+import { SiMoneygram } from "react-icons/si";
 
 export default function HackathonOverview({ hackathon, sectionRef, user, onShowParticipants }) {
   // Defensive: default arrays and strings
   const requirements = Array.isArray(hackathon.requirements) ? hackathon.requirements : [];
+  const perks = Array.isArray(hackathon.perks) ? hackathon.perks : [];
   const organizer = hackathon.organizer || '';
   const tags = Array.isArray(hackathon.tags) ? hackathon.tags : [];
   const teamSize = hackathon.teamSize || {};
@@ -134,60 +136,44 @@ export default function HackathonOverview({ hackathon, sectionRef, user, onShowP
                 <ul className="space-y-4">
                   {requirements.length > 0 ? (
                     requirements.map((req, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <CheckCircle className="w-3 h-3 text-white" />
-                        </div>
+                      <li key={index} className="flex items-center gap-3">                        
+                          <ArrowRight className="w-5 h-5 text-indigo-500" />
                         <span className="text-gray-700 leading-relaxed">{req}</span>
                       </li>
                     ))
                   ) : (
-                    <li className="flex items-start gap-3">
-                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      </div>
+                    <li className="flex items-start gap-3">    
+                        <ArrowRight className="w-3 h-3 text-indigo-500" />
                       <span className="text-gray-700 leading-relaxed">Open to all skill levels</span>
                     </li>
                   )}
                 </ul>
               </div>
             </div>
+
+            
             <hr />
             {/* What You'll Need Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
                
-                <h3 className="text-xl font-semibold text-gray-900">What You'll Need</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Perks</h3>
               </div>
               <div className="">
-                <ul className="space-y-4 text-gray-700">
-                  <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <AlertCircle className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="leading-relaxed">Laptop/Computer with development environment</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <AlertCircle className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="leading-relaxed">Stable internet connection</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Users className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="leading-relaxed">
-                      Team of {teamSize.min || 1} to {teamSize.max || 4} members
-                      {teamSize.allowSolo ? " (solo participation allowed)" : ""}
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <AlertCircle className="w-3 h-3 text-white" />
-                    </div>
-                    <span className="leading-relaxed">GitHub account for code submission</span>
-                  </li>
+                <ul className="space-y-4">
+                  {perks.length > 0 ? (
+                    perks.map((req, index) => (
+                      <li key={index} className="flex items-center gap-3">
+                          <ArrowRight className="w-5 h-5 text-indigo-500" />
+                        <span className="text-gray-700 leading-relaxed">{req}</span>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="flex items-start gap-3">
+                        <ArrowRight className="w-3 h-3 text-indigo-500" />
+                      <span className="text-gray-700 leading-relaxed">Open to all skill levels</span>
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>

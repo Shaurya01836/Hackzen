@@ -7,52 +7,27 @@ import { Skeleton } from "../../../../../../components/DashboardUI/skeleton";
 import { ProjectCard } from "../../../../../../components/CommonUI/ProjectCard";
 import { Rocket, Code2, FileText, Sparkles, FolderOpen } from "lucide-react";
 
-// Empty State Component (Adjusted for consistent design)
-const EmptyProjectsState = ({ selectedType }) => {
-  const getEmptyStateContent = () => {
-    if (selectedType && selectedType !== "") {
-      return {
-        title: `No ${selectedType} submissions yet`,
-        subtitle: `Be the first to submit a ${selectedType.toLowerCase()} for this hackathon!`,
-        IconComponent: selectedType.toLowerCase() === 'ppt' ? FileText : Code2
-      };
-    }
-    return {
-      title: "No projects submitted yet",
-      subtitle: "Be the first to showcase your innovative solution!",
-      IconComponent: Rocket
-    };
-  };
-
-  const { title, subtitle, IconComponent } = getEmptyStateContent();
-
+// Empty State Component
+const EmptyProjectsState = () => {
   return (
     <div className="text-center py-12">
       <div className="w-16 h-16 mx-auto mb-6 bg-indigo-100 rounded-full flex items-center justify-center">
-        <IconComponent className="w-8 h-8 text-indigo-600" />
+        <Rocket className="w-8 h-8 text-indigo-600" />
       </div>
-      <h4 className="text-2xl font-bold text-gray-800 mb-3">{title}</h4>
+      <h4 className="text-2xl font-bold text-gray-800 mb-3">No projects submitted yet</h4>
       <p className="text-gray-700 leading-relaxed text-lg mb-6 max-w-2xl mx-auto">
-        {subtitle}
+        Be the first to showcase your innovative solution!
       </p>
     </div>
   );
 };
 
-export default function HackathonProjectsGallery({ hackathonId, onProjectClick, selectedType, sectionRef }) {
+export default function HackathonProjectsGallery({ hackathonId, onProjectClick, sectionRef }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [judgeScores, setJudgeScores] = useState([]);
   const navigate = useNavigate();
-
-  // Get dynamic heading based on filter
-  const getPageHeading = () => {
-    if (selectedType && selectedType !== "") {
-      return `${selectedType.charAt(0).toUpperCase() + selectedType.slice(1)} Submissions`;
-    }
-    return "Project Gallery";
-  };
 
   // Fetch only submitted projects for the hackathon
   useEffect(() => {
@@ -81,26 +56,8 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
 
         const projectsData = await Promise.all(projectPromises);
 
-        // 3. Add standalone PPT submissions
-        const pptSubmissions = submissions
-          .filter((s) => s.pptFile && !s.projectId)
-          .map((s) => ({
-            ...s,
-            type: "ppt",
-            title: s.title || s.originalName || "PPT Submission",
-            name: s.teamName || (s.team && s.team.name) || "-",
-            status: s.status || "Submitted",
-            submittedBy: s.submittedBy,
-            submittedAt: s.submittedAt,
-            pptFile: s.pptFile,
-            logo: { url: "/assets/ppt.png" },
-            likes: s.likes || 0,
-            views: s.views || 0,
-            __submission: s, // ✅ attach itself as submission
-          }));
-
-        // 4. Combine and set
-        setProjects([...projectsData, ...pptSubmissions]);
+        // 3. Set the projects to be displayed
+        setProjects(projectsData);
       } catch (err) {
         console.error("Error fetching submitted projects for hackathon", err);
         setProjects([]);
@@ -137,17 +94,6 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
     fetchUserAndScores();
   }, []);
 
-  // Filter by selected type
-  const filteredProjects =
-    selectedType && selectedType !== ""
-      ? projects.filter((project) => {
-          if (project.type) {
-            return project.type.toLowerCase() === selectedType.toLowerCase();
-          }
-          return selectedType.toLowerCase() === "project";
-        })
-      : projects;
-
   // Show skeletons while loading
   if (loading) {
     return (
@@ -183,7 +129,7 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         <CardHeader className="border-b border-gray-100 bg-gray-50/50">
           <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
             <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
-            {getPageHeading()}
+            Project Gallery
           </CardTitle>
         </CardHeader>
 
@@ -194,17 +140,17 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
               <h3 className="text-xl font-semibold text-gray-900">Submitted Projects</h3>
             </div>
             
-            {filteredProjects.length === 0 ? (
-              <EmptyProjectsState selectedType={selectedType} />
+            {projects.length === 0 ? (
+              <EmptyProjectsState />
             ) : (
               <div className="">
                 <p className="text-gray-700 leading-relaxed text-lg mb-6">
-                  {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} submitted for this hackathon
+                  {projects.length} {projects.length === 1 ? 'project' : 'projects'} submitted for this hackathon
                 </p>
                 
                 {/* Projects Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProjects.map((project) => (
+                  {projects.map((project) => (
                     <ProjectCard
                       key={project._id}
                       project={project}
