@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/DashboardUI/dialog';
-import { X, Search, UserPlus, ChevronDown } from 'lucide-react';
+import { X, Search, UserPlus, ChevronDown, CheckCircle, Clock, XCircle, Users } from 'lucide-react';
 import { useToast } from '../../../../hooks/use-toast';
 
 export default function BulkEvaluatorAssignModal({
@@ -8,43 +8,80 @@ export default function BulkEvaluatorAssignModal({
   onClose,
   selectedCount = 0,
   onAssign,
-  allEvaluators = [], // all possible judges
-  initialSelected = [], // array of assigned judge ids
-  hackathonId, // required
-  roundIndex = 0, // which round we're assigning for
-  selectedSubmissionIds = [], // array of selected submission IDs
+  hackathonId,
+  roundIndex = 0,
+  selectedSubmissionIds = [],
 }) {
   const { toast } = useToast();
   const [evaluatorSearch, setEvaluatorSearch] = useState("");
   const [selectedEvaluators, setSelectedEvaluators] = useState([]);
   const [assignCounts, setAssignCounts] = useState({});
-  const [localEvaluators, setLocalEvaluators] = useState([]); // for added evaluators
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [addForm, setAddForm] = useState({ firstName: '', lastName: '', email: '', mobile: '', sendEmail: true });
-  const [addTouched, setAddTouched] = useState(false);
-  const [addLoading, setAddLoading] = useState(false);
+  const [allEvaluators, setAllEvaluators] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignmentMode, setAssignmentMode] = useState('manual'); // 'manual' or 'equal'
+  
+  // New state for multiple judges per project
+  const [multipleJudgesMode, setMultipleJudgesMode] = useState(false);
+  const [judgesPerProject, setJudgesPerProject] = useState(1);
+  const [judgesPerProjectMode, setJudgesPerProjectMode] = useState('manual'); // 'manual' or 'equal'
 
+  // Fetch evaluators when modal opens
+  useEffect(() => {
+    if (open && hackathonId) {
+      fetchEvaluators();
+    }
+  }, [open, hackathonId]);
+
+  // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setSelectedEvaluators([]);
       setAssignCounts({});
-      setLocalEvaluators([]);
       setEvaluatorSearch("");
       setAssignmentMode('manual');
+      setMultipleJudgesMode(false);
+      setJudgesPerProject(1);
+      setJudgesPerProjectMode('manual');
     }
   }, [open]);
 
-  // Combine allEvaluators and localEvaluators
-  const allEvalList = [...allEvaluators, ...localEvaluators];
-  
-  // Unassigned = not in selectedEvaluators
-  const unassignedEvaluators = allEvalList.filter(ev => !selectedEvaluators.includes(ev.id));
-  const filteredUnassigned = unassignedEvaluators.filter(ev =>
+  const fetchEvaluators = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/evaluators`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAllEvaluators(data.evaluators);
+      } else {
+        throw new Error('Failed to fetch evaluators');
+      }
+    } catch (error) {
+      console.error('Error fetching evaluators:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch evaluators',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter evaluators based on search
+  const filteredEvaluators = allEvaluators.filter(ev =>
     ev.name.toLowerCase().includes(evaluatorSearch.toLowerCase()) ||
     ev.email.toLowerCase().includes(evaluatorSearch.toLowerCase())
   );
+
+  // Separate evaluators by status
+  const activeEvaluators = filteredEvaluators.filter(ev => ev.status === 'active');
+  const pendingEvaluators = filteredEvaluators.filter(ev => ev.status === 'pending');
+  const declinedEvaluators = filteredEvaluators.filter(ev => ev.status === 'declined');
 
   const handleEvaluatorToggle = (id) => {
     setSelectedEvaluators(prev =>
@@ -62,16 +99,48 @@ export default function BulkEvaluatorAssignModal({
       return;
     }
 
+    // Validate multiple judges per project settings
+    if (multipleJudgesMode) {
+      if (judgesPerProject < 1) {
+        toast({
+          title: 'Invalid judges per project',
+          description: 'Judges per project must be at least 1.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      // Warn if more judges per project than available evaluators
+      if (judgesPerProject > selectedEvaluators.length) {
+        console.warn(`Warning: ${judgesPerProject} judges per project requested but only ${selectedEvaluators.length} evaluators available`);
+      }
+    }
+
+    // Check if we have enough evaluators for all submissions
+    const totalAssigned = selectedEvaluators.reduce((sum, id) => {
+      const count = parseInt(assignCounts[id] || 0);
+      return sum + count;
+    }, 0);
+
+    if (totalAssigned < selectedCount) {
+      toast({
+        title: 'Insufficient assignments',
+        description: `You need to assign ${selectedCount} submissions, but only assigned ${totalAssigned}.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setAssignLoading(true);
     try {
       const token = localStorage.getItem('token');
       
       // Prepare evaluator assignments
       const evaluatorAssignments = selectedEvaluators.map(evaluatorId => {
-        const evaluator = allEvalList.find(e => e.id === evaluatorId);
+        const evaluator = allEvaluators.find(e => e.id === evaluatorId);
         return {
           evaluatorId,
-          maxSubmissions: parseInt(assignCounts[evaluatorId] || 0) || Math.ceil(selectedCount / selectedEvaluators.length),
+          maxSubmissions: parseInt(assignCounts[evaluatorId] || 0),
           evaluatorEmail: evaluator?.email,
           evaluatorName: evaluator?.name
         };
@@ -84,10 +153,13 @@ export default function BulkEvaluatorAssignModal({
           Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
-          submissionIds: selectedSubmissionIds, // This will be filled by the backend based on selected submissions
+          submissionIds: selectedSubmissionIds,
           evaluatorAssignments,
           assignmentMode,
-          roundIndex
+          roundIndex,
+          multipleJudgesMode,
+          judgesPerProject,
+          judgesPerProjectMode
         }),
       });
 
@@ -100,18 +172,21 @@ export default function BulkEvaluatorAssignModal({
       
       toast({
         title: 'Assignments completed successfully',
-        description: `Assigned ${selectedCount} submissions to ${selectedEvaluators.length} evaluators.`,
+        description: `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators${multipleJudgesMode ? ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project` : ''}.`,
         variant: 'default',
       });
 
       // Reset form
       setSelectedEvaluators([]);
       setAssignCounts({});
-      setLocalEvaluators([]);
       setEvaluatorSearch("");
       setAssignmentMode('manual');
+      setMultipleJudgesMode(false);
+      setJudgesPerProject(1);
+      setJudgesPerProjectMode('manual');
       
       if (onClose) onClose();
+      if (onAssign) onAssign(selectedEvaluators);
       
     } catch (error) {
       console.error('Assignment error:', error);
@@ -142,77 +217,38 @@ export default function BulkEvaluatorAssignModal({
     setAssignmentMode('equal');
   };
 
-  // Add Evaluator Modal logic
-  const handleAddEvaluator = async (e) => {
-    e.preventDefault();
-    setAddTouched(true);
-    if (!addForm.firstName || !addForm.email) return;
-    if (!hackathonId) {
-      toast({
-        title: 'Error',
-        description: 'No hackathonId provided!',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    setAddLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/judge-management/hackathons/${hackathonId}/assign-judges`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          judgeAssignments: [{
-            judgeEmail: addForm.email,
-            judgeType: 'platform',
-            sponsorCompany: '',
-            canJudgeSponsoredPS: false,
-            maxSubmissionsPerJudge: 50,
-            firstName: addForm.firstName,
-            lastName: addForm.lastName,
-            mobile: addForm.mobile,
-            sendEmail: addForm.sendEmail,
-          }],
-        }),
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to assign judge');
-      }
-      
-      const newEvaluator = {
-        id: addForm.email,
-        name: addForm.firstName + (addForm.lastName ? ' ' + addForm.lastName : ''),
-        email: addForm.email,
-        mobile: addForm.mobile,
-      };
-      
-      setLocalEvaluators(prev => [...prev, newEvaluator]);
-      setAddForm({ firstName: '', lastName: '', email: '', mobile: '', sendEmail: true });
-      setAddModalOpen(false);
-      setAddTouched(false);
-      
-      toast({
-        title: 'Evaluator added successfully',
-        description: addForm.sendEmail ? 'Email invitation sent to the evaluator.' : 'Evaluator added without email notification.',
-        variant: 'default',
-      });
-    } catch (err) {
-      console.error('Add evaluator error:', err);
-      toast({
-        title: 'Failed to add evaluator',
-        description: err.message || 'An error occurred while adding the evaluator.',
-        variant: 'destructive',
-      });
-    } finally {
-      setAddLoading(false);
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'active':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'pending':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'declined':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
     }
   };
 
-  const isAddDisabled = !addForm.firstName || !addForm.email;
-  const isAssignDisabled = selectedEvaluators.length === 0 || assignLoading;
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Accepted';
+      case 'pending':
+        return 'Pending';
+      case 'declined':
+        return 'Declined';
+      default:
+        return status;
+    }
+  };
+
+  const totalAssigned = selectedEvaluators.reduce((sum, id) => {
+    const count = parseInt(assignCounts[id] || 0);
+    return sum + count;
+  }, 0);
+
+  const remainingToAssign = selectedCount - totalAssigned;
 
   if (!hackathonId) {
     return (
@@ -229,9 +265,15 @@ export default function BulkEvaluatorAssignModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full">
+      <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold">Assign Evaluators "{selectedCount} Candidates"</DialogTitle>
+          <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            Assign {selectedCount} Submission{selectedCount > 1 ? 's' : ''} to Judges
+          </DialogTitle>
+          <p className="text-sm text-gray-600 mt-2">
+            Select judges to evaluate the selected submissions. Judges will only see submissions assigned to them.
+          </p>
           <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={onClose}>
             <X className="w-5 h-5" />
           </button>
@@ -249,9 +291,102 @@ export default function BulkEvaluatorAssignModal({
                 Assign Equally <ChevronDown className="w-3 h-3" />
               </button>
             </div>
+            
+            {/* Multiple Judges Per Project Section */}
+            <div className="mb-4 p-3 border border-blue-200 rounded-lg bg-blue-50">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-800">Multiple Judges Per Project</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={multipleJudgesMode}
+                    onChange={(e) => setMultipleJudgesMode(e.target.checked)}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span className="text-sm text-gray-700">Enable multiple judges per project</span>
+                </label>
+              </div>
+              
+              {multipleJudgesMode && (
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="judgesPerProjectMode"
+                        checked={judgesPerProjectMode === 'manual'}
+                        onChange={() => setJudgesPerProjectMode('manual')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-sm text-gray-700">Manual assignment</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="judgesPerProjectMode"
+                        checked={judgesPerProjectMode === 'equal'}
+                        onChange={() => setJudgesPerProjectMode('equal')}
+                        className="h-4 w-4 text-blue-600"
+                      />
+                      <span className="text-sm text-gray-700">Equal distribution</span>
+                    </div>
+                  </div>
+                  
+                  {judgesPerProjectMode === 'manual' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-700">Judges per project:</span>
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center"
+                          value={judgesPerProject}
+                          onChange={(e) => setJudgesPerProject(parseInt(e.target.value) || 1)}
+                        />
+                        <div className="flex items-center gap-1 ml-2">
+                          {[...Array(Math.min(judgesPerProject, 5))].map((_, i) => (
+                            <Users key={i} className="w-4 h-4 text-blue-600" />
+                          ))}
+                          {judgesPerProject > 5 && (
+                            <span className="text-xs text-blue-600 font-medium">+{judgesPerProject - 5}</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">(recommended: ≤ {selectedEvaluators.length})</span>
+                      {judgesPerProject > selectedEvaluators.length && (
+                        <span className="text-xs text-red-500 ml-2">Warning: More judges per project than available evaluators!</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {judgesPerProjectMode === 'equal' && (
+                    <div className="text-sm text-gray-600">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span>Each project will be assigned to {Math.ceil(selectedEvaluators.length / selectedCount)} judges equally</span>
+                        <div className="flex items-center gap-1">
+                          {[...Array(Math.min(Math.ceil(selectedEvaluators.length / selectedCount), 5))].map((_, i) => (
+                            <Users key={i} className="w-3 h-3 text-blue-600" />
+                          ))}
+                          {Math.ceil(selectedEvaluators.length / selectedCount) > 5 && (
+                            <span className="text-xs text-blue-600 font-medium">+{Math.ceil(selectedEvaluators.length / selectedCount) - 5}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Distribution: {selectedCount} projects × {Math.ceil(selectedEvaluators.length / selectedCount)} judges = {selectedCount * Math.ceil(selectedEvaluators.length / selectedCount)} total assignments
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
             <div className="space-y-3">
               {selectedEvaluators.map(id => {
-                const ev = allEvalList.find(e => e.id === id);
+                const ev = allEvaluators.find(e => e.id === id);
                 if (!ev) return null;
                 
                 return (
@@ -306,116 +441,123 @@ export default function BulkEvaluatorAssignModal({
         </div>
         
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {filteredUnassigned.length === 0 ? (
-            <div className="text-gray-400 text-sm text-center py-4">No unassigned evaluators found.</div>
-          ) : filteredUnassigned.map(ev => (
-            <div key={ev.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-              <input 
-                type="checkbox" 
-                checked={false} 
-                onChange={() => handleEvaluatorToggle(ev.id)}
-                className="h-4 w-4 text-blue-600"
-              />
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
-                {ev.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+          {loading ? (
+            <div className="text-gray-400 text-sm text-center py-4">Loading evaluators...</div>
+          ) : filteredEvaluators.length === 0 ? (
+            <div className="text-gray-400 text-sm text-center py-4">No evaluators found.</div>
+          ) : (
+            filteredEvaluators.map(ev => (
+              <div key={ev.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
+                <input 
+                  type="checkbox" 
+                  checked={selectedEvaluators.includes(ev.id)} 
+                  onChange={() => handleEvaluatorToggle(ev.id)}
+                  className="h-4 w-4 text-blue-600"
+                  disabled={ev.status !== 'active'}
+                />
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs">
+                  {ev.name.split(' ').map(n => n[0]).join('').slice(0,2)}
+                </div>
+                <div className="flex-1">
+                  <div className="font-medium text-gray-900 text-sm">{ev.name}</div>
+                  <div className="text-xs text-gray-500">{ev.email}</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(ev.status)}
+                  <span className="text-xs text-gray-500">{getStatusText(ev.status)}</span>
+                </div>
               </div>
-              <div className="flex-1">
-                <div className="font-medium text-gray-900 text-sm">{ev.name}</div>
-                <div className="text-xs text-gray-500">{ev.email}</div>
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
+        
+        {/* Assignment Preview */}
+        {multipleJudgesMode && selectedEvaluators.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-4 h-4 text-blue-600" />
+              <span className="text-blue-800 text-sm font-semibold">Assignment Preview</span>
+            </div>
+            <div className="text-sm text-blue-700">
+              {judgesPerProjectMode === 'manual' ? (
+                <div>
+                  <span>Each project will have {judgesPerProject} judge(s)</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[...Array(Math.min(judgesPerProject, 5))].map((_, i) => (
+                      <Users key={i} className="w-3 h-3 text-blue-600" />
+                    ))}
+                    {judgesPerProject > 5 && (
+                      <span className="text-xs text-blue-600 font-medium">+{judgesPerProject - 5}</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <span>Equal distribution: {Math.ceil(selectedEvaluators.length / selectedCount)} judges per project</span>
+                  <div className="flex items-center gap-1 mt-1">
+                    {[...Array(Math.min(Math.ceil(selectedEvaluators.length / selectedCount), 5))].map((_, i) => (
+                      <Users key={i} className="w-3 h-3 text-blue-600" />
+                    ))}
+                    {Math.ceil(selectedEvaluators.length / selectedCount) > 5 && (
+                      <span className="text-xs text-blue-600 font-medium">+{Math.ceil(selectedEvaluators.length / selectedCount) - 5}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Warning Bar */}
+        {remainingToAssign > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-orange-500 flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">i</span>
+                </div>
+                <span className="text-orange-800 text-sm">
+                  +{remainingToAssign} candidate(s) still need to be selected!
+                </span>
+              </div>
+              <button 
+                className="text-blue-600 text-sm font-semibold hover:text-blue-700"
+                onClick={handleAssignEqually}
+              >
+                Assign equally
+              </button>
+            </div>
+          </div>
+        )}
         
         {/* Bottom Action Bar */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
           <button 
             className="flex items-center gap-2 text-gray-700 hover:text-blue-700 font-medium text-sm" 
-            onClick={() => setAddModalOpen(true)}
+            onClick={() => {
+              // TODO: Implement add evaluator functionality
+              toast({
+                title: 'Add Evaluator',
+                description: 'This feature will be implemented soon.',
+                variant: 'default',
+              });
+            }}
           >
             <UserPlus className="w-4 h-4" />
             Evaluator
           </button>
           <button 
-            className="bg-gray-300 text-gray-500 px-6 py-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" 
+            className={`px-6 py-2 rounded-lg font-semibold transition ${
+              remainingToAssign === 0 && selectedEvaluators.length > 0
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
             onClick={handleAssign} 
-            disabled={isAssignDisabled}
+            disabled={remainingToAssign > 0 || selectedEvaluators.length === 0 || assignLoading}
           >
             {assignLoading ? 'Assigning...' : 'Assign'}
           </button>
         </div>
-        
-        {/* Add Evaluator Modal */}
-        <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-          <DialogContent className="max-w-md w-full">
-            <DialogHeader>
-              <DialogTitle>Add Evaluator</DialogTitle>
-              <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={() => setAddModalOpen(false)}>
-                <X className="w-5 h-5" />
-              </button>
-            </DialogHeader>
-            <form onSubmit={handleAddEvaluator} className="space-y-4 mt-2">
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">First Name <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" 
-                    value={addForm.firstName} 
-                    onChange={e => setAddForm(f => ({ ...f, firstName: e.target.value }))} 
-                    required 
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium mb-1">Last Name</label>
-                  <input 
-                    type="text" 
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" 
-                    value={addForm.lastName} 
-                    onChange={e => setAddForm(f => ({ ...f, lastName: e.target.value }))} 
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Official Email <span className="text-red-500">*</span></label>
-                <input 
-                  type="email" 
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" 
-                  value={addForm.email} 
-                  onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))} 
-                  required 
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Mobile</label>
-                <input 
-                  type="text" 
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" 
-                  value={addForm.mobile} 
-                  onChange={e => setAddForm(f => ({ ...f, mobile: e.target.value }))} 
-                />
-              </div>
-              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-3 py-2">
-                <label className="flex-1 text-sm font-medium">Send E-mail to this user</label>
-                <input 
-                  type="checkbox" 
-                  className="h-4 w-4" 
-                  checked={addForm.sendEmail} 
-                  onChange={e => setAddForm(f => ({ ...f, sendEmail: e.target.checked }))} 
-                />
-              </div>
-              <div className="flex justify-end mt-6">
-                <button 
-                  type="submit" 
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50" 
-                  disabled={isAddDisabled || addLoading}
-                >
-                  {addLoading ? 'Adding...' : 'Add Evaluator'}
-                </button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </DialogContent>
     </Dialog>
   );

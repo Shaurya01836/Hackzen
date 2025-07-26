@@ -1,103 +1,358 @@
-import { useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { cn } from "../../../lib/utils";
-import { Gavel, FileText } from "lucide-react";
-import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger
-} from "../../../components/DashboardUI/sidebar";
-import DashboardJudgePanel from "./JudgePanel";
-import JudgeProjectGallery from "./JudgeProjectGallery";
+import React, { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "../../../components/CommonUI/card";
+import { Button } from "../../../components/CommonUI/button";
+import { Eye, CheckCircle, Clock, XCircle, Users, Award, FileText } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/DashboardUI/dialog";
+import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
+import { toast } from "../../../hooks/use-toast";
+import ScoringModal from "./ScoringModal";
 
 export default function JudgeDashboard() {
-  const location = useLocation();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const params = useParams();
-  const [currentView, setCurrentView] = useState("judge-panel");
+  const [assignedSubmissions, setAssignedSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [scoringModalOpen, setScoringModalOpen] = useState(false);
+  const [submissionToScore, setSubmissionToScore] = useState(null);
+  const [currentRound, setCurrentRound] = useState(0);
+  const [rounds, setRounds] = useState([]);
+  const [allSubmissions, setAllSubmissions] = useState([]);
 
-  const changeView = (viewKey) => {
-    setCurrentView(viewKey);
-    navigate(`/dashboard/${viewKey}`);
+  useEffect(() => {
+    if (user) {
+      fetchAssignedSubmissions();
+    }
+  }, [user, currentRound]);
+
+  const fetchAssignedSubmissions = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/my-assignments`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAllSubmissions(data.submissions || []);
+        setRounds(data.rounds || []);
+        
+        // Filter submissions for current round
+        const roundSubmissions = data.submissions?.filter(sub => 
+          sub.roundIndex === currentRound
+        ) || [];
+        setAssignedSubmissions(roundSubmissions);
+      } else {
+        throw new Error('Failed to fetch assigned submissions');
+      }
+    } catch (error) {
+      console.error('Error fetching assigned submissions:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch your assigned submissions',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const judgeMenuItems = [
-    { title: "Judge Panel", icon: Gavel, key: "judge-panel", onClick: () => changeView("judge-panel") },
-    { title: "My Judgments", icon: FileText, key: "my-judgments", onClick: () => changeView("my-judgments") },
-  ];
+  const handleScoreSubmission = async (submissionId, score, feedback) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/submissions/${submissionId}/score`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json', 
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({ score, feedback, roundIndex: currentRound })
+      });
+      
+      if (response.ok) {
+        toast({
+          title: 'Score submitted successfully',
+          description: 'Your evaluation has been recorded.',
+          variant: 'default',
+        });
+        fetchAssignedSubmissions(); // Refresh the list
+      } else {
+        throw new Error('Failed to submit score');
+      }
+    } catch (error) {
+      console.error('Error submitting score:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to submit score',
+        variant: 'destructive',
+      });
+    }
+  };
 
-  const renderContent = () => {
-    // Special case: judge project gallery route
-    if (location.pathname.match(/^\/dashboard\/judge\/hackathon\/[^/]+\/gallery/)) {
-      return <JudgeProjectGallery />;
-    }
-    switch (currentView) {
-      case "judge-panel":
-        return <DashboardJudgePanel onBack={() => changeView("judge-panel")} />;
-      case "my-judgments":
-        return <div className="p-6">My Judgments Section - Coming Soon</div>;
+  const openScoringModal = (submission) => {
+    setSubmissionToScore(submission);
+    setScoringModalOpen(true);
+  };
+
+  const handleScoreSubmit = (submissionId, score, feedback) => {
+    // Update the local state to reflect the new score
+    setAssignedSubmissions(prev => 
+      prev.map(sub => 
+        sub._id === submissionId 
+          ? { ...sub, score, evaluationStatus: 'evaluated' }
+          : sub
+      )
+    );
+    setAllSubmissions(prev => 
+      prev.map(sub => 
+        sub._id === submissionId 
+          ? { ...sub, score, evaluationStatus: 'evaluated' }
+          : sub
+      )
+    );
+    handleScoreSubmission(submissionId, score, feedback);
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'evaluated':
+        return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'pending':
+        return <Clock className="w-4 h-4 text-yellow-600" />;
       default:
-        return <DashboardJudgePanel onBack={() => changeView("judge-panel")} />;
+        return <XCircle className="w-4 h-4 text-gray-400" />;
     }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'evaluated':
+        return 'Evaluated';
+      case 'pending':
+        return 'Pending';
+      default:
+        return 'Unknown';
+    }
+  };
+
+  const formatDate = (date) => date ? new Date(date).toLocaleString() : '--';
+
+  const getSubmissionTypeIcon = (submission) => {
+    if (submission.pptFile) return <FileText className="w-4 h-4 text-blue-600" />;
+    if (submission.projectId) return <Award className="w-4 h-4 text-green-600" />;
+    return <FileText className="w-4 h-4 text-gray-600" />;
+  };
+
+  const getSubmissionTypeText = (submission) => {
+    if (submission.pptFile) return 'PPT';
+    if (submission.projectId) return 'Project';
+    return 'Submission';
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar className="border-r bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-        <SidebarHeader className="p-4">
-          <div className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => navigate("/")}>
-            <img src="https://res.cloudinary.com/dg2q2tzbv/image/upload/v1751960561/logo_bg_yvh9hq.png" alt="HackZen Logo" className="w-10 h-10 object-contain border rounded-full" />
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">HackZen</h1>
-              <p className="text-sm text-gray-500">Hackathon Platform</p>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Judge Dashboard</h1>
+          <p className="text-gray-600">Welcome back, {user?.name || user?.email}</p>
+          <p className="text-sm text-blue-600 mt-1">
+            You can only view and evaluate submissions assigned to you by the organizer
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <span className="text-sm text-gray-500">
+              {allSubmissions.length} total submissions assigned
+            </span>
+            <br />
+            <span className="text-sm text-gray-500">
+              {assignedSubmissions.length} in current round
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Round Selection */}
+      {rounds.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Select Round
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Choose which round's submissions you want to evaluate
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              {rounds.map((round, index) => (
+                <Button
+                  key={index}
+                  variant={currentRound === index ? "default" : "outline"}
+                  onClick={() => setCurrentRound(index)}
+                >
+                  {round.name || `Round ${index + 1}`}
+                  <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded">
+                    {round.submissionCount || 0}
+                  </span>
+                </Button>
+              ))}
             </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent className="scrollbar-hide">
-          <SidebarGroup>
-            <SidebarGroupLabel className="flex items-center gap-2 text-orange-600">
-              <Gavel className="w-4 h-4" />
-              Judge Menu
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {judgeMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        onClick={item.onClick}
-                        className={cn(
-                          "flex items-center gap-3 w-full text-left rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-                          currentView === item.key
-                            ? "bg-orange-100 text-orange-700"
-                            : "text-gray-700 hover:bg-orange-50 hover:text-orange-700"
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Assigned Submissions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Award className="w-5 h-5" />
+            My Assigned Submissions
+          </CardTitle>
+          <p className="text-sm text-gray-600">
+            {rounds[currentRound]?.name || `Round ${currentRound + 1}`} - {assignedSubmissions.length} submissions assigned to you
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading your assigned submissions...</p>
+            </div>
+          ) : assignedSubmissions.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No submissions assigned to you for this round.</p>
+              <p className="text-sm text-gray-400 mt-1">
+                The organizer will assign submissions to you when they are ready for evaluation.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">#</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Team</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Type</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Project Title</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Submitted</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Status</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Score</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assignedSubmissions.map((submission, index) => (
+                    <tr key={submission._id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-gray-900 font-medium">
+                        {index + 1}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
+                            {submission.team?.name?.charAt(0)?.toUpperCase() || 'T'}
+                          </div>
+                          <span className="font-medium text-gray-900">
+                            {submission.team?.name || 'No Team'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          {getSubmissionTypeIcon(submission)}
+                          <span className="text-sm text-gray-600">
+                            {getSubmissionTypeText(submission)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className="font-medium text-gray-900">
+                          {submission.projectTitle || submission.title || 'Untitled Project'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {formatDate(submission.submittedAt)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(submission.evaluationStatus || 'pending')}
+                          <span className="text-sm text-gray-600">
+                            {getStatusText(submission.evaluationStatus || 'pending')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {submission.score ? (
+                          <span className="font-bold text-yellow-700">
+                            {submission.score} / 10
+                          </span>
+                        ) : (
+                          <span className="text-gray-500 italic">Not scored</span>
                         )}
-                      >
-                        <item.icon className={cn("w-4 h-4", currentView === item.key ? "text-orange-700" : "text-gray-500")} />
-                        <span>{item.title}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter className="p-4"></SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-          <SidebarTrigger className="-ml-1" />
-          <div className="h-4 w-px bg-gray-200" />
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Dashboard</span>
-            <span>/</span>
-            <span className="capitalize">{currentView.replace("-", " ")}</span>
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto scrollbar-hide">
-          {renderContent()}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedSubmission(submission);
+                              setModalOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View
+                          </Button>
+                          {submission.evaluationStatus !== 'evaluated' && (
+                            <Button
+                              size="sm"
+                              onClick={() => openScoringModal(submission)}
+                            >
+                              Score
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Submission Details Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent className="max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Submission Details</DialogTitle>
+          </DialogHeader>
+          {selectedSubmission && (
+            <ProjectDetail
+              project={selectedSubmission}
+              submission={selectedSubmission}
+              hideBackButton={true}
+              onlyOverview={false}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Scoring Modal */}
+      <ScoringModal
+        open={scoringModalOpen}
+        onClose={() => setScoringModalOpen(false)}
+        submission={submissionToScore}
+        onScoreSubmit={handleScoreSubmit}
+        roundIndex={currentRound}
+      />
+    </div>
   );
 }

@@ -13,7 +13,7 @@ const SubmissionSchema = new Schema({
     },
   ],
   submittedAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['submitted', 'reviewed'], default: 'submitted' },
+  status: { type: String, enum: ['submitted', 'reviewed', 'shortlisted', 'rejected'], default: 'submitted' },
   problemStatement: { type: String },
   customAnswers: [
     {

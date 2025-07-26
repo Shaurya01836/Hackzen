@@ -4,6 +4,9 @@ const User = require('../model/UserModel');
 const RoleInvite = require('../model/RoleInviteModel');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const Submission = require('../model/SubmissionModel');
+const Score = require('../model/ScoreModel');
+const mongoose = require('mongoose');
 
 // 🎯 Add Problem Statements to Hackathon
 exports.addProblemStatements = async (req, res) => {
@@ -57,97 +60,123 @@ exports.addProblemStatements = async (req, res) => {
 
 // 🎯 Assign Judges to Problem Statements
 exports.assignJudges = async (req, res) => {
-  try {
-    const { hackathonId } = req.params;
-    const { judgeAssignments } = req.body;
+  try {
+    const { hackathonId } = req.params;
+    const { judgeAssignments } = req.body;
 
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
 
-    // Verify organizer permissions
-    if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can assign judges' });
-    }
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign judges' });
+    }
 
-    const results = [];
+    const results = [];
 
-    for (const assignment of judgeAssignments) {
-      let { judgeEmail, judgeType, sponsorCompany, canJudgeSponsoredPS, maxSubmissionsPerJudge, sendEmail } = assignment;
+    for (const assignment of judgeAssignments) {
+      let { 
+        judgeEmail, 
+        judgeType, 
+        sponsorCompany, 
+        canJudgeSponsoredPS, 
+        maxSubmissionsPerJudge, 
+        sendEmail = true,
+        firstName,
+        lastName,
+        mobile
+      } = assignment;
 
-      // Only create a JudgeAssignment for the judge, no assignedProblemStatements or assignedRounds
-      // Check if assignment already exists for this judge and hackathon
-      const existing = await JudgeAssignment.findOne({
-        hackathon: hackathonId,
-        'judge.email': judgeEmail
-      });
-      if (existing) {
-        results.push({
-          judgeEmail,
-          success: false,
-          error: 'Judge already invited to this hackathon'
-        });
-        continue;
-      }
-      const judgeAssignment = await JudgeAssignment.create({
-        hackathon: hackathonId,
-        judge: {
-          email: judgeEmail,
-          type: judgeType,
-          sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
-          canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && canJudgeSponsoredPS)
-        },
-        assignedProblemStatements: [],
-        assignedRounds: [],
-        permissions: {
-          canJudgeGeneralPS: judgeType !== 'sponsor',
-          canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || canJudgeSponsoredPS,
-          canJudgeAllRounds: true,
-          maxSubmissionsPerJudge: maxSubmissionsPerJudge || 50
-        },
-        assignedBy: req.user.id,
-        status: 'pending'
-      });
+      // Check if assignment already exists for this judge and hackathon
+      const existing = await JudgeAssignment.findOne({
+        hackathon: hackathonId,
+        'judge.email': judgeEmail
+      });
+      
+      if (existing) {
+        results.push({
+          judgeEmail,
+          success: false,
+          error: 'Judge already invited to this hackathon'
+        });
+        continue;
+      }
 
-      // === Unified RoleInvite System ===
-      let invite = await RoleInvite.findOne({
-        email: judgeEmail,
-        hackathon: hackathonId,
-        role: 'judge',
-        status: 'pending'
-      });
-      if (!invite) {
-        const token = crypto.randomBytes(32).toString('hex');
-        invite = await RoleInvite.create({
-          email: judgeEmail,
-          hackathon: hackathonId,
-          role: 'judge',
-          token
-        });
-        if (sendEmail) {
-          await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
-        }
-      } else {
-        console.log(`Judge invite already exists for: ${judgeEmail}`);
-      }
+      // Create judge assignment
+      const judgeAssignment = await JudgeAssignment.create({
+        hackathon: hackathonId,
+        judge: {
+          email: judgeEmail,
+          name: firstName && lastName ? `${firstName} ${lastName}` : firstName || judgeEmail.split('@')[0],
+          type: judgeType,
+          sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
+          canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && canJudgeSponsoredPS)
+        },
+        assignedProblemStatements: [],
+        assignedRounds: [],
+        permissions: {
+          canJudgeGeneralPS: judgeType !== 'sponsor',
+          canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || canJudgeSponsoredPS,
+          canJudgeAllRounds: true,
+          maxSubmissionsPerJudge: maxSubmissionsPerJudge || 50
+        },
+        assignedBy: req.user.id,
+        status: 'pending',
+        invitation: {
+          sentAt: sendEmail ? new Date() : null
+        }
+      });
 
-      results.push({
-        judgeEmail,
-        success: true,
-        assignmentId: judgeAssignment._id
-      });
-    }
+      // === Unified RoleInvite System ===
+      let invite = await RoleInvite.findOne({
+        email: judgeEmail,
+        hackathon: hackathonId,
+        role: 'judge',
+        status: 'pending'
+      });
+      
+      if (!invite) {
+        const token = crypto.randomBytes(32).toString('hex');
+        invite = await RoleInvite.create({
+          email: judgeEmail,
+          hackathon: hackathonId,
+          role: 'judge',
+          token,
+          metadata: {
+            firstName,
+            lastName,
+            mobile,
+            judgeType,
+            sponsorCompany
+          }
+        });
+        
+        if (sendEmail) {
+          await sendRoleInviteEmail(judgeEmail, 'judge', token, hackathon);
+        }
+      } else {
+        console.log(`Judge invite already exists for: ${judgeEmail}`);
+      }
 
-    res.status(200).json({
-      message: 'Judge assignments processed',
-      results
-    });
+      results.push({
+        judgeEmail,
+        success: true,
+        assignmentId: judgeAssignment._id,
+        status: 'pending'
+      });
+    }
 
-  } catch (error) {
-    console.error('Error assigning judges:', error);
-    res.status(500).json({ message: 'Failed to assign judges' });
-  }
+    res.status(200).json({
+      message: 'Judge assignments processed',
+      results
+    });
+
+  } catch (error) {
+    console.error('Error assigning judges:', error);
+    res.status(500).json({ message: 'Failed to assign judges' });
+  }
 };
 
 // 🎯 Get Judge Assignments for Hackathon
@@ -296,57 +325,186 @@ exports.removeJudgeAssignment = async (req, res) => {
 };
 
 // 🎯 Get Available Judges for Problem Statement
+exports.getAvailableJudgesForProblemStatement = async (req, res) => {
+  try {
+    const { hackathonId, problemStatementId } = req.params;
+    
+    // Verify hackathon exists
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    const problemStatement = hackathon.problemStatements.find(
+      ps => ps._id.toString() === problemStatementId
+    );
+    if (!problemStatement) {
+      return res.status(404).json({ message: 'Problem statement not found' });
+    }
+
+    // Get all judge assignments for this hackathon
+    const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
+
+    // Filter judges who can judge this problem statement
+    const availableJudges = assignments.filter(assignment => {
+      if (problemStatement.type === 'general') {
+        return assignment.permissions.canJudgeGeneralPS;
+      } else if (problemStatement.type === 'sponsored') {
+        if (assignment.judge.type === 'sponsor') {
+          return assignment.judge.sponsorCompany === problemStatement.sponsorCompany;
+        } else if (assignment.judge.type === 'hybrid') {
+          return assignment.permissions.canJudgeSponsoredPS;
+        } else if (assignment.judge.type === 'platform' && assignment.judge.canJudgeSponsoredPS) {
+          return assignment.permissions.canJudgeSponsoredPS;
+        }
+      }
+      return false;
+    });
+
+    res.status(200).json({
+      problemStatement,
+      availableJudges: availableJudges.map(judge => ({
+        email: judge.judge.email,
+        name: judge.judge.name,
+        type: judge.judge.type,
+        sponsorCompany: judge.judge.sponsorCompany,
+        metrics: judge.metrics,
+        status: judge.status
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching available judges:', error);
+    res.status(500).json({ message: 'Failed to fetch available judges' });
+  }
+};
+
+// 🎯 Get All Available Judges for Hackathon
 exports.getAvailableJudges = async (req, res) => {
-  try {
-    const { hackathonId, problemStatementId } = req.params;
+  try {
+    const { hackathonId } = req.params;
+    
+    // Verify hackathon exists
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
 
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
+    // Check if user is organizer or admin
+    if (hackathon.organizer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to manage this hackathon' });
+    }
 
-    const problemStatement = hackathon.problemStatements.find(
-      ps => ps._id.toString() === problemStatementId
-    );
-    if (!problemStatement) {
-      return res.status(404).json({ message: 'Problem statement not found' });
-    }
+    const User = require('../model/UserModel');
+    const allJudges = await User.find({ 
+      role: 'judge',
+      profileCompleted: true 
+    }).select('name email profileImage');
+    
+    const existingAssignments = await JudgeAssignment.find({ 
+      hackathon: hackathonId 
+    }).select('judge.email');
+    
+    const existingJudgeEmails = existingAssignments.map(assignment => assignment.judge.email);
+    const availableJudges = allJudges.filter(judge => 
+      !existingJudgeEmails.includes(judge.email)
+    );
 
-    // Get all judge assignments for this hackathon
-    const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
+    const formattedJudges = availableJudges.map(judge => ({
+      id: judge._id,
+      name: judge.name || judge.email.split('@')[0],
+      email: judge.email,
+      profileImage: judge.profileImage,
+      type: 'external', // Default type for available judges
+      status: 'available',
+      assignedSubmissions: 0,
+      maxSubmissions: 10 
+    }));
 
-    // Filter judges who can judge this problem statement
-    const availableJudges = assignments.filter(assignment => {
-      if (problemStatement.type === 'general') {
-        return assignment.permissions.canJudgeGeneralPS;
-      } else if (problemStatement.type === 'sponsored') {
-        if (assignment.judge.type === 'sponsor') {
-          return assignment.judge.sponsorCompany === problemStatement.sponsorCompany;
-        } else if (assignment.judge.type === 'hybrid') {
-          return assignment.permissions.canJudgeSponsoredPS;
-        } else if (assignment.judge.type === 'platform' && assignment.judge.canJudgeSponsoredPS) {
-          return assignment.permissions.canJudgeSponsoredPS;
-        }
-      }
-      return false;
-    });
+    res.status(200).json({
+      evaluators: formattedJudges,
+      total: formattedJudges.length,
+      available: formattedJudges.length,
+      assigned: existingJudgeEmails.length
+    });
+  } catch (error) {
+    console.error('Error fetching available judges:', error);
+    res.status(500).json({ message: 'Failed to fetch available judges' });
+  }
+};
 
-    res.status(200).json({
-      problemStatement,
-      availableJudges: availableJudges.map(judge => ({
-        email: judge.judge.email,
-        name: judge.judge.name,
-        type: judge.judge.type,
-        sponsorCompany: judge.judge.sponsorCompany,
-        metrics: judge.metrics,
-        status: judge.status
-      }))
-    });
+// 🎯 Invite Judge to Hackathon
+exports.inviteJudge = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { judgeEmail, judgeType = 'external', maxSubmissionsPerJudge = 10 } = req.body;
 
-  } catch (error) {
-    console.error('Error fetching available judges:', error);
-    res.status(500).json({ message: 'Failed to fetch available judges' });
-  }
+    // Validate input
+    if (!judgeEmail || !judgeEmail.includes('@')) {
+      return res.status(400).json({ message: 'Valid judge email is required' });
+    }
+
+    // Verify hackathon exists
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Check if user is organizer or admin
+    if (hackathon.organizer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized to manage this hackathon' });
+    }
+
+    // Check if judge exists
+    const judge = await User.findOne({ email: judgeEmail });
+    if (!judge) {
+      return res.status(404).json({ message: 'Judge not found. User must be registered first.' });
+    }
+
+    // Check if judge is already assigned to this hackathon
+    const existingAssignment = await JudgeAssignment.findOne({
+      hackathon: hackathonId,
+      'judge.email': judgeEmail
+    });
+
+    if (existingAssignment) {
+      return res.status(400).json({ message: 'Judge is already assigned to this hackathon' });
+    }
+
+    // Create judge assignment
+    const assignment = new JudgeAssignment({
+      hackathon: hackathonId,
+      judge: {
+        _id: judge._id,
+        name: judge.name || judge.email.split('@')[0],
+        email: judge.email,
+        type: judgeType,
+        profileImage: judge.profileImage
+      },
+      status: 'pending',
+      maxSubmissionsPerJudge,
+      assignedRounds: [],
+      assignedTeams: []
+    });
+
+    await assignment.save();
+
+    // TODO: Send invitation email to judge
+    // This would typically involve sending an email with a link to accept/decline the invitation
+
+    res.status(201).json({
+      message: 'Judge invited successfully',
+      assignment: {
+        _id: assignment._id,
+        judge: assignment.judge,
+        status: assignment.status,
+        maxSubmissionsPerJudge: assignment.maxSubmissionsPerJudge
+      }
+    });
+
+  } catch (error) {
+    console.error('Error inviting judge:', error);
+    res.status(500).json({ message: 'Failed to invite judge' });
+  }
 };
 
 // 🎯 Accept/Decline Judge Invitation
@@ -906,8 +1064,314 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       submissionIds, 
       evaluatorAssignments, 
       assignmentMode = 'manual', // 'manual' or 'equal'
-      roundIndex 
+      roundIndex,
+      multipleJudgesMode = false,
+      judgesPerProject = 1,
+      judgesPerProjectMode = 'manual' // 'manual' or 'equal'
     } = req.body;
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Defensive check for rounds and roundIndex
+    if (!Array.isArray(hackathon.rounds) || typeof roundIndex !== 'number' || roundIndex < 0 || roundIndex >= hackathon.rounds.length) {
+      console.error('Invalid roundIndex or hackathon.rounds:', { roundIndex, rounds: hackathon.rounds });
+      return res.status(400).json({ message: 'Invalid round index for this hackathon.' });
+    }
+
+    // Defensive check for submissionIds
+    if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
+      return res.status(400).json({ message: 'At least one submission is required' });
+    }
+    const invalidSubmissionIds = submissionIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
+    if (invalidSubmissionIds.length > 0) {
+      console.error('Invalid submissionIds:', invalidSubmissionIds);
+      return res.status(400).json({ message: 'One or more submission IDs are invalid.' });
+    }
+
+    // Defensive check for evaluatorAssignments
+    if (!Array.isArray(evaluatorAssignments) || evaluatorAssignments.length === 0) {
+      return res.status(400).json({ message: 'At least one evaluator is required' });
+    }
+
+    // Get all evaluator assignments for this hackathon
+    const allEvaluators = await JudgeAssignment.find({ 
+      hackathon: hackathonId,
+      status: { $in: ['active', 'pending'] }
+    });
+
+    // Validate that all evaluator assignments reference a valid, active judge
+    const activeEvaluators = allEvaluators.filter(e => e.status === 'active');
+    const invalidEvaluators = evaluatorAssignments.filter(assignment => {
+      const found = allEvaluators.find(e => 
+        e._id.toString() === assignment.evaluatorId || e.judge.email === assignment.evaluatorEmail
+      );
+      return !found || found.status !== 'active';
+    });
+    if (invalidEvaluators.length > 0) {
+      console.error('Invalid or inactive evaluator assignments:', invalidEvaluators);
+      return res.status(400).json({ message: 'One or more evaluator assignments are invalid or inactive.' });
+    }
+
+    if (activeEvaluators.length === 0) {
+      return res.status(400).json({ 
+        message: 'No active evaluators found. Please ensure evaluators have accepted their invitations.' 
+      });
+    }
+
+    const results = [];
+    const totalSubmissions = submissionIds.length;
+    let remainingSubmissions = [...submissionIds];
+
+    // Handle multiple judges per project logic
+    if (multipleJudgesMode) {
+      // Create a map to track which submissions are assigned to which judges
+      const submissionJudgeMap = new Map();
+      
+      // Initialize the map for all submissions
+      submissionIds.forEach(submissionId => {
+        submissionJudgeMap.set(submissionId.toString(), []);
+      });
+
+      // Process each evaluator assignment for multiple judges mode
+      for (const assignment of evaluatorAssignments) {
+        const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
+        
+        // Find the evaluator assignment
+        const evaluatorAssignment = allEvaluators.find(e => 
+          e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
+        );
+        
+        if (!evaluatorAssignment) {
+          results.push({
+            evaluatorId,
+            success: false,
+            error: 'Evaluator not found'
+          });
+          continue;
+        }
+
+        // Check if evaluator is active
+        if (evaluatorAssignment.status !== 'active') {
+          results.push({
+            evaluatorId,
+            success: false,
+            error: `Evaluator ${evaluatorAssignment.judge.email} has not accepted the invitation yet`
+          });
+          continue;
+        }
+
+        // Calculate submissions to assign based on multiple judges logic
+        let submissionsToAssign = [];
+        let actualMaxSubmissions = maxSubmissions || Math.ceil(totalSubmissions / evaluatorAssignments.length);
+        
+        // For multiple judges mode, we need to distribute submissions more carefully
+        if (judgesPerProjectMode === 'equal') {
+          // Equal distribution: each submission gets assigned to multiple judges equally
+          const judgesPerSubmission = Math.ceil(evaluatorAssignments.length / totalSubmissions);
+          submissionsToAssign = submissionIds.filter(submissionId => {
+            const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
+            return currentJudges.length < judgesPerSubmission;
+          }).slice(0, actualMaxSubmissions);
+        } else {
+          // Manual mode: assign based on judgesPerProject setting
+          submissionsToAssign = submissionIds.filter(submissionId => {
+            const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
+            return currentJudges.length < judgesPerProject;
+          }).slice(0, actualMaxSubmissions);
+        }
+
+        // Update the submission-judge mapping
+        submissionsToAssign.forEach(submissionId => {
+          const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
+          currentJudges.push(evaluatorAssignment._id.toString());
+          submissionJudgeMap.set(submissionId.toString(), currentJudges);
+        });
+
+        // Update the judge assignment with new submissions for this round
+        const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+        
+        // Get round details with fallbacks
+        const roundDetails = hackathon.rounds[roundIndex] || {};
+        const roundName = roundDetails.name || `Round ${roundIndex + 1}`;
+        const roundType = roundDetails.type || 'project';
+        const roundId = roundDetails._id?.toString() || `round_${roundIndex}`;
+        
+        if (existingRoundIndex >= 0) {
+          // Update existing round assignment
+          evaluatorAssignment.assignedRounds[existingRoundIndex] = {
+            ...evaluatorAssignment.assignedRounds[existingRoundIndex],
+            roundIndex,
+            roundId,
+            roundName,
+            roundType,
+            isAssigned: true,
+            assignedSubmissions: submissionsToAssign,
+            maxSubmissions: actualMaxSubmissions
+          };
+        } else {
+          // Add new round assignment
+          evaluatorAssignment.assignedRounds.push({
+            roundIndex,
+            roundId,
+            roundName,
+            roundType,
+            isAssigned: true,
+            assignedSubmissions: submissionsToAssign,
+            maxSubmissions: actualMaxSubmissions
+          });
+        }
+
+        try {
+          await evaluatorAssignment.save();
+        } catch (saveError) {
+          console.error('Error saving evaluatorAssignment:', {
+            evaluatorAssignmentId: evaluatorAssignment._id,
+            assignedRounds: evaluatorAssignment.assignedRounds,
+            error: saveError
+          });
+          throw saveError;
+        }
+
+        results.push({
+          evaluatorId: evaluatorAssignment._id,
+          evaluatorEmail: evaluatorAssignment.judge.email,
+          evaluatorName: evaluatorAssignment.judge.name,
+          success: true,
+          assignedSubmissions: submissionsToAssign,
+          maxSubmissions: actualMaxSubmissions,
+          status: evaluatorAssignment.status
+        });
+      }
+    } else {
+      // Original single judge per project logic
+      // Process each evaluator assignment
+      for (const assignment of evaluatorAssignments) {
+        const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
+        
+        // Find the evaluator assignment
+        const evaluatorAssignment = allEvaluators.find(e => 
+          e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
+        );
+        
+        if (!evaluatorAssignment) {
+          results.push({
+            evaluatorId,
+            success: false,
+            error: 'Evaluator not found'
+          });
+          continue;
+        }
+
+        // Check if evaluator is active
+        if (evaluatorAssignment.status !== 'active') {
+          results.push({
+            evaluatorId,
+            success: false,
+            error: `Evaluator ${evaluatorAssignment.judge.email} has not accepted the invitation yet`
+          });
+          continue;
+        }
+
+        // Calculate submissions to assign based on mode
+        let submissionsToAssign = [];
+        let actualMaxSubmissions = maxSubmissions || Math.ceil(totalSubmissions / evaluatorAssignments.length);
+        
+        if (assignmentMode === 'equal') {
+          const equalCount = Math.ceil(totalSubmissions / evaluatorAssignments.length);
+          const startIndex = evaluatorAssignments.indexOf(assignment) * equalCount;
+          submissionsToAssign = remainingSubmissions.slice(0, equalCount);
+          actualMaxSubmissions = equalCount;
+        } else {
+          // Manual mode - assign based on maxSubmissions
+          submissionsToAssign = remainingSubmissions.slice(0, actualMaxSubmissions);
+        }
+
+        // Remove assigned submissions from remaining pool
+        remainingSubmissions = remainingSubmissions.filter(id => !submissionsToAssign.includes(id));
+
+        // Update the judge assignment with new submissions for this round
+        const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+        
+        // Get round details with fallbacks
+        const roundDetails = hackathon.rounds[roundIndex] || {};
+        const roundName = roundDetails.name || `Round ${roundIndex + 1}`;
+        const roundType = roundDetails.type || 'project';
+        const roundId = roundDetails._id?.toString() || `round_${roundIndex}`;
+        
+        if (existingRoundIndex >= 0) {
+          // Update existing round assignment
+          evaluatorAssignment.assignedRounds[existingRoundIndex] = {
+            ...evaluatorAssignment.assignedRounds[existingRoundIndex],
+            roundIndex,
+            roundId,
+            roundName,
+            roundType,
+            isAssigned: true,
+            assignedSubmissions: submissionsToAssign,
+            maxSubmissions: actualMaxSubmissions
+          };
+        } else {
+          // Add new round assignment
+          evaluatorAssignment.assignedRounds.push({
+            roundIndex,
+            roundId,
+            roundName,
+            roundType,
+            isAssigned: true,
+            assignedSubmissions: submissionsToAssign,
+            maxSubmissions: actualMaxSubmissions
+          });
+        }
+
+        await evaluatorAssignment.save();
+
+        results.push({
+          evaluatorId: evaluatorAssignment._id,
+          evaluatorEmail: evaluatorAssignment.judge.email,
+          evaluatorName: evaluatorAssignment.judge.name,
+          success: true,
+          assignedSubmissions: submissionsToAssign,
+          maxSubmissions: actualMaxSubmissions,
+          status: evaluatorAssignment.status
+        });
+      }
+    }
+
+    // Check if all submissions were assigned
+    const unassignedCount = remainingSubmissions.length;
+    if (unassignedCount > 0) {
+      console.warn(`${unassignedCount} submissions could not be assigned due to evaluator limits`);
+    }
+
+    res.status(200).json({
+      message: 'Bulk assignment completed successfully',
+      results,
+      totalSubmissions,
+      assignedSubmissions: totalSubmissions - unassignedCount,
+      unassignedSubmissions: unassignedCount,
+      totalEvaluators: evaluatorAssignments.length,
+      activeEvaluators: activeEvaluators.length,
+      multipleJudgesMode,
+      judgesPerProject: multipleJudgesMode ? judgesPerProject : 1,
+      judgesPerProjectMode: multipleJudgesMode ? judgesPerProjectMode : 'manual'
+    });
+
+  } catch (error) {
+    console.error('Error bulk assigning submissions:', error);
+    if (error && error.stack) {
+      console.error(error.stack);
+    }
+    res.status(500).json({ message: 'Failed to bulk assign submissions' });
+  }
+};
+
+// 🎯 Get All Evaluators with Status
+exports.getAllEvaluators = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
 
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -916,100 +1380,566 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
 
     // Verify organizer permissions
     if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can assign submissions' });
+      return res.status(403).json({ message: 'Only the organizer can view evaluators' });
     }
 
-    // Validate inputs
-    if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
-      return res.status(400).json({ message: 'At least one submission is required' });
-    }
+    const assignments = await JudgeAssignment.find({ hackathon: hackathonId })
+      .populate('assignedBy', 'name email')
+      .sort({ createdAt: -1 });
 
-    if (!Array.isArray(evaluatorAssignments) || evaluatorAssignments.length === 0) {
-      return res.status(400).json({ message: 'At least one evaluator is required' });
-    }
+    const evaluators = assignments.map(assignment => ({
+      id: assignment._id,
+      name: assignment.judge.name || assignment.judge.email.split('@')[0],
+      email: assignment.judge.email,
+      type: assignment.judge.type,
+      status: assignment.status,
+      sponsorCompany: assignment.judge.sponsorCompany,
+      assignedSubmissions: assignment.assignedRounds.reduce((total, round) => 
+        total + (round.assignedSubmissions?.length || 0), 0),
+      maxSubmissions: assignment.permissions.maxSubmissionsPerJudge,
+      invitationSent: !!assignment.invitation.sentAt,
+      acceptedAt: assignment.invitation.acceptedAt,
+      declinedAt: assignment.invitation.declinedAt
+    }));
 
-    const results = [];
-
-    // Get all evaluator assignments for this hackathon
-    const allEvaluators = await JudgeAssignment.find({ 
-      hackathon: hackathonId,
-      status: { $in: ['active', 'pending'] }
+    res.status(200).json({
+      evaluators,
+      total: evaluators.length,
+      pending: evaluators.filter(e => e.status === 'pending').length,
+      active: evaluators.filter(e => e.status === 'active').length,
+      declined: evaluators.filter(e => e.status === 'declined').length
     });
 
-    // Process each evaluator assignment
-    for (const assignment of evaluatorAssignments) {
-      const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
+  } catch (error) {
+    console.error('Error fetching evaluators:', error);
+    res.status(500).json({ message: 'Failed to fetch evaluators' });
+  }
+};
+
+// 🎯 Update Judge Status (Accept/Decline)
+exports.updateJudgeStatus = async (req, res) => {
+  try {
+    const { assignmentId } = req.params;
+    const { status } = req.body; // 'accept' or 'decline'
+
+    const assignment = await JudgeAssignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    if (status === 'accept') {
+      assignment.status = 'active';
+      assignment.invitation.acceptedAt = new Date();
+      assignment.lastActive = new Date();
+    } else if (status === 'decline') {
+      assignment.status = 'declined';
+      assignment.invitation.declinedAt = new Date();
+    }
+
+    await assignment.save();
+
+    res.status(200).json({
+      message: `Judge ${status === 'accept' ? 'accepted' : 'declined'} the invitation`,
+      assignment
+    });
+
+  } catch (error) {
+    console.error('Error updating judge status:', error);
+    res.status(500).json({ message: 'Failed to update judge status' });
+  }
+};
+
+// 🎯 Get My Assigned Submissions (for judges)
+exports.getMyAssignedSubmissions = async (req, res) => {
+  try {
+    const judgeEmail = req.user.email;
+    
+    // Find all judge assignments for this user
+    const assignments = await JudgeAssignment.find({ 
+      'judge.email': judgeEmail,
+      status: 'active'
+    }).populate('hackathon', 'name rounds');
+
+    const submissions = [];
+    const rounds = [];
+    const hackathons = [];
+
+    for (const assignment of assignments) {
+      // Only process assignments where judge has actual submissions assigned
+      let hasAnyAssignments = false;
       
-      // Find the evaluator assignment
-      const evaluatorAssignment = allEvaluators.find(e => 
-        e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
-      );
+      for (const round of assignment.assignedRounds) {
+        if (round.isAssigned && round.assignedSubmissions && round.assignedSubmissions.length > 0) {
+          hasAnyAssignments = true;
+          
+          // Get submission details for this round
+          const submissionDetails = await Submission.find({
+            _id: { $in: round.assignedSubmissions }
+          }).populate('team', 'name members')
+            .populate('hackathon', 'name')
+            .populate('scores');
+
+          // Add round info
+          const roundInfo = {
+            index: round.roundIndex,
+            name: round.roundName,
+            type: round.roundType,
+            submissionCount: round.assignedSubmissions.length,
+            hackathonId: assignment.hackathon._id,
+            hackathonName: assignment.hackathon.name
+          };
+
+          if (!rounds.find(r => r.index === round.roundIndex && r.hackathonId.toString() === assignment.hackathon._id.toString())) {
+            rounds.push(roundInfo);
+          }
+
+          // Add submissions with evaluation status
+          for (const submission of submissionDetails) {
+            const existingScore = submission.scores?.find(s => 
+              s.judge.toString() === assignment._id.toString() && 
+              s.roundIndex === round.roundIndex
+            );
+
+            submissions.push({
+              ...submission.toObject(),
+              evaluationStatus: existingScore ? 'evaluated' : 'pending',
+              score: existingScore?.score || null,
+              feedback: existingScore?.feedback || null,
+              roundIndex: round.roundIndex,
+              roundName: round.roundName,
+              hackathonId: assignment.hackathon._id,
+              hackathonName: assignment.hackathon.name
+            });
+          }
+        }
+      }
       
-      if (!evaluatorAssignment) {
-        results.push({
-          evaluatorId,
-          success: false,
-          error: 'Evaluator not found'
+      // Add hackathon to list if judge has any assignments
+      if (hasAnyAssignments && assignment.hackathon) {
+        hackathons.push({
+          _id: assignment.hackathon._id,
+          name: assignment.hackathon.name
         });
-        continue;
       }
+    }
 
-      // Calculate submissions to assign based on mode
-      let submissionsToAssign = [];
-      if (assignmentMode === 'equal') {
-        const equalCount = Math.ceil(submissionIds.length / evaluatorAssignments.length);
-        const startIndex = evaluatorAssignments.indexOf(assignment) * equalCount;
-        submissionsToAssign = submissionIds.slice(startIndex, startIndex + equalCount);
-      } else {
-        // Manual mode - assign based on maxSubmissions
-        const maxSubs = maxSubmissions || Math.ceil(submissionIds.length / evaluatorAssignments.length);
-        submissionsToAssign = submissionIds.slice(0, maxSubs);
+    // Remove duplicate hackathons
+    const uniqueHackathons = hackathons.filter((hackathon, index, self) => 
+      index === self.findIndex(h => h._id.toString() === hackathon._id.toString())
+    );
+
+    res.status(200).json({
+      submissions,
+      rounds,
+      hackathons: uniqueHackathons,
+      totalSubmissions: submissions.length,
+      totalRounds: rounds.length,
+      totalHackathons: uniqueHackathons.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching assigned submissions:', error);
+    res.status(500).json({ message: 'Failed to fetch assigned submissions' });
+  }
+};
+
+// 🎯 Update Submission Status (Shortlist/Reject)
+exports.updateSubmissionStatus = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { status } = req.body; // 'shortlisted' or 'rejected'
+    const judgeEmail = req.user.email;
+
+    // Validate status
+    if (!['shortlisted', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Status must be either "shortlisted" or "rejected"' });
+    }
+
+    // Find the submission
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    // Verify organizer permissions (only organizers can shortlist/reject)
+    const hackathon = await Hackathon.findById(submission.hackathonId);
+    if (!hackathon || hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can update submission status' });
+    }
+
+    // Update the submission status
+    submission.status = status;
+    await submission.save();
+
+    res.status(200).json({
+      message: `Submission ${status} successfully`,
+      submission: {
+        _id: submission._id,
+        status: submission.status,
+        teamName: submission.teamName
       }
+    });
 
-      // Update the judge assignment with new submissions for this round
-      const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+  } catch (error) {
+    console.error('Error updating submission status:', error);
+    res.status(500).json({ message: 'Failed to update submission status' });
+  }
+};
+
+// 🎯 Score a Submission (for judges)
+exports.scoreSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const { scores, feedback, roundIndex, submissionType } = req.body;
+    const judgeEmail = req.user.email;
+
+    // Validate inputs
+    if (!scores || typeof scores !== 'object') {
+      return res.status(400).json({ message: 'Scores object is required' });
+    }
+
+    if (!submissionType || !['project', 'presentation'].includes(submissionType)) {
+      return res.status(400).json({ message: 'Submission type must be either "project" or "presentation"' });
+    }
+
+    // Find judge assignment
+    const assignment = await JudgeAssignment.findOne({
+      'judge.email': judgeEmail,
+      status: 'active'
+    });
+
+    if (!assignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    // Verify the submission is assigned to this judge
+    const isAssigned = assignment.assignedRounds.some(round => 
+      round.roundIndex === roundIndex && 
+      round.assignedSubmissions.includes(submissionId)
+    );
+
+    if (!isAssigned) {
+      return res.status(403).json({ message: 'This submission is not assigned to you' });
+    }
+
+    // Get judging criteria for validation
+    const hackathon = await Hackathon.findById(assignment.hackathon);
+    const round = hackathon.rounds[roundIndex];
+    const criteria = round.judgingCriteria?.[submissionType] || [];
+
+    // Validate scores against criteria
+    const validatedScores = new Map();
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    for (const criterion of criteria) {
+      const score = scores[criterion.name];
+      if (score === undefined || score === null) {
+        return res.status(400).json({ message: `Score for ${criterion.name} is required` });
+      }
       
-      if (existingRoundIndex >= 0) {
-        // Update existing round assignment
-        evaluatorAssignment.assignedRounds[existingRoundIndex] = {
-          ...evaluatorAssignment.assignedRounds[existingRoundIndex],
-          assignedSubmissions: submissionsToAssign,
-          maxSubmissions: maxSubmissions || evaluatorAssignment.assignedRounds[existingRoundIndex].maxSubmissions || 50
-        };
-      } else {
-        // Add new round assignment
-        evaluatorAssignment.assignedRounds.push({
-          roundIndex,
-          roundId: hackathon.rounds[roundIndex]?._id?.toString(),
-          roundName: hackathon.rounds[roundIndex]?.name || `Round ${roundIndex + 1}`,
-          roundType: hackathon.rounds[roundIndex]?.type || 'project',
-          isAssigned: true,
-          assignedSubmissions: submissionsToAssign,
-          maxSubmissions: maxSubmissions || 50
+      if (typeof score !== 'number' || score < 0 || score > criterion.maxScore) {
+        return res.status(400).json({ 
+          message: `Score for ${criterion.name} must be between 0 and ${criterion.maxScore}` 
         });
       }
 
-      await evaluatorAssignment.save();
+      validatedScores.set(criterion.name, {
+        score: score,
+        maxScore: criterion.maxScore,
+        weight: criterion.weight || 1
+      });
 
-      results.push({
-        evaluatorId: evaluatorAssignment._id,
-        evaluatorEmail: evaluatorAssignment.judge.email,
-        evaluatorName: evaluatorAssignment.judge.name,
-        success: true,
-        assignedSubmissions: submissionsToAssign,
-        maxSubmissions: maxSubmissions || 50
+      totalScore += score * (criterion.weight || 1);
+      totalWeight += criterion.weight || 1;
+    }
+
+    // Calculate weighted average
+    const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0;
+
+    // Check if already scored
+    const existingScore = await Score.findOne({
+      submission: submissionId,
+      judge: assignment._id,
+      roundIndex: roundIndex,
+      submissionType: submissionType
+    });
+
+    if (existingScore) {
+      // Update existing score
+      existingScore.scores = validatedScores;
+      existingScore.totalScore = finalScore;
+      existingScore.feedback = feedback;
+      existingScore.updatedAt = new Date();
+      await existingScore.save();
+    } else {
+      // Create new score
+      await Score.create({
+        submission: submissionId,
+        judge: assignment._id,
+        roundIndex: roundIndex,
+        submissionType: submissionType,
+        scores: validatedScores,
+        totalScore: finalScore,
+        feedback: feedback
       });
     }
 
     res.status(200).json({
-      message: 'Bulk assignment completed successfully',
-      results,
-      totalSubmissions: submissionIds.length,
-      totalEvaluators: evaluatorAssignments.length
+      message: 'Score submitted successfully',
+      totalScore: finalScore,
+      scores: Object.fromEntries(validatedScores),
+      feedback: feedback
     });
 
   } catch (error) {
-    console.error('Error bulk assigning submissions:', error);
-    res.status(500).json({ message: 'Failed to bulk assign submissions' });
+    console.error('Error scoring submission:', error);
+    res.status(500).json({ message: 'Failed to score submission' });
+  }
+};
+
+// 🎯 Get Judging Criteria for Hackathon Round
+exports.getJudgingCriteria = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex } = req.params;
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    if (!hackathon.rounds || !hackathon.rounds[roundIndex]) {
+      return res.status(404).json({ message: 'Round not found' });
+    }
+
+    const round = hackathon.rounds[roundIndex];
+    const criteria = round.judgingCriteria || {
+      project: [
+        { name: 'Innovation', description: 'Originality and creativity of the solution', maxScore: 10, weight: 1 },
+        { name: 'Impact', description: 'Potential impact and value of the solution', maxScore: 10, weight: 1 },
+        { name: 'Technicality', description: 'Technical complexity and implementation', maxScore: 10, weight: 1 },
+        { name: 'Presentation', description: 'Quality of presentation and communication', maxScore: 10, weight: 1 }
+      ],
+      presentation: [
+        { name: 'Clarity', description: 'Clear and understandable presentation', maxScore: 10, weight: 1 },
+        { name: 'Engagement', description: 'How engaging and compelling the presentation is', maxScore: 10, weight: 1 },
+        { name: 'Content', description: 'Quality and relevance of content', maxScore: 10, weight: 1 },
+        { name: 'Delivery', description: 'Quality of delivery and communication skills', maxScore: 10, weight: 1 }
+      ]
+    };
+
+    res.status(200).json({
+      message: 'Judging criteria retrieved successfully',
+      criteria,
+      roundName: round.name,
+      roundType: round.type
+    });
+
+  } catch (error) {
+    console.error('Error getting judging criteria:', error);
+    res.status(500).json({ message: 'Failed to get judging criteria' });
+  }
+};
+
+// 🎯 Update Judging Criteria for Hackathon Round
+exports.updateJudgingCriteria = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex } = req.params;
+    const { criteria } = req.body;
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can update judging criteria' });
+    }
+
+    if (!hackathon.rounds || !hackathon.rounds[roundIndex]) {
+      return res.status(404).json({ message: 'Round not found' });
+    }
+
+    // Validate criteria structure
+    if (!criteria || (!criteria.project && !criteria.presentation)) {
+      return res.status(400).json({ message: 'At least one criteria type (project or presentation) is required' });
+    }
+
+    // Validate individual criteria
+    const validateCriteria = (criteriaList, type) => {
+      if (!Array.isArray(criteriaList)) {
+        throw new Error(`${type} criteria must be an array`);
+      }
+      
+      for (const criterion of criteriaList) {
+        if (!criterion.name || typeof criterion.name !== 'string') {
+          throw new Error(`${type} criteria must have valid names`);
+        }
+        if (criterion.maxScore && (typeof criterion.maxScore !== 'number' || criterion.maxScore <= 0)) {
+          throw new Error(`${type} criteria must have valid max scores`);
+        }
+        if (criterion.weight && (typeof criterion.weight !== 'number' || criterion.weight <= 0)) {
+          throw new Error(`${type} criteria must have valid weights`);
+        }
+      }
+    };
+
+    if (criteria.project) {
+      validateCriteria(criteria.project, 'Project');
+    }
+    if (criteria.presentation) {
+      validateCriteria(criteria.presentation, 'Presentation');
+    }
+
+    // Update the round with new criteria
+    const updateQuery = {};
+    if (criteria.project) {
+      updateQuery[`rounds.${roundIndex}.judgingCriteria.project`] = criteria.project;
+    }
+    if (criteria.presentation) {
+      updateQuery[`rounds.${roundIndex}.judgingCriteria.presentation`] = criteria.presentation;
+    }
+
+    const updatedHackathon = await Hackathon.findByIdAndUpdate(
+      hackathonId,
+      { $set: updateQuery },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: 'Judging criteria updated successfully',
+      criteria: updatedHackathon.rounds[roundIndex].judgingCriteria
+    });
+
+  } catch (error) {
+    console.error('Error updating judging criteria:', error);
+    res.status(500).json({ message: error.message || 'Failed to update judging criteria' });
+  }
+};
+
+// 🗑️ Delete Judge and All Their Assignments
+exports.deleteJudge = async (req, res) => {
+  try {
+    const { hackathonId, judgeId } = req.params;
+
+    // Find the hackathon
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can delete judges' });
+    }
+
+    // Find the judge assignment
+    const judgeAssignment = await JudgeAssignment.findById(judgeId);
+    if (!judgeAssignment) {
+      return res.status(404).json({ message: 'Judge assignment not found' });
+    }
+
+    // Verify this assignment belongs to the specified hackathon
+    if (judgeAssignment.hackathon.toString() !== hackathonId) {
+      return res.status(400).json({ message: 'Judge assignment does not belong to this hackathon' });
+    }
+
+    const judgeEmail = judgeAssignment.judge.email;
+    const judgeIdFromAssignment = judgeAssignment.judge._id;
+
+    // Start a transaction to ensure data consistency
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Remove all scores given by this judge
+      const scoresToDelete = await Score.find({
+        judge: judgeIdFromAssignment,
+        hackathon: hackathonId
+      });
+      
+      if (scoresToDelete.length > 0) {
+        await Score.deleteMany({
+          judge: judgeIdFromAssignment,
+          hackathon: hackathonId
+        });
+        console.log(`Deleted ${scoresToDelete.length} scores from judge ${judgeEmail}`);
+      }
+
+      // 2. Remove judge from all submissions they were assigned to
+      const assignedSubmissionIds = [];
+      judgeAssignment.assignedRounds?.forEach(round => {
+        if (round.assignedSubmissions) {
+          assignedSubmissionIds.push(...round.assignedSubmissions);
+        }
+      });
+
+      if (assignedSubmissionIds.length > 0) {
+        // Update submissions to remove this judge from assignedJudges
+        await Submission.updateMany(
+          { _id: { $in: assignedSubmissionIds } },
+          { $pull: { assignedJudges: judgeIdFromAssignment } }
+        );
+        console.log(`Removed judge ${judgeEmail} from ${assignedSubmissionIds.length} submissions`);
+      }
+
+      // 3. Delete the judge assignment
+      await JudgeAssignment.findByIdAndDelete(judgeId);
+
+      // 4. Remove judge from hackathon's judgeAssignments if it exists
+      if (hackathon.judgeAssignments) {
+        const updatedJudgeAssignments = {};
+        Object.keys(hackathon.judgeAssignments).forEach(type => {
+          if (Array.isArray(hackathon.judgeAssignments[type])) {
+            updatedJudgeAssignments[type] = hackathon.judgeAssignments[type].filter(
+              assignment => assignment.judge.toString() !== judgeIdFromAssignment.toString()
+            );
+          }
+        });
+        
+        await Hackathon.findByIdAndUpdate(hackathonId, {
+          judgeAssignments: updatedJudgeAssignments
+        });
+      }
+
+      // 5. Optionally remove judge role from user (if they should lose judge access)
+      const user = await User.findById(judgeIdFromAssignment);
+      if (user) {
+        // Remove judge role for this specific hackathon
+        const updatedRoles = user.roles.filter(role => 
+          !(role.role === 'judge' && role.hackathon?.toString() === hackathonId)
+        );
+        
+        await User.findByIdAndUpdate(judgeIdFromAssignment, {
+          roles: updatedRoles
+        });
+        console.log(`Removed judge role from user ${judgeEmail} for hackathon ${hackathonId}`);
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(200).json({
+        message: 'Judge deleted successfully',
+        deletedJudge: {
+          email: judgeEmail,
+          assignmentsRemoved: assignedSubmissionIds.length,
+          scoresRemoved: scoresToDelete.length
+        }
+      });
+
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error deleting judge:', error);
+    res.status(500).json({ 
+      message: 'Failed to delete judge',
+      error: error.message 
+    });
   }
 };

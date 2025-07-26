@@ -63,7 +63,21 @@ const HackathonSchema = new Schema({
     description: { type: String },
     startDate: { type: Date },
     endDate: { type: Date },
-    assignmentMode: { type: String, enum: ['open', 'assigned'], default: 'open' } // New field
+    assignmentMode: { type: String, enum: ['open', 'assigned'], default: 'open' }, // New field
+    judgingCriteria: {
+      project: [{
+        name: { type: String, required: true },
+        description: { type: String },
+        maxScore: { type: Number, default: 10 },
+        weight: { type: Number, default: 1 }
+      }],
+      presentation: [{
+        name: { type: String, required: true },
+        description: { type: String },
+        maxScore: { type: Number, default: 10 },
+        weight: { type: Number, default: 1 }
+      }]
+    }
   }],
 
   // Track which participants/teams advance per round
