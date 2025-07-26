@@ -25,7 +25,6 @@ export default function JudgeDashboard() {
 
   useEffect(() => {
     if (user) {
-      console.log('🔍 Fetching submissions for user and round:', currentRound);
       fetchAssignedSubmissions();
     }
   }, [user, currentRound]);
@@ -48,16 +47,6 @@ export default function JudgeDashboard() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Judge dashboard data:', {
-          hasSpecificAssignments: data.hasSpecificAssignments,
-          totalSubmissions: data.totalSubmissions,
-          submissions: data.submissions?.length || 0,
-          rounds: data.rounds?.length || 0,
-          hackathons: data.hackathons?.length || 0,
-          allSubmissions: data.submissions || [],
-          roundsData: data.rounds || [],
-          hackathonsData: data.hackathons || []
-        });
         
         setAllSubmissions(data.submissions || []);
         setRounds(data.rounds || []);
@@ -68,26 +57,17 @@ export default function JudgeDashboard() {
         if (data.rounds && data.rounds.length > 0) {
           const firstRoundIndex = data.rounds[0].index;
           setCurrentRound(firstRoundIndex);
-          console.log('🔍 Setting current round to:', firstRoundIndex);
         }
-        
-        console.log('🔍 Available rounds:', data.rounds);
-        console.log('🔍 Current round state:', currentRound);
         
         // Only show submissions if judge has specific assignments
         if (data.hasSpecificAssignments) {
           // Filter submissions for current round
           const roundSubmissions = data.submissions?.filter(sub => {
-            console.log(`🔍 Checking submission ${sub._id} - roundIndex: ${sub.roundIndex}, currentRound: ${currentRound}`);
             return sub.roundIndex === currentRound;
           }) || [];
-          console.log(`🔍 Filtered submissions for round ${currentRound}:`, roundSubmissions.length);
-          console.log('🔍 All submissions data:', data.submissions);
-          console.log('🔍 Round submissions:', roundSubmissions);
           setAssignedSubmissions(roundSubmissions);
         } else {
           // Show no submissions when no specific assignments
-          console.log('🔍 No specific assignments, showing empty dashboard');
           setAssignedSubmissions([]);
         }
       } else {

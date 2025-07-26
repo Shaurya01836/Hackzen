@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info } from "lucide-react";
+import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter } from "lucide-react";
 import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
 
 export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortlistingComplete }) {
   const { toast } = useToast();
@@ -15,13 +16,19 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
   const [shortlistThreshold, setShortlistThreshold] = useState(5);
   const [shortlistMode, setShortlistMode] = useState('topN'); // 'topN', 'threshold', or 'date'
   const [summary, setSummary] = useState(null);
+  const [selectedRound, setSelectedRound] = useState(roundIndex);
+  const [showOnlyEvaluated, setShowOnlyEvaluated] = useState(false);
+  const [viewSubmissionModalOpen, setViewSubmissionModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [submissionDetails, setSubmissionDetails] = useState(null);
+  const [loadingSubmissionDetails, setLoadingSubmissionDetails] = useState(false);
 
   useEffect(() => {
     if (hackathonId) {
       fetchLeaderboard();
       checkAutoProgress();
     }
-  }, [hackathonId, roundIndex]);
+  }, [hackathonId, selectedRound]);
 
   const checkAutoProgress = async () => {
     try {
@@ -50,9 +57,9 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Frontend - Fetching leaderboard for hackathonId:', hackathonId, 'roundIndex:', roundIndex);
+      console.log('🔍 Frontend - Fetching leaderboard for hackathonId:', hackathonId, 'roundIndex:', selectedRound);
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${roundIndex}/leaderboard`, {
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/leaderboard`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -61,7 +68,29 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
       if (response.ok) {
         const data = await response.json();
         console.log('🔍 Frontend - Leaderboard data received:', data);
-        setLeaderboard(data.leaderboard || []);
+        
+        // Filter to show only evaluated submissions if requested
+        let filteredLeaderboard = data.leaderboard || [];
+        console.log('🔍 Frontend - Raw leaderboard data:', filteredLeaderboard);
+        console.log('🔍 Frontend - Show only evaluated:', showOnlyEvaluated);
+        console.log('🔍 Frontend - Summary data:', data.summary);
+        
+        // Debug: Log each entry's score count
+        filteredLeaderboard.forEach((entry, index) => {
+          console.log(`🔍 Frontend - Entry ${index}:`, {
+            projectTitle: entry.projectTitle,
+            scoreCount: entry.scoreCount,
+            averageScore: entry.averageScore,
+            totalScore: entry.totalScore
+          });
+        });
+        
+        if (showOnlyEvaluated) {
+          filteredLeaderboard = filteredLeaderboard.filter(entry => entry.scoreCount > 0);
+          console.log('🔍 Frontend - Filtered leaderboard (evaluated only):', filteredLeaderboard);
+        }
+        
+        setLeaderboard(filteredLeaderboard);
         setSummary(data.summary);
       } else {
         const errorData = await response.json();
@@ -77,6 +106,55 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewSubmission = async (submission) => {
+    setSelectedSubmission(submission);
+    setViewSubmissionModalOpen(true);
+    setLoadingSubmissionDetails(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch detailed submission information
+      const response = await fetch(`/api/submission-form/admin/${submission._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const submissionData = await response.json();
+        
+        // Fetch judge evaluations for this submission
+        const evaluationsResponse = await fetch(`/api/scores/submission/${submission._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        let evaluations = [];
+        if (evaluationsResponse.ok) {
+          evaluations = await evaluationsResponse.json();
+        }
+        
+        setSubmissionDetails({
+          ...submissionData.submission,
+          evaluations
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch submission details",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch submission details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSubmissionDetails(false);
     }
   };
 
@@ -107,7 +185,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
         ? { shortlistCount, mode: 'topN' }
         : { shortlistThreshold, mode: 'threshold' };
 
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${roundIndex}/shortlist`, {
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/shortlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -161,12 +239,16 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
     return new Date(date).toLocaleDateString();
   };
 
+  const filteredLeaderboard = showOnlyEvaluated 
+    ? leaderboard.filter(entry => entry.scoreCount > 0)
+    : leaderboard;
+
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Round {roundIndex + 1} Leaderboard</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Round {selectedRound + 1} Leaderboard</h2>
             <p className="text-gray-600">Loading leaderboard data...</p>
           </div>
         </div>
@@ -183,7 +265,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Round {roundIndex + 1} Leaderboard</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Round {selectedRound + 1} Leaderboard</h2>
           <p className="text-gray-600">
             {summary ? (
               <>
@@ -242,6 +324,53 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
               }
             </Button>
           )}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-gray-600" />
+          <span className="text-sm font-medium text-gray-700">Filters:</span>
+        </div>
+        
+        {/* Round Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Round:</label>
+          <Select value={selectedRound.toString()} onValueChange={(value) => setSelectedRound(parseInt(value))}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Round 1</SelectItem>
+              <SelectItem value="2">Round 2</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Show Only Evaluated Filter */}
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={showOnlyEvaluated}
+              onChange={(e) => setShowOnlyEvaluated(e.target.checked)}
+              className="rounded text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-600">Show only evaluated</span>
+          </label>
+          <Button
+            onClick={() => setShowOnlyEvaluated(!showOnlyEvaluated)}
+            variant="outline"
+            size="sm"
+            className="text-xs"
+          >
+            Toggle Filter
+          </Button>
+        </div>
+
+        <div className="text-sm text-gray-500">
+          Showing {filteredLeaderboard.length} of {leaderboard.length} submissions
         </div>
       </div>
 
@@ -305,10 +434,15 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {leaderboard.length === 0 ? (
+          {filteredLeaderboard.length === 0 ? (
             <div className="text-center py-8">
               <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No submissions found for this round</p>
+              <p className="text-gray-500">
+                {showOnlyEvaluated 
+                  ? 'No evaluated submissions found for this round' 
+                  : 'No submissions found for this round'
+                }
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -340,12 +474,12 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                       Shortlisted
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Submitted
+                      Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {leaderboard.map((entry, index) => (
+                  {filteredLeaderboard.map((entry, index) => (
                     <tr key={entry._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -418,8 +552,16 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                           <span className="text-sm text-gray-400">-</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(entry.submittedAt)}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Button
+                          onClick={() => handleViewSubmission(entry)}
+                          variant="outline"
+                          size="sm"
+                          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -430,7 +572,218 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
         </CardContent>
       </Card>
 
-            {/* Shortlist Modal */}
+      {/* View Submission Modal */}
+      <Dialog open={viewSubmissionModalOpen} onOpenChange={setViewSubmissionModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Submission Details
+            </DialogTitle>
+          </DialogHeader>
+          {loadingSubmissionDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading submission details...</span>
+            </div>
+          ) : submissionDetails ? (
+            <div className="space-y-6">
+              {/* Submission Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {submissionDetails.projectTitle || submissionDetails.title || 'Untitled Project'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Team:</span>
+                        <span className="ml-2 text-gray-900">{submissionDetails.teamName}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Submission Type:</span>
+                        <span className="ml-2 text-gray-900">
+                          {submissionDetails.pptFile ? 'PPT Presentation' : 'Project Files'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Submitted:</span>
+                        <span className="ml-2 text-gray-900">
+                          {formatDate(submissionDetails.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {submissionDetails.evaluations?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-500">Evaluations</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submission Files */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Submission Files
+                </h4>
+                <div className="space-y-4">
+                  {submissionDetails.pptFile && (
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        <div>
+                          <div className="font-medium text-gray-900">PPT Presentation</div>
+                          <div className="text-sm text-gray-500">
+                            {submissionDetails.pptFile.split('/').pop()}
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={submissionDetails.pptFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View PPT
+                      </a>
+                    </div>
+                  )}
+                  {submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <h5 className="font-medium text-gray-900">Project Files:</h5>
+                      {submissionDetails.projectFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <div className="font-medium text-gray-900">{file.name}</div>
+                              <div className="text-sm text-gray-500">{file.type}</div>
+                            </div>
+                          </div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Judge Evaluations */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-600" />
+                  Judge Evaluations ({submissionDetails.evaluations?.length || 0})
+                </h4>
+                {submissionDetails.evaluations && submissionDetails.evaluations.length > 0 ? (
+                  <div className="space-y-4">
+                    {submissionDetails.evaluations.map((evaluation, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-semibold text-blue-700">
+                                {(evaluation.judge?.name || evaluation.judge?.email || 'J')[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {evaluation.judge?.name || evaluation.judge?.email || 'Unknown Judge'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {evaluation.judge?.email || 'No email available'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {evaluation.totalScore || (evaluation.scores && Object.values(evaluation.scores).reduce((sum, score) => sum + (score || 0), 0) / Object.keys(evaluation.scores).length) || 0}/10
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDate(evaluation.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Evaluation Criteria */}
+                        {evaluation.scores && Object.keys(evaluation.scores).length > 0 && (
+                          <div className="space-y-2">
+                            <h6 className="font-medium text-gray-900">Evaluation Criteria:</h6>
+                            {Object.entries(evaluation.scores).map(([criteria, score]) => (
+                              <div key={criteria} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm text-gray-700 capitalize">{criteria}</span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {score}/10
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Comments */}
+                        {evaluation.feedback && (
+                          <div className="mt-4">
+                            <h6 className="font-medium text-gray-900 mb-2">Comments:</h6>
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <p className="text-sm text-gray-700">{evaluation.feedback}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Award className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>No evaluations completed yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Average Score */}
+              {submissionDetails.evaluations && submissionDetails.evaluations.length > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+                  <div className="text-center">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Overall Score</h4>
+                    <div className="text-4xl font-bold text-green-600">
+                      {(() => {
+                        if (!submissionDetails.evaluations || submissionDetails.evaluations.length === 0) return '0.0';
+                        const totalScore = submissionDetails.evaluations.reduce((sum, evaluation) => {
+                          const score = evaluation.totalScore || 
+                            (evaluation.scores && Object.values(evaluation.scores).reduce((s, val) => s + (val || 0), 0) / Object.keys(evaluation.scores).length) || 0;
+                          return sum + score;
+                        }, 0);
+                        return (totalScore / submissionDetails.evaluations.length).toFixed(1);
+                      })()}/10
+                    </div>
+                    <div className="text-sm text-gray-500 mt-2">
+                      Based on {submissionDetails.evaluations.length} evaluation{submissionDetails.evaluations.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p>No submission details available</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Shortlist Modal */}
       <Dialog open={shortlistModalOpen} onOpenChange={setShortlistModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -537,17 +890,17 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
               </div>
             )}
 
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-yellow-600" />
-                                  <span className="text-sm text-yellow-800">
-                    {shortlistMode === 'topN' 
-                      ? `This will shortlist the top ${shortlistCount} projects to advance to Round 2.`
-                      : shortlistMode === 'threshold'
-                      ? `This will shortlist all projects with average score ≥ ${shortlistThreshold}/10 to advance to Round 2.`
-                      : `This will shortlist all submissions that participated in Round 1 to advance to Round 2.`
-                    }
-                  </span>
+                <span className="text-sm text-yellow-800">
+                  {shortlistMode === 'topN' 
+                    ? `This will shortlist the top ${shortlistCount} projects to advance to Round 2.`
+                    : shortlistMode === 'threshold'
+                    ? `This will shortlist all projects with average score ≥ ${shortlistThreshold}/10 to advance to Round 2.`
+                    : `This will shortlist all submissions that participated in Round 1 to advance to Round 2.`
+                  }
+                </span>
               </div>
             </div>
             

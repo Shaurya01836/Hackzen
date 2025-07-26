@@ -499,8 +499,17 @@ export default function ProjectSubmissionForm({
 
   // Determine current eligible round for the participant
   const [currentRound, setCurrentRound] = useState(null);
+  const [round2Eligibility, setRound2Eligibility] = useState(null);
+  const [checkingEligibility, setCheckingEligibility] = useState(false);
+
   useEffect(() => {
     if (!hackathon || !Array.isArray(hackathon.rounds)) return;
+    
+    // Check Round 2 eligibility if Round 2 exists
+    if (hackathon.rounds.length >= 2) {
+      checkRound2Eligibility();
+    }
+    
     // If no roundProgress, everyone is eligible for round 0
     if (!Array.isArray(hackathon.roundProgress) || hackathon.roundProgress.length === 0) {
       setCurrentRound({ ...hackathon.rounds[0], roundIndex: 0 });
@@ -524,6 +533,27 @@ export default function ProjectSubmissionForm({
     setCurrentRound(eligibleRound);
   }, [hackathon, userId]);
 
+  const checkRound2Eligibility = async () => {
+    setCheckingEligibility(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id || hackathon.id}/round2-eligibility`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setRound2Eligibility(data);
+      } else {
+        console.error('Failed to check Round 2 eligibility');
+      }
+    } catch (error) {
+      console.error('Error checking Round 2 eligibility:', error);
+    } finally {
+      setCheckingEligibility(false);
+    }
+  };
+
   // Block access if not eligible
   if (!currentRound) {
     return (
@@ -533,11 +563,67 @@ export default function ProjectSubmissionForm({
     );
   }
 
+  // Check if this is Round 2 and show eligibility status
+  const isRound2 = currentRound.roundIndex === 1; // Round 2 (index 1)
+  const showRound2Eligibility = isRound2 && round2Eligibility;
+
   // Render the correct form for the current round's type
   // For now, show a placeholder for each type
   if (currentRound.type === 'ppt') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-8 px-4">
+        {/* Round 2 Eligibility Check */}
+        {showRound2Eligibility && (
+          <div className="max-w-4xl mx-auto mb-6">
+            {checkingEligibility ? (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-blue-800">Checking Round 2 eligibility...</span>
+                </div>
+              </div>
+            ) : round2Eligibility.eligible ? (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-green-800">Congratulations! You're eligible for Round 2</h3>
+                    <p className="text-sm text-green-700 mt-1">
+                      Your team was shortlisted for Round 2. You can now submit a new project for this round.
+                    </p>
+                    {round2Eligibility.shortlistingDetails && (
+                      <p className="text-xs text-green-600 mt-2">
+                        Shortlisted project: {round2Eligibility.shortlistingDetails.projectTitle}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✗</span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-red-800">Not Selected for Round 2</h3>
+                    <p className="text-sm text-red-700 mt-1">
+                      {round2Eligibility.message || 'Your team was not shortlisted for Round 2. Thank you for participating in Round 1!'}
+                    </p>
+                    {!round2Eligibility.round2Started && round2Eligibility.round2StartDate && (
+                      <p className="text-xs text-red-600 mt-2">
+                        Round 2 starts: {new Date(round2Eligibility.round2StartDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Eligibility and round type logic */}
         {!currentRound ? (
           <div className="flex items-center justify-center text-xl text-red-600 font-bold min-h-[300px]">
@@ -585,6 +671,58 @@ export default function ProjectSubmissionForm({
           <div className="flex items-center justify-center text-lg min-h-[300px]">Quiz Form (Coming Soon)</div>
         ) : currentRound.type === 'project' ? (
           <div>
+            {/* Round 2 Eligibility Check for Project Submissions */}
+            {showRound2Eligibility && (
+              <div className="max-w-4xl mx-auto mb-6">
+                {checkingEligibility ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-blue-800">Checking Round 2 eligibility...</span>
+                    </div>
+                  </div>
+                ) : round2Eligibility.eligible ? (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✓</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-green-800">Congratulations! You're eligible for Round 2</h3>
+                        <p className="text-sm text-green-700 mt-1">
+                          Your team was shortlisted for Round 2. You can now submit a new project for this round.
+                        </p>
+                        {round2Eligibility.shortlistingDetails && (
+                          <p className="text-xs text-green-600 mt-2">
+                            Shortlisted project: {round2Eligibility.shortlistingDetails.projectTitle}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">✗</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-red-800">Not Selected for Round 2</h3>
+                        <p className="text-sm text-red-700 mt-1">
+                          {round2Eligibility.message || 'Your team was not shortlisted for Round 2. Thank you for participating in Round 1!'}
+                        </p>
+                        {!round2Eligibility.round2Started && round2Eligibility.round2StartDate && (
+                          <p className="text-xs text-red-600 mt-2">
+                            Round 2 starts: {new Date(round2Eligibility.round2StartDate).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Show allowed submissions info */}
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 font-medium">
               {hackathon.maxSubmissionsPerParticipant === 1
@@ -920,23 +1058,26 @@ export default function ProjectSubmissionForm({
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              type="submit"
-                              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
-                              disabled={
-                                !selectedProjectId ||
-                                selectedProjectId === "create-new" ||
-                                !selectedProblem ||
-                                submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
-                                isSubmitting ||
-                                maxReached
-                              }
-                            >
+                                                          <Button
+                                type="submit"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-lg shadow transition-all font-semibold"
+                                disabled={
+                                  !selectedProjectId ||
+                                  selectedProjectId === "create-new" ||
+                                  !selectedProblem ||
+                                  submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
+                                  isSubmitting ||
+                                  maxReached ||
+                                  (isRound2 && round2Eligibility && !round2Eligibility.eligible)
+                                }
+                              >
                               {isSubmitting ? (
                                 <>
                                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                                   Submitting...
                                 </>
+                              ) : isRound2 && round2Eligibility && !round2Eligibility.eligible ? (
+                                "Not Eligible for Round 2"
                               ) : (
                                 "Submit Project →"
                               )}

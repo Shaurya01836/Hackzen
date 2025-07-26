@@ -1092,7 +1092,16 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       judgesPerProjectMode = 'manual' // 'manual' or 'equal'
     } = req.body;
 
-
+    console.log('🔍 Bulk Assignment Request:', {
+      hackathonId,
+      submissionIds,
+      evaluatorAssignments,
+      assignmentMode,
+      roundIndex,
+      multipleJudgesMode,
+      judgesPerProject,
+      judgesPerProjectMode
+    });
 
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -1115,11 +1124,18 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       return res.status(400).json({ message: 'One or more submission IDs are invalid.' });
     }
 
-    // Get all evaluator assignments for this hackathon
+    // Get all evaluator assignments for this hackathon (NOT lean - we need to save them)
     const allEvaluators = await JudgeAssignment.find({ 
       hackathon: hackathonId,
       status: { $in: ['active', 'pending'] }
-    });
+    }).populate('judge');
+
+    console.log('🔍 Found evaluators:', allEvaluators.map(e => ({
+      id: e._id,
+      email: e.judge.email,
+      status: e.status,
+      assignedRounds: e.assignedRounds?.length || 0
+    })));
 
     // Get already assigned submissions for this round to prevent duplicates
     const alreadyAssignedSubmissions = new Set();
@@ -1135,6 +1151,13 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     // Filter out already assigned submissions
     const availableSubmissionIds = submissionIds.filter(id => !alreadyAssignedSubmissions.has(id.toString()));
     const duplicateSubmissionIds = submissionIds.filter(id => alreadyAssignedSubmissions.has(id.toString()));
+
+    console.log('🔍 Assignment Analysis:', {
+      totalSubmissions: submissionIds.length,
+      alreadyAssigned: alreadyAssignedSubmissions.size,
+      availableSubmissions: availableSubmissionIds.length,
+      duplicateSubmissions: duplicateSubmissionIds.length
+    });
 
     if (availableSubmissionIds.length === 0) {
       return res.status(400).json({ 
@@ -1175,135 +1198,212 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     const totalSubmissions = availableSubmissionIds.length;
     let remainingSubmissions = [...availableSubmissionIds];
 
-    // Handle multiple judges per project logic
+    // Get round details
+    const roundDetails = hackathon.rounds[roundIndex] || {};
+    const roundName = roundDetails.name || `Round ${roundIndex + 1}`;
+    const roundType = roundDetails.type || 'project';
+    const roundId = roundDetails._id?.toString() || `round_${roundIndex}`;
+
+    console.log('🔍 Round Details:', {
+      roundIndex,
+      roundName,
+      roundType,
+      roundId
+    });
+
+    // Process assignments
     if (multipleJudgesMode) {
+      // Multiple judges per project logic
+      console.log('🔍 Processing multiple judges mode');
+      
       // Create a map to track which submissions are assigned to which judges
       const submissionJudgeMap = new Map();
       
       // Initialize the map for all submissions
-      submissionIds.forEach(submissionId => {
+      availableSubmissionIds.forEach(submissionId => {
         submissionJudgeMap.set(submissionId.toString(), []);
       });
 
-      // Process each evaluator assignment for multiple judges mode
-      for (const assignment of evaluatorAssignments) {
-        const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
-        
-        // Find the evaluator assignment
-        const evaluatorAssignment = allEvaluators.find(e => 
-          e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
-        );
-        
-        if (!evaluatorAssignment) {
-          results.push({
-            evaluatorId,
-            success: false,
-            error: 'Evaluator not found'
-          });
-          continue;
-        }
+      console.log('🔍 Multiple Judges Mode - Available submissions:', availableSubmissionIds.length);
+      console.log('🔍 Multiple Judges Mode - Selected evaluators:', evaluatorAssignments.length);
 
-        // Check if evaluator is active
-        if (evaluatorAssignment.status !== 'active') {
-          results.push({
-            evaluatorId,
-            success: false,
-            error: `Evaluator ${evaluatorAssignment.judge.email} has not accepted the invitation yet`
-          });
-          continue;
-        }
-
-        // Calculate submissions to assign based on multiple judges logic
-        let submissionsToAssign = [];
-        let actualMaxSubmissions = maxSubmissions || Math.ceil(totalSubmissions / evaluatorAssignments.length);
+      // For multiple judges mode, we want to assign multiple judges to each submission
+      if (judgesPerProjectMode === 'equal') {
+        // Equal distribution: distribute judges evenly across submissions
+        const judgesPerSubmission = Math.min(judgesPerProject, evaluatorAssignments.length);
+        console.log('🔍 Equal distribution mode - Judges per submission:', judgesPerSubmission);
         
-        // For multiple judges mode, we need to distribute submissions more carefully
-        if (judgesPerProjectMode === 'equal') {
-          // Equal distribution: each submission gets assigned to multiple judges equally
-          const judgesPerSubmission = Math.ceil(evaluatorAssignments.length / totalSubmissions);
-          submissionsToAssign = availableSubmissionIds.filter(submissionId => {
-            const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
-            return currentJudges.length < judgesPerSubmission;
-          }).slice(0, actualMaxSubmissions);
-        } else {
-          // Manual mode: assign based on judgesPerProject setting
+        // Assign each submission to multiple judges
+        for (let i = 0; i < availableSubmissionIds.length; i++) {
+          const submissionId = availableSubmissionIds[i];
+          const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
+          
+          // Find judges that haven't been assigned to this submission yet
+          const availableJudges = evaluatorAssignments.filter(assignment => {
+            const evaluatorAssignment = allEvaluators.find(e => 
+              e._id.toString() === assignment.evaluatorId || e.judge.email === assignment.evaluatorEmail
+            );
+            return evaluatorAssignment && 
+                   evaluatorAssignment.status === 'active' && 
+                   !currentJudges.includes(evaluatorAssignment._id.toString());
+          });
+          
+          // Assign judges to this submission
+          const judgesToAssign = availableJudges.slice(0, judgesPerSubmission - currentJudges.length);
+          
+          for (const judgeAssignment of judgesToAssign) {
+            const evaluatorAssignment = allEvaluators.find(e => 
+              e._id.toString() === judgeAssignment.evaluatorId || e.judge.email === judgeAssignment.evaluatorEmail
+            );
+            
+            if (evaluatorAssignment) {
+              // Add this judge to the submission's judge list
+              currentJudges.push(evaluatorAssignment._id.toString());
+              submissionJudgeMap.set(submissionId.toString(), currentJudges);
+              
+              // Update the judge's assignment to include this submission
+              const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+              const submissionsToAdd = [submissionId];
+              
+              if (existingRoundIndex >= 0) {
+                // Add to existing round assignment
+                const existingSubmissions = evaluatorAssignment.assignedRounds[existingRoundIndex].assignedSubmissions || [];
+                evaluatorAssignment.assignedRounds[existingRoundIndex].assignedSubmissions = [...existingSubmissions, ...submissionsToAdd];
+              } else {
+                // Create new round assignment
+                evaluatorAssignment.assignedRounds.push({
+                  roundIndex,
+                  roundId,
+                  roundName,
+                  roundType,
+                  isAssigned: true,
+                  assignedSubmissions: submissionsToAdd,
+                  maxSubmissions: 1
+                });
+              }
+              
+              await evaluatorAssignment.save();
+              
+              // Send email notification
+              await sendSubmissionAssignmentEmail(
+                evaluatorAssignment.judge.email,
+                evaluatorAssignment.judge.name,
+                hackathon,
+                submissionsToAdd,
+                roundName
+              );
+              
+              console.log(`✅ Assigned submission ${submissionId} to judge ${evaluatorAssignment.judge.email}`);
+            }
+          }
+        }
+        
+        // Create results summary
+        evaluatorAssignments.forEach(assignment => {
+          const evaluatorAssignment = allEvaluators.find(e => 
+            e._id.toString() === assignment.evaluatorId || e.judge.email === assignment.evaluatorEmail
+          );
+          
+          if (evaluatorAssignment) {
+            const roundAssignment = evaluatorAssignment.assignedRounds.find(r => r.roundIndex === roundIndex);
+            const assignedSubmissions = roundAssignment?.assignedSubmissions || [];
+            
+            results.push({
+              evaluatorId: evaluatorAssignment._id,
+              evaluatorEmail: evaluatorAssignment.judge.email,
+              evaluatorName: evaluatorAssignment.judge.name,
+              success: true,
+              assignedSubmissions: assignedSubmissions,
+              maxSubmissions: assignedSubmissions.length,
+              status: evaluatorAssignment.status
+            });
+          }
+        });
+        
+      } else {
+        // Manual mode - assign based on maxSubmissions per judge
+        console.log('🔍 Manual distribution mode');
+        
+        for (const assignment of evaluatorAssignments) {
+          const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
+          
+          // Find the evaluator assignment
+          const evaluatorAssignment = allEvaluators.find(e => 
+            e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
+          );
+          
+          if (!evaluatorAssignment) {
+            results.push({
+              evaluatorId,
+              success: false,
+              error: 'Evaluator not found'
+            });
+            continue;
+          }
+
+          // Check if evaluator is active
+          if (evaluatorAssignment.status !== 'active') {
+            results.push({
+              evaluatorId,
+              success: false,
+              error: `Evaluator ${evaluatorAssignment.judge.email} has not accepted the invitation yet`
+            });
+            continue;
+          }
+
+          // Calculate submissions to assign
+          let submissionsToAssign = [];
+          let actualMaxSubmissions = maxSubmissions || Math.ceil(availableSubmissionIds.length / evaluatorAssignments.length);
+          
+          // Find submissions that need more judges
           submissionsToAssign = availableSubmissionIds.filter(submissionId => {
             const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
             return currentJudges.length < judgesPerProject;
           }).slice(0, actualMaxSubmissions);
-        }
 
-        // Update the submission-judge mapping
-        submissionsToAssign.forEach(submissionId => {
-          const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
-          currentJudges.push(evaluatorAssignment._id.toString());
-          submissionJudgeMap.set(submissionId.toString(), currentJudges);
-        });
+          // Update submission-judge map
+          submissionsToAssign.forEach(submissionId => {
+            const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
+            currentJudges.push(evaluatorAssignment._id.toString());
+            submissionJudgeMap.set(submissionId.toString(), currentJudges);
+          });
 
-        // Update the judge assignment with new submissions for this round
-        const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
-        
-        // Get round details with fallbacks
-        const roundDetails = hackathon.rounds[roundIndex] || {};
-        const roundName = roundDetails.name || `Round ${roundIndex + 1}`;
-        const roundType = roundDetails.type || 'project';
-        const roundId = roundDetails._id?.toString() || `round_${roundIndex}`;
-        
-        if (existingRoundIndex >= 0) {
-          // Update existing round assignment
-          evaluatorAssignment.assignedRounds[existingRoundIndex] = {
-            ...evaluatorAssignment.assignedRounds[existingRoundIndex],
-            roundIndex,
-            roundId,
-            roundName,
-            roundType,
-            isAssigned: true,
+          // Update the judge assignment
+          await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
+
+          // Send email notification
+          if (submissionsToAssign.length > 0) {
+            await sendSubmissionAssignmentEmail(
+              evaluatorAssignment.judge.email,
+              evaluatorAssignment.judge.name,
+              hackathon,
+              submissionsToAssign,
+              roundName
+            );
+          }
+
+          results.push({
+            evaluatorId: evaluatorAssignment._id,
+            evaluatorEmail: evaluatorAssignment.judge.email,
+            evaluatorName: evaluatorAssignment.judge.name,
+            success: true,
             assignedSubmissions: submissionsToAssign,
-            maxSubmissions: actualMaxSubmissions
-          };
-        } else {
-          // Add new round assignment
-          evaluatorAssignment.assignedRounds.push({
-            roundIndex,
-            roundId,
-            roundName,
-            roundType,
-            isAssigned: true,
-            assignedSubmissions: submissionsToAssign,
-            maxSubmissions: actualMaxSubmissions
+            maxSubmissions: actualMaxSubmissions,
+            status: evaluatorAssignment.status
           });
         }
-
-        try {
-          await evaluatorAssignment.save();
-        } catch (saveError) {
-          console.error('Error saving evaluatorAssignment:', {
-            evaluatorAssignmentId: evaluatorAssignment._id,
-            assignedRounds: evaluatorAssignment.assignedRounds,
-            error: saveError
-          });
-          throw saveError;
-        }
-
-        results.push({
-          evaluatorId: evaluatorAssignment._id,
-          evaluatorEmail: evaluatorAssignment.judge.email,
-          evaluatorName: evaluatorAssignment.judge.name,
-          success: true,
-          assignedSubmissions: submissionsToAssign,
-          maxSubmissions: actualMaxSubmissions,
-          status: evaluatorAssignment.status
-        });
       }
     } else {
-      // Original single judge per project logic
+      // Single judge per project logic
+      console.log('🔍 Processing single judge per project mode');
+      
       // Process each evaluator assignment
       for (const assignment of evaluatorAssignments) {
         const { evaluatorId, maxSubmissions, evaluatorEmail } = assignment;
         
         // Find the evaluator assignment
         const evaluatorAssignment = allEvaluators.find(e => 
-          e._id.toString() === evaluatorId || e.judge.email === evaluatorEmail
+          e._id.toString() === evaluatorId || e.judge.email === assignment.evaluatorEmail
         );
         
         if (!evaluatorAssignment) {
@@ -1329,54 +1429,48 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
         let submissionsToAssign = [];
         let actualMaxSubmissions = maxSubmissions || Math.ceil(totalSubmissions / evaluatorAssignments.length);
         
+        // Check if any of the remaining submissions are already assigned to this judge
+        const existingRoundAssignment = evaluatorAssignment.assignedRounds?.find(r => r.roundIndex === roundIndex);
+        const alreadyAssignedToThisJudge = existingRoundAssignment?.assignedSubmissions || [];
+        
+        // Filter out submissions already assigned to this judge
+        const availableForThisJudge = remainingSubmissions.filter(subId => 
+          !alreadyAssignedToThisJudge.includes(subId) && 
+          !alreadyAssignedToThisJudge.some(assigned => assigned.toString() === subId.toString())
+        );
+        
+        console.log('🔍 Judge assignment check:', {
+          judge: evaluatorAssignment.judge.email,
+          alreadyAssigned: alreadyAssignedToThisJudge.length,
+          remainingSubmissions: remainingSubmissions.length,
+          availableForThisJudge: availableForThisJudge.length
+        });
+        
         if (assignmentMode === 'equal') {
           const equalCount = Math.ceil(totalSubmissions / evaluatorAssignments.length);
-          const startIndex = evaluatorAssignments.indexOf(assignment) * equalCount;
-          submissionsToAssign = remainingSubmissions.slice(0, equalCount);
+          submissionsToAssign = availableForThisJudge.slice(0, equalCount);
           actualMaxSubmissions = equalCount;
         } else {
           // Manual mode - assign based on maxSubmissions
-          submissionsToAssign = remainingSubmissions.slice(0, actualMaxSubmissions);
+          submissionsToAssign = availableForThisJudge.slice(0, actualMaxSubmissions);
         }
 
         // Remove assigned submissions from remaining pool
         remainingSubmissions = remainingSubmissions.filter(id => !submissionsToAssign.includes(id));
 
-        // Update the judge assignment with new submissions for this round
-        const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
-        
-        // Get round details with fallbacks
-        const roundDetails = hackathon.rounds[roundIndex] || {};
-        const roundName = roundDetails.name || `Round ${roundIndex + 1}`;
-        const roundType = roundDetails.type || 'project';
-        const roundId = roundDetails._id?.toString() || `round_${roundIndex}`;
-        
-        if (existingRoundIndex >= 0) {
-          // Update existing round assignment
-          evaluatorAssignment.assignedRounds[existingRoundIndex] = {
-            ...evaluatorAssignment.assignedRounds[existingRoundIndex],
-            roundIndex,
-            roundId,
-            roundName,
-            roundType,
-            isAssigned: true,
-            assignedSubmissions: submissionsToAssign,
-            maxSubmissions: actualMaxSubmissions
-          };
-        } else {
-          // Add new round assignment
-          evaluatorAssignment.assignedRounds.push({
-            roundIndex,
-            roundId,
-            roundName,
-            roundType,
-            isAssigned: true,
-            assignedSubmissions: submissionsToAssign,
-            maxSubmissions: actualMaxSubmissions
-          });
-        }
+        // Update the judge assignment
+        await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
 
-        await evaluatorAssignment.save();
+        // Send email notification
+        if (submissionsToAssign.length > 0) {
+          await sendSubmissionAssignmentEmail(
+            evaluatorAssignment.judge.email,
+            evaluatorAssignment.judge.name,
+            hackathon,
+            submissionsToAssign,
+            roundName
+          );
+        }
 
         results.push({
           evaluatorId: evaluatorAssignment._id,
@@ -1395,6 +1489,17 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     if (unassignedCount > 0) {
       console.warn(`${unassignedCount} submissions could not be assigned due to evaluator limits`);
     }
+
+    console.log('🔍 Assignment Results:', {
+      totalSubmissions,
+      assignedSubmissions: totalSubmissions - unassignedCount,
+      unassignedSubmissions: unassignedCount,
+      results: results.map(r => ({
+        evaluator: r.evaluatorEmail,
+        assigned: r.assignedSubmissions?.length || 0,
+        success: r.success
+      }))
+    });
 
     res.status(200).json({
       message: 'Bulk assignment completed successfully',
@@ -1422,6 +1527,51 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     res.status(500).json({ message: 'Failed to bulk assign submissions' });
   }
 };
+
+// Helper function to update judge assignment
+async function updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, maxSubmissions) {
+  try {
+    console.log('🔍 Updating judge assignment:', {
+      judge: evaluatorAssignment.judge.email,
+      roundIndex,
+      submissionsToAssign: submissionsToAssign.length,
+      maxSubmissions
+    });
+
+    const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+    
+    if (existingRoundIndex >= 0) {
+      // Update existing round assignment
+      evaluatorAssignment.assignedRounds[existingRoundIndex] = {
+        ...evaluatorAssignment.assignedRounds[existingRoundIndex],
+        roundIndex,
+        roundId,
+        roundName,
+        roundType,
+        isAssigned: true,
+        assignedSubmissions: submissionsToAssign,
+        maxSubmissions
+      };
+    } else {
+      // Add new round assignment
+      evaluatorAssignment.assignedRounds.push({
+        roundIndex,
+        roundId,
+        roundName,
+        roundType,
+        isAssigned: true,
+        assignedSubmissions: submissionsToAssign,
+        maxSubmissions
+      });
+    }
+
+    await evaluatorAssignment.save();
+    console.log('✅ Successfully updated judge assignment for:', evaluatorAssignment.judge.email);
+  } catch (error) {
+    console.error('❌ Error updating judge assignment:', error);
+    throw error;
+  }
+}
 
 // 🎯 Get All Evaluators with Status
 exports.getAllEvaluators = async (req, res) => {
@@ -1514,137 +1664,73 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     const assignments = await JudgeAssignment.find({ 
       'judge.email': judgeEmail,
       status: 'active'
-    }).populate('hackathon', 'name rounds');
+    }).populate('hackathon', 'name rounds').populate('judge', 'name email');
     
     console.log('🔍 Backend - Found assignments:', assignments.length);
-    console.log('🔍 Backend - Assignments:', assignments);
     
-    // If no assignments found, return empty response
-    if (assignments.length === 0) {
-      console.log('🔍 Backend - No assignments found for judge');
-      const response = {
-        submissions: [],
-        rounds: [],
-        hackathons: [],
-        totalSubmissions: 0,
-        totalRounds: 0,
-        totalHackathons: 0,
-        hasSpecificAssignments: false
-      };
-      res.status(200).json(response);
-      return;
-    }
-
-    const submissions = [];
-    const rounds = [];
+    // Defensive: Collect all assigned submission IDs from all rounds
+    const assignedSubmissionIds = new Set();
     const hackathons = [];
-    const allSubmissions = [];
-
+    const rounds = [];
     for (const assignment of assignments) {
       const hackathon = assignment.hackathon;
-      console.log('🔍 Backend - Processing assignment:', assignment._id);
-      console.log('🔍 Backend - Assignment data:', {
-        judgeEmail: assignment.judge?.email,
-        hackathonId: hackathon?._id,
-        assignedRounds: assignment.assignedRounds,
-        status: assignment.status
-      });
-      
-      // Check if judge has any specific assignments
-      let hasSpecificAssignments = false;
-      let assignedSubmissionIds = new Set();
-      
       if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
         for (const round of assignment.assignedRounds) {
-          console.log('🔍 Backend - Processing round:', round);
-          if (round.isAssigned && round.assignedSubmissions && Array.isArray(round.assignedSubmissions) && round.assignedSubmissions.length > 0) {
-            hasSpecificAssignments = true;
+          if (round.isAssigned && Array.isArray(round.assignedSubmissions)) {
             round.assignedSubmissions.forEach(id => assignedSubmissionIds.add(id.toString()));
-          }
-        }
-      } else {
-        console.log('🔍 Backend - No assignedRounds found in assignment or not an array');
-      }
-
-      // If judge has specific assignments, show only those
-      // If no specific assignments, show NO submissions (empty dashboard)
-      let submissionsToFetch = [];
-      
-      if (hasSpecificAssignments && assignedSubmissionIds.size > 0) {
-        try {
-          // Get only assigned submissions
-          const Submission = require('../model/SubmissionModel');
-          submissionsToFetch = await Submission.find({
-            _id: { $in: Array.from(assignedSubmissionIds) }
-          }).populate('teamId', 'name members')
-            .populate('hackathonId', 'name');
-          console.log('🔍 Backend - Found submissions:', submissionsToFetch.length);
-        } catch (submissionError) {
-          console.error('🔍 Backend - Error fetching submissions:', submissionError);
-          submissionsToFetch = [];
-        }
-      } else {
-        console.log('🔍 Backend - No specific assignments found, showing empty list');
-        submissionsToFetch = [];
-      }
-
-      // Process rounds
-      if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
-        for (const round of assignment.assignedRounds) {
-          if (round && round.isAssigned) {
+            // Add round info for UI
             const roundInfo = {
               index: round.roundIndex || 0,
               name: round.roundName || 'Round',
               type: round.roundType || 'project',
-              submissionCount: hasSpecificAssignments ? (round.assignedSubmissions?.length || 0) : submissionsToFetch.length,
+              submissionCount: round.assignedSubmissions?.length || 0,
               hackathonId: hackathon._id,
               hackathonName: hackathon.name,
-              hasSpecificAssignments: hasSpecificAssignments
+              hasSpecificAssignments: true
             };
-
             if (!rounds.find(r => r.index === roundInfo.index && r.hackathonId.toString() === hackathon._id.toString())) {
               rounds.push(roundInfo);
             }
           }
         }
       }
-
-      // Add submissions with evaluation status
-      for (const submission of submissionsToFetch) {
-        try {
-          // Check if this submission has been scored by this judge
-          const Score = require('../model/ScoreModel');
-          const existingScore = await Score.findOne({
-            submission: submission._id,
-            judge: assignment._id
-          });
-
-          const submissionData = {
-            ...submission.toObject(),
-            evaluationStatus: existingScore ? 'evaluated' : 'pending',
-            score: existingScore?.score || null,
-            feedback: existingScore?.feedback || null,
-            roundIndex: assignment.assignedRounds?.[0]?.roundIndex || 0,
-            roundName: assignment.assignedRounds?.[0]?.roundName || 'Round 1',
-            hackathonId: hackathon._id,
-            hackathonName: hackathon.name,
-            isAssigned: hasSpecificAssignments ? assignedSubmissionIds.has(submission._id.toString()) : false
-          };
-
-          submissions.push(submissionData);
-          allSubmissions.push(submissionData);
-        } catch (submissionError) {
-          console.error('🔍 Backend - Error processing submission:', submissionError);
-        }
-      }
-      
       // Add hackathon to list
       if (hackathon && hackathon._id) {
         hackathons.push({
           _id: hackathon._id,
           name: hackathon.name || 'Unknown Hackathon',
-          hasSpecificAssignments: hasSpecificAssignments
+          hasSpecificAssignments: true
         });
+      }
+    }
+
+    // Fetch all assigned submissions
+    let allSubmissions = [];
+    if (assignedSubmissionIds.size > 0) {
+      try {
+        const Submission = require('../model/SubmissionModel');
+        const Score = require('../model/ScoreModel');
+        const submissionsToFetch = await Submission.find({
+          _id: { $in: Array.from(assignedSubmissionIds) }
+        }).populate('teamId', 'name members')
+          .populate('hackathonId', 'name');
+        // Add evaluation status for each submission
+        for (const submission of submissionsToFetch) {
+          const existingScore = await Score.findOne({
+            submission: submission._id,
+            judgeEmail: judgeEmail
+          });
+          allSubmissions.push({
+            ...submission.toObject(),
+            evaluationStatus: existingScore ? 'evaluated' : 'pending',
+            score: existingScore?.score || null,
+            feedback: existingScore?.feedback || null,
+            isAssigned: true
+          });
+        }
+      } catch (submissionError) {
+        console.error('🔍 Backend - Error fetching assigned submissions:', submissionError);
+        allSubmissions = [];
       }
     }
 
@@ -1660,9 +1746,8 @@ exports.getMyAssignedSubmissions = async (req, res) => {
       totalSubmissions: allSubmissions.length,
       totalRounds: rounds.length,
       totalHackathons: uniqueHackathons.length,
-      hasSpecificAssignments: uniqueHackathons.some(h => h.hasSpecificAssignments)
+      hasSpecificAssignments: true
     });
-
   } catch (error) {
     console.error('🔍 Backend - Error in getMyAssignedSubmissions:', error);
     console.error('🔍 Backend - Error stack:', error.stack);
@@ -2088,6 +2173,8 @@ exports.getAssignmentOverview = async (req, res) => {
     const judgeAssignments = await JudgeAssignment.find({ hackathon: hackathonId })
       .populate('judge')
       .lean();
+      
+    console.log('🔍 Assignment Overview - Raw Judge Assignments from DB:', JSON.stringify(judgeAssignments, null, 2));
 
     // Get all submissions for this hackathon
     const submissions = await Submission.find({ hackathonId: hackathonId, status: 'submitted' })
@@ -2114,31 +2201,58 @@ exports.getAssignmentOverview = async (req, res) => {
       submissionAssignments[sub._id.toString()] = [];
     });
 
+    console.log('🔍 Assignment Overview - Processing Judge Assignments...');
+
     // Map: judge email -> assigned submission IDs with round info
     const judgeToSubmissions = {};
     judgeAssignments.forEach(judgeAssignment => {
       const judgeEmail = judgeAssignment.judge?.email || judgeAssignment.judge.email;
       judgeToSubmissions[judgeEmail] = [];
-      (judgeAssignment.assignedRounds || []).forEach(round => {
-        (round.assignedSubmissions || []).forEach(subId => {
-          judgeToSubmissions[judgeEmail].push({
-            submissionId: subId.toString(),
-            roundIndex: round.roundIndex,
-            roundName: round.roundName,
-            roundType: round.roundType
+      
+      console.log(`🔍 Processing judge ${judgeEmail}:`, {
+        assignedRounds: judgeAssignment.assignedRounds?.length || 0,
+        rounds: judgeAssignment.assignedRounds?.map(r => ({
+          roundIndex: r.roundIndex,
+          assignedSubmissions: r.assignedSubmissions?.length || 0,
+          submissionIds: r.assignedSubmissions || []
+        }))
+      });
+      
+      if (judgeAssignment.assignedRounds && Array.isArray(judgeAssignment.assignedRounds)) {
+        judgeAssignment.assignedRounds.forEach(round => {
+          console.log(`🔍 Processing round ${round.roundIndex}:`, {
+            assignedSubmissions: round.assignedSubmissions?.length || 0,
+            submissionIds: round.assignedSubmissions || []
           });
-          if (submissionAssignments[subId.toString()]) {
-            submissionAssignments[subId.toString()].push({
-              judgeEmail,
-              judgeName: judgeAssignment.judge?.name || judgeEmail,
-              roundIndex: round.roundIndex,
-              roundName: round.roundName,
-              roundType: round.roundType
+          
+          if (round.assignedSubmissions && Array.isArray(round.assignedSubmissions)) {
+            round.assignedSubmissions.forEach(subId => {
+              const subIdStr = subId.toString();
+              console.log(`🔍 Assigning submission ${subIdStr} to judge ${judgeEmail}`);
+              
+              judgeToSubmissions[judgeEmail].push({
+                submissionId: subIdStr,
+                roundIndex: round.roundIndex,
+                roundName: round.roundName,
+                roundType: round.roundType
+              });
+              
+              if (submissionAssignments[subIdStr]) {
+                submissionAssignments[subIdStr].push({
+                  judgeEmail,
+                  judgeName: judgeAssignment.judge?.name || judgeEmail,
+                  roundIndex: round.roundIndex,
+                  roundName: round.roundName,
+                  roundType: round.roundType
+                });
+              }
             });
           }
         });
-      });
+      }
     });
+
+    console.log('🔍 Assignment Overview - Final Submission Assignments:', submissionAssignments);
 
     // Build judge assignment summary with evaluation status
     const judges = judgeAssignments.map(judgeAssignment => {
@@ -2283,14 +2397,40 @@ exports.getSubmissionsWithAssignmentStatus = async (req, res) => {
       
       if (roundAssignment?.assignedSubmissions) {
         roundAssignment.assignedSubmissions.forEach(subId => {
-          if (submissionAssignments[subId.toString()]) {
-            submissionAssignments[subId.toString()].push({
+          const subIdStr = subId.toString();
+          if (submissionAssignments[subIdStr]) {
+            submissionAssignments[subIdStr].push({
               judgeEmail,
               judgeName: judgeAssignment.judge?.name || judgeEmail,
               judgeType: judgeAssignment.judge?.type || 'platform',
               roundIndex: roundAssignment.roundIndex,
               roundName: roundAssignment.roundName,
               roundType: roundAssignment.roundType
+            });
+          }
+        });
+      }
+    });
+    
+    // Also check for any assignments in ANY round for this hackathon (fallback)
+    judgeAssignments.forEach(judgeAssignment => {
+      const judgeEmail = judgeAssignment.judge?.email || judgeAssignment.judge.email;
+      
+      if (judgeAssignment.assignedRounds && Array.isArray(judgeAssignment.assignedRounds)) {
+        judgeAssignment.assignedRounds.forEach(round => {
+          if (round.assignedSubmissions && Array.isArray(round.assignedSubmissions)) {
+            round.assignedSubmissions.forEach(subId => {
+              const subIdStr = subId.toString();
+              if (submissionAssignments[subIdStr] && submissionAssignments[subIdStr].length === 0) {
+                submissionAssignments[subIdStr].push({
+                  judgeEmail,
+                  judgeName: judgeAssignment.judge?.name || judgeEmail,
+                  judgeType: judgeAssignment.judge?.type || 'platform',
+                  roundIndex: round.roundIndex,
+                  roundName: round.roundName,
+                  roundType: round.roundType
+                });
+              }
             });
           }
         });
@@ -2304,6 +2444,10 @@ exports.getSubmissionsWithAssignmentStatus = async (req, res) => {
         ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
         : null;
       
+      const subIdStr = sub._id.toString();
+      const assignedJudges = submissionAssignments[subIdStr] || [];
+      const isAssigned = assignedJudges.length > 0;
+      
       return {
         _id: sub._id,
         projectTitle: sub.projectTitle || sub.title,
@@ -2311,8 +2455,8 @@ exports.getSubmissionsWithAssignmentStatus = async (req, res) => {
         teamName: sub.teamName,
         pptFile: sub.pptFile,
         submittedAt: sub.submittedAt,
-        isAssigned: (submissionAssignments[sub._id.toString()] || []).length > 0,
-        assignedJudges: submissionAssignments[sub._id.toString()] || [],
+        isAssigned: isAssigned,
+        assignedJudges: assignedJudges,
         evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
         scoreCount: submissionScoresList.length,
         averageScore: averageScore ? Math.round(averageScore * 10) / 10 : null
@@ -2398,24 +2542,45 @@ exports.getLeaderboard = async (req, res) => {
       
       submissionScoresList.forEach(score => {
         console.log('🔍 Backend - Processing score:', score);
-        // Convert Map to object if needed
-        let scoresObject = {};
+        
+        // Handle the complex score structure
+        let totalCriteriaScore = 0;
+        let criteriaCount = 0;
+        
         if (score.scores && score.scores instanceof Map) {
+          // Handle Map structure
           score.scores.forEach((value, key) => {
-            scoresObject[key] = value.score;
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            }
           });
         } else if (score.scores && typeof score.scores === 'object') {
-          scoresObject = score.scores;
+          // Handle object structure
+          Object.values(score.scores).forEach(value => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            } else if (typeof value === 'number') {
+              // Fallback for simple number values
+              totalCriteriaScore += value;
+              criteriaCount++;
+            }
+          });
         }
         
-        console.log('🔍 Backend - Scores object:', scoresObject);
-        const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
-        console.log('🔍 Backend - Criteria scores:', criteriaScores);
-        if (criteriaScores.length > 0) {
-          const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+        console.log('🔍 Backend - Total criteria score:', totalCriteriaScore, 'Criteria count:', criteriaCount);
+        
+        if (criteriaCount > 0) {
+          const submissionScore = totalCriteriaScore / criteriaCount;
           totalScore += submissionScore;
           scoreCount++;
           console.log('🔍 Backend - Submission score calculated:', submissionScore);
+        } else if (score.totalScore && typeof score.totalScore === 'number') {
+          // Fallback to totalScore if criteria calculation fails
+          totalScore += score.totalScore;
+          scoreCount++;
+          console.log('🔍 Backend - Using totalScore fallback:', score.totalScore);
         }
       });
       
@@ -2602,29 +2767,43 @@ exports.performShortlisting = async (req, res) => {
 
     console.log('🔍 Backend - Submissions to shortlist:', submissionsToShortlist);
 
-    // Update submission statuses
-    const updatePromises = submissionsToShortlist.map(submissionId =>
-      Submission.findByIdAndUpdate(submissionId, { 
-        status: 'shortlisted',
-        shortlistedAt: new Date(),
-        shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
-      })
-    );
+    // Update submission statuses and track shortlisted teams
+    const shortlistedTeams = new Set();
+    const updatePromises = submissionsToShortlist.map(async (submissionId) => {
+      const submission = await Submission.findById(submissionId);
+      if (submission) {
+        // Track the team that submitted this
+        if (submission.teamId) {
+          shortlistedTeams.add(submission.teamId.toString());
+        } else if (submission.submittedBy) {
+          // For individual submissions, track the user
+          shortlistedTeams.add(submission.submittedBy.toString());
+        }
+        
+        return Submission.findByIdAndUpdate(submissionId, { 
+          status: 'shortlisted',
+          shortlistedAt: new Date(),
+          shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
+        });
+      }
+    });
 
     await Promise.all(updatePromises);
 
-    // Update hackathon round progress
+    // Update hackathon round progress with shortlisted teams
     const roundProgressIndex = hackathon.roundProgress.findIndex(rp => rp.roundIndex === parseInt(roundIndex));
     
     if (roundProgressIndex >= 0) {
       // Update existing round progress
       hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = submissionsToShortlist;
+      hackathon.roundProgress[roundProgressIndex].shortlistedTeams = Array.from(shortlistedTeams);
       hackathon.roundProgress[roundProgressIndex].shortlistedAt = new Date();
     } else {
       // Add new round progress
       hackathon.roundProgress.push({
         roundIndex: parseInt(roundIndex),
         shortlistedSubmissions: submissionsToShortlist,
+        shortlistedTeams: Array.from(shortlistedTeams),
         shortlistedAt: new Date()
       });
     }
@@ -2636,6 +2815,7 @@ exports.performShortlisting = async (req, res) => {
     res.status(200).json({
       message: `Successfully shortlisted ${submissionsToShortlist.length} submissions`,
       shortlistedSubmissions: submissionsToShortlist,
+      shortlistedTeams: Array.from(shortlistedTeams),
       roundIndex: parseInt(roundIndex),
       shortlistedAt: new Date(),
       mode: mode
@@ -2644,6 +2824,113 @@ exports.performShortlisting = async (req, res) => {
   } catch (error) {
     console.error('🔍 Backend - Error performing shortlisting:', error);
     res.status(500).json({ message: 'Failed to perform shortlisting', error: error.message });
+  }
+};
+
+// 🎯 Check if user/team is shortlisted for Round 2
+exports.checkRound2Eligibility = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const userId = req.user._id;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Check if user is registered for this hackathon
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(403).json({ 
+        eligible: false, 
+        message: 'You must be registered for this hackathon to participate in Round 2' 
+      });
+    }
+
+    // Check if Round 2 exists
+    if (!hackathon.rounds || hackathon.rounds.length < 2) {
+      return res.status(400).json({ 
+        eligible: false, 
+        message: 'This hackathon does not have a Round 2' 
+      });
+    }
+
+    // Check if Round 2 has started
+    const round2StartDate = hackathon.rounds[1]?.startDate;
+    const now = new Date();
+    const round2Started = round2StartDate && now >= new Date(round2StartDate);
+
+    if (!round2Started) {
+      return res.status(200).json({
+        eligible: false,
+        message: 'Round 2 has not started yet',
+        round2StartDate: round2StartDate
+      });
+    }
+
+    // Check if user's team was shortlisted
+    const Team = require("../model/TeamModel");
+    const userTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId, 
+      status: 'active' 
+    });
+
+    let isShortlisted = false;
+    let shortlistingDetails = null;
+
+    if (userTeam) {
+      // Check if team was shortlisted
+      const shortlistedSubmission = await Submission.findOne({
+        hackathonId: hackathonId,
+        teamId: userTeam._id,
+        shortlistedForRound: 2,
+        status: 'shortlisted'
+      });
+      
+      if (shortlistedSubmission) {
+        isShortlisted = true;
+        shortlistingDetails = {
+          submissionId: shortlistedSubmission._id,
+          projectTitle: shortlistedSubmission.projectTitle,
+          shortlistedAt: shortlistedSubmission.shortlistedAt
+        };
+      }
+    } else {
+      // Check if individual user was shortlisted
+      const shortlistedSubmission = await Submission.findOne({
+        hackathonId: hackathonId,
+        submittedBy: userId,
+        shortlistedForRound: 2,
+        status: 'shortlisted'
+      });
+      
+      if (shortlistedSubmission) {
+        isShortlisted = true;
+        shortlistingDetails = {
+          submissionId: shortlistedSubmission._id,
+          projectTitle: shortlistedSubmission.projectTitle,
+          shortlistedAt: shortlistedSubmission.shortlistedAt
+        };
+      }
+    }
+
+    return res.status(200).json({
+      eligible: isShortlisted,
+      message: isShortlisted 
+        ? 'You are eligible to submit to Round 2' 
+        : 'Your team was not shortlisted for Round 2',
+      round2Started: true,
+      shortlistingDetails
+    });
+
+  } catch (error) {
+    console.error('🔍 Error checking Round 2 eligibility:', error);
+    return res.status(500).json({ 
+      message: 'Failed to check eligibility', 
+      error: error.message 
+    });
   }
 };
 
@@ -2804,3 +3091,155 @@ exports.getShortlistedSubmissions = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch shortlisted submissions' });
   }
 };
+
+// Helper function to send submission assignment notification email
+async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, submissions, roundName) {
+  console.log('🔍 DEBUG: Starting sendSubmissionAssignmentEmail', {
+    judgeEmail,
+    judgeName,
+    hackathonTitle: hackathon.title,
+    submissionsCount: submissions.length,
+    roundName,
+    hasEmailCredentials: !!(process.env.MAIL_USER && process.env.MAIL_PASS)
+  });
+
+  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+    console.log('🔍 DEBUG: Email credentials not configured, skipping submission assignment notification');
+    return;
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS
+      }
+    });
+
+    console.log('🔍 DEBUG: Email transporter created successfully');
+
+    // Get submission details
+    const Submission = require('../model/SubmissionModel');
+    const submissionDetails = await Submission.find({ 
+      _id: { $in: submissions } 
+    }).populate('team', 'name');
+
+    console.log('🔍 DEBUG: Fetched submission details', {
+      requestedSubmissions: submissions.length,
+      foundSubmissions: submissionDetails.length,
+      submissionIds: submissions
+    });
+
+    const submissionList = submissionDetails.map(sub => ({
+      title: sub.projectTitle || sub.title || 'Untitled Project',
+      team: sub.team?.name || 'Unknown Team',
+      hasPPT: !!sub.pptFile,
+      submittedAt: new Date(sub.submittedAt).toLocaleDateString()
+    }));
+
+    const pptSubmissions = submissionList.filter(sub => sub.hasPPT);
+    const projectSubmissions = submissionList.filter(sub => !sub.hasPPT);
+
+    console.log('🔍 DEBUG: Processed submission list', {
+      totalSubmissions: submissionList.length,
+      pptSubmissions: pptSubmissions.length,
+      projectSubmissions: projectSubmissions.length,
+      pptSubmissionsList: pptSubmissions.map(s => ({ title: s.title, team: s.team })),
+      projectSubmissionsList: projectSubmissions.map(s => ({ title: s.title, team: s.team }))
+    });
+
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #f59e0b 0%, #667eea 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">⚖️ New Submissions Assigned</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">You have new submissions to evaluate for ${hackathon.title}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333; margin-top: 0;">Hello ${judgeName || 'Judge'}! 👋</h2>
+          
+          <p style="color: #555; line-height: 1.6;">
+            You have been assigned <strong>${submissions.length} new submission(s)</strong> to evaluate for the <strong>${roundName}</strong> round of <strong>${hackathon.title}</strong>.
+          </p>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+            <h3 style="color: #f59e0b; margin: 0 0 15px 0;">📋 Assignment Summary</h3>
+            <p style="color: #666; margin: 0 0 5px 0;"><strong>Hackathon:</strong> ${hackathon.title}</p>
+            <p style="color: #666; margin: 0 0 5px 0;"><strong>Round:</strong> ${roundName}</p>
+            <p style="color: #666; margin: 0 0 5px 0;"><strong>Total Submissions:</strong> ${submissions.length}</p>
+            <p style="color: #666; margin: 0 0 5px 0;"><strong>PPT Submissions:</strong> ${pptSubmissions.length}</p>
+            <p style="color: #666; margin: 0;"><strong>Project Submissions:</strong> ${projectSubmissions.length}</p>
+          </div>
+
+          ${pptSubmissions.length > 0 ? `
+            <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="color: #0c5460; margin: 0 0 10px 0;">📊 PPT Submissions (${pptSubmissions.length})</h4>
+              <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+                ${pptSubmissions.map(sub => `
+                  <li><strong>${sub.title}</strong> - Team: ${sub.team} (Submitted: ${sub.submittedAt})</li>
+                `).join('')}
+              </ul>
+            </div>
+          ` : ''}
+
+          ${projectSubmissions.length > 0 ? `
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="color: #856404; margin: 0 0 10px 0;">💻 Project Submissions (${projectSubmissions.length})</h4>
+              <ul style="color: #856404; margin: 0; padding-left: 20px;">
+                ${projectSubmissions.map(sub => `
+                  <li><strong>${sub.title}</strong> - Team: ${sub.team} (Submitted: ${sub.submittedAt})</li>
+                `).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="http://localhost:5173/judge-dashboard" style="background: linear-gradient(135deg, #f59e0b 0%, #667eea 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              🚀 Access Judge Dashboard
+            </a>
+          </div>
+          
+          <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #0c5460; margin: 0 0 10px 0;">📝 Evaluation Guidelines:</h4>
+            <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+              <li>Review each submission thoroughly before scoring</li>
+              <li>Consider innovation, technical implementation, and presentation quality</li>
+              <li>Provide constructive feedback to help teams improve</li>
+              <li>Ensure fair and consistent evaluation across all submissions</li>
+            </ul>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+            Thank you for your contribution to making this hackathon a success!
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+          <p>© 2024 HackZen. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    console.log('🔍 DEBUG: Email template generated, sending email to:', judgeEmail);
+
+    await transporter.sendMail({
+      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
+      to: judgeEmail,
+      subject: `⚖️ New Submissions Assigned - ${hackathon.title} (${roundName})`,
+      html: emailTemplate
+    });
+
+    console.log(`✅ Submission assignment notification sent successfully to ${judgeEmail}`);
+  } catch (emailError) {
+    console.error('❌ Submission assignment email sending failed:', emailError);
+    console.error('❌ Email error details:', {
+      judgeEmail,
+      judgeName,
+      hackathonTitle: hackathon.title,
+      submissionsCount: submissions.length,
+      error: emailError.message,
+      stack: emailError.stack
+    });
+  }
+}

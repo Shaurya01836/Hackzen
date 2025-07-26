@@ -79,26 +79,29 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
       try {
         const token = localStorage.getItem("token");
         
-        console.log('🔍 JudgeAssignedProjectsGallery - Fetching assignments for hackathonId:', hackathonId);
-        
         // Fetch judge's assigned submissions
         const response = await axios.get(`/api/judge-management/my-assignments`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
         const data = response.data;
-        console.log('🔍 JudgeAssignedProjectsGallery - Response data:', data);
-        
         const submissions = data.submissions || [];
-        console.log('🔍 JudgeAssignedProjectsGallery - All submissions:', submissions);
         
         // Filter submissions for this specific hackathon
         const hackathonSubmissions = submissions.filter(sub => {
-          console.log(`🔍 Checking submission ${sub._id} - hackathonId: ${sub.hackathonId}, expected: ${hackathonId}`);
-          return sub.hackathonId === hackathonId;
+          // Check both hackathonId and hackathonId._id (in case it's populated)
+          const submissionHackathonId = sub.hackathonId?._id || sub.hackathonId;
+          const submissionHackathonIdStr = submissionHackathonId?.toString();
+          const expectedHackathonIdStr = hackathonId?.toString();
+          
+          // If no hackathonId is provided, show all submissions
+          if (!hackathonId) {
+            return true;
+          }
+          
+          const matches = submissionHackathonId === hackathonId || submissionHackathonIdStr === expectedHackathonIdStr;
+          return matches;
         });
-        
-        console.log('🔍 JudgeAssignedProjectsGallery - Filtered submissions for hackathon:', hackathonSubmissions);
 
         // Transform submissions into project format
         const projects = hackathonSubmissions.map(submission => {
@@ -139,13 +142,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         setAssignedSubmissions(projects);
       } catch (err) {
         console.error("Error fetching assigned submissions", err);
-        console.error("🔍 Error details:", {
-          message: err.message,
-          status: err.response?.status,
-          data: err.response?.data,
-          config: err.config
-        });
-        console.error("🔍 Full error response data:", JSON.stringify(err.response?.data, null, 2));
         setAssignedSubmissions([]);
       } finally {
         setLoading(false);
@@ -168,7 +164,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
 
         if (currentUser.role === "judge") {
           // TODO: Implement judge scores endpoint
-          console.log('🔍 JudgeAssignedProjectsGallery - Judge scores endpoint not implemented yet');
+  
           setJudgeScores([]); // Empty array for now
         }
       } catch (err) {

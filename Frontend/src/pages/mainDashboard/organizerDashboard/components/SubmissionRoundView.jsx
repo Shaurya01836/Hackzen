@@ -1,122 +1,261 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { Eye, Users, Award, FileText, RefreshCw } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
-import { ProjectDetail } from "../../../../components/CommonUI/ProjectDetail";
-import { useNavigate } from "react-router-dom";
-import { useToast } from "../../../../hooks/use-toast";
-import axios from "axios";
-import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
+"use client";
+import React, { useState, useEffect } from "react";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
+import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "../../../../components/DashboardUI/avatar";
+import { toast } from "../../../../hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel
+} from "../../../../components/DashboardUI/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
+// Removed circular import - this component is SubmissionRoundView
+import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
 
-const PAGE_SIZE = 10;
+// Mock stages data
+const stages = [
+  { id: 'reg', label: 'All Registrations', icon: 'REG', status: 'active' },
+  { id: 'r1', label: 'Submission Round 1', icon: 'R1', status: 'in-progress' },
+  { id: 'r2', label: 'Submission Round 2', icon: 'R2', status: 'pending' },
+];
 
-export default function SubmissionRoundView({ roundId, roundName, roundDescription, roundStart, roundEnd, roundIndex, roundType, teams, submissions, judgeAssignments = { platform: [], sponsor: [], hybrid: [] }, hackathonId, onAssignmentComplete }) {
-  console.log('🔍 DEBUG: SubmissionRoundView render', { 
-    submissionsLength: submissions.length, 
-    roundIndex,
-    hackathonId,
-    onAssignmentComplete: !!onAssignmentComplete
-  });
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRows, setSelectedRows] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [scoresMap, setScoresMap] = useState({});
+export default function JudgeManagementAssignments({
+  allJudgeAssignments = [],
+  hackathon,
+  teams = [],
+  fetchJudgeAssignments,
+  submissions = [],
+}) {
+  const [unassigning, setUnassigning] = useState({});
+  const [selectedStage, setSelectedStage] = useState(stages[0].id);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [selectedSubmissions, setSelectedSubmissions] = useState(new Set());
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [allEvaluators, setAllEvaluators] = useState([]);
+  const [assignmentOverview, setAssignmentOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [availableJudges, setAvailableJudges] = useState([]);
+  const [deletingJudge, setDeletingJudge] = useState(null);
+  const [judgeDetailsOpen, setJudgeDetailsOpen] = useState(false);
+  const [selectedJudge, setSelectedJudge] = useState(null);
+  const [judgeDetailsModalOpen, setJudgeDetailsModalOpen] = useState(false);
+  const [loadingAvailableJudges, setLoadingAvailableJudges] = useState(false);
   const [submissionScores, setSubmissionScores] = useState({});
 
-  const navigate = useNavigate();
-  const { toast } = useToast();
 
-  // Get judge count for a submission - moved before useMemo to fix hoisting issue
-  const getJudgeCountForSubmission = (submissionId) => {
-    let count = 0;
-    
-    // Check all judge assignment types
-    Object.values(judgeAssignments).forEach(assignmentArray => {
-      if (Array.isArray(assignmentArray)) {
-        assignmentArray.forEach(assignment => {
-          if (assignment.assignedRounds) {
-            assignment.assignedRounds.forEach(round => {
-              if (round.assignedSubmissions && round.assignedSubmissions.includes(submissionId)) {
-                count++;
-              }
-            });
-          }
-        });
-      }
-    });
-    
-    console.log(`🔍 DEBUG: getJudgeCountForSubmission(${submissionId}) = ${count}`);
-    return count;
-  };
 
-  // Memoized roundSubmissions using the submissions prop
-  const roundSubmissions = useMemo(() => {
-    const filtered = submissions.filter(sub => {
-      const matchesRound = typeof roundIndex === 'number' && sub.roundIndex === roundIndex;
-      const isSubmitted = sub.status && sub.status.toLowerCase() === 'submitted';
-      return matchesRound && isSubmitted;
-    });
-    return filtered;
-  }, [submissions, roundIndex]);
 
-  // Separate assigned and unassigned submissions
-  const { assignedSubmissions, unassignedSubmissions } = useMemo(() => {
-    const assigned = [];
-    const unassigned = [];
-    
-    roundSubmissions.forEach(sub => {
-      const judgeCount = getJudgeCountForSubmission(sub._id);
-      if (judgeCount > 0) {
-        assigned.push(sub);
-      } else {
-        unassigned.push(sub);
-      }
-    });
-    
-    return { assignedSubmissions: assigned, unassignedSubmissions: unassigned };
-  }, [roundSubmissions, judgeAssignments]);
-
-  // Debug logs for submissions and roundSubmissions
+  // Fetch assignment overview when component mounts or hackathon changes
   useEffect(() => {
-    console.log('DEBUG: all submissions', submissions);
-  }, [submissions]);
-  useEffect(() => {
-    console.log('DEBUG: roundSubmissions', roundSubmissions);
-  }, [roundSubmissions]);
-
-  // Fetch evaluators when component mounts
-  useEffect(() => {
-    if (hackathonId) {
-      fetchEvaluators();
+    if (hackathon?._id || hackathon?.id) {
+      fetchAssignmentOverview();
     }
-  }, [hackathonId]);
+  }, [hackathon?._id, hackathon?.id]);
 
-  // Fetch scores for submissions when they change
+  // Refresh assignment overview periodically to ensure data is current
   useEffect(() => {
-    if (unassignedSubmissions.length > 0 || assignedSubmissions.length > 0) {
+    if (hackathon?._id || hackathon?.id) {
+      const interval = setInterval(() => {
+        fetchAssignmentOverview();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [hackathon?._id, hackathon?.id]);
+
+  // Fetch scores when assignment overview changes
+  useEffect(() => {
+    if (assignmentOverview) {
       fetchSubmissionScores();
     }
-  }, [unassignedSubmissions, assignedSubmissions]);
+  }, [assignmentOverview]);
 
-  const fetchEvaluators = async () => {
+  const fetchAssignmentOverview = async () => {
+    const hackathonId = hackathon?._id || hackathon?.id;
+    if (!hackathonId) {
+      return;
+    }
+    
+    setOverviewLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/evaluators`, {
+      
+      const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
-        setAllEvaluators(data.evaluators || []);
+        setAssignmentOverview(data);
       } else {
-        console.error('Failed to fetch evaluators');
+        const errorText = await response.text();
+        console.error('Failed to fetch assignment overview:', response.status, errorText);
+        toast({
+          title: 'Error',
+          description: `Failed to fetch assignment overview. Status: ${response.status}`,
+          variant: 'destructive',
+        });
       }
     } catch (error) {
-      console.error('Error fetching evaluators:', error);
+      console.error('Error fetching assignment overview:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch assignment overview. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOverviewLoading(false);
     }
+  };
+
+  // Helper: get round name from stage id
+  const getRoundName = (stageId) => {
+    if (stageId === 'reg') return 'All Registrations';
+    if (stageId === 'r1') return 'Submission Round 1';
+    if (stageId === 'r2') return 'Submission Round 2';
+    return stageId;
+  };
+
+  // Helper: get round details (mock for now)
+  const getRoundDetails = (stageId) => {
+    if (stageId === 'reg') return 'All teams that have registered.';
+    if (stageId === 'r1') return 'Teams that have submitted in Submission Round 1.';
+    if (stageId === 'r2') return 'Teams that have submitted in Submission Round 2.';
+    return '';
+  };
+
+  // Filter teams by selected stage (round)
+  let teamsToShow = teams;
+  if (selectedStage === 'r1' || selectedStage === 'r2') {
+    // Find all team IDs that have a submission in this round
+    const roundName = getRoundName(selectedStage);
+    const submittedTeamIds = submissions
+      .filter(sub => (sub.round === roundName || sub.roundName === roundName || sub.round?.name === roundName))
+      .map(sub => sub.team?._id || sub.teamId || sub.teamName)
+      .filter(Boolean);
+    teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
+  }
+
+  const handleUnassignAll = async (assignmentId) => {
+    setUnassigning(prev => ({ ...prev, [assignmentId]: true }));
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/judge-management/judge-assignments/${assignmentId}/assign-teams`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ teamIds: [] }),
+      });
+      if (res.ok) {
+        fetchJudgeAssignments?.();
+        toast({ title: "All teams unassigned successfully!" });
+      } else {
+        toast({ title: "Failed to unassign teams", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Failed to unassign teams", variant: "destructive" });
+    } finally {
+      setUnassigning(prev => ({ ...prev, [assignmentId]: false }));
+    }
+  };
+
+  const handleJudgeClick = (judge) => {
+    setSelectedJudge(judge);
+    setJudgeDetailsModalOpen(true);
+  };
+
+  const getJudgeAssignmentStats = (judge) => {
+    const totalSubmissions = judge.assignedRounds?.reduce((total, round) => 
+      total + (round.assignedSubmissions?.length || 0), 0) || 0;
+    
+    const evaluatedSubmissions = judge.assignedRounds?.reduce((total, round) => {
+      const evaluatedInRound = round.assignedSubmissions?.filter(subId => {
+        const submission = submissions.find(s => s._id === subId);
+        return submission?.scores?.length > 0;
+      }).length || 0;
+      return total + evaluatedInRound;
+    }, 0) || 0;
+
+    return { totalSubmissions, evaluatedSubmissions };
+  };
+
+  const getJudgeAssignedTeams = (judge) => {
+    const assignedTeamIds = new Set();
+    judge.assignedRounds?.forEach(round => {
+      round.assignedSubmissions?.forEach(subId => {
+        const submission = submissions.find(s => s._id === subId);
+        if (submission?.teamId) {
+          assignedTeamIds.add(submission.teamId);
+        }
+      });
+    });
+    
+    return teams.filter(team => assignedTeamIds.has(team._id));
+  };
+
+  const handleDeleteJudge = async (judgeAssignment) => {
+    if (!confirm(`Are you sure you want to delete judge "${judgeAssignment.judge.email}"? This will also remove all their assigned submissions and scores.`)) {
+      return;
+    }
+
+    setDeletingJudge(judgeAssignment._id);
+        try {
+          const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathon?._id || hackathon?.id}/judges/${judgeAssignment._id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        toast({ 
+          title: "Judge deleted successfully!", 
+          description: `Removed ${result.deletedJudge.assignmentsRemoved} assignments and ${result.deletedJudge.scoresRemoved} scores.`
+        });
+        fetchJudgeAssignments?.();
+      } else {
+        const error = await res.json();
+        toast({ 
+          title: "Failed to delete judge", 
+          description: error.message || "An error occurred while deleting the judge.",
+          variant: "destructive" 
+        });
+      }
+    } catch (err) {
+      toast({ 
+        title: "Failed to delete judge", 
+        description: "Network error occurred. Please try again.",
+        variant: "destructive" 
+      });
+    } finally {
+      setDeletingJudge(null);
+    }
+  };
+
+  const formatDate = (date) => date ? new Date(date).toLocaleString() : '--';
+
+  // Calculate average score for a submission
+  const getAverageScore = (submissionId) => {
+    const scores = submissionScores[submissionId] || [];
+    if (scores.length === 0) return null;
+    
+    const CRITERIA = ["innovation", "impact", "technicality", "presentation"];
+    const totalScore = scores.reduce((sum, score) => {
+      const criteriaScore = CRITERIA.reduce((acc, criteria) => acc + (score.scores?.[criteria] || 0), 0);
+      return sum + (criteriaScore / CRITERIA.length);
+    }, 0);
+    
+    return (totalScore / scores.length).toFixed(2);
   };
 
   // Fetch scores for submissions
@@ -124,16 +263,16 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
     try {
       const token = localStorage.getItem('token');
       const allSubmissionIds = [
-        ...unassignedSubmissions.map(sub => sub._id),
-        ...assignedSubmissions.map(sub => sub._id)
+        ...(assignmentOverview?.unassignedSubmissions?.map(sub => sub._id) || []),
+        ...(assignmentOverview?.assignedSubmissions?.map(sub => sub._id) || [])
       ];
       
       if (allSubmissionIds.length === 0) return;
 
       const response = await fetch(`http://localhost:3000/api/scores/submissions-scores`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+          headers: {
+            'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ submissionIds: allSubmissionIds })
@@ -158,572 +297,1049 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
     }
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(roundSubmissions.length / PAGE_SIZE);
-  const paginatedSubmissions = useMemo(() => {
-    return roundSubmissions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  }, [roundSubmissions, currentPage]);
-
-  useEffect(() => {
-    // Fetch scores for all paginated submissions
-    async function fetchScores() {
-      const map = {};
-      await Promise.all(paginatedSubmissions.map(async (sub) => {
-        try {
-          const token = localStorage.getItem("token");
-          const res = await axios.get(`/api/scores/submission/${sub._id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const scores = Array.isArray(res.data) ? res.data : [];
-          if (scores.length > 0) {
-            // Calculate average as in ProjectScoresList
-            const CRITERIA = ["innovation", "impact", "technicality", "presentation"];
-            const avg = (
-              scores.reduce((sum, s) => {
-                const total = CRITERIA.reduce((acc, c) => acc + (s.scores?.[c] || 0), 0);
-                return sum + total / CRITERIA.length;
-              }, 0) / scores.length
-            ).toFixed(2);
-            map[sub._id] = avg;
-          }
-        } catch {}
-      }));
-      setScoresMap(map);
-    }
-    fetchScores();
-  }, [paginatedSubmissions]);
-
-  // Improved team/leader extraction
-  const getTeamAndLeader = (sub) => {
-    let team = null;
-    // Try to match by _id (string/number mismatch safe)
-    if (sub.team && typeof sub.team === 'object') team = sub.team;
-    else if (sub.teamId) team = teams.find(t => t._id == sub.teamId);
-    else if (sub.teamName) team = teams.find(t => t.name === sub.teamName);
-    // Fallbacks if not found
-    let teamName = team?.name || sub.teamName || sub.teamId || 'No Team';
-    let leaderName = team?.leader?.name || team?.leader || sub.leaderName || sub.leader;
-    if (!leaderName) {
-      if (sub.submittedBy && (sub.submittedBy.name || sub.submittedBy.email)) {
-        leaderName = sub.submittedBy.name || sub.submittedBy.email;
+  // Fetch available judges
+  // Handle submission selection
+  const handleSubmissionSelection = (submissionId, isSelected) => {
+    setSelectedSubmissions(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(submissionId);
       } else {
-        leaderName = '--';
+        newSet.delete(submissionId);
       }
-    }
-    return { teamName, leaderName };
+      return newSet;
+    });
   };
 
-  const formatDate = (date) => date ? new Date(date).toLocaleString() : '--';
-
-  // Calculate average score for a submission
-  const getAverageScore = (submissionId) => {
-    const scores = submissionScores[submissionId] || [];
-    if (scores.length === 0) return null;
-    
-    const CRITERIA = ["innovation", "impact", "technicality", "presentation"];
-    const totalScore = scores.reduce((sum, score) => {
-      const criteriaScore = CRITERIA.reduce((acc, criteria) => acc + (score.scores?.[criteria] || 0), 0);
-      return sum + (criteriaScore / CRITERIA.length);
-    }, 0);
-    
-    return (totalScore / scores.length).toFixed(2);
-  };
-
-
-
-  // Selection logic
-  const isAllSelected = paginatedSubmissions.length > 0 && paginatedSubmissions.every(sub => selectedRows.includes(sub._id));
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedRows([
-        ...selectedRows,
-        ...paginatedSubmissions.map(sub => sub._id).filter(id => !selectedRows.includes(id))
-      ]);
-    } else {
-      setSelectedRows(selectedRows.filter(id => !paginatedSubmissions.map(sub => sub._id).includes(id)));
-    }
-  };
-  const handleSelectRow = (id) => {
-    setSelectedRows(selectedRows.includes(id)
-      ? selectedRows.filter(rowId => rowId !== id)
-      : [...selectedRows, id]
-    );
-  };
-
-  const handleShortlistSelected = async () => {
-    if (selectedRows.length === 0) {
+  // Handle bulk assignment
+  const handleBulkAssignment = () => {
+    if (selectedSubmissions.size === 0) {
       toast({
-        title: 'No submissions selected',
-        description: 'Please select at least one submission to shortlist.',
-        variant: 'destructive',
+        title: "No submissions selected",
+        description: "Please select at least one submission to assign.",
+        variant: "destructive",
       });
       return;
     }
+    setAssignModalOpen(true);
+  };
 
+  const fetchAvailableJudges = async () => {
+    const hackathonId = hackathon?._id || hackathon?.id;
+    if (!hackathonId) return;
+    
+    setLoadingAvailableJudges(true);
     try {
       const token = localStorage.getItem('token');
-      const promises = selectedRows.map(submissionId =>
-        fetch(`/api/judge-management/submissions/${submissionId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: 'shortlisted' })
-        })
-      );
-
-      const responses = await Promise.all(promises);
-      const failedCount = responses.filter(r => !r.ok).length;
-      const successCount = responses.length - failedCount;
-
-      if (successCount > 0) {
-        toast({
-          title: 'Shortlist successful',
-          description: `Successfully shortlisted ${successCount} submission(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}.`,
-          variant: 'default',
-        });
-        setSelectedRows([]);
-        // Refresh the submissions list
-        window.location.reload();
+      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/available-judges`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableJudges(data.evaluators || []);
       } else {
-        throw new Error('All shortlist operations failed');
+        console.error('Failed to fetch available judges');
       }
     } catch (error) {
-      console.error('Error shortlisting submissions:', error);
-      toast({
-        title: 'Shortlist failed',
-        description: 'Failed to shortlist selected submissions.',
-        variant: 'destructive',
-      });
+      console.error('Error fetching available judges:', error);
+    } finally {
+      setLoadingAvailableJudges(false);
     }
   };
 
-  const handleRejectSelected = async () => {
-    if (selectedRows.length === 0) {
-      toast({
-        title: 'No submissions selected',
-        description: 'Please select at least one submission to reject.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  // Fetch available judges when component mounts
+  React.useEffect(() => {
+    fetchAvailableJudges();
+  }, [hackathon?._id]);
 
-    try {
-      const token = localStorage.getItem('token');
-      const promises = selectedRows.map(submissionId =>
-        fetch(`/api/judge-management/submissions/${submissionId}/status`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: 'rejected' })
-        })
-      );
+  // Find the round object for the selected stage
+  let roundObj = null;
+  if ((selectedStage === 'r1' || selectedStage === 'r2') && hackathon?.rounds) {
+    const roundName = getRoundName(selectedStage);
+    roundObj = hackathon.rounds.find(r => r.name === roundName);
+  }
 
-      const responses = await Promise.all(promises);
-      const failedCount = responses.filter(r => !r.ok).length;
-      const successCount = responses.length - failedCount;
-
-      if (successCount > 0) {
-        toast({
-          title: 'Reject successful',
-          description: `Successfully rejected ${successCount} submission(s)${failedCount > 0 ? `, ${failedCount} failed` : ''}.`,
-          variant: 'default',
-        });
-        setSelectedRows([]);
-        // Refresh the submissions list
-        window.location.reload();
-      } else {
-        throw new Error('All reject operations failed');
-      }
-    } catch (error) {
-      console.error('Error rejecting submissions:', error);
-      toast({
-        title: 'Reject failed',
-        description: 'Failed to reject selected submissions.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Determine if the round has started
-  const now = new Date();
-  const roundStartDate = roundStart ? new Date(roundStart) : null;
-  const roundEndDate = roundEnd ? new Date(roundEnd) : null;
-  const hasStarted = !roundStartDate || now >= roundStartDate;
+  // Format round dates for description
+  let roundDescription = getRoundDetails(selectedStage);
+  if (roundObj) {
+    roundDescription += `\nStart: ${formatDate(roundObj.startDate)}\nEnd: ${formatDate(roundObj.endDate)}`;
+  }
 
   return (
     <div className="space-y-6">
-      {/* Round Information */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{roundName}</h2>
-            <p className="text-gray-600 mt-1">{roundDescription}</p>
-            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-              <span>Start: {formatDate(roundStart)}</span>
-              <span>End: {formatDate(roundEnd)}</span>
+      {/* Stage Selection */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {stages.map((stage) => (
+          <button
+            key={stage.id}
+            onClick={() => setSelectedStage(stage.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              selectedStage === stage.id
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {stage.label}
+          </button>
+        ))}
             </div>
+
+      {/* Show Submission Round 1 or 2 view if selected */}
+      {(selectedStage === 'r1' || selectedStage === 'r2') ? (
+        <div className="space-y-6">
+          {/* Round Header */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+              {getRoundName(selectedStage)}
+            </h2>
+            <p className="text-gray-500 text-base">{roundDescription}</p>
           </div>
-          <div className="text-right">
-            <div className="text-3xl font-bold text-blue-600">{roundSubmissions.length}</div>
-            <div className="text-sm text-gray-500">Total Submissions</div>
+          
+          {/* Submission Round Content */}
+          <div className="space-y-6">
+            {/* Assignment Overview Cards */}
+            {assignmentOverview && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <Card className="border-2 border-blue-200 bg-blue-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-blue-700">
+                      <Users className="w-5 h-5" />
+                      Active Judges
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="text-lg font-bold text-blue-700">{assignmentOverview.judges?.length || 0}</div>
+                    <div className="text-sm text-blue-600">
+                      {assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0} assigned projects
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-orange-200 bg-orange-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-orange-700">
+                      <FileText className="w-5 h-5" />
+                      Unassigned Projects
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="text-lg font-bold text-orange-700">{assignmentOverview.unassignedSubmissions?.length || 0}</div>
+                    <div className="text-sm text-orange-600">
+                      Need judge assignment
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-green-200 bg-green-50/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-green-700">
+                      <CheckCircle className="w-5 h-5" />
+                      Total Submissions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="text-lg font-bold text-green-700">
+                      {(assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0) +
+                      (assignmentOverview.unassignedSubmissions?.length || 0)}
+                    </div>
+                    <div className="text-sm text-green-600">
+                      All submissions
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Assigned Submissions Table */}
+            <div className="mb-6">
+              <Card className="border-2 border-green-200 bg-green-50/30">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-green-700">
+                        <CheckCircle className="w-5 h-5" />
+                        Assigned Submissions
+                      </CardTitle>
+                      <CardDescription className="text-green-600">
+                        Submissions already assigned to Judges
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-600">{assignmentOverview?.assignedSubmissions?.length || 0}</div>
+                      <div className="text-sm text-gray-500">Assigned to Judges</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  {assignmentOverview?.assignedSubmissions?.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASSIGNED JUDGES</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SCORE</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACTIONS</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {assignmentOverview.assignedSubmissions.map((submission) => (
+                            <tr key={submission._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="font-medium text-gray-900">{submission.teamName}</div>
+                                  <div className="text-sm text-gray-500">{submission.teamId}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {submission.projectTitle || submission.title || 'Untitled Project'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <FileText className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm text-gray-900">PPT</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-4 h-4 text-gray-400" />
+                                  <span className="text-sm text-gray-900">
+                                    {submission.assignedJudges?.length || 0} judge{submission.assignedJudges?.length !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {submission.averageScore ? (
+                                  <div className="text-sm font-medium text-green-600">
+                                    {submission.averageScore}/10
+                                  </div>
+                                ) : (
+                                  <div className="text-sm italic text-gray-500">
+                                    Not evaluated yet
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <button className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                  <Eye className="w-4 h-4" />
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>No assigned submissions</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+                         </div>
+
+             {/* Unassigned Submissions Section */}
+             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+               <div className="p-6 border-b border-gray-200">
+                 <div className="flex items-center justify-between">
+                   <div>
+                     <h3 className="text-lg font-semibold text-gray-900">Unassigned Submissions</h3>
+                     <p className="text-sm text-gray-600">Submissions that need to be assigned to judges</p>
+                   </div>
+                   <div className="text-right">
+                     <div className="text-2xl font-bold text-yellow-600">{assignmentOverview?.unassignedSubmissions?.length || 0}</div>
+                     <div className="text-sm text-gray-500">Pending Assignment</div>
+                   </div>
+                 </div>
+               </div>
+               <div className="p-6">
+                 {assignmentOverview?.unassignedSubmissions?.length > 0 ? (
+                   <>
+                     <div className="overflow-x-auto">
+                       <table className="min-w-full divide-y divide-gray-200">
+                         <thead className="bg-gray-50">
+                           <tr>
+                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                               <input
+                                 type="checkbox"
+                                 checked={selectedSubmissions.size === assignmentOverview.unassignedSubmissions.length}
+                                 onChange={(e) => {
+                                   if (e.target.checked) {
+                                     setSelectedSubmissions(new Set(assignmentOverview.unassignedSubmissions.map(s => s._id)));
+                                   } else {
+                                     setSelectedSubmissions(new Set());
+                                   }
+                                 }}
+                                 className="h-4 w-4 text-blue-600 rounded"
+                               />
+                             </th>
+                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
+                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
+                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
+                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STATUS</th>
+                           </tr>
+                         </thead>
+                         <tbody className="bg-white divide-y divide-gray-200">
+                           {assignmentOverview.unassignedSubmissions.map((submission) => (
+                             <tr key={submission._id} className="hover:bg-gray-50">
+                               <td className="px-6 py-4 whitespace-nowrap">
+                                 <input
+                                   type="checkbox"
+                                   checked={selectedSubmissions.has(submission._id)}
+                                   onChange={(e) => handleSubmissionSelection(submission._id, e.target.checked)}
+                                   className="h-4 w-4 text-blue-600 rounded"
+                                 />
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap">
+                                 <div>
+                                   <div className="font-medium text-gray-900">{submission.teamName}</div>
+                                   <div className="text-sm text-gray-500">{submission.teamId}</div>
+                                 </div>
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap">
+                                 <div className="text-sm text-gray-900">
+                                   {submission.projectTitle || submission.title || 'Untitled Project'}
+                                 </div>
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap">
+                                 <div className="flex items-center gap-2">
+                                   <FileText className="w-4 h-4 text-gray-400" />
+                                   <span className="text-sm text-gray-900">PPT</span>
+                                 </div>
+                               </td>
+                               <td className="px-6 py-4 whitespace-nowrap">
+                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                   Unassigned
+                                 </span>
+                               </td>
+                             </tr>
+                           ))}
+                         </tbody>
+                       </table>
+                     </div>
+                     {/* Assignment Actions for Unassigned */}
+                     {selectedSubmissions.size > 0 && (
+                       <div className="flex flex-wrap gap-4 mt-6 items-center">
+                         <Button
+                           onClick={handleBulkAssignment}
+                           className="bg-blue-600 hover:bg-blue-700 text-white"
+                           disabled={selectedSubmissions.size === 0}
+                         >
+                           <Users className="w-4 h-4 mr-2" />
+                           Assign to Judges ({selectedSubmissions.size} selected)
+                         </Button>
+                         <span className="text-sm text-gray-500">
+                           Select judges to assign these submissions
+                         </span>
+                       </div>
+                     )}
+                   </>
+                 ) : (
+                   // Empty state for no unassigned submissions
+                   <div className="text-center py-12">
+                     <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                       <CheckCircle className="w-8 h-8 text-green-600" />
+                     </div>
+                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Unassigned Submissions</h3>
+                     <p className="text-sm text-gray-500 mb-4">
+                       All submissions have been assigned to judges for evaluation.
+                     </p>
+                     <div className="text-xs text-gray-400">
+                       Great job! All submissions are now being reviewed by the judges.
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
+           </div>
+         </div>
+      ) : (
+        <>
+          {/* Show round name and details above the table for other stages */}
+          <div className="mb-4">
+            <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+              {getRoundName(selectedStage)}
+            </h2>
+            <p className="text-gray-500 text-base">{getRoundDetails(selectedStage)}</p>
+          </div>
+          
+          {/* Team Management Section */}
+          <Card className="p-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gavel className="w-5 h-5" />
+                Team Management
+              </CardTitle>
+              <CardDescription>
+                View and manage teams across different stages of the hackathon.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Teams Table */}
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leader</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamsToShow.length === 0 ? (
+                      <tr><td colSpan={5} className="text-center py-8 text-gray-400">No teams found.</td></tr>
+                    ) : teamsToShow.map((team, idx) => (
+                      <tr key={team._id} className="border-b hover:bg-indigo-50 transition-all">
+                        <td className="px-6 py-4 font-medium">{idx + 1}</td>
+                        <td className="px-6 py-4">
+                          <button className="flex items-center gap-2 font-semibold text-indigo-700 hover:underline" onClick={() => setSelectedTeam(team)}>
+                            <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-white" style={{ background: '#'+((1<<24)*Math.abs(Math.sin(team.name.length))).toString(16).slice(0,6) }}>{team.name.charAt(0).toUpperCase()}</div>
+                            {team.name}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-medium text-gray-900">{team.leader?.name}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 17l-4 4m0 0l-4-4m4 4V3" /></svg>
+                            REG <span className="text-green-500">→</span> R1
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Current Assignments Table */}
+          <Card className="p-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Gavel className="w-5 h-5" />
+                Current Judge Assignments
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchAssignmentOverview}
+                  disabled={overviewLoading}
+                  className="ml-auto"
+                >
+                  <RefreshCw className={`w-4 h-4 ${overviewLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                if (onAssignmentComplete) {
-                  onAssignmentComplete();
-                }
+                    setSelectedSubmissions(new Set());
+                    fetchAssignmentOverview();
               }}
-              className="mt-2"
+                  disabled={overviewLoading}
             >
-              <RefreshCw className="w-4 h-4 mr-1" />
-              Refresh Assignments
+                  Force Refresh
             </Button>
+              </CardTitle>
+              <CardDescription>
+                View current judge assignments and their assigned projects/teams for this hackathon.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Assignment Summary */}
+              {assignmentOverview && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-blue-600" />
           </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Active Judges</div>
+                        <div className="text-lg font-bold text-blue-700">{assignmentOverview.judges?.length || 0}</div>
         </div>
-
-        {/* Assignment Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-blue-900">Assigned</span>
             </div>
-            <p className="text-2xl font-bold text-blue-700">{assignedSubmissions.length}</p>
-            <p className="text-sm text-blue-600">To Judges</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-green-600" />
           </div>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <Award className="w-5 h-5 text-yellow-600" />
-              <span className="font-semibold text-yellow-900">Unassigned</span>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Assigned Projects</div>
+                        <div className="text-lg font-bold text-green-700">
+                          {assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0}
             </div>
-            <p className="text-2xl font-bold text-yellow-700">{unassignedSubmissions.length}</p>
-            <p className="text-sm text-yellow-600">Need Assignment</p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-900">Evaluated</span>
             </div>
-            <p className="text-2xl font-bold text-green-700">
-              {assignedSubmissions.filter(sub => scoresMap[sub._id]).length}
-            </p>
-            <p className="text-sm text-green-600">With Scores</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-orange-600" />
       </div>
+                      <div>
+                        <div className="text-sm font-medium text-gray-600">Unassigned Projects</div>
+                        <div className="text-lg font-bold text-orange-700">{assignmentOverview.unassignedSubmissions?.length || 0}</div>
         </div>
       </div>
-
-      {/* Unassigned Submissions Section */}
-      {unassignedSubmissions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                        <Award className="w-5 h-5 text-purple-600" />
+                      </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Unassigned Submissions</h3>
-                <p className="text-sm text-gray-600">Submissions that need to be assigned to judges</p>
+                        <div className="text-sm font-medium text-gray-600">Total Projects</div>
+                        <div className="text-lg font-bold text-purple-700">
+                          {(assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0) + 
+                           (assignmentOverview.unassignedSubmissions?.length || 0)}
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-yellow-600">{unassignedSubmissions.length}</div>
-                <div className="text-sm text-gray-500">Pending Assignment</div>
               </div>
             </div>
           </div>
-          <div className="p-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedRows(unassignedSubmissions.map(sub => sub._id));
-                          } else {
-                            setSelectedRows([]);
-                          }
-                        }}
-                        checked={selectedRows.length === unassignedSubmissions.length && unassignedSubmissions.length > 0}
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scores</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {unassignedSubmissions.map((sub) => {
-                    const { teamName, leaderName } = getTeamAndLeader(sub);
-                    return (
-                      <tr key={sub._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            checked={selectedRows.includes(sub._id)}
-                            onChange={() => handleSelectRow(sub._id)}
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{teamName}</div>
-                            <div className="text-sm text-gray-500">{leaderName}</div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {sub.projectTitle || sub.title || 'Untitled Project'}
+              )}
+
+              {/* Assigned Submissions Table */}
+              <div className="mb-6">
+                <Card className="border-2 border-green-200 bg-green-50/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2 text-green-700">
+                          <CheckCircle className="w-5 h-5" />
+                          Assigned Submissions
+                        </CardTitle>
+                        <CardDescription className="text-green-600">
+                          Submissions already assigned to Judges
+                        </CardDescription>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">{assignmentOverview?.assignedSubmissions?.length || 0}</div>
+                        <div className="text-sm text-gray-500">Assigned to Judges</div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {assignmentOverview?.assignedSubmissions?.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASSIGNED JUDGES</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SCORE</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACTIONS</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {assignmentOverview.assignedSubmissions.map((submission) => (
+                              <tr key={submission._id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div>
+                                    <div className="font-medium text-gray-900">{submission.teamName}</div>
+                                    <div className="text-sm text-gray-500">{submission.teamId}</div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-gray-900">
+                                    {submission.projectTitle || submission.title || 'Untitled Project'}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-900">PPT</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-900">
+                                      {submission.assignedJudges?.length || 0} judge{submission.assignedJudges?.length !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {submission.averageScore ? (
+                                    <div className="text-sm font-medium text-green-600">
+                                      {submission.averageScore}/10
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm italic text-gray-500">
+                                      Not evaluated yet
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <button className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                    <Eye className="w-4 h-4" />
+                                    View
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p>No assigned submissions</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/90 border border-gray-200 p-2 md:p-4">
+                <table className="min-w-full text-sm border-separate border-spacing-y-3">
+                  <thead className="bg-gradient-to-r from-indigo-100 to-purple-100 border-b-2 border-gray-200">
+                    <tr>
+                      <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide rounded-tl-2xl">Judge</th>
+                      <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Type</th>
+                      <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Status</th>
+                      <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Assigned Projects</th>
+                      <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide rounded-tr-2xl">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Assigned Judges */}
+                    {(!allJudgeAssignments || allJudgeAssignments.length === 0) && (!availableJudges || availableJudges.length === 0) ? (
+                      <tr>
+                        <td colSpan={5} className="text-center py-16">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <span className="text-5xl">🧑‍⚖️</span>
+                            <span className="font-semibold text-gray-700 text-lg">No judges assigned yet</span>
+                            <span className="text-gray-500 text-base">Invite judges to get started.</span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2">
-                            {sub.pptFile ? (
-                              <FileText className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <Award className="w-4 h-4 text-green-600" />
-                            )}
-                            <span className="text-sm text-gray-600">
-                              {sub.pptFile ? 'PPT' : 'Project'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {(() => {
-                            const averageScore = getAverageScore(sub._id);
-                            const scores = submissionScores[sub._id] || [];
-                            if (scores.length === 0) {
-                              return (
-                                <span className="text-sm text-gray-400">No scores yet</span>
-                              );
-                            }
-                            return (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-green-600">
-                                  {averageScore}/10
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({scores.length} judge{scores.length > 1 ? 's' : ''})
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(sub.submittedAt)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                <button
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-900 font-medium text-xs"
-                            onClick={() => navigate(`/dashboard/organizer/submission/${sub._id}`)}
-                >
-                            <Eye className="w-4 h-4" /> View
-                </button>
                         </td>
                       </tr>
-                    );
-                  })}
+                    ) : (
+                      <>
+                        {/* Assigned Judges */}
+                        {allJudgeAssignments?.map(a => (
+                          <tr key={a._id} className="bg-white hover:bg-indigo-50 transition-all duration-200 rounded-2xl shadow-md border border-gray-100">
+                            <td className="px-8 py-4 flex items-center gap-4 border-r border-gray-100">
+                              <Avatar className="h-9 w-9 shadow-sm">
+                                <AvatarImage src={a.judge.avatarUrl || undefined} alt={a.judge.email} />
+                                <AvatarFallback>{a.judge.email[0]?.toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <button 
+                                onClick={() => handleJudgeClick(a)}
+                                className="font-medium text-gray-900 hover:text-blue-600 hover:underline cursor-pointer transition-colors"
+                              >
+                                {a.judge.email}
+                              </button>
+                            </td>
+                            <td className="px-8 py-4 border-r border-gray-100">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${a.judge.type === 'platform' ? 'bg-blue-100 text-blue-700' : a.judge.type === 'sponsor' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{a.judge.type}</span>
+                            </td>
+                            <td className="px-8 py-4 border-r border-gray-100">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Assigned
+                              </span>
+                            </td>
+                                                             <td className="px-8 py-4 border-r border-gray-100">
+                               <div className="space-y-2">
+                                 {(() => {
+                                   // Get assigned projects from assignment overview
+                                   const judgeOverview = assignmentOverview?.judges?.find(j => j.judgeEmail === a.judge.email);
+                                   const assignedProjects = judgeOverview?.assignedSubmissions || [];
+                                   
+                                   if (assignedProjects.length > 0) {
+                            return (
+                                       <div className="space-y-1">
+                                         {assignedProjects.slice(0, 3).map((project, idx) => (
+                                           <div key={project._id} className="flex items-center justify-between p-2 bg-indigo-50 rounded border border-indigo-100">
+                              <div className="flex items-center gap-2">
+                                               <FileText className="w-3 h-3 text-indigo-600" />
+                                               <span className="text-xs font-medium text-indigo-700">
+                                                 {project.projectTitle || 'Untitled'}
+                                </span>
+                                             </div>
+                                             <div className="flex items-center gap-2">
+                                               <span className={`text-xs px-2 py-1 rounded-full ${
+                                                 project.evaluationStatus === 'evaluated' 
+                                                   ? 'bg-green-100 text-green-700' 
+                                                   : 'bg-yellow-100 text-yellow-700'
+                                               }`}>
+                                                 {project.evaluationStatus === 'evaluated' ? '✓' : '⏳'}
+                                </span>
+                                               {project.averageScore && (
+                                                 <span className="text-xs font-bold text-green-700">
+                                                   {project.averageScore}/10
+                                                 </span>
+                                               )}
+                                             </div>
+                                           </div>
+                                         ))}
+                                         {assignedProjects.length > 3 && (
+                                           <div className="text-xs text-gray-500 text-center">
+                                             +{assignedProjects.length - 3} more projects
+                                           </div>
+                                         )}
+                              </div>
+                            );
+                                   } else {
+                                     return (
+                                       <span className="text-gray-400 text-sm">No projects assigned</span>
+                                     );
+                                   }
+                          })()}
+                               </div>
+                        </td>
+                            <td className="px-8 py-4">
+                              <div className="flex items-center gap-2">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                      Unassign All
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Unassign All Teams</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This will remove all team assignments from this judge. This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleUnassignAll(a._id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        {unassigning[a._id] ? <Loader2 className="w-4 h-4 animate-spin" /> : "Unassign All"}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50"
+                                      disabled={deletingJudge === a._id}
+                                    >
+                                      {deletingJudge === a._id ? (
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                      ) : (
+                                        "Delete Judge"
+                                      )}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Judge</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This will permanently delete judge "{a.judge.email}" and remove all their:
+                                        <ul className="list-disc list-inside mt-2 space-y-1">
+                                          <li>Assigned submissions</li>
+                                          <li>Given scores</li>
+                                          <li>Judge role for this hackathon</li>
+                                        </ul>
+                                        <p className="mt-2 font-semibold text-red-600">This action cannot be undone!</p>
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteJudge(a)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete Judge
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                        </td>
+                          </tr>
+                        ))}
+                        
+                        {/* Available Judges */}
+                        {availableJudges?.map(judge => (
+                          <tr key={judge.id} className="bg-gray-50 hover:bg-gray-100 transition-all duration-200 rounded-2xl shadow-sm border border-gray-200">
+                            <td className="px-8 py-4 flex items-center gap-4 border-r border-gray-200">
+                              <Avatar className="h-9 w-9 shadow-sm">
+                                <AvatarImage src={judge.profileImage || undefined} alt={judge.email} />
+                                <AvatarFallback>{judge.name?.charAt(0)?.toUpperCase() || judge.email[0]?.toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium text-gray-600">
+                                {judge.name || judge.email}
+                              </span>
+                            </td>
+                            <td className="px-8 py-4 border-r border-gray-200">
+                              <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold shadow-sm bg-gray-100 text-gray-700">
+                                {judge.type || 'external'}
+                              </span>
+                            </td>
+                            <td className="px-8 py-4 border-r border-gray-200">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
+                                <Users className="w-3 h-3 mr-1" />
+                                Available
+                              </span>
+                            </td>
+                            <td className="px-8 py-4 border-r border-gray-200">
+                              <span className="text-gray-400 text-sm">Not assigned yet</span>
+                            </td>
+                            <td className="px-8 py-4">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-blue-600 hover:text-blue-700 border-blue-200 hover:bg-blue-50"
+                                onClick={() => {
+                                  // TODO: Open invite modal or assign directly
+                                  toast({
+                                    title: 'Invite Judge',
+                                    description: `Click "Assign to Judges" in the submission round to invite ${judge.name || judge.email}`,
+                                    variant: 'default',
+                                  });
+                                }}
+                              >
+                                Invite
+                              </Button>
+                        </td>
+                      </tr>
+                        ))}
+                      </>
+                    )}
                 </tbody>
               </table>
             </div>
-            
-            {/* Assignment Actions for Unassigned */}
-            {selectedRows.length > 0 && (
-              <div className="flex flex-wrap gap-4 mt-6 items-center">
-                <div className="flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <div>
-                    <p className="text-sm font-medium text-blue-900">
-                      Assign {selectedRows.length} selected submission{selectedRows.length > 1 ? 's' : ''} to judges
-                    </p>
-                    <p className="text-xs text-blue-700">
-                      Judges will only see submissions you assign to them
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="border border-blue-500 text-blue-600 bg-white px-5 py-2 rounded-lg font-medium hover:bg-blue-50 transition flex items-center gap-2" 
-                  onClick={() => setAssignModalOpen(true)}
-                >
-                  <Users className="w-4 h-4" />
-                  Assign to Judges
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      {/* Assigned Submissions Section */}
-      {assignedSubmissions.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
+      {/* Team Details Modal */}
+      <Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Team Details</DialogTitle>
+            <DialogDescription>
+              Detailed view of team information and submissions.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTeam && (
+            <SubmissionRoundView
+              team={selectedTeam}
+              hackathonId={hackathon?._id || hackathon?.id}
+              onClose={() => setSelectedTeam(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Judge Details Modal */}
+      <Dialog open={judgeDetailsModalOpen} onOpenChange={setJudgeDetailsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+              Judge Assignment Details
+            </DialogTitle>
+            <DialogDescription>
+              Detailed view of judge assignments, submissions, and evaluation progress.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedJudge && (
+            <div className="space-y-6">
+              {/* Judge Info */}
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                <Avatar className="h-12 w-12">
+                  <AvatarImage src={selectedJudge.judge.avatarUrl || undefined} alt={selectedJudge.judge.email} />
+                  <AvatarFallback className="text-lg">{selectedJudge.judge.email[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">{selectedJudge.judge.name || selectedJudge.judge.email}</h3>
+                  <p className="text-gray-600 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    {selectedJudge.judge.email}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                      selectedJudge.judge.type === 'platform' ? 'bg-blue-100 text-blue-700' : 
+                      selectedJudge.judge.type === 'sponsor' ? 'bg-green-100 text-green-700' : 
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {selectedJudge.judge.type} Judge
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      Status: {selectedJudge.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assignment Statistics */}
+              {(() => {
+                const stats = getJudgeAssignmentStats(selectedJudge);
+                const assignedTeams = getJudgeAssignedTeams(selectedJudge);
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Award className="w-5 h-5 text-blue-600" />
+                        <span className="font-semibold text-blue-900">Total Submissions</span>
+          </div>
+                      <p className="text-2xl font-bold text-blue-700">{stats.totalSubmissions}</p>
+        </div>
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <span className="font-semibold text-green-900">Evaluated</span>
+                      </div>
+                      <p className="text-2xl font-bold text-green-700">{stats.evaluatedSubmissions}</p>
+                    </div>
+                    <div className="p-4 bg-purple-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-600" />
+                        <span className="font-semibold text-purple-900">Assigned Teams</span>
+                      </div>
+                      <p className="text-2xl font-bold text-purple-700">{assignedTeams.length}</p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Assigned Teams */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Assigned Teams
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {getJudgeAssignedTeams(selectedJudge).map(team => (
+                    <div key={team._id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Assigned Submissions</h3>
-                <p className="text-sm text-gray-600">Submissions already assigned to judges</p>
+                          <h5 className="font-semibold text-gray-900">{team.name}</h5>
+                          <p className="text-sm text-gray-600">
+                            Leader: {team.leader?.name || 'Unknown'}
+                          </p>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-blue-600">{assignedSubmissions.length}</div>
-                <div className="text-sm text-gray-500">Assigned to Judges</div>
+                          <span className="text-sm text-gray-500">
+                            {team.members?.length || 0} members
+                          </span>
               </div>
             </div>
           </div>
-          <div className="p-6">
-          <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Judges</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {assignedSubmissions.map((sub) => {
-                  const { teamName, leaderName } = getTeamAndLeader(sub);
-                    const judgeCount = getJudgeCountForSubmission(sub._id);
-                  return (
-                      <tr key={sub._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">{teamName}</div>
-                            <div className="text-sm text-gray-500">{leaderName}</div>
+                  ))}
                           </div>
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {sub.projectTitle || sub.title || 'Untitled Project'}
                           </div>
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+
+              {/* Round-wise Assignments */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Round-wise Assignments
+                </h4>
+                {selectedJudge.assignedRounds?.map((round, index) => (
+                  <div key={index} className="p-4 border border-gray-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="font-semibold text-gray-900">
+                        {round.roundName || `Round ${round.roundIndex + 1}`}
+                      </h5>
+                      <span className="text-sm text-gray-500">
+                        {round.assignedSubmissions?.length || 0} submissions
+                      </span>
+                    </div>
+                    
+                    {round.assignedSubmissions?.length > 0 ? (
+                      <div className="space-y-2">
+                        {round.assignedSubmissions.map(subId => {
+                          const submission = submissions.find(s => s._id === subId);
+                          const team = teams.find(t => t._id === submission?.teamId);
+                          return submission ? (
+                            <div key={subId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                         <div className="flex items-center gap-2">
-                            {sub.pptFile ? (
+                                {submission.pptFile ? (
                               <FileText className="w-4 h-4 text-blue-600" />
                             ) : (
                               <Award className="w-4 h-4 text-green-600" />
                             )}
-                            <span className="text-sm text-gray-600">
-                              {sub.pptFile ? 'PPT' : 'Project'}
+                                <span className="text-sm font-medium">
+                                  {submission.projectTitle || submission.title || 'Untitled Project'}
                           </span>
-                        </div>
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1">
-                          <Users className="w-4 h-4 text-blue-600" />
-                          <span className="text-sm font-medium text-gray-700">
-                              {judgeCount} judge{judgeCount !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                      </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {(() => {
-                            const averageScore = getAverageScore(sub._id);
-                            const scores = submissionScores[sub._id] || [];
-                            if (scores.length === 0) {
-                              return (
-                                <span className="italic text-gray-500">Not evaluated yet</span>
-                              );
-                            }
-                            return (
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-yellow-700">
-                                  {averageScore}/10
-                                </span>
                                 <span className="text-xs text-gray-500">
-                                  ({scores.length} judge{scores.length > 1 ? 's' : ''})
+                                  ({team?.name || 'No Team'})
+                          </span>
+                        </div>
+                              <div className="flex items-center gap-2">
+                                {submission.scores?.length > 0 ? (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                    Evaluated
                                 </span>
+                                ) : (
+                                  <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">
+                                    Pending
+                                </span>
+                                )}
                               </div>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                            className="inline-flex items-center gap-1 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium text-xs"
-                          onClick={() => navigate(`/dashboard/organizer/submission/${sub._id}`)}
-                        >
-                            <Eye className="w-4 h-4" /> View
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            </div>
+                          ) : null;
+                        })}
           </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm">No submissions assigned to this round</p>
+                    )}
           </div>
+                )) || (
+                  <p className="text-gray-500 text-sm">No rounds assigned</p>
+                )}
+              </div>
         </div>
-      )}
-
-      {/* Empty State */}
-      {roundSubmissions.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-5xl mb-4">📝</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Submissions Yet</h3>
-          <p className="text-gray-600">No submissions have been made for this round.</p>
-        </div>
-      )}
-
-          {/* Modal for viewing submission details */}
-          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-            <DialogContent className="max-w-3xl w-full">
-              <DialogHeader>
-                <DialogTitle>Submission Details</DialogTitle>
-              </DialogHeader>
-              {selectedSubmission && (
-                <ProjectDetail
-                  project={selectedSubmission}
-                  submission={selectedSubmission}
-                  hideBackButton={true}
-                  onlyOverview={false}
-                />
               )}
             </DialogContent>
           </Dialog>
 
-      {/* Bulk Evaluator Assign Modal */}
+      {/* Assignment Modal */}
           <BulkEvaluatorAssignModal
             open={assignModalOpen}
             onClose={() => {
-              console.log('🔍 DEBUG: Assignment modal closed in SubmissionRoundView');
               setAssignModalOpen(false);
             }}
-            selectedCount={selectedRows.length}
-            onAssign={(selectedEvaluatorIds) => {
-              console.log('🔍 DEBUG: onAssign called in SubmissionRoundView with evaluators:', selectedEvaluatorIds);
-              toast({
-                title: 'Success',
-                description: `Assigned ${selectedEvaluatorIds.length} evaluator(s) to ${selectedRows.length} submission(s)`,
-              });
+        selectedCount={selectedSubmissions.size}
+        hackathonId={hackathon?._id || hackathon?.id}
+        roundIndex={selectedStage === 'r1' ? 0 : 1}
+        selectedSubmissionIds={Array.from(selectedSubmissions)}
+        onAssign={(selectedEvaluators) => {
+          setSelectedSubmissions(new Set());
               setAssignModalOpen(false);
-              setSelectedRows([]);
+          // Force refresh after assignment
+          fetchAssignmentOverview();
             }}
-            allEvaluators={allEvaluators}
-            initialSelected={[]}
-            hackathonId={hackathonId}
-            roundIndex={roundIndex}
-            selectedSubmissionIds={selectedRows}
             onAssignmentComplete={() => {
-              console.log('🔍 DEBUG: onAssignmentComplete called in SubmissionRoundView');
-              // Call the parent callback if provided
-              if (onAssignmentComplete) {
-                console.log('🔍 DEBUG: Calling parent onAssignmentComplete callback');
-                onAssignmentComplete();
-              }
-              // Reset selected rows
-              setSelectedRows([]);
-              // Close the modal
-              setAssignModalOpen(false);
+          // Force refresh assignment overview immediately
+          fetchAssignmentOverview();
+          // Reset selected submissions
+          setSelectedSubmissions(new Set());
+          // Show success message
+          toast({
+            title: 'Assignment completed',
+            description: 'Submissions have been assigned to judges. The overview has been refreshed.',
+            variant: 'default',
+          });
+          // Force a second refresh after a short delay to ensure data is updated
+          setTimeout(() => {
+            fetchAssignmentOverview();
+          }, 1000);
             }}
           />
     </div>

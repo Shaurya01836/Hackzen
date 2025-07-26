@@ -394,10 +394,20 @@ export default function HackathonTimeline({
                     // Check if user is blocked from previous round
                     const blockedByPreviousRound = idx > 0 && isProjectSubmission;
                     
+                    // Check if this is Round 2 and user needs to be shortlisted
+                    const isRound2 = idx === 1; // Round 2 (index 1)
+                    const needsShortlisting = isRound2 && isProjectSubmission;
+                    
                     if (blockedByPreviousRound) {
                       projectSubmissionUI = (
                         <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
                           You did not submit in the previous round, so you cannot submit in this round.
+                        </div>
+                      );
+                    } else if (needsShortlisting) {
+                      projectSubmissionUI = (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
+                          Round 2 submission requires shortlisting from Round 1. Please wait for results.
                         </div>
                       );
                     } else {
