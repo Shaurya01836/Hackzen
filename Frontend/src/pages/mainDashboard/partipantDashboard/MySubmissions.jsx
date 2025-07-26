@@ -18,7 +18,7 @@ import {
   CardContent,
 } from "../../../components/CommonUI/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/CommonUI/tabs";
-import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
+import ProjectCard from "../../../components/CommonUI/ProjectCard";
 
 export function MySubmissions() {
   const [submissions, setSubmissions] = useState([]);

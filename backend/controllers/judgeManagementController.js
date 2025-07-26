@@ -2499,16 +2499,27 @@ exports.getLeaderboard = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can view leaderboard' });
     }
 
-    // Get all submissions for this hackathon and round
+    // Get all submissions for this hackathon and round - handle both roundIndex 0 and 1 for Round 1
     const submissions = await Submission.find({ 
       hackathonId: hackathonId, 
-      roundIndex: parseInt(roundIndex)
+      $or: [
+        { roundIndex: parseInt(roundIndex) },
+        { roundIndex: 0 }, // Many submissions are in round 0
+        { roundIndex: { $exists: false } } // Some submissions have no roundIndex
+      ]
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
       .lean();
 
     console.log('🔍 Backend - Found submissions:', submissions.length);
-    console.log('🔍 Backend - Submissions:', submissions.map(s => ({ id: s._id, title: s.projectTitle, status: s.status, roundIndex: s.roundIndex })));
+    console.log('🔍 Backend - Submissions:', submissions.map(s => ({ 
+      id: s._id, 
+      title: s.projectTitle || s.title, 
+      status: s.status, 
+      roundIndex: s.roundIndex,
+      teamName: s.teamName || s.teamId?.name,
+      submittedBy: s.submittedBy?.name || s.submittedBy?.email
+    })));
 
     // Get all scores for these submissions
     const Score = require('../model/ScoreModel');
@@ -2601,7 +2612,20 @@ exports.getLeaderboard = async (req, res) => {
       };
     });
 
-    console.log('🔍 Backend - Final leaderboard:', leaderboard);
+    console.log('🔍 Backend - Final leaderboard:', leaderboard.map(entry => ({
+      id: entry._id,
+      title: entry.projectTitle,
+      status: entry.status,
+      averageScore: entry.averageScore,
+      scoreCount: entry.scoreCount
+    })));
+    
+    // Log shortlisted entries specifically
+    const shortlistedEntries = leaderboard.filter(entry => entry.status === 'shortlisted');
+    console.log('🔍 Backend - Shortlisted entries count:', shortlistedEntries.length);
+    shortlistedEntries.forEach(entry => {
+      console.log(`🔍 Backend - Shortlisted entry: ${entry.projectTitle} (${entry._id})`);
+    });
 
     // Sort by average score (descending) and then by submission date (ascending for ties)
     leaderboard.sort((a, b) => {
@@ -2666,11 +2690,15 @@ exports.performShortlisting = async (req, res) => {
       // Use provided submission IDs
       submissionsToShortlist = submissionIds;
     } else {
-      // Get leaderboard data
+      // Get leaderboard data - handle both roundIndex 0 and 1 for Round 1 shortlisting
       const submissions = await Submission.find({ 
         hackathonId: hackathonId, 
         status: 'submitted',
-        roundIndex: parseInt(roundIndex)
+        $or: [
+          { roundIndex: parseInt(roundIndex) },
+          { roundIndex: 0 }, // Many submissions are in round 0
+          { roundIndex: { $exists: false } } // Some submissions have no roundIndex
+        ]
       }).populate('teamId', 'name leader')
         .populate('submittedBy', 'name email')
         .lean();
@@ -2769,26 +2797,48 @@ exports.performShortlisting = async (req, res) => {
 
     // Update submission statuses and track shortlisted teams
     const shortlistedTeams = new Set();
-    const updatePromises = submissionsToShortlist.map(async (submissionId) => {
-      const submission = await Submission.findById(submissionId);
-      if (submission) {
-        // Track the team that submitted this
-        if (submission.teamId) {
-          shortlistedTeams.add(submission.teamId.toString());
-        } else if (submission.submittedBy) {
-          // For individual submissions, track the user
-          shortlistedTeams.add(submission.submittedBy.toString());
+    const updatePromises = [];
+    
+    console.log('🔍 Backend - Starting to update submissions...');
+    
+    for (const submissionId of submissionsToShortlist) {
+      try {
+        const submission = await Submission.findById(submissionId);
+        if (submission) {
+          console.log(`🔍 Backend - Updating submission ${submissionId} to shortlisted`);
+          
+          // Track the team that submitted this
+          if (submission.teamId) {
+            shortlistedTeams.add(submission.teamId.toString());
+            console.log(`🔍 Backend - Added team ${submission.teamId} to shortlisted teams`);
+          } else if (submission.submittedBy) {
+            // For individual submissions, track the user
+            shortlistedTeams.add(submission.submittedBy.toString());
+            console.log(`🔍 Backend - Added user ${submission.submittedBy} to shortlisted teams`);
+          }
+          
+          const updateResult = await Submission.findByIdAndUpdate(submissionId, { 
+            status: 'shortlisted',
+            shortlistedAt: new Date(),
+            shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
+          });
+          
+          console.log(`🔍 Backend - Successfully updated submission ${submissionId}:`, updateResult ? 'Updated' : 'Not found');
+          
+          // Verify the update by fetching the submission again
+          const updatedSubmission = await Submission.findById(submissionId);
+          console.log(`🔍 Backend - Verification - Submission ${submissionId} status:`, updatedSubmission ? updatedSubmission.status : 'Not found');
+          updatePromises.push(Promise.resolve());
+        } else {
+          console.log(`🔍 Backend - Submission ${submissionId} not found`);
         }
-        
-        return Submission.findByIdAndUpdate(submissionId, { 
-          status: 'shortlisted',
-          shortlistedAt: new Date(),
-          shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
-        });
+      } catch (error) {
+        console.error(`🔍 Backend - Error updating submission ${submissionId}:`, error);
       }
-    });
+    }
 
-    await Promise.all(updatePromises);
+    console.log('🔍 Backend - All submission updates completed');
+    console.log('🔍 Backend - Shortlisted teams:', Array.from(shortlistedTeams));
 
     // Update hackathon round progress with shortlisted teams
     const roundProgressIndex = hackathon.roundProgress.findIndex(rp => rp.roundIndex === parseInt(roundIndex));
@@ -2810,6 +2860,27 @@ exports.performShortlisting = async (req, res) => {
 
     await hackathon.save();
 
+    // Send email notifications to participants
+    try {
+      console.log('🔍 Backend - Attempting to send shortlisting emails...');
+      console.log('🔍 Backend - Shortlisted teams:', Array.from(shortlistedTeams));
+      console.log('🔍 Backend - Shortlisted submissions:', submissionsToShortlist);
+      console.log('🔍 Backend - Mode:', mode);
+      
+      await sendShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
+      console.log('🔍 Backend - Email notifications sent successfully');
+    } catch (emailError) {
+      console.error('🔍 Backend - Error sending shortlisting emails:', emailError);
+      console.error('🔍 Backend - Email error details:', {
+        error: emailError.message,
+        stack: emailError.stack,
+        shortlistedTeams: Array.from(shortlistedTeams),
+        submissionsToShortlist,
+        mode
+      });
+      // Don't fail the request if emails fail
+    }
+
     console.log('🔍 Backend - Shortlisting completed successfully');
 
     res.status(200).json({
@@ -2824,6 +2895,112 @@ exports.performShortlisting = async (req, res) => {
   } catch (error) {
     console.error('🔍 Backend - Error performing shortlisting:', error);
     res.status(500).json({ message: 'Failed to perform shortlisting', error: error.message });
+  }
+};
+
+// 🎯 Toggle individual submission shortlist status
+exports.toggleSubmissionShortlist = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params;
+    const { submissionId, shortlist } = req.body;
+    
+    console.log('🔍 Backend - toggleSubmissionShortlist called with:', { 
+      hackathonId, roundIndex, submissionId, shortlist 
+    });
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can modify shortlist status' });
+    }
+
+    // Find the submission
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+
+    // Verify the submission belongs to this hackathon and round
+    if (submission.hackathonId.toString() !== hackathonId || submission.roundIndex !== parseInt(roundIndex)) {
+      return res.status(400).json({ message: 'Submission does not belong to this hackathon/round' });
+    }
+
+    // Update submission status
+    const updateData = {
+      status: shortlist ? 'shortlisted' : 'submitted',
+      shortlistedAt: shortlist ? new Date() : null,
+      shortlistedForRound: shortlist ? 2 : null
+    };
+
+    await Submission.findByIdAndUpdate(submissionId, updateData);
+
+    // Update hackathon round progress
+    const roundProgressIndex = hackathon.roundProgress.findIndex(rp => rp.roundIndex === parseInt(roundIndex));
+    
+    if (roundProgressIndex >= 0) {
+      if (shortlist) {
+        // Add to shortlisted submissions if not already there
+        if (!hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions) {
+          hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = [];
+        }
+        if (!hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions.includes(submissionId)) {
+          hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions.push(submissionId);
+        }
+        
+        // Add team/user to shortlisted teams
+        if (!hackathon.roundProgress[roundProgressIndex].shortlistedTeams) {
+          hackathon.roundProgress[roundProgressIndex].shortlistedTeams = [];
+        }
+        const teamOrUserId = submission.teamId || submission.submittedBy;
+        if (teamOrUserId && !hackathon.roundProgress[roundProgressIndex].shortlistedTeams.includes(teamOrUserId.toString())) {
+          hackathon.roundProgress[roundProgressIndex].shortlistedTeams.push(teamOrUserId.toString());
+        }
+      } else {
+        // Remove from shortlisted submissions
+        if (hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions) {
+          hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = 
+            hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions.filter(id => id.toString() !== submissionId.toString());
+        }
+        
+        // Remove team/user from shortlisted teams
+        if (hackathon.roundProgress[roundProgressIndex].shortlistedTeams) {
+          const teamOrUserId = submission.teamId || submission.submittedBy;
+          if (teamOrUserId) {
+            hackathon.roundProgress[roundProgressIndex].shortlistedTeams = 
+              hackathon.roundProgress[roundProgressIndex].shortlistedTeams.filter(id => id.toString() !== teamOrUserId.toString());
+          }
+        }
+      }
+    } else {
+      // Create new round progress if it doesn't exist
+      if (shortlist) {
+        hackathon.roundProgress.push({
+          roundIndex: parseInt(roundIndex),
+          shortlistedSubmissions: [submissionId],
+          shortlistedTeams: [submission.teamId || submission.submittedBy].filter(Boolean).map(id => id.toString()),
+          shortlistedAt: new Date()
+        });
+      }
+    }
+
+    await hackathon.save();
+
+    console.log('🔍 Backend - Shortlist status updated successfully');
+
+    res.status(200).json({
+      message: `Submission ${shortlist ? 'added to' : 'removed from'} shortlist successfully`,
+      submissionId,
+      shortlisted: shortlist,
+      updatedAt: new Date()
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error toggling shortlist status:', error);
+    res.status(500).json({ message: 'Failed to update shortlist status', error: error.message });
   }
 };
 
@@ -3241,5 +3418,260 @@ async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, s
       error: emailError.message,
       stack: emailError.stack
     });
+  }
+}
+
+// 🎯 Send shortlisting notifications to participants
+async function sendShortlistingNotifications(hackathon, shortlistedTeams, shortlistedSubmissions, mode) {
+  try {
+    // Check email configuration
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      console.error('🔍 Backend - Email configuration missing:', {
+        MAIL_USER: process.env.MAIL_USER ? 'Set' : 'Missing',
+        MAIL_PASS: process.env.MAIL_PASS ? 'Set' : 'Missing'
+      });
+      throw new Error('Email configuration not set. Please configure MAIL_USER and MAIL_PASS environment variables.');
+    }
+    
+    const User = require('../model/UserModel');
+    const Team = require('../model/TeamModel');
+    const Submission = require('../model/SubmissionModel');
+    
+    // Get all participants who submitted to this hackathon - handle both roundIndex 0 and 1 for Round 1
+    const allSubmissions = await Submission.find({ 
+      hackathonId: hackathon._id,
+      $or: [
+        { roundIndex: 1 }, // Round 1 submissions
+        { roundIndex: 0 }, // Many submissions are in round 0
+        { roundIndex: { $exists: false } } // Some submissions have no roundIndex
+      ]
+    }).populate('submittedBy', 'name email')
+      .populate('teamId', 'name members')
+      .lean();
+
+    // Get all unique participants
+    const allParticipants = new Set();
+    const participantDetails = new Map();
+
+    allSubmissions.forEach(submission => {
+      if (submission.teamId) {
+        // Team submission
+        submission.teamId.members.forEach(memberId => {
+          allParticipants.add(memberId.toString());
+        });
+        participantDetails.set(submission.teamId._id.toString(), {
+          type: 'team',
+          name: submission.teamId.name,
+          submissionTitle: submission.projectTitle || submission.title,
+          submissionType: submission.pptFile ? 'PPT' : 'Project'
+        });
+      } else if (submission.submittedBy) {
+        // Individual submission
+        allParticipants.add(submission.submittedBy._id.toString());
+        participantDetails.set(submission.submittedBy._id.toString(), {
+          type: 'individual',
+          name: submission.submittedBy.name || submission.submittedBy.email,
+          submissionTitle: submission.projectTitle || submission.title,
+          submissionType: submission.pptFile ? 'PPT' : 'Project'
+        });
+      }
+    });
+
+    // Get user details for all participants
+    const users = await User.find({ 
+      _id: { $in: Array.from(allParticipants) } 
+    }).select('name email').lean();
+
+    const userMap = new Map(users.map(user => [user._id.toString(), user]));
+
+    // Separate shortlisted and non-shortlisted participants
+    const shortlistedParticipants = new Set();
+    const nonShortlistedParticipants = new Set();
+
+    allParticipants.forEach(participantId => {
+      const participantDetail = participantDetails.get(participantId);
+      if (participantDetail) {
+        if (shortlistedTeams.includes(participantDetail.type === 'team' ? participantDetail.name : participantId)) {
+          shortlistedParticipants.add(participantId);
+        } else {
+          nonShortlistedParticipants.add(participantId);
+        }
+      }
+    });
+
+    // Send emails to shortlisted participants
+    for (const participantId of shortlistedParticipants) {
+      const user = userMap.get(participantId);
+      if (user && user.email) {
+        await sendShortlistedEmail(user.email, user.name, hackathon, participantDetails.get(participantId), mode);
+      }
+    }
+
+    // Send emails to non-shortlisted participants
+    for (const participantId of nonShortlistedParticipants) {
+      const user = userMap.get(participantId);
+      if (user && user.email) {
+        await sendNotShortlistedEmail(user.email, user.name, hackathon, participantDetails.get(participantId));
+      }
+    }
+
+    console.log(`✅ Shortlisting notifications sent: ${shortlistedParticipants.size} selected, ${nonShortlistedParticipants.size} not selected`);
+  } catch (error) {
+    console.error('❌ Error sending shortlisting notifications:', error);
+    throw error;
+  }
+}
+
+// 🎯 Send email to shortlisted participants
+async function sendShortlistedEmail(userEmail, userName, hackathon, participantDetail, mode) {
+  try {
+    const transporter = require('../config/mailer');
+    
+    const round2StartDate = hackathon.rounds && hackathon.rounds.length > 1 ? hackathon.rounds[1].startDate : null;
+    const round2EndDate = hackathon.rounds && hackathon.rounds.length > 1 ? hackathon.rounds[1].endDate : null;
+
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been selected for Round 2 of ${hackathon.title}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333; margin-top: 0;">Hello ${userName || 'Participant'}! 🚀</h2>
+          
+          <p style="color: #555; line-height: 1.6;">
+            <strong>🎉 Congratulations!</strong> You have been <strong>SELECTED FOR ROUND 2</strong> of <strong>${hackathon.title}</strong>!
+          </p>
+          
+          <div style="background: #d1fae5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+            <h3 style="color: #065f46; margin: 0 0 15px 0;">🏆 Selection Details</h3>
+            <p style="color: #065f46; margin: 0 0 5px 0;"><strong>Hackathon:</strong> ${hackathon.title}</p>
+            <p style="color: #065f46; margin: 0 0 5px 0;"><strong>Team/Individual:</strong> ${participantDetail.name}</p>
+            <p style="color: #065f46; margin: 0 0 5px 0;"><strong>Submission:</strong> ${participantDetail.submissionTitle}</p>
+            <p style="color: #065f46; margin: 0 0 5px 0;"><strong>Type:</strong> ${participantDetail.submissionType}</p>
+            <p style="color: #065f46; margin: 0;"><strong>Selection Method:</strong> ${getSelectionMethodText(mode)}</p>
+          </div>
+
+          ${round2StartDate && round2EndDate ? `
+            <div style="background: #dbeafe; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+              <h3 style="color: #1e40af; margin: 0 0 15px 0;">📅 Round 2 Schedule</h3>
+              <p style="color: #1e40af; margin: 0 0 5px 0;"><strong>Start Date:</strong> ${new Date(round2StartDate).toLocaleDateString()}</p>
+              <p style="color: #1e40af; margin: 0;"><strong>End Date:</strong> ${new Date(round2EndDate).toLocaleDateString()}</p>
+            </div>
+          ` : ''}
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/hackathons/${hackathon._id}" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+              🎯 Go to Hackathon
+            </a>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #92400e; margin: 0 0 10px 0;">📝 Next Steps:</h4>
+            <ul style="color: #92400e; margin: 0; padding-left: 20px;">
+              <li>Prepare your Round 2 submission</li>
+              <li>Review the problem statements for Round 2</li>
+              <li>Submit your project before the deadline</li>
+              <li>Stay updated with announcements</li>
+            </ul>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+            Good luck with Round 2! We're excited to see what you'll create next.
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+          <p>© 2024 HackZen. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: `🎉 Congratulations! You're Selected for Round 2 - ${hackathon.title}`,
+      html: emailTemplate
+    });
+
+    console.log(`✅ Shortlisted notification sent to ${userEmail}`);
+  } catch (emailError) {
+    console.error('❌ Shortlisted email sending failed:', emailError);
+  }
+}
+
+// 🎯 Send email to non-shortlisted participants
+async function sendNotShortlistedEmail(userEmail, userName, hackathon, participantDetail) {
+  try {
+    const transporter = require('../config/mailer');
+    
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">📋 Round 2 Selection Update</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9;">Thank you for participating in ${hackathon.title}</p>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+          <h2 style="color: #333; margin-top: 0;">Hello ${userName || 'Participant'}! 👋</h2>
+          
+          <p style="color: #555; line-height: 1.6;">
+            Thank you for your participation in <strong>Round 1</strong> of <strong>${hackathon.title}</strong>. After careful evaluation, we regret to inform you that <strong>you are NOT SHORTLISTED FOR ROUND 2</strong>.
+          </p>
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6b7280;">
+            <h3 style="color: #374151; margin: 0 0 15px 0;">📊 Round 1 Summary</h3>
+            <p style="color: #374151; margin: 0 0 5px 0;"><strong>Hackathon:</strong> ${hackathon.title}</p>
+            <p style="color: #374151; margin: 0 0 5px 0;"><strong>Team/Individual:</strong> ${participantDetail.name}</p>
+            <p style="color: #374151; margin: 0 0 5px 0;"><strong>Submission:</strong> ${participantDetail.submissionTitle}</p>
+            <p style="color: #374151; margin: 0;"><strong>Type:</strong> ${participantDetail.submissionType}</p>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #92400e; margin: 0 0 10px 0;">💡 What's Next:</h4>
+            <ul style="color: #92400e; margin: 0; padding-left: 20px;">
+              <li>Keep an eye on future hackathons</li>
+              <li>Continue building and improving your skills</li>
+              <li>Join our community for updates and opportunities</li>
+              <li>Consider participating in other events</li>
+            </ul>
+          </div>
+          
+          <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+            Thank you for being part of our hackathon community. We hope to see you in future events!
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+          <p>© 2024 HackZen. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    await transporter.sendMail({
+      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: `📋 Round 2 Selection Update - ${hackathon.title}`,
+      html: emailTemplate
+    });
+
+    console.log(`✅ Not shortlisted notification sent to ${userEmail}`);
+  } catch (emailError) {
+    console.error('❌ Not shortlisted email sending failed:', emailError);
+  }
+}
+
+// 🎯 Helper function to get selection method text
+function getSelectionMethodText(mode) {
+  switch (mode) {
+    case 'topN':
+      return 'Top N Projects Selection';
+    case 'threshold':
+      return 'Score Threshold Selection';
+    case 'date':
+      return 'Round 1 End Date Selection';
+    default:
+      return 'Manual Selection';
   }
 }
