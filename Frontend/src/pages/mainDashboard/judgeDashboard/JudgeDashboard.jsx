@@ -25,6 +25,7 @@ export default function JudgeDashboard() {
 
   useEffect(() => {
     if (user) {
+      console.log('🔍 Fetching submissions for user and round:', currentRound);
       fetchAssignedSubmissions();
     }
   }, [user, currentRound]);
@@ -41,7 +42,7 @@ export default function JudgeDashboard() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/judge-management/my-assigned-submissions', {
+      const response = await fetch('/api/judge-management/my-assignments', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -52,7 +53,10 @@ export default function JudgeDashboard() {
           totalSubmissions: data.totalSubmissions,
           submissions: data.submissions?.length || 0,
           rounds: data.rounds?.length || 0,
-          hackathons: data.hackathons?.length || 0
+          hackathons: data.hackathons?.length || 0,
+          allSubmissions: data.submissions || [],
+          roundsData: data.rounds || [],
+          hackathonsData: data.hackathons || []
         });
         
         setAllSubmissions(data.submissions || []);
@@ -60,13 +64,26 @@ export default function JudgeDashboard() {
         setHackathons(data.hackathons || []);
         setHasSpecificAssignments(data.hasSpecificAssignments || false);
         
+        // Set current round to first available round if we have rounds
+        if (data.rounds && data.rounds.length > 0) {
+          const firstRoundIndex = data.rounds[0].index;
+          setCurrentRound(firstRoundIndex);
+          console.log('🔍 Setting current round to:', firstRoundIndex);
+        }
+        
+        console.log('🔍 Available rounds:', data.rounds);
+        console.log('🔍 Current round state:', currentRound);
+        
         // Only show submissions if judge has specific assignments
         if (data.hasSpecificAssignments) {
           // Filter submissions for current round
-          const roundSubmissions = data.submissions?.filter(sub => 
-            sub.roundIndex === currentRound
-          ) || [];
+          const roundSubmissions = data.submissions?.filter(sub => {
+            console.log(`🔍 Checking submission ${sub._id} - roundIndex: ${sub.roundIndex}, currentRound: ${currentRound}`);
+            return sub.roundIndex === currentRound;
+          }) || [];
           console.log(`🔍 Filtered submissions for round ${currentRound}:`, roundSubmissions.length);
+          console.log('🔍 All submissions data:', data.submissions);
+          console.log('🔍 Round submissions:', roundSubmissions);
           setAssignedSubmissions(roundSubmissions);
         } else {
           // Show no submissions when no specific assignments
@@ -233,10 +250,10 @@ export default function JudgeDashboard() {
               {rounds.map((round, index) => (
                 <Button
                   key={index}
-                  variant={currentRound === index ? "default" : "outline"}
-                  onClick={() => setCurrentRound(index)}
+                  variant={currentRound === round.index ? "default" : "outline"}
+                  onClick={() => setCurrentRound(round.index)}
                 >
-                  {round.name || `Round ${index + 1}`}
+                  {round.name || `Round ${round.index + 1}`}
                   <span className="ml-2 text-xs bg-white/20 px-2 py-1 rounded">
                     {round.submissionCount || 0}
                   </span>
@@ -260,7 +277,7 @@ export default function JudgeDashboard() {
           </CardTitle>
           <p className="text-sm text-gray-600">
             {hasSpecificAssignments 
-              ? `${rounds[currentRound]?.name || `Round ${currentRound + 1}`} - ${assignedSubmissions.length} submissions assigned to you`
+              ? `${rounds.find(r => r.index === currentRound)?.name || `Round ${currentRound + 1}`} - ${assignedSubmissions.length} submissions assigned to you`
               : 'No submissions assigned yet. The organizer will assign projects to you for evaluation.'
             }
           </p>

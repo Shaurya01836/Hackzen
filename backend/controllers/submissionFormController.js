@@ -42,6 +42,30 @@ exports.submitProjectWithAnswers = async (req, res) => {
       });
     }
 
+    // Check if this is Round 2 submission and validate shortlisting
+    if (roundIndex === 1) { // Round 2 (index 1 in rounds array)
+      // Check if the user's team was shortlisted for Round 2
+      const userTeam = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+      if (userTeam) {
+        const shortlistedSubmission = await Submission.findOne({
+          hackathonId,
+          teamName: userTeam.name,
+          shortlistedForRound: 2,
+          status: 'shortlisted'
+        });
+        
+        if (!shortlistedSubmission) {
+          return res.status(403).json({ 
+            error: "Your team was not shortlisted for Round 2. Only shortlisted teams can submit to Round 2." 
+          });
+        }
+      } else {
+        return res.status(403).json({ 
+          error: "You must be part of a team to submit to Round 2." 
+        });
+      }
+    }
+
     // Check for duplicate submission
     const existing = await Submission.findOne({ hackathonId, projectId, submittedBy: userId });
     if (existing) {

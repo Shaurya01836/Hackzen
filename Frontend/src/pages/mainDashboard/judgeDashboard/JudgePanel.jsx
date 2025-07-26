@@ -41,6 +41,7 @@ export default function JudgePanel() {
           }
         );
         const data = await res.json();
+        console.log('🔍 JudgePanel - Fetched hackathons:', data);
         setHackathons(data);
       } catch (err) {
         console.error("Error fetching judge hackathons", err);

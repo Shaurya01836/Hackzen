@@ -79,5 +79,6 @@ router.get('/hackathons/:hackathonId/rounds/:roundIndex/submissions-status', pro
 router.get('/hackathons/:hackathonId/rounds/:roundIndex/leaderboard', protect, isOrganizerOrAdmin, judgeManagementController.getLeaderboard);
 router.post('/hackathons/:hackathonId/rounds/:roundIndex/shortlist', protect, isOrganizerOrAdmin, judgeManagementController.performShortlisting);
 router.get('/hackathons/:hackathonId/rounds/:roundIndex/shortlisted', protect, isOrganizerOrAdmin, judgeManagementController.getShortlistedSubmissions);
+router.post('/hackathons/:hackathonId/auto-progress-round2', protect, isOrganizerOrAdmin, judgeManagementController.checkAndAutoProgressRound2);
 
 module.exports = router; 

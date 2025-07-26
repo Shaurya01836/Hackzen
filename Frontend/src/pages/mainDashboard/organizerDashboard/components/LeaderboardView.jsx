@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info } from "lucide-react";
 import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
 
@@ -12,31 +12,64 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
   const [shortlisting, setShortlisting] = useState(false);
   const [shortlistModalOpen, setShortlistModalOpen] = useState(false);
   const [shortlistCount, setShortlistCount] = useState(10);
+  const [shortlistThreshold, setShortlistThreshold] = useState(5);
+  const [shortlistMode, setShortlistMode] = useState('topN'); // 'topN', 'threshold', or 'date'
   const [summary, setSummary] = useState(null);
 
   useEffect(() => {
     if (hackathonId) {
       fetchLeaderboard();
+      checkAutoProgress();
     }
   }, [hackathonId, roundIndex]);
 
-  const fetchLeaderboard = async () => {
-    setLoading(true);
+  const checkAutoProgress = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${roundIndex}/leaderboard`, {
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/auto-progress-round2`, {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
+        if (data.progressed) {
+          toast({
+            title: 'Round 2 Auto-Progress',
+            description: `${data.count} submissions have been automatically moved to Round 2`,
+            variant: 'default',
+          });
+          fetchLeaderboard(); // Refresh data
+        }
+      }
+    } catch (error) {
+      console.error('Error checking auto-progress:', error);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      console.log('🔍 Frontend - Fetching leaderboard for hackathonId:', hackathonId, 'roundIndex:', roundIndex);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${roundIndex}/leaderboard`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      console.log('🔍 Frontend - Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Frontend - Leaderboard data received:', data);
         setLeaderboard(data.leaderboard || []);
         setSummary(data.summary);
       } else {
+        const errorData = await response.json();
+        console.error('🔍 Frontend - Error response:', errorData);
         throw new Error('Failed to fetch leaderboard');
       }
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.error('🔍 Frontend - Error fetching leaderboard:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch leaderboard data',
@@ -48,7 +81,8 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
   };
 
   const handleShortlisting = async () => {
-    if (shortlistCount < 1) {
+    // Validate based on mode
+    if (shortlistMode === 'topN' && shortlistCount < 1) {
       toast({
         title: 'Invalid count',
         description: 'Please enter a valid number of submissions to shortlist',
@@ -57,16 +91,29 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
       return;
     }
 
+    if (shortlistMode === 'threshold' && (shortlistThreshold < 0 || shortlistThreshold > 10)) {
+      toast({
+        title: 'Invalid threshold',
+        description: 'Please enter a valid score threshold between 0 and 10',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setShortlisting(true);
     try {
       const token = localStorage.getItem('token');
+      const requestBody = shortlistMode === 'topN' 
+        ? { shortlistCount, mode: 'topN' }
+        : { shortlistThreshold, mode: 'threshold' };
+
       const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${roundIndex}/shortlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ shortlistCount })
+        body: JSON.stringify(requestBody)
       });
 
       if (response.ok) {
@@ -146,15 +193,53 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
               'Leaderboard data'
             )}
           </p>
+          <p className="text-sm text-blue-600 mt-1">
+            Shortlist top performers to advance to Round 2
+          </p>
+          {summary && summary.evaluatedSubmissions > 0 && (
+            <p className="text-sm text-green-600 mt-1">
+              ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for shortlisting
+            </p>
+          )}
+          {summary && summary.evaluatedSubmissions === 0 && (
+            <p className="text-sm text-yellow-600 mt-1">
+              ⏳ Waiting for judge evaluations to begin shortlisting
+            </p>
+          )}
+          <div className="mt-2 p-3 bg-gray-50 rounded-md">
+            <p className="text-xs text-gray-600">
+              <strong>Shortlisting Process:</strong> 
+              1) Judges evaluate Round 1 submissions → 
+              2) Scores appear in leaderboard → 
+              3) Organizer shortlists top performers → 
+              4) Shortlisted teams can submit to Round 2
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-4">
-          {summary && summary.evaluatedSubmissions > 0 && (
+          <Button
+            onClick={fetchLeaderboard}
+            variant="outline"
+            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          {summary && summary.totalSubmissions > 0 && (
             <Button
               onClick={() => setShortlistModalOpen(true)}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className={`${
+                summary.evaluatedSubmissions > 0 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+              }`}
+              disabled={summary.evaluatedSubmissions === 0}
             >
               <Trophy className="w-4 h-4 mr-2" />
-              Shortlist Top Projects
+              {summary.evaluatedSubmissions > 0 
+                ? 'Shortlist for Round 2' 
+                : 'Shortlist (No Evaluations Yet)'
+              }
             </Button>
           )}
         </div>
@@ -162,7 +247,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
@@ -197,6 +282,15 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                 <span className="font-semibold text-purple-900">Avg Score</span>
               </div>
               <p className="text-2xl font-bold text-purple-700">{summary.averageScore}/10</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-600" />
+                <span className="font-semibold text-yellow-900">Shortlisted</span>
+              </div>
+              <p className="text-2xl font-bold text-yellow-700">{summary.shortlistedCount || 0}</p>
             </CardContent>
           </Card>
         </div>
@@ -243,6 +337,9 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Shortlisted
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Submitted
                     </th>
                   </tr>
@@ -262,6 +359,11 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                             </div>
                           ) : (
                             <span className="text-gray-900 font-medium">{entry.rank}</span>
+                          )}
+                          {index < 5 && (
+                            <span className="ml-2 text-xs text-green-600 font-medium">
+                              Top Performer
+                            </span>
                           )}
                         </div>
                       </td>
@@ -306,6 +408,16 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
                           </span>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {entry.status === 'shortlisted' ? (
+                          <div className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            <span className="text-sm text-green-600 font-medium">Shortlisted</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">-</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(entry.submittedAt)}
                       </td>
@@ -318,40 +430,155 @@ export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortli
         </CardContent>
       </Card>
 
-      {/* Shortlist Modal */}
+            {/* Shortlist Modal */}
       <Dialog open={shortlistModalOpen} onOpenChange={setShortlistModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-600" />
-              Shortlist Top Projects
+              Shortlist for Round 2
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Shortlisting Mode Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Number of projects to shortlist
+                Shortlisting Mode
               </label>
-              <input
-                type="number"
-                min="1"
-                max={leaderboard.length}
-                value={shortlistCount}
-                onChange={(e) => setShortlistCount(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Maximum: {leaderboard.length} projects
-              </p>
-            </div>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm text-yellow-800">
-                  This will shortlist the top {shortlistCount} projects based on their scores.
-                </span>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="topN"
+                    checked={shortlistMode === 'topN'}
+                    onChange={(e) => setShortlistMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Top N Projects</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="threshold"
+                    checked={shortlistMode === 'threshold'}
+                    onChange={(e) => setShortlistMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Score Threshold</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="date"
+                    checked={shortlistMode === 'date'}
+                    onChange={(e) => setShortlistMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Round 1 End Date</span>
+                </label>
               </div>
             </div>
+
+            {/* Top N Mode */}
+            {shortlistMode === 'topN' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of projects to shortlist
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={leaderboard.length}
+                  value={shortlistCount}
+                  onChange={(e) => setShortlistCount(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum: {leaderboard.length} projects
+                </p>
+              </div>
+            )}
+
+            {/* Threshold Mode */}
+            {shortlistMode === 'threshold' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum score threshold
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={shortlistThreshold}
+                  onChange={(e) => setShortlistThreshold(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Projects with average score ≥ {shortlistThreshold}/10 will be shortlisted
+                </p>
+              </div>
+            )}
+
+            {/* Date Mode */}
+            {shortlistMode === 'date' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Shortlist all submissions after Round 1 ends
+                </label>
+                <div className="bg-gray-100 p-3 rounded-md">
+                  <p className="text-sm text-gray-700">
+                    This will shortlist all submissions that were submitted before the Round 1 end date.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Useful when you want to advance all teams that participated in Round 1.
+                  </p>
+                </div>
+              </div>
+            )}
+
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                                  <span className="text-sm text-yellow-800">
+                    {shortlistMode === 'topN' 
+                      ? `This will shortlist the top ${shortlistCount} projects to advance to Round 2.`
+                      : shortlistMode === 'threshold'
+                      ? `This will shortlist all projects with average score ≥ ${shortlistThreshold}/10 to advance to Round 2.`
+                      : `This will shortlist all submissions that participated in Round 1 to advance to Round 2.`
+                    }
+                  </span>
+              </div>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium">What happens after shortlisting?</p>
+                  <ul className="mt-1 space-y-1 text-xs">
+                    <li>• Shortlisted teams will be notified</li>
+                    <li>• They can submit new projects for Round 2</li>
+                    <li>• Only shortlisted teams can access Round 2</li>
+                    <li>• Auto-progression occurs when Round 2 starts</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {summary && summary.evaluatedSubmissions === 0 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-orange-600" />
+                  <div className="text-sm text-orange-800">
+                    <p className="font-medium">No evaluations yet</p>
+                    <p className="text-xs mt-1">
+                      You can still shortlist submissions manually, but it's recommended to wait for judge evaluations for better decision-making.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"

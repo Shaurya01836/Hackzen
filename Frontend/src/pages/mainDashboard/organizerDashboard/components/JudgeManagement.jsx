@@ -57,6 +57,7 @@ import JudgeManagementOverview from './JudgeManagementOverview';
 import JudgeManagementProblemStatements from './JudgeManagementProblemStatements';
 import JudgeManagementJudges from './JudgeManagementJudges';
 import JudgeManagementAssignments from './JudgeManagementAssignments';
+import LeaderboardView from './LeaderboardView';
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack, submissions: propSubmissions = [] }) {
@@ -707,11 +708,12 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
         <div>
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-4 rounded-t-xl">
+              <TabsList className="grid w-full grid-cols-5 rounded-t-xl">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="problem-statements">Problem Statements</TabsTrigger>
                 <TabsTrigger value="judges">Judges</TabsTrigger>
                 <TabsTrigger value="assignments">Assignments</TabsTrigger>
+                <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
               </TabsList>
 
               {/* Overview Tab */}
@@ -754,6 +756,23 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                     teams={teams}
                     fetchJudgeAssignments={fetchJudgeAssignments}
                     submissions={submissions}
+                  />
+                ) : (
+                  <div className="p-8 text-center text-lg text-gray-500">Loading hackathon data...</div>
+                )}
+              </TabsContent>
+
+              {/* Leaderboard Tab */}
+              <TabsContent value="leaderboard" className="space-y-6 p-6">
+                {(hackathon && (hackathon._id || hackathon.id)) ? (
+                  <LeaderboardView
+                    hackathonId={hackathon._id || hackathon.id}
+                    roundIndex={0} // Round 1 (index 0) for shortlisting to Round 2
+                    onShortlistingComplete={() => {
+                      // Refresh data after shortlisting
+                      fetchJudgeAssignments();
+                      fetchJudged();
+                    }}
                   />
                 ) : (
                   <div className="p-8 text-center text-lg text-gray-500">Loading hackathon data...</div>

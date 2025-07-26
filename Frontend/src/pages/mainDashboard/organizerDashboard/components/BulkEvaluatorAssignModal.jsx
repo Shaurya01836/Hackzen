@@ -14,6 +14,14 @@ export default function BulkEvaluatorAssignModal({
   selectedSubmissionIds = [],
   onAssignmentComplete,
 }) {
+  console.log('🔍 DEBUG: BulkEvaluatorAssignModal render', {
+    open,
+    selectedCount,
+    hackathonId,
+    roundIndex,
+    selectedSubmissionIds: selectedSubmissionIds.length,
+    onAssignmentComplete: !!onAssignmentComplete
+  });
   const { toast } = useToast();
   const [evaluatorSearch, setEvaluatorSearch] = useState("");
   const [selectedEvaluators, setSelectedEvaluators] = useState([]);
@@ -58,21 +66,35 @@ export default function BulkEvaluatorAssignModal({
   }, [open]);
 
   const fetchEvaluators = async () => {
+    console.log('🔍 DEBUG: fetchEvaluators called for hackathonId:', hackathonId);
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/evaluators`, {
+      console.log('🔍 DEBUG: Token available for evaluators:', !!token);
+      
+      const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/evaluators`;
+      console.log('🔍 DEBUG: Fetching evaluators from:', url);
+      
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('🔍 DEBUG: Evaluators response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 DEBUG: Evaluators data received:', {
+          evaluatorsCount: data.evaluators?.length || 0,
+          evaluators: data.evaluators?.map(e => ({ id: e.id, email: e.email, status: e.status }))
+        });
         setAllEvaluators(data.evaluators);
       } else {
+        const errorText = await response.text();
+        console.error('🔍 DEBUG: Failed to fetch evaluators:', response.status, errorText);
         throw new Error('Failed to fetch evaluators');
       }
     } catch (error) {
-      console.error('Error fetching evaluators:', error);
+      console.error('🔍 DEBUG: Error fetching evaluators:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch evaluators',
@@ -80,6 +102,7 @@ export default function BulkEvaluatorAssignModal({
       });
     } finally {
       setLoading(false);
+      console.log('🔍 DEBUG: fetchEvaluators completed');
     }
   };
 
@@ -87,7 +110,7 @@ export default function BulkEvaluatorAssignModal({
     setOverviewLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/assignment-overview`, {
+      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -130,7 +153,17 @@ export default function BulkEvaluatorAssignModal({
   };
 
   const handleAssign = async () => {
+    console.log('🔍 DEBUG: handleAssign called with:', {
+      selectedEvaluators,
+      selectedCount,
+      assignmentMode,
+      multipleJudgesMode,
+      judgesPerProject,
+      judgesPerProjectMode
+    });
+    
     if (selectedEvaluators.length === 0) {
+      console.log('🔍 DEBUG: No evaluators selected');
       toast({
         title: 'No evaluators selected',
         description: 'Please select at least one evaluator to assign submissions.',
@@ -140,6 +173,7 @@ export default function BulkEvaluatorAssignModal({
     }
 
     if (!assignmentOverview) {
+      console.log('🔍 DEBUG: Assignment overview not loaded');
       toast({
         title: 'Assignment data not loaded',
         description: 'Please wait for assignment data to load before assigning submissions.',
@@ -149,11 +183,13 @@ export default function BulkEvaluatorAssignModal({
     }
 
     // Refresh assignment overview to ensure we have the latest data
+    console.log('🔍 DEBUG: Refreshing assignment overview before assignment');
     await fetchAssignmentOverview();
 
     // Validate multiple judges per project settings
     if (multipleJudgesMode) {
       if (judgesPerProject < 1) {
+        console.log('🔍 DEBUG: Invalid judges per project:', judgesPerProject);
         toast({
           title: 'Invalid judges per project',
           description: 'Judges per project must be at least 1.',
@@ -164,7 +200,7 @@ export default function BulkEvaluatorAssignModal({
       
       // Warn if more judges per project than available evaluators
       if (judgesPerProject > selectedEvaluators.length) {
-        console.warn(`Warning: ${judgesPerProject} judges per project requested but only ${selectedEvaluators.length} evaluators available`);
+        console.warn(`🔍 DEBUG: Warning: ${judgesPerProject} judges per project requested but only ${selectedEvaluators.length} evaluators available`);
       }
     }
 
@@ -174,7 +210,14 @@ export default function BulkEvaluatorAssignModal({
       return sum + count;
     }, 0);
 
+    console.log('🔍 DEBUG: Assignment validation:', {
+      totalAssigned,
+      selectedCount,
+      hasEnoughEvaluators: totalAssigned >= selectedCount
+    });
+
     if (totalAssigned < selectedCount) {
+      console.log('🔍 DEBUG: Insufficient assignments');
       toast({
         title: 'Insufficient assignments',
         description: `You need to assign ${selectedCount} submissions, but only assigned ${totalAssigned}.`,
@@ -188,7 +231,7 @@ export default function BulkEvaluatorAssignModal({
       const token = localStorage.getItem('token');
       
       // Filter out already assigned submissions using assignment overview data
-      console.log('🔍 Debugging assignment filtering:', {
+      console.log('🔍 DEBUG: Assignment overview data:', {
         selectedSubmissionIds,
         assignmentOverview: assignmentOverview ? {
           unassignedSubmissions: assignmentOverview.unassignedSubmissions?.map(s => s._id),
@@ -202,17 +245,18 @@ export default function BulkEvaluatorAssignModal({
       // Get list of unassigned submission IDs from assignment overview
       const unassignedSubmissionIdsFromOverview = assignmentOverview?.unassignedSubmissions?.map(s => s._id) || [];
       
-      console.log('🔍 Available unassigned submissions:', unassignedSubmissionIdsFromOverview);
-      console.log('🔍 Selected submissions:', selectedSubmissionIds);
+      console.log('🔍 DEBUG: Available unassigned submissions:', unassignedSubmissionIdsFromOverview);
+      console.log('🔍 DEBUG: Selected submissions:', selectedSubmissionIds);
       
       // Filter selected submissions to only include unassigned ones
       const unassignedSubmissionIds = selectedSubmissionIds.filter(submissionId => {
         const isUnassigned = unassignedSubmissionIdsFromOverview.includes(submissionId);
-        console.log(`🔍 Submission ${submissionId} is unassigned: ${isUnassigned}`);
+        console.log(`🔍 DEBUG: Submission ${submissionId} is unassigned: ${isUnassigned}`);
         return isUnassigned;
       });
 
       if (unassignedSubmissionIds.length === 0) {
+        console.log('🔍 DEBUG: No unassigned submissions to assign');
         toast({
           title: 'No unassigned submissions',
           description: `All ${selectedSubmissionIds.length} selected submissions are already assigned to judges. Only ${assignmentOverview?.unassignedSubmissions?.length || 0} submissions are available for assignment. Please select from the "Unassigned Submissions" section.`,
@@ -222,7 +266,7 @@ export default function BulkEvaluatorAssignModal({
         return;
       }
 
-      console.log(`🔍 Proceeding with assignment: ${unassignedSubmissionIds.length} unassigned submissions out of ${selectedSubmissionIds.length} selected`);
+      console.log(`🔍 DEBUG: Proceeding with assignment: ${unassignedSubmissionIds.length} unassigned submissions out of ${selectedSubmissionIds.length} selected`);
 
       // Prepare evaluator assignments
       const evaluatorAssignments = selectedEvaluators.map(evaluatorId => {
@@ -235,7 +279,7 @@ export default function BulkEvaluatorAssignModal({
         };
       });
 
-      console.log('🔍 Sending bulk assignment request:', {
+      console.log('🔍 DEBUG: Sending bulk assignment request:', {
         originalSubmissionIds: selectedSubmissionIds,
         filteredSubmissionIds: unassignedSubmissionIds,
         evaluatorAssignments,
@@ -246,7 +290,10 @@ export default function BulkEvaluatorAssignModal({
         judgesPerProjectMode
       });
 
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/bulk-assign-submissions`, {
+      const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/bulk-assign-submissions`;
+      console.log('🔍 DEBUG: Sending assignment request to:', url);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json', 
@@ -263,20 +310,26 @@ export default function BulkEvaluatorAssignModal({
         }),
       });
 
+      console.log('🔍 DEBUG: Assignment response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('🔍 DEBUG: Assignment failed:', errorData);
         throw new Error(errorData.message || 'Failed to assign submissions');
       }
 
       const result = await response.json();
+      console.log('🔍 DEBUG: Assignment result:', result);
       
       if (result.assignedSubmissions > 0) {
+        console.log('🔍 DEBUG: Assignment successful');
         toast({
           title: 'Assignments completed successfully',
           description: `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators${multipleJudgesMode ? ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project` : ''}.`,
           variant: 'default',
         });
       } else {
+        console.log('🔍 DEBUG: No assignments made');
         toast({
           title: 'No assignments made',
           description: 'All selected submissions were already assigned to judges.',
@@ -294,25 +347,25 @@ export default function BulkEvaluatorAssignModal({
       setJudgesPerProjectMode('manual');
       
       // Refresh assignment overview and submissions status
-      console.log('🔄 Refreshing assignment overview after successful assignment...');
+      console.log('🔍 DEBUG: Refreshing assignment overview after successful assignment...');
       await fetchAssignmentOverview();
       
       // Notify parent component and close modal
       if (onAssignmentComplete) {
-        console.log('🔄 Calling onAssignmentComplete callback...');
+        console.log('🔍 DEBUG: Calling onAssignmentComplete callback...');
         onAssignmentComplete();
       }
       if (onClose) {
-        console.log('🔄 Closing assignment modal...');
+        console.log('🔍 DEBUG: Closing assignment modal...');
         onClose();
       }
       if (onAssign) {
-        console.log('🔄 Calling onAssign callback...');
+        console.log('🔍 DEBUG: Calling onAssign callback...');
         onAssign(selectedEvaluators);
       }
       
     } catch (error) {
-      console.error('Assignment error:', error);
+      console.error('🔍 DEBUG: Assignment error:', error);
       toast({
         title: 'Assignment failed',
         description: error.message || 'Failed to assign submissions to evaluators.',
@@ -320,6 +373,7 @@ export default function BulkEvaluatorAssignModal({
       });
     } finally {
       setAssignLoading(false);
+      console.log('🔍 DEBUG: handleAssign completed');
     }
   };
 

@@ -7,17 +7,58 @@ exports.createOrUpdateScore = async (req, res) => {
   const { submission, scores, feedback } = req.body;
 
   try {
+    console.log('🔍 Backend - createOrUpdateScore called with:', { submission, scores, feedback, judge });
+
+    // Validate required fields
+    if (!submission || !scores) {
+      return res.status(400).json({ message: "Submission and scores are required" });
+    }
+
+    // Calculate total score from the criteria scores
+    const criteriaScores = Object.values(scores).filter(score => typeof score === 'number');
+    const totalScore = criteriaScores.length > 0 
+      ? criteriaScores.reduce((sum, score) => sum + score, 0) / criteriaScores.length
+      : 0;
+
+    // Convert scores to the expected Map format
+    const scoresMap = new Map();
+    Object.entries(scores).forEach(([key, value]) => {
+      scoresMap.set(key, {
+        score: Number(value),
+        maxScore: 10,
+        weight: 1
+      });
+    });
+
     let existing = await Score.findOne({ submission, judge });
 
     if (existing) {
-      existing.scores = scores;
+      existing.scores = scoresMap;
       existing.feedback = feedback;
+      existing.totalScore = totalScore;
       await existing.save();
+      console.log('🔍 Backend - Score updated successfully');
       return res.json({ message: "Score updated successfully" });
     }
 
-    const newScore = new Score({ submission, judge, scores, feedback });
+    // Get submission details to determine roundIndex and submissionType
+    const submissionDoc = await Submission.findById(submission);
+    if (!submissionDoc) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    const newScore = new Score({ 
+      submission, 
+      judge, 
+      scores: scoresMap,
+      feedback,
+      totalScore,
+      roundIndex: submissionDoc.roundIndex || 1,
+      submissionType: submissionDoc.pptFile ? 'presentation' : 'project'
+    });
+    
     await newScore.save();
+    console.log('🔍 Backend - Score created successfully');
 
     // Optional: Link score to the submission (if needed)
     await Submission.findByIdAndUpdate(submission, {
@@ -26,8 +67,8 @@ exports.createOrUpdateScore = async (req, res) => {
 
     res.status(201).json({ message: "Score submitted" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error submitting score" });
+    console.error('🔍 Backend - Error in createOrUpdateScore:', err);
+    res.status(500).json({ message: "Error submitting score", error: err.message });
   }
 };
 
@@ -49,7 +90,25 @@ exports.getScoresForSubmission = async (req, res) => {
       return res.status(400).json({ message: "Invalid submissionId" });
     }
     const scores = await Score.find({ submission: submissionId }).populate("judge", "name email");
-    res.json(scores);
+    
+    // Convert Map to object for frontend compatibility
+    const formattedScores = scores.map(score => {
+      const scoresObject = {};
+      if (score.scores && score.scores instanceof Map) {
+        score.scores.forEach((value, key) => {
+          scoresObject[key] = value.score;
+        });
+      } else if (score.scores && typeof score.scores === 'object') {
+        Object.assign(scoresObject, score.scores);
+      }
+      
+      return {
+        ...score.toObject(),
+        scores: scoresObject
+      };
+    });
+    
+    res.json(formattedScores);
   } catch (err) {
     console.error("getScoresForSubmission error:", err);
     res.status(500).json({ message: "Failed to get scores", error: err.message });
@@ -117,6 +176,16 @@ exports.getAllScoresForHackathon = async (req, res) => {
         teamObj = { name: sub.submittedBy.name || sub.submittedBy.email };
       }
 
+      // Convert Map to object for frontend compatibility
+      const scoresObject = {};
+      if (s.scores && s.scores instanceof Map) {
+        s.scores.forEach((value, key) => {
+          scoresObject[key] = value.score;
+        });
+      } else if (s.scores && typeof s.scores === 'object') {
+        Object.assign(scoresObject, s.scores);
+      }
+      
       return {
         _id: s._id,
         judge: s.judge,
@@ -126,7 +195,7 @@ exports.getAllScoresForHackathon = async (req, res) => {
         problemStatement: sub.problemStatement || null,
         pptFile: sub.pptFile || null,
         feedback: s.feedback,
-        scores: s.scores,
+        scores: scoresObject,
         submittedAt: sub.submittedAt
       };
     });
@@ -135,5 +204,55 @@ exports.getAllScoresForHackathon = async (req, res) => {
   } catch (err) {
     console.error("Error in getAllScoresForHackathon:", err);
     res.status(500).json({ message: "Failed to get all scores for hackathon" });
+  }
+};
+
+// Get scores for multiple submissions
+exports.getScoresForSubmissions = async (req, res) => {
+  try {
+    const { submissionIds } = req.body;
+    
+    if (!submissionIds || !Array.isArray(submissionIds)) {
+      return res.status(400).json({ message: "Invalid submissionIds array" });
+    }
+
+    const scores = await Score.find({ 
+      submission: { $in: submissionIds } 
+    }).populate("judge", "name email");
+
+    // Group scores by submission ID
+    const scoresBySubmission = {};
+    scores.forEach(score => {
+      const submissionId = score.submission.toString();
+      if (!scoresBySubmission[submissionId]) {
+        scoresBySubmission[submissionId] = [];
+      }
+      
+      // Convert Map to object for frontend compatibility
+      const scoresObject = {};
+      if (score.scores && score.scores instanceof Map) {
+        score.scores.forEach((value, key) => {
+          scoresObject[key] = value.score;
+        });
+      } else if (score.scores && typeof score.scores === 'object') {
+        // Handle case where scores might already be an object
+        Object.assign(scoresObject, score.scores);
+      }
+      
+      scoresBySubmission[submissionId].push({
+        submissionId: submissionId,
+        judgeId: score.judge._id,
+        judgeName: score.judge.name,
+        judgeEmail: score.judge.email,
+        scores: scoresObject,
+        feedback: score.feedback,
+        submittedAt: score.createdAt
+      });
+    });
+
+    res.json(Object.values(scoresBySubmission).flat());
+  } catch (err) {
+    console.error("Error in getScoresForSubmissions:", err);
+    res.status(500).json({ message: "Failed to get scores for submissions" });
   }
 };

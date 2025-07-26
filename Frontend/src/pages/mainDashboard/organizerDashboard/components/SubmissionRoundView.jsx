@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Eye, Users, Award, FileText } from "lucide-react";
+import { Eye, Users, Award, FileText, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
 import { ProjectDetail } from "../../../../components/CommonUI/ProjectDetail";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../../../../hooks/use-toast";
 import axios from "axios";
 import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
+import { Button } from "../../../../components/CommonUI/button";
 
 const PAGE_SIZE = 10;
 
-export default function SubmissionRoundView({ roundId, roundName, roundDescription, roundStart, roundEnd, roundIndex, roundType, teams, submissions, judgeAssignments = { platform: [], sponsor: [], hybrid: [] }, hackathonId }) {
-  console.log('DEBUG: SubmissionRoundView render', { submissionsLength: submissions.length, roundIndex });
+export default function SubmissionRoundView({ roundId, roundName, roundDescription, roundStart, roundEnd, roundIndex, roundType, teams, submissions, judgeAssignments = { platform: [], sponsor: [], hybrid: [] }, hackathonId, onAssignmentComplete }) {
+  console.log('🔍 DEBUG: SubmissionRoundView render', { 
+    submissionsLength: submissions.length, 
+    roundIndex,
+    hackathonId,
+    onAssignmentComplete: !!onAssignmentComplete
+  });
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -18,6 +24,7 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
   const [scoresMap, setScoresMap] = useState({});
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [allEvaluators, setAllEvaluators] = useState([]);
+  const [submissionScores, setSubmissionScores] = useState({});
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -41,6 +48,7 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
       }
     });
     
+    console.log(`🔍 DEBUG: getJudgeCountForSubmission(${submissionId}) = ${count}`);
     return count;
   };
 
@@ -86,6 +94,13 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
     }
   }, [hackathonId]);
 
+  // Fetch scores for submissions when they change
+  useEffect(() => {
+    if (unassignedSubmissions.length > 0 || assignedSubmissions.length > 0) {
+      fetchSubmissionScores();
+    }
+  }, [unassignedSubmissions, assignedSubmissions]);
+
   const fetchEvaluators = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -101,6 +116,45 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
       }
     } catch (error) {
       console.error('Error fetching evaluators:', error);
+    }
+  };
+
+  // Fetch scores for submissions
+  const fetchSubmissionScores = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const allSubmissionIds = [
+        ...unassignedSubmissions.map(sub => sub._id),
+        ...assignedSubmissions.map(sub => sub._id)
+      ];
+      
+      if (allSubmissionIds.length === 0) return;
+
+      const response = await fetch(`http://localhost:3000/api/scores/submissions-scores`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ submissionIds: allSubmissionIds })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const scoresData = {};
+        
+        data.forEach(score => {
+          if (!scoresData[score.submissionId]) {
+            scoresData[score.submissionId] = [];
+          }
+          scoresData[score.submissionId].push(score);
+        });
+        
+        setSubmissionScores(scoresData);
+        console.log('🔍 Fetched submission scores:', scoresData);
+      }
+    } catch (error) {
+      console.error('Error fetching submission scores:', error);
     }
   };
 
@@ -160,6 +214,20 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
   };
 
   const formatDate = (date) => date ? new Date(date).toLocaleString() : '--';
+
+  // Calculate average score for a submission
+  const getAverageScore = (submissionId) => {
+    const scores = submissionScores[submissionId] || [];
+    if (scores.length === 0) return null;
+    
+    const CRITERIA = ["innovation", "impact", "technicality", "presentation"];
+    const totalScore = scores.reduce((sum, score) => {
+      const criteriaScore = CRITERIA.reduce((acc, criteria) => acc + (score.scores?.[criteria] || 0), 0);
+      return sum + (criteriaScore / CRITERIA.length);
+    }, 0);
+    
+    return (totalScore / scores.length).toFixed(2);
+  };
 
 
 
@@ -302,6 +370,19 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
           <div className="text-right">
             <div className="text-3xl font-bold text-blue-600">{roundSubmissions.length}</div>
             <div className="text-sm text-gray-500">Total Submissions</div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (onAssignmentComplete) {
+                  onAssignmentComplete();
+                }
+              }}
+              className="mt-2"
+            >
+              <RefreshCw className="w-4 h-4 mr-1" />
+              Refresh Assignments
+            </Button>
           </div>
         </div>
 
@@ -373,6 +454,7 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Team</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scores</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -412,6 +494,27 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
                               {sub.pptFile ? 'PPT' : 'Project'}
                             </span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(() => {
+                            const averageScore = getAverageScore(sub._id);
+                            const scores = submissionScores[sub._id] || [];
+                            if (scores.length === 0) {
+                              return (
+                                <span className="text-sm text-gray-400">No scores yet</span>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-green-600">
+                                  {averageScore}/10
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({scores.length} judge{scores.length > 1 ? 's' : ''})
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {formatDate(sub.submittedAt)}
@@ -524,11 +627,25 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
                         </div>
                       </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {scoresMap[sub._id] ? (
-                            <span className="font-bold text-yellow-700">{scoresMap[sub._id]} / 10</span>
-                          ) : (
-                            <span className="italic text-gray-500">Not evaluated yet</span>
-                          )}
+                          {(() => {
+                            const averageScore = getAverageScore(sub._id);
+                            const scores = submissionScores[sub._id] || [];
+                            if (scores.length === 0) {
+                              return (
+                                <span className="italic text-gray-500">Not evaluated yet</span>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-yellow-700">
+                                  {averageScore}/10
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({scores.length} judge{scores.length > 1 ? 's' : ''})
+                                </span>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                         <button
@@ -577,9 +694,13 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
       {/* Bulk Evaluator Assign Modal */}
           <BulkEvaluatorAssignModal
             open={assignModalOpen}
-            onClose={() => setAssignModalOpen(false)}
+            onClose={() => {
+              console.log('🔍 DEBUG: Assignment modal closed in SubmissionRoundView');
+              setAssignModalOpen(false);
+            }}
             selectedCount={selectedRows.length}
             onAssign={(selectedEvaluatorIds) => {
+              console.log('🔍 DEBUG: onAssign called in SubmissionRoundView with evaluators:', selectedEvaluatorIds);
               toast({
                 title: 'Success',
                 description: `Assigned ${selectedEvaluatorIds.length} evaluator(s) to ${selectedRows.length} submission(s)`,
@@ -593,8 +714,16 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
             roundIndex={roundIndex}
             selectedSubmissionIds={selectedRows}
             onAssignmentComplete={() => {
-              // Refresh the component to update assignments
-              window.location.reload();
+              console.log('🔍 DEBUG: onAssignmentComplete called in SubmissionRoundView');
+              // Call the parent callback if provided
+              if (onAssignmentComplete) {
+                console.log('🔍 DEBUG: Calling parent onAssignmentComplete callback');
+                onAssignmentComplete();
+              }
+              // Reset selected rows
+              setSelectedRows([]);
+              // Close the modal
+              setAssignModalOpen(false);
             }}
           />
     </div>

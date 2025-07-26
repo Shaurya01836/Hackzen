@@ -1508,12 +1508,32 @@ exports.updateJudgeStatus = async (req, res) => {
 exports.getMyAssignedSubmissions = async (req, res) => {
   try {
     const judgeEmail = req.user.email;
+    console.log('🔍 Backend - getMyAssignedSubmissions called for judge:', judgeEmail);
     
     // Find all judge assignments for this user
     const assignments = await JudgeAssignment.find({ 
       'judge.email': judgeEmail,
       status: 'active'
     }).populate('hackathon', 'name rounds');
+    
+    console.log('🔍 Backend - Found assignments:', assignments.length);
+    console.log('🔍 Backend - Assignments:', assignments);
+    
+    // If no assignments found, return empty response
+    if (assignments.length === 0) {
+      console.log('🔍 Backend - No assignments found for judge');
+      const response = {
+        submissions: [],
+        rounds: [],
+        hackathons: [],
+        totalSubmissions: 0,
+        totalRounds: 0,
+        totalHackathons: 0,
+        hasSpecificAssignments: false
+      };
+      res.status(200).json(response);
+      return;
+    }
 
     const submissions = [];
     const rounds = [];
@@ -1522,82 +1542,107 @@ exports.getMyAssignedSubmissions = async (req, res) => {
 
     for (const assignment of assignments) {
       const hackathon = assignment.hackathon;
+      console.log('🔍 Backend - Processing assignment:', assignment._id);
+      console.log('🔍 Backend - Assignment data:', {
+        judgeEmail: assignment.judge?.email,
+        hackathonId: hackathon?._id,
+        assignedRounds: assignment.assignedRounds,
+        status: assignment.status
+      });
       
       // Check if judge has any specific assignments
       let hasSpecificAssignments = false;
       let assignedSubmissionIds = new Set();
       
-      for (const round of assignment.assignedRounds) {
-        if (round.isAssigned && round.assignedSubmissions && round.assignedSubmissions.length > 0) {
-          hasSpecificAssignments = true;
-          round.assignedSubmissions.forEach(id => assignedSubmissionIds.add(id.toString()));
+      if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
+        for (const round of assignment.assignedRounds) {
+          console.log('🔍 Backend - Processing round:', round);
+          if (round.isAssigned && round.assignedSubmissions && Array.isArray(round.assignedSubmissions) && round.assignedSubmissions.length > 0) {
+            hasSpecificAssignments = true;
+            round.assignedSubmissions.forEach(id => assignedSubmissionIds.add(id.toString()));
+          }
         }
+      } else {
+        console.log('🔍 Backend - No assignedRounds found in assignment or not an array');
       }
 
       // If judge has specific assignments, show only those
       // If no specific assignments, show NO submissions (empty dashboard)
       let submissionsToFetch = [];
       
-      if (hasSpecificAssignments) {
-        // Get only assigned submissions
-        submissionsToFetch = await Submission.find({
-          _id: { $in: Array.from(assignedSubmissionIds) }
-        }).populate('team', 'name members')
-          .populate('hackathonId', 'name');
+      if (hasSpecificAssignments && assignedSubmissionIds.size > 0) {
+        try {
+          // Get only assigned submissions
+          const Submission = require('../model/SubmissionModel');
+          submissionsToFetch = await Submission.find({
+            _id: { $in: Array.from(assignedSubmissionIds) }
+          }).populate('teamId', 'name members')
+            .populate('hackathonId', 'name');
+          console.log('🔍 Backend - Found submissions:', submissionsToFetch.length);
+        } catch (submissionError) {
+          console.error('🔍 Backend - Error fetching submissions:', submissionError);
+          submissionsToFetch = [];
+        }
       } else {
-        // Show NO submissions when no specific assignments
+        console.log('🔍 Backend - No specific assignments found, showing empty list');
         submissionsToFetch = [];
       }
 
       // Process rounds
-      for (const round of assignment.assignedRounds) {
-        if (round.isAssigned) {
-          const roundInfo = {
-            index: round.roundIndex,
-            name: round.roundName,
-            type: round.roundType,
-            submissionCount: hasSpecificAssignments ? round.assignedSubmissions?.length || 0 : submissionsToFetch.length,
-            hackathonId: hackathon._id,
-            hackathonName: hackathon.name,
-            hasSpecificAssignments: hasSpecificAssignments
-          };
+      if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
+        for (const round of assignment.assignedRounds) {
+          if (round && round.isAssigned) {
+            const roundInfo = {
+              index: round.roundIndex || 0,
+              name: round.roundName || 'Round',
+              type: round.roundType || 'project',
+              submissionCount: hasSpecificAssignments ? (round.assignedSubmissions?.length || 0) : submissionsToFetch.length,
+              hackathonId: hackathon._id,
+              hackathonName: hackathon.name,
+              hasSpecificAssignments: hasSpecificAssignments
+            };
 
-          if (!rounds.find(r => r.index === round.roundIndex && r.hackathonId.toString() === hackathon._id.toString())) {
-            rounds.push(roundInfo);
+            if (!rounds.find(r => r.index === roundInfo.index && r.hackathonId.toString() === hackathon._id.toString())) {
+              rounds.push(roundInfo);
+            }
           }
         }
       }
 
       // Add submissions with evaluation status
       for (const submission of submissionsToFetch) {
-        // Check if this submission has been scored by this judge
-        const Score = require('../model/ScoreModel');
-        const existingScore = await Score.findOne({
-          submission: submission._id,
-          judge: assignment._id
-        });
+        try {
+          // Check if this submission has been scored by this judge
+          const Score = require('../model/ScoreModel');
+          const existingScore = await Score.findOne({
+            submission: submission._id,
+            judge: assignment._id
+          });
 
-        const submissionData = {
-          ...submission.toObject(),
-          evaluationStatus: existingScore ? 'evaluated' : 'pending',
-          score: existingScore?.score || null,
-          feedback: existingScore?.feedback || null,
-          roundIndex: assignment.assignedRounds[0]?.roundIndex || 0,
-          roundName: assignment.assignedRounds[0]?.roundName || 'Round 1',
-          hackathonId: hackathon._id,
-          hackathonName: hackathon.name,
-          isAssigned: hasSpecificAssignments ? assignedSubmissionIds.has(submission._id.toString()) : false
-        };
+          const submissionData = {
+            ...submission.toObject(),
+            evaluationStatus: existingScore ? 'evaluated' : 'pending',
+            score: existingScore?.score || null,
+            feedback: existingScore?.feedback || null,
+            roundIndex: assignment.assignedRounds?.[0]?.roundIndex || 0,
+            roundName: assignment.assignedRounds?.[0]?.roundName || 'Round 1',
+            hackathonId: hackathon._id,
+            hackathonName: hackathon.name,
+            isAssigned: hasSpecificAssignments ? assignedSubmissionIds.has(submission._id.toString()) : false
+          };
 
-        submissions.push(submissionData);
-        allSubmissions.push(submissionData);
+          submissions.push(submissionData);
+          allSubmissions.push(submissionData);
+        } catch (submissionError) {
+          console.error('🔍 Backend - Error processing submission:', submissionError);
+        }
       }
       
       // Add hackathon to list
-      if (hackathon) {
+      if (hackathon && hackathon._id) {
         hackathons.push({
           _id: hackathon._id,
-          name: hackathon.name,
+          name: hackathon.name || 'Unknown Hackathon',
           hasSpecificAssignments: hasSpecificAssignments
         });
       }
@@ -1619,8 +1664,13 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching assigned submissions:', error);
-    res.status(500).json({ message: 'Failed to fetch assigned submissions' });
+    console.error('🔍 Backend - Error in getMyAssignedSubmissions:', error);
+    console.error('🔍 Backend - Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Failed to fetch assigned submissions',
+      error: error.message,
+      stack: error.stack
+    });
   }
 };
 
@@ -2308,30 +2358,38 @@ exports.getLeaderboard = async (req, res) => {
     // Get all submissions for this hackathon and round
     const submissions = await Submission.find({ 
       hackathonId: hackathonId, 
-      status: 'submitted',
       roundIndex: parseInt(roundIndex)
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
       .lean();
 
+    console.log('🔍 Backend - Found submissions:', submissions.length);
+    console.log('🔍 Backend - Submissions:', submissions.map(s => ({ id: s._id, title: s.projectTitle, status: s.status, roundIndex: s.roundIndex })));
+
     // Get all scores for these submissions
     const Score = require('../model/ScoreModel');
     const scores = await Score.find({ 
-      submissionId: { $in: submissions.map(s => s._id) } 
+      submission: { $in: submissions.map(s => s._id) } 
     }).populate('judge', 'name email').lean();
+
+    console.log('🔍 Backend - Found scores:', scores.length);
+    console.log('🔍 Backend - Scores data:', scores);
 
     // Create a map of submission scores
     const submissionScores = {};
     scores.forEach(score => {
-      if (!submissionScores[score.submissionId.toString()]) {
-        submissionScores[score.submissionId.toString()] = [];
+      if (!submissionScores[score.submission.toString()]) {
+        submissionScores[score.submission.toString()] = [];
       }
-      submissionScores[score.submissionId.toString()].push(score);
+      submissionScores[score.submission.toString()].push(score);
     });
+
+    console.log('🔍 Backend - Submission scores map:', submissionScores);
 
     // Calculate leaderboard entries
     const leaderboard = submissions.map(submission => {
       const submissionScoresList = submissionScores[submission._id.toString()] || [];
+      console.log('🔍 Backend - Processing submission:', submission._id, 'with scores:', submissionScoresList.length);
       
       // Calculate average score
       let averageScore = 0;
@@ -2339,13 +2397,25 @@ exports.getLeaderboard = async (req, res) => {
       let scoreCount = 0;
       
       submissionScoresList.forEach(score => {
-        if (score.scores && Array.isArray(score.scores)) {
-          const criteriaScores = Object.values(score.scores).filter(s => typeof s === 'number');
-          if (criteriaScores.length > 0) {
-            const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
-            totalScore += submissionScore;
-            scoreCount++;
-          }
+        console.log('🔍 Backend - Processing score:', score);
+        // Convert Map to object if needed
+        let scoresObject = {};
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            scoresObject[key] = value.score;
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          scoresObject = score.scores;
+        }
+        
+        console.log('🔍 Backend - Scores object:', scoresObject);
+        const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+        console.log('🔍 Backend - Criteria scores:', criteriaScores);
+        if (criteriaScores.length > 0) {
+          const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+          totalScore += submissionScore;
+          scoreCount++;
+          console.log('🔍 Backend - Submission score calculated:', submissionScore);
         }
       });
       
@@ -2365,6 +2435,8 @@ exports.getLeaderboard = async (req, res) => {
         roundIndex: submission.roundIndex
       };
     });
+
+    console.log('🔍 Backend - Final leaderboard:', leaderboard);
 
     // Sort by average score (descending) and then by submission date (ascending for ties)
     leaderboard.sort((a, b) => {
@@ -2390,6 +2462,7 @@ exports.getLeaderboard = async (req, res) => {
         totalSubmissions: leaderboard.length,
         evaluatedSubmissions: leaderboard.filter(s => s.scoreCount > 0).length,
         pendingEvaluations: leaderboard.filter(s => s.scoreCount === 0).length,
+        shortlistedCount: leaderboard.filter(s => s.status === 'shortlisted').length,
         averageScore: leaderboard.length > 0 
           ? Math.round(leaderboard.reduce((sum, s) => sum + s.averageScore, 0) / leaderboard.length * 10) / 10
           : 0
@@ -2406,7 +2479,11 @@ exports.getLeaderboard = async (req, res) => {
 exports.performShortlisting = async (req, res) => {
   try {
     const { hackathonId, roundIndex = 1 } = req.params;
-    const { shortlistCount, submissionIds } = req.body;
+    const { shortlistCount, shortlistThreshold, mode, submissionIds } = req.body;
+    
+    console.log('🔍 Backend - performShortlisting called with:', { 
+      hackathonId, roundIndex, shortlistCount, shortlistThreshold, mode, submissionIds 
+    });
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -2418,32 +2495,120 @@ exports.performShortlisting = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can perform shortlisting' });
     }
 
-    // Validate input
-    if (!shortlistCount || shortlistCount < 1) {
-      return res.status(400).json({ message: 'Valid shortlist count is required' });
-    }
-
     let submissionsToShortlist = [];
 
     if (submissionIds && Array.isArray(submissionIds)) {
       // Use provided submission IDs
       submissionsToShortlist = submissionIds;
     } else {
-      // Get top N submissions from leaderboard
-      const leaderboardResponse = await this.getLeaderboard(req, res);
-      if (leaderboardResponse.statusCode !== 200) {
-        return leaderboardResponse;
+      // Get leaderboard data
+      const submissions = await Submission.find({ 
+        hackathonId: hackathonId, 
+        status: 'submitted',
+        roundIndex: parseInt(roundIndex)
+      }).populate('teamId', 'name leader')
+        .populate('submittedBy', 'name email')
+        .lean();
+
+      // Get all scores for these submissions
+      const Score = require('../model/ScoreModel');
+      const scores = await Score.find({ 
+        submission: { $in: submissions.map(s => s._id) } 
+      }).populate('judge', 'name email').lean();
+
+      // Create a map of submission scores
+      const submissionScores = {};
+      scores.forEach(score => {
+        if (!submissionScores[score.submission.toString()]) {
+          submissionScores[score.submission.toString()] = [];
+        }
+        submissionScores[score.submission.toString()].push(score);
+      });
+
+      // Calculate leaderboard entries
+      const leaderboard = submissions.map(submission => {
+        const submissionScoresList = submissionScores[submission._id.toString()] || [];
+        
+        // Calculate average score
+        let averageScore = 0;
+        let totalScore = 0;
+        let scoreCount = 0;
+        
+        submissionScoresList.forEach(score => {
+          // Convert Map to object if needed
+          let scoresObject = {};
+          if (score.scores && score.scores instanceof Map) {
+            score.scores.forEach((value, key) => {
+              scoresObject[key] = value.score;
+            });
+          } else if (score.scores && typeof score.scores === 'object') {
+            scoresObject = score.scores;
+          }
+          
+          const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+          if (criteriaScores.length > 0) {
+            const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+            totalScore += submissionScore;
+            scoreCount++;
+          }
+        });
+        
+        averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+        return {
+          _id: submission._id,
+          projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+          teamName: submission.teamName || submission.teamId?.name || 'No Team',
+          leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+          pptFile: submission.pptFile,
+          submittedAt: submission.submittedAt,
+          averageScore: Math.round(averageScore * 10) / 10,
+          scoreCount,
+          totalScore: Math.round(totalScore * 10) / 10,
+          status: submission.status,
+          roundIndex: submission.roundIndex
+        };
+      });
+
+      // Sort by average score (descending)
+      leaderboard.sort((a, b) => b.averageScore - a.averageScore);
+
+      // Apply shortlisting based on mode
+      if (mode === 'topN') {
+        // Validate input for topN mode
+        if (!shortlistCount || shortlistCount < 1) {
+          return res.status(400).json({ message: 'Valid shortlist count is required for topN mode' });
+        }
+        
+        submissionsToShortlist = leaderboard
+          .slice(0, shortlistCount)
+          .map(entry => entry._id);
+      } else if (mode === 'threshold') {
+        // Validate input for threshold mode
+        if (shortlistThreshold === undefined || shortlistThreshold < 0 || shortlistThreshold > 10) {
+          return res.status(400).json({ message: 'Valid score threshold (0-10) is required for threshold mode' });
+        }
+        
+        submissionsToShortlist = leaderboard
+          .filter(entry => entry.averageScore >= shortlistThreshold)
+          .map(entry => entry._id);
+      } else if (mode === 'date') {
+        // Shortlist all submissions (date-based)
+        submissionsToShortlist = leaderboard.map(entry => entry._id);
+      } else {
+        return res.status(400).json({ message: 'Invalid shortlisting mode. Use "topN", "threshold", or "date"' });
       }
-      
-      const leaderboard = leaderboardResponse.data.leaderboard;
-      submissionsToShortlist = leaderboard
-        .slice(0, shortlistCount)
-        .map(entry => entry._id);
     }
+
+    console.log('🔍 Backend - Submissions to shortlist:', submissionsToShortlist);
 
     // Update submission statuses
     const updatePromises = submissionsToShortlist.map(submissionId =>
-      Submission.findByIdAndUpdate(submissionId, { status: 'shortlisted' })
+      Submission.findByIdAndUpdate(submissionId, { 
+        status: 'shortlisted',
+        shortlistedAt: new Date(),
+        shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
+      })
     );
 
     await Promise.all(updatePromises);
@@ -2454,6 +2619,7 @@ exports.performShortlisting = async (req, res) => {
     if (roundProgressIndex >= 0) {
       // Update existing round progress
       hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = submissionsToShortlist;
+      hackathon.roundProgress[roundProgressIndex].shortlistedAt = new Date();
     } else {
       // Add new round progress
       hackathon.roundProgress.push({
@@ -2465,16 +2631,75 @@ exports.performShortlisting = async (req, res) => {
 
     await hackathon.save();
 
+    console.log('🔍 Backend - Shortlisting completed successfully');
+
     res.status(200).json({
       message: `Successfully shortlisted ${submissionsToShortlist.length} submissions`,
       shortlistedSubmissions: submissionsToShortlist,
       roundIndex: parseInt(roundIndex),
-      shortlistedAt: new Date()
+      shortlistedAt: new Date(),
+      mode: mode
     });
 
   } catch (error) {
-    console.error('Error performing shortlisting:', error);
-    res.status(500).json({ message: 'Failed to perform shortlisting' });
+    console.error('🔍 Backend - Error performing shortlisting:', error);
+    res.status(500).json({ message: 'Failed to perform shortlisting', error: error.message });
+  }
+};
+
+// 🎯 Check and Auto-Progress Round 2
+exports.checkAndAutoProgressRound2 = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    const now = new Date();
+    const round2StartDate = hackathon.rounds?.[1]?.startDate; // Round 2 start date
+
+    if (round2StartDate && now >= new Date(round2StartDate)) {
+      // Round 2 has started, move shortlisted submissions to round 2
+      const shortlistedSubmissions = await Submission.find({
+        hackathonId: hackathonId,
+        status: 'shortlisted',
+        shortlistedForRound: 2
+      });
+
+      if (shortlistedSubmissions.length > 0) {
+        // Update submissions to round 2
+        await Submission.updateMany(
+          { _id: { $in: shortlistedSubmissions.map(s => s._id) } },
+          { 
+            roundIndex: 1, // Round 2 (index 1 in the rounds array)
+            status: 'submitted',
+            shortlistedForRound: null // Clear shortlisting flag
+          }
+        );
+
+        console.log(`🔍 Auto-progressed ${shortlistedSubmissions.length} submissions to Round 2`);
+        
+        return res.status(200).json({
+          progressed: true,
+          count: shortlistedSubmissions.length,
+          message: `Successfully progressed ${shortlistedSubmissions.length} submissions to Round 2`
+        });
+      }
+    }
+    
+    return res.status(200).json({
+      progressed: false,
+      count: 0,
+      message: 'No submissions to progress or Round 2 has not started yet'
+    });
+  } catch (error) {
+    console.error('🔍 Error in auto-progress round 2:', error);
+    return res.status(500).json({ 
+      message: 'Failed to check auto-progress', 
+      error: error.message 
+    });
   }
 };
 
@@ -2521,13 +2746,21 @@ exports.getShortlistedSubmissions = async (req, res) => {
       let scoreCount = 0;
       
       submissionScoresList.forEach(score => {
-        if (score.scores && Array.isArray(score.scores)) {
-          const criteriaScores = Object.values(score.scores).filter(s => typeof s === 'number');
-          if (criteriaScores.length > 0) {
-            const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
-            totalScore += submissionScore;
-            scoreCount++;
-          }
+        // Convert Map to object if needed
+        let scoresObject = {};
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            scoresObject[key] = value.score;
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          scoresObject = score.scores;
+        }
+        
+        const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+        if (criteriaScores.length > 0) {
+          const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+          totalScore += submissionScore;
+          scoreCount++;
         }
       });
       
