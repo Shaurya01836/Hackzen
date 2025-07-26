@@ -1,8 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle } from "lucide-react";
+import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../../../../components/DashboardUI/avatar";
 import { toast } from "../../../../hooks/use-toast";
 import {
@@ -18,6 +18,7 @@ import {
 } from "../../../../components/DashboardUI/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
 import SubmissionRoundView from "./SubmissionRoundView";
+import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
 
 // Mock stages data
 const stages = [
@@ -42,6 +43,73 @@ export default function JudgeManagementAssignments({
   const [deletingJudge, setDeletingJudge] = useState(null);
   const [availableJudges, setAvailableJudges] = useState([]);
   const [loadingAvailableJudges, setLoadingAvailableJudges] = useState(false);
+
+  // Assignment overview state
+  const [assignmentOverview, setAssignmentOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  
+  // Selection state for unassigned submissions
+  const [selectedSubmissions, setSelectedSubmissions] = useState(new Set());
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+
+  // Fetch assignment overview when component mounts or hackathon changes
+  useEffect(() => {
+    if (hackathon?._id) {
+      fetchAssignmentOverview();
+    }
+  }, [hackathon?._id]);
+
+  // Refresh assignment overview periodically to ensure data is current
+  useEffect(() => {
+    if (hackathon?._id) {
+      const interval = setInterval(() => {
+        fetchAssignmentOverview();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [hackathon?._id]);
+
+  const fetchAssignmentOverview = async () => {
+    if (!hackathon?._id) return;
+    
+    setOverviewLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id}/assignment-overview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Assignment overview fetched:', {
+          totalSubmissions: data.summary?.totalSubmissions,
+          assignedSubmissions: data.summary?.assignedSubmissions,
+          unassignedSubmissions: data.summary?.unassignedSubmissions,
+          judges: data.judges?.length,
+          unassignedIds: data.unassignedSubmissions?.map(s => s._id),
+          assignedIds: data.assignedSubmissions?.map(s => s._id)
+        });
+        setAssignmentOverview(data);
+      } else {
+        console.error('Failed to fetch assignment overview:', response.status);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch assignment overview. Please refresh the page.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching assignment overview:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch assignment overview. Please check your connection.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
 
   // Helper: get round name from stage id
   const getRoundName = (stageId) => {
@@ -169,6 +237,32 @@ export default function JudgeManagementAssignments({
   const formatDate = (date) => date ? new Date(date).toLocaleString() : '--';
 
   // Fetch available judges
+  // Handle submission selection
+  const handleSubmissionSelection = (submissionId, isSelected) => {
+    setSelectedSubmissions(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(submissionId);
+      } else {
+        newSet.delete(submissionId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle bulk assignment
+  const handleBulkAssignment = () => {
+    if (selectedSubmissions.size === 0) {
+      toast({
+        title: "No submissions selected",
+        description: "Please select at least one submission to assign.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setAssignModalOpen(true);
+  };
+
   const fetchAvailableJudges = async () => {
     if (!hackathon?._id) return;
     
@@ -337,12 +431,201 @@ export default function JudgeManagementAssignments({
           <CardTitle className="flex items-center gap-2">
             <Gavel className="w-5 h-5" />
             Current Judge Assignments
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchAssignmentOverview}
+              disabled={overviewLoading}
+              className="ml-auto"
+            >
+              <RefreshCw className={`w-4 h-4 ${overviewLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedSubmissions(new Set());
+                fetchAssignmentOverview();
+              }}
+              disabled={overviewLoading}
+            >
+              Force Refresh
+            </Button>
           </CardTitle>
           <CardDescription>
-            View current judge assignments and available judges for this hackathon.
+            View current judge assignments and their assigned projects/teams for this hackathon.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Assignment Summary */}
+          {assignmentOverview && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Users className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Active Judges</div>
+                    <div className="text-lg font-bold text-blue-700">{assignmentOverview.judges?.length || 0}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Assigned Projects</div>
+                    <div className="text-lg font-bold text-green-700">
+                      {assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Unassigned Projects</div>
+                    <div className="text-lg font-bold text-orange-700">{assignmentOverview.unassignedSubmissions?.length || 0}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <Award className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-600">Total Projects</div>
+                    <div className="text-lg font-bold text-purple-700">
+                      {(assignmentOverview.judges?.reduce((total, judge) => total + (judge.assignedSubmissions?.length || 0), 0) || 0) + 
+                       (assignmentOverview.unassignedSubmissions?.length || 0)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Unassigned and Assigned Submissions Tables */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* Unassigned Submissions */}
+            <Card className="border-2 border-blue-200 bg-blue-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-blue-700">
+                  <FileText className="w-5 h-5" />
+                  Unassigned Submissions ({assignmentOverview?.unassignedSubmissions?.length || 0})
+                </CardTitle>
+                <CardDescription className="text-blue-600">
+                  Select from these submissions to assign to judges
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {assignmentOverview?.unassignedSubmissions?.length > 0 ? (
+                    assignmentOverview.unassignedSubmissions.map((submission) => (
+                      <div key={submission._id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                                                     <input
+                             type="checkbox"
+                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                             checked={selectedSubmissions.has(submission._id)}
+                             onChange={(e) => handleSubmissionSelection(submission._id, e.target.checked)}
+                           />
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {submission.projectTitle || submission.title || 'Untitled Project'}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(submission.submittedAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>No unassigned submissions</p>
+                    </div>
+                  )}
+                </div>
+                {assignmentOverview?.unassignedSubmissions?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-blue-200">
+                    <Button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={handleBulkAssignment}
+                      disabled={selectedSubmissions.size === 0}
+                    >
+                      Assign Selected to Judges ({selectedSubmissions.size})
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Assigned Submissions */}
+            <Card className="border-2 border-green-200 bg-green-50/30">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="w-5 h-5" />
+                  Assigned Submissions ({assignmentOverview?.assignedSubmissions?.length || 0})
+                </CardTitle>
+                <CardDescription className="text-green-600">
+                  These submissions are already assigned to judges
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {assignmentOverview?.assignedSubmissions?.length > 0 ? (
+                    assignmentOverview.assignedSubmissions.map((submission) => (
+                      <div key={submission._id} className="p-3 bg-white rounded-lg border border-green-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="font-medium text-gray-900">
+                            {submission.projectTitle || submission.title || 'Untitled Project'}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {submission.evaluationStatus === 'evaluated' ? (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Evaluated
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">
+                                <span className="w-3 h-3 mr-1">⏳</span>
+                                Pending
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>Assigned to: {submission.assignedJudges?.map(j => j.judgeName).join(', ') || 'Unknown'}</span>
+                          <span>{new Date(submission.submittedAt).toLocaleDateString()}</span>
+                        </div>
+                        {submission.averageScore && (
+                          <div className="mt-2 text-xs text-gray-600">
+                            Average Score: {submission.averageScore}/10 ({submission.scoreCount} evaluations)
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <CheckCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>No assigned submissions</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
           <div className="overflow-x-auto rounded-2xl shadow-lg bg-white/90 border border-gray-200 p-2 md:p-4">
             <table className="min-w-full text-sm border-separate border-spacing-y-3">
               <thead className="bg-gradient-to-r from-indigo-100 to-purple-100 border-b-2 border-gray-200">
@@ -350,7 +633,7 @@ export default function JudgeManagementAssignments({
                   <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide rounded-tl-2xl">Judge</th>
                   <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Type</th>
                   <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Status</th>
-                  <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Teams</th>
+                  <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide">Assigned Projects</th>
                   <th className="px-8 py-4 text-left font-bold text-gray-800 tracking-wide rounded-tr-2xl">Actions</th>
                 </tr>
               </thead>
@@ -392,27 +675,55 @@ export default function JudgeManagementAssignments({
                             Assigned
                           </span>
                         </td>
-                        <td className="px-8 py-4 border-r border-gray-100">
-                          <div className="flex flex-wrap gap-1">
-                            {a.assignedTeams?.length > 0 ? (
-                              a.assignedTeams.slice(0, 3).map((teamId, idx) => {
-                                const team = teams.find(t => t._id === teamId);
-                                return team ? (
-                                  <span key={teamId} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-indigo-100 text-indigo-700">
-                                    {team.name}
-                                  </span>
-                                ) : null;
-                              })
-                            ) : (
-                              <span className="text-gray-400 text-sm">No teams assigned</span>
-                            )}
-                            {a.assignedTeams?.length > 3 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-600">
-                                +{a.assignedTeams.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </td>
+                                                 <td className="px-8 py-4 border-r border-gray-100">
+                           <div className="space-y-2">
+                             {(() => {
+                               // Get assigned projects from assignment overview
+                               const judgeOverview = assignmentOverview?.judges?.find(j => j.judgeEmail === a.judge.email);
+                               const assignedProjects = judgeOverview?.assignedSubmissions || [];
+                               
+                               if (assignedProjects.length > 0) {
+                                 return (
+                                   <div className="space-y-1">
+                                     {assignedProjects.slice(0, 3).map((project, idx) => (
+                                       <div key={project._id} className="flex items-center justify-between p-2 bg-indigo-50 rounded border border-indigo-100">
+                                         <div className="flex items-center gap-2">
+                                           <FileText className="w-3 h-3 text-indigo-600" />
+                                           <span className="text-xs font-medium text-indigo-700">
+                                             {project.projectTitle || 'Untitled'}
+                                           </span>
+                                         </div>
+                                         <div className="flex items-center gap-2">
+                                           <span className={`text-xs px-2 py-1 rounded-full ${
+                                             project.evaluationStatus === 'evaluated' 
+                                               ? 'bg-green-100 text-green-700' 
+                                               : 'bg-yellow-100 text-yellow-700'
+                                           }`}>
+                                             {project.evaluationStatus === 'evaluated' ? '✓' : '⏳'}
+                                           </span>
+                                           {project.averageScore && (
+                                             <span className="text-xs font-bold text-green-700">
+                                               {project.averageScore}/10
+                                             </span>
+                                           )}
+                                         </div>
+                                       </div>
+                                     ))}
+                                     {assignedProjects.length > 3 && (
+                                       <div className="text-xs text-gray-500 text-center">
+                                         +{assignedProjects.length - 3} more projects
+                                       </div>
+                                     )}
+                                   </div>
+                                 );
+                               } else {
+                                 return (
+                                   <span className="text-gray-400 text-sm">No projects assigned</span>
+                                 );
+                               }
+                             })()}
+                           </div>
+                         </td>
                         <td className="px-8 py-4">
                           <div className="flex items-center gap-2">
                             <AlertDialog>
@@ -700,6 +1011,40 @@ export default function JudgeManagementAssignments({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Assignment Modal */}
+      <BulkEvaluatorAssignModal
+        open={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        selectedCount={selectedSubmissions.size}
+        hackathonId={hackathon?._id}
+        roundIndex={selectedStage === 'r1' ? 0 : 1}
+        selectedSubmissionIds={Array.from(selectedSubmissions)}
+        onAssign={(selectedEvaluators) => {
+          setSelectedSubmissions(new Set());
+          setAssignModalOpen(false);
+          // Force refresh after assignment
+          fetchAssignmentOverview();
+        }}
+        onAssignmentComplete={() => {
+          // Force refresh assignment overview immediately
+          console.log('🔄 Assignment completed, refreshing overview...');
+          fetchAssignmentOverview();
+          // Reset selected submissions
+          setSelectedSubmissions(new Set());
+          // Show success message
+          toast({
+            title: 'Assignment completed',
+            description: 'Submissions have been assigned to judges. The overview has been refreshed.',
+            variant: 'default',
+          });
+          // Force a second refresh after a short delay to ensure data is updated
+          setTimeout(() => {
+            console.log('🔄 Second refresh to ensure data consistency...');
+            fetchAssignmentOverview();
+          }, 1000);
+        }}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../components/CommonUI/card";
 import { Button } from "../../../components/CommonUI/button";
-import { Eye, CheckCircle, Clock, XCircle, Users, Award, FileText } from "lucide-react";
+import { Eye, CheckCircle, Clock, XCircle, Users, Award, FileText, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/DashboardUI/dialog";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ export default function JudgeDashboard() {
   const [currentRound, setCurrentRound] = useState(0);
   const [rounds, setRounds] = useState([]);
   const [allSubmissions, setAllSubmissions] = useState([]);
+  const [hasSpecificAssignments, setHasSpecificAssignments] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -28,24 +29,50 @@ export default function JudgeDashboard() {
     }
   }, [user, currentRound]);
 
+  // Add periodic refresh
+  useEffect(() => {
+    const interval = setInterval(fetchAssignedSubmissions, 30000);
+    return () => clearInterval(interval);
+  }, [currentRound]);
+
   const fetchAssignedSubmissions = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/my-assignments`, {
+      const response = await fetch('/api/judge-management/my-assigned-submissions', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Judge dashboard data:', {
+          hasSpecificAssignments: data.hasSpecificAssignments,
+          totalSubmissions: data.totalSubmissions,
+          submissions: data.submissions?.length || 0,
+          rounds: data.rounds?.length || 0,
+          hackathons: data.hackathons?.length || 0
+        });
+        
         setAllSubmissions(data.submissions || []);
         setRounds(data.rounds || []);
+        setHackathons(data.hackathons || []);
+        setHasSpecificAssignments(data.hasSpecificAssignments || false);
         
-        // Filter submissions for current round
-        const roundSubmissions = data.submissions?.filter(sub => 
-          sub.roundIndex === currentRound
-        ) || [];
-        setAssignedSubmissions(roundSubmissions);
+        // Only show submissions if judge has specific assignments
+        if (data.hasSpecificAssignments) {
+          // Filter submissions for current round
+          const roundSubmissions = data.submissions?.filter(sub => 
+            sub.roundIndex === currentRound
+          ) || [];
+          console.log(`🔍 Filtered submissions for round ${currentRound}:`, roundSubmissions.length);
+          setAssignedSubmissions(roundSubmissions);
+        } else {
+          // Show no submissions when no specific assignments
+          console.log('🔍 No specific assignments, showing empty dashboard');
+          setAssignedSubmissions([]);
+        }
       } else {
         throw new Error('Failed to fetch assigned submissions');
       }
@@ -160,24 +187,37 @@ export default function JudgeDashboard() {
           <h1 className="text-2xl font-bold text-gray-900">Judge Dashboard</h1>
           <p className="text-gray-600">Welcome back, {user?.name || user?.email}</p>
           <p className="text-sm text-blue-600 mt-1">
-            You can only view and evaluate submissions assigned to you by the organizer
+            {hasSpecificAssignments 
+              ? "You can view and evaluate submissions assigned to you by the organizer"
+              : "No submissions assigned yet. The organizer will assign specific projects to you for evaluation."
+            }
           </p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <span className="text-sm text-gray-500">
-              {allSubmissions.length} total submissions assigned
-            </span>
-            <br />
-            <span className="text-sm text-gray-500">
-              {assignedSubmissions.length} in current round
-            </span>
+            {hasSpecificAssignments ? (
+              <>
+                <span className="text-sm text-gray-500">
+                  {allSubmissions.length} total submissions assigned
+                </span>
+                <br />
+                <span className="text-sm text-gray-500">
+                  {assignedSubmissions.length} in current round
+                </span>
+              </>
+            ) : (
+              <div className="mt-2">
+                <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                  No assignments yet
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Round Selection */}
-      {rounds.length > 0 && (
+      {rounds.length > 0 && hasSpecificAssignments && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -213,9 +253,16 @@ export default function JudgeDashboard() {
           <CardTitle className="text-lg flex items-center gap-2">
             <Award className="w-5 h-5" />
             My Assigned Submissions
+            <Button onClick={fetchAssignedSubmissions} disabled={loading} variant="outline" size="sm" className="ml-auto">
+              <RefreshCw className={loading ? 'animate-spin' : ''} />
+              Refresh
+            </Button>
           </CardTitle>
           <p className="text-sm text-gray-600">
-            {rounds[currentRound]?.name || `Round ${currentRound + 1}`} - {assignedSubmissions.length} submissions assigned to you
+            {hasSpecificAssignments 
+              ? `${rounds[currentRound]?.name || `Round ${currentRound + 1}`} - ${assignedSubmissions.length} submissions assigned to you`
+              : 'No submissions assigned yet. The organizer will assign projects to you for evaluation.'
+            }
           </p>
         </CardHeader>
         <CardContent>
@@ -227,9 +274,17 @@ export default function JudgeDashboard() {
           ) : assignedSubmissions.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No submissions assigned to you for this round.</p>
+              <p className="text-gray-500">
+                {hasSpecificAssignments 
+                  ? 'No submissions assigned to you for this round.'
+                  : 'No submissions assigned to you yet.'
+                }
+              </p>
               <p className="text-sm text-gray-400 mt-1">
-                The organizer will assign submissions to you when they are ready for evaluation.
+                {hasSpecificAssignments
+                  ? 'The organizer will assign submissions to you when they are ready for evaluation.'
+                  : 'The organizer will assign specific projects to you for evaluation.'
+                }
               </p>
             </div>
           ) : (

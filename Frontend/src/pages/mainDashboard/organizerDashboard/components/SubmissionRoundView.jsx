@@ -577,23 +577,25 @@ export default function SubmissionRoundView({ roundId, roundName, roundDescripti
       {/* Bulk Evaluator Assign Modal */}
           <BulkEvaluatorAssignModal
             open={assignModalOpen}
-        onClose={() => setAssignModalOpen(false)}
+            onClose={() => setAssignModalOpen(false)}
             selectedCount={selectedRows.length}
             onAssign={(selectedEvaluatorIds) => {
-          toast({
-            title: 'Success',
-            description: `Assigned ${selectedEvaluatorIds.length} evaluator(s) to ${selectedRows.length} submission(s)`,
-          });
+              toast({
+                title: 'Success',
+                description: `Assigned ${selectedEvaluatorIds.length} evaluator(s) to ${selectedRows.length} submission(s)`,
+              });
               setAssignModalOpen(false);
-          setSelectedRows([]);
-          // Refresh the component to update assignments
-          window.location.reload();
+              setSelectedRows([]);
             }}
             allEvaluators={allEvaluators}
             initialSelected={[]}
             hackathonId={hackathonId}
             roundIndex={roundIndex}
             selectedSubmissionIds={selectedRows}
+            onAssignmentComplete={() => {
+              // Refresh the component to update assignments
+              window.location.reload();
+            }}
           />
     </div>
   );

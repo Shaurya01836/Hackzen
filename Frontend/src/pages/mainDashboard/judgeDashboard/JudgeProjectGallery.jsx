@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/CommonUI/button";
-import HackathonProjectsGallery from "../partipantDashboard/components/HackathonComponent/Hackathon/HackathonProjectsGallery";
+import JudgeAssignedProjectsGallery from "./JudgeAssignedProjectsGallery";
 import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
 import { ArrowLeft, Filter, LayoutGrid, FileText, Folder } from "lucide-react";
 import {
@@ -113,42 +113,10 @@ export default function JudgeProjectGallery() {
                   </h2>
                 </div>
 
-                <HackathonProjectsGallery
+                <JudgeAssignedProjectsGallery
                   hackathonId={hackathonId}
                   onProjectClick={handleProjectClick}
                   selectedType={getFilterValue()} 
-                  emptyStateMessage={
-                    <Card className="overflow-hidden">
-                      <CardContent className="text-center py-12 pt-12">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
-                          <Folder className="w-8 h-8 text-gray-400" />
-                        </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">
-                          {selectedType !== "all" 
-                            ? "No Projects Found"
-                            : "No Projects Submitted Yet"}
-                        </h3>
-                        <p className="text-gray-500 mb-4 max-w-md mx-auto">
-                          {selectedType !== "all" 
-                            ? `No projects of type "${
-                                typeOptions.find(
-                                  (opt) => opt.value === selectedType
-                                )?.label
-                              }" have been submitted yet. Try selecting a different filter or check back later.`
-                            : "No projects have been submitted for this hackathon yet. Participants may still be working on their submissions."}
-                        </p>
-                        {selectedType !== "all" && ( 
-                          <Button
-                            variant="outline"
-                            onClick={() => setSelectedType("all")} 
-                            className="mt-2"
-                          >
-                            View All Projects
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  }
                 />
               </div>
             </div>

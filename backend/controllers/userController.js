@@ -618,18 +618,19 @@ const getUserRoleBreakdown = async (req, res) => {
 const getJudgeStats = async (req, res) => {
   try {
     const userId = req.user._id;
+    const userEmail = req.user.email;
 
-    // 1️⃣ Find accepted judge invites
-    const judgeInvites = await RoleInvite.find({
-      invitedUser: userId,
-      role: 'judge',
-      status: 'accepted'
+    // 1️⃣ Find active judge assignments (instead of role invites)
+    const JudgeAssignment = require('../model/JudgeAssignmentModel');
+    const activeAssignments = await JudgeAssignment.find({
+      'judge.email': userEmail,
+      status: 'active'
     }).populate('hackathon');
 
-    const totalHackathons = judgeInvites.length;
+    const totalHackathons = activeAssignments.length;
 
     // 2️⃣ Count total submitted projects in those hackathons
-    const hackathonIds = judgeInvites.map(invite => invite.hackathon._id);
+    const hackathonIds = activeAssignments.map(assignment => assignment.hackathon._id);
     const totalSubmissions = await Project.countDocuments({
       hackathon: { $in: hackathonIds },
       status: 'submitted'

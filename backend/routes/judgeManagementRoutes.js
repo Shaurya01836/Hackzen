@@ -69,4 +69,15 @@ router.post('/judge-assignments/:assignmentId/respond', protect, judgeManagement
 // 🎯 Judge Dashboard
 router.get('/judge/dashboard', protect, judgeManagementController.getJudgeDashboard);
 
+// Assignment overview for organizer
+router.get('/hackathons/:hackathonId/assignment-overview', protect, judgeManagementController.getAssignmentOverview);
+
+// Get submissions with assignment status for round
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/submissions-status', protect, judgeManagementController.getSubmissionsWithAssignmentStatus);
+
+// 🎯 Leaderboard and Shortlisting for Round 2
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/leaderboard', protect, isOrganizerOrAdmin, judgeManagementController.getLeaderboard);
+router.post('/hackathons/:hackathonId/rounds/:roundIndex/shortlist', protect, isOrganizerOrAdmin, judgeManagementController.performShortlisting);
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/shortlisted', protect, isOrganizerOrAdmin, judgeManagementController.getShortlistedSubmissions);
+
 module.exports = router; 

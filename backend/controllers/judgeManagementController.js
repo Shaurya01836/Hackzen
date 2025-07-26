@@ -104,6 +104,17 @@ exports.assignJudges = async (req, res) => {
         continue;
       }
 
+      // Create assignedRounds for each hackathon round, with assignedSubmissions: []
+      const assignedRounds = (hackathon.rounds || []).map((round, idx) => ({
+        roundIndex: idx,
+        roundId: round._id?.toString() || `round_${idx}`,
+        roundName: round.name || `Round #${idx + 1}`,
+        roundType: round.type || 'project',
+        isAssigned: true,
+        assignedSubmissions: [],
+        maxSubmissions: 50
+      }));
+
       // Create judge assignment
       const judgeAssignment = await JudgeAssignment.create({
         hackathon: hackathonId,
@@ -115,7 +126,7 @@ exports.assignJudges = async (req, res) => {
           canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && canJudgeSponsoredPS)
         },
         assignedProblemStatements: [],
-        assignedRounds: [],
+        assignedRounds,
         permissions: {
           canJudgeGeneralPS: judgeType !== 'sponsor',
           canJudgeSponsoredPS: judgeType === 'sponsor' || judgeType === 'hybrid' || canJudgeSponsoredPS,
@@ -470,6 +481,17 @@ exports.inviteJudge = async (req, res) => {
       return res.status(400).json({ message: 'Judge is already assigned to this hackathon' });
     }
 
+    // Create assignedRounds for each hackathon round, with assignedSubmissions: []
+    const assignedRounds = (hackathon.rounds || []).map((round, idx) => ({
+      roundIndex: idx,
+      roundId: round._id?.toString() || `round_${idx}`,
+      roundName: round.name || `Round #${idx + 1}`,
+      roundType: round.type || 'project',
+      isAssigned: true,
+      assignedSubmissions: [],
+      maxSubmissions: 50
+    }));
+
     // Create judge assignment
     const assignment = new JudgeAssignment({
       hackathon: hackathonId,
@@ -482,7 +504,7 @@ exports.inviteJudge = async (req, res) => {
       },
       status: 'pending',
       maxSubmissionsPerJudge,
-      assignedRounds: [],
+      assignedRounds,
       assignedTeams: []
     });
 
@@ -1070,6 +1092,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       judgesPerProjectMode = 'manual' // 'manual' or 'equal'
     } = req.body;
 
+
+
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
       return res.status(404).json({ message: 'Hackathon not found' });
@@ -1091,16 +1115,42 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       return res.status(400).json({ message: 'One or more submission IDs are invalid.' });
     }
 
-    // Defensive check for evaluatorAssignments
-    if (!Array.isArray(evaluatorAssignments) || evaluatorAssignments.length === 0) {
-      return res.status(400).json({ message: 'At least one evaluator is required' });
-    }
-
     // Get all evaluator assignments for this hackathon
     const allEvaluators = await JudgeAssignment.find({ 
       hackathon: hackathonId,
       status: { $in: ['active', 'pending'] }
     });
+
+    // Get already assigned submissions for this round to prevent duplicates
+    const alreadyAssignedSubmissions = new Set();
+    allEvaluators.forEach(evaluator => {
+      const roundAssignment = evaluator.assignedRounds?.find(r => r.roundIndex === roundIndex);
+      if (roundAssignment?.assignedSubmissions) {
+        roundAssignment.assignedSubmissions.forEach(subId => {
+          alreadyAssignedSubmissions.add(subId.toString());
+        });
+      }
+    });
+
+    // Filter out already assigned submissions
+    const availableSubmissionIds = submissionIds.filter(id => !alreadyAssignedSubmissions.has(id.toString()));
+    const duplicateSubmissionIds = submissionIds.filter(id => alreadyAssignedSubmissions.has(id.toString()));
+
+    if (availableSubmissionIds.length === 0) {
+      return res.status(400).json({ 
+        message: 'All selected submissions are already assigned to judges for this round.',
+        duplicateSubmissions: duplicateSubmissionIds
+      });
+    }
+
+    if (duplicateSubmissionIds.length > 0) {
+      console.warn(`Filtering out ${duplicateSubmissionIds.length} already assigned submissions:`, duplicateSubmissionIds);
+    }
+
+    // Defensive check for evaluatorAssignments
+    if (!Array.isArray(evaluatorAssignments) || evaluatorAssignments.length === 0) {
+      return res.status(400).json({ message: 'At least one evaluator is required' });
+    }
 
     // Validate that all evaluator assignments reference a valid, active judge
     const activeEvaluators = allEvaluators.filter(e => e.status === 'active');
@@ -1122,8 +1172,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     }
 
     const results = [];
-    const totalSubmissions = submissionIds.length;
-    let remainingSubmissions = [...submissionIds];
+    const totalSubmissions = availableSubmissionIds.length;
+    let remainingSubmissions = [...availableSubmissionIds];
 
     // Handle multiple judges per project logic
     if (multipleJudgesMode) {
@@ -1171,13 +1221,13 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
         if (judgesPerProjectMode === 'equal') {
           // Equal distribution: each submission gets assigned to multiple judges equally
           const judgesPerSubmission = Math.ceil(evaluatorAssignments.length / totalSubmissions);
-          submissionsToAssign = submissionIds.filter(submissionId => {
+          submissionsToAssign = availableSubmissionIds.filter(submissionId => {
             const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
             return currentJudges.length < judgesPerSubmission;
           }).slice(0, actualMaxSubmissions);
         } else {
           // Manual mode: assign based on judgesPerProject setting
-          submissionsToAssign = submissionIds.filter(submissionId => {
+          submissionsToAssign = availableSubmissionIds.filter(submissionId => {
             const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
             return currentJudges.length < judgesPerProject;
           }).slice(0, actualMaxSubmissions);
@@ -1352,6 +1402,11 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       totalSubmissions,
       assignedSubmissions: totalSubmissions - unassignedCount,
       unassignedSubmissions: unassignedCount,
+      filteredSubmissions: duplicateSubmissionIds.length > 0 ? {
+        count: duplicateSubmissionIds.length,
+        submissions: duplicateSubmissionIds,
+        message: `${duplicateSubmissionIds.length} submissions were already assigned and were filtered out`
+      } : null,
       totalEvaluators: evaluatorAssignments.length,
       activeEvaluators: activeEvaluators.length,
       multipleJudgesMode,
@@ -1463,62 +1518,87 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     const submissions = [];
     const rounds = [];
     const hackathons = [];
+    const allSubmissions = [];
 
     for (const assignment of assignments) {
-      // Only process assignments where judge has actual submissions assigned
-      let hasAnyAssignments = false;
+      const hackathon = assignment.hackathon;
+      
+      // Check if judge has any specific assignments
+      let hasSpecificAssignments = false;
+      let assignedSubmissionIds = new Set();
       
       for (const round of assignment.assignedRounds) {
         if (round.isAssigned && round.assignedSubmissions && round.assignedSubmissions.length > 0) {
-          hasAnyAssignments = true;
-          
-          // Get submission details for this round
-          const submissionDetails = await Submission.find({
-            _id: { $in: round.assignedSubmissions }
-          }).populate('team', 'name members')
-            .populate('hackathon', 'name')
-            .populate('scores');
+          hasSpecificAssignments = true;
+          round.assignedSubmissions.forEach(id => assignedSubmissionIds.add(id.toString()));
+        }
+      }
 
-          // Add round info
+      // If judge has specific assignments, show only those
+      // If no specific assignments, show NO submissions (empty dashboard)
+      let submissionsToFetch = [];
+      
+      if (hasSpecificAssignments) {
+        // Get only assigned submissions
+        submissionsToFetch = await Submission.find({
+          _id: { $in: Array.from(assignedSubmissionIds) }
+        }).populate('team', 'name members')
+          .populate('hackathonId', 'name');
+      } else {
+        // Show NO submissions when no specific assignments
+        submissionsToFetch = [];
+      }
+
+      // Process rounds
+      for (const round of assignment.assignedRounds) {
+        if (round.isAssigned) {
           const roundInfo = {
             index: round.roundIndex,
             name: round.roundName,
             type: round.roundType,
-            submissionCount: round.assignedSubmissions.length,
-            hackathonId: assignment.hackathon._id,
-            hackathonName: assignment.hackathon.name
+            submissionCount: hasSpecificAssignments ? round.assignedSubmissions?.length || 0 : submissionsToFetch.length,
+            hackathonId: hackathon._id,
+            hackathonName: hackathon.name,
+            hasSpecificAssignments: hasSpecificAssignments
           };
 
-          if (!rounds.find(r => r.index === round.roundIndex && r.hackathonId.toString() === assignment.hackathon._id.toString())) {
+          if (!rounds.find(r => r.index === round.roundIndex && r.hackathonId.toString() === hackathon._id.toString())) {
             rounds.push(roundInfo);
-          }
-
-          // Add submissions with evaluation status
-          for (const submission of submissionDetails) {
-            const existingScore = submission.scores?.find(s => 
-              s.judge.toString() === assignment._id.toString() && 
-              s.roundIndex === round.roundIndex
-            );
-
-            submissions.push({
-              ...submission.toObject(),
-              evaluationStatus: existingScore ? 'evaluated' : 'pending',
-              score: existingScore?.score || null,
-              feedback: existingScore?.feedback || null,
-              roundIndex: round.roundIndex,
-              roundName: round.roundName,
-              hackathonId: assignment.hackathon._id,
-              hackathonName: assignment.hackathon.name
-            });
           }
         }
       }
+
+      // Add submissions with evaluation status
+      for (const submission of submissionsToFetch) {
+        // Check if this submission has been scored by this judge
+        const Score = require('../model/ScoreModel');
+        const existingScore = await Score.findOne({
+          submission: submission._id,
+          judge: assignment._id
+        });
+
+        const submissionData = {
+          ...submission.toObject(),
+          evaluationStatus: existingScore ? 'evaluated' : 'pending',
+          score: existingScore?.score || null,
+          feedback: existingScore?.feedback || null,
+          roundIndex: assignment.assignedRounds[0]?.roundIndex || 0,
+          roundName: assignment.assignedRounds[0]?.roundName || 'Round 1',
+          hackathonId: hackathon._id,
+          hackathonName: hackathon.name,
+          isAssigned: hasSpecificAssignments ? assignedSubmissionIds.has(submission._id.toString()) : false
+        };
+
+        submissions.push(submissionData);
+        allSubmissions.push(submissionData);
+      }
       
-      // Add hackathon to list if judge has any assignments
-      if (hasAnyAssignments && assignment.hackathon) {
+      // Add hackathon to list
+      if (hackathon) {
         hackathons.push({
-          _id: assignment.hackathon._id,
-          name: assignment.hackathon.name
+          _id: hackathon._id,
+          name: hackathon.name,
+          hasSpecificAssignments: hasSpecificAssignments
         });
       }
     }
@@ -1529,12 +1609,13 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     );
 
     res.status(200).json({
-      submissions,
+      submissions: allSubmissions,
       rounds,
       hackathons: uniqueHackathons,
-      totalSubmissions: submissions.length,
+      totalSubmissions: allSubmissions.length,
       totalRounds: rounds.length,
-      totalHackathons: uniqueHackathons.length
+      totalHackathons: uniqueHackathons.length,
+      hasSpecificAssignments: uniqueHackathons.some(h => h.hasSpecificAssignments)
     });
 
   } catch (error) {
@@ -1941,5 +2022,552 @@ exports.deleteJudge = async (req, res) => {
       message: 'Failed to delete judge',
       error: error.message 
     });
+  }
+};
+
+// 🎯 Assignment Overview for Organizer
+exports.getAssignmentOverview = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get all judge assignments for this hackathon
+    const judgeAssignments = await JudgeAssignment.find({ hackathon: hackathonId })
+      .populate('judge')
+      .lean();
+
+    // Get all submissions for this hackathon
+    const submissions = await Submission.find({ hackathonId: hackathonId, status: 'submitted' })
+      .select('_id projectTitle title teamId teamName pptFile submittedAt')
+      .lean();
+
+    // Get all scores for these submissions
+    const scores = await Score.find({ 
+      submissionId: { $in: submissions.map(s => s._id) } 
+    }).lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submissionId.toString()]) {
+        submissionScores[score.submissionId.toString()] = [];
+      }
+      submissionScores[score.submissionId.toString()].push(score);
+    });
+
+    // Map: submissionId -> assigned judge emails with round info
+    const submissionAssignments = {};
+    submissions.forEach(sub => {
+      submissionAssignments[sub._id.toString()] = [];
+    });
+
+    // Map: judge email -> assigned submission IDs with round info
+    const judgeToSubmissions = {};
+    judgeAssignments.forEach(judgeAssignment => {
+      const judgeEmail = judgeAssignment.judge?.email || judgeAssignment.judge.email;
+      judgeToSubmissions[judgeEmail] = [];
+      (judgeAssignment.assignedRounds || []).forEach(round => {
+        (round.assignedSubmissions || []).forEach(subId => {
+          judgeToSubmissions[judgeEmail].push({
+            submissionId: subId.toString(),
+            roundIndex: round.roundIndex,
+            roundName: round.roundName,
+            roundType: round.roundType
+          });
+          if (submissionAssignments[subId.toString()]) {
+            submissionAssignments[subId.toString()].push({
+              judgeEmail,
+              judgeName: judgeAssignment.judge?.name || judgeEmail,
+              roundIndex: round.roundIndex,
+              roundName: round.roundName,
+              roundType: round.roundType
+            });
+          }
+        });
+      });
+    });
+
+    // Build judge assignment summary with evaluation status
+    const judges = judgeAssignments.map(judgeAssignment => {
+      const judgeEmail = judgeAssignment.judge?.email || judgeAssignment.judge.email;
+      return {
+        judgeEmail,
+        judgeName: judgeAssignment.judge?.name || judgeEmail,
+        judgeType: judgeAssignment.judge?.type || 'platform',
+        assignedSubmissions: (judgeToSubmissions[judgeEmail] || []).map(assignment => {
+          const sub = submissions.find(s => s._id.toString() === assignment.submissionId);
+          if (!sub) return null;
+          
+          const submissionScoresList = submissionScores[assignment.submissionId] || [];
+          const averageScore = submissionScoresList.length > 0 
+            ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
+            : null;
+          
+          return {
+            _id: sub._id,
+            projectTitle: sub.projectTitle || sub.title,
+            teamId: sub.teamId,
+            teamName: sub.teamName,
+            pptFile: sub.pptFile,
+            submittedAt: sub.submittedAt,
+            roundIndex: assignment.roundIndex,
+            roundName: assignment.roundName,
+            roundType: assignment.roundType,
+            evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
+            scoreCount: submissionScoresList.length,
+            averageScore: averageScore ? Math.round(averageScore * 10) / 10 : null,
+            scores: submissionScoresList.map(score => ({
+              judgeEmail: score.judgeEmail,
+              totalScore: score.totalScore,
+              criteria: score.criteria || []
+            }))
+          };
+        }).filter(Boolean)
+      };
+    });
+
+    // Find unassigned submissions
+    const unassignedSubmissions = submissions.filter(sub =>
+      (submissionAssignments[sub._id.toString()] || []).length === 0
+    ).map(sub => ({
+      _id: sub._id,
+      projectTitle: sub.projectTitle || sub.title,
+      teamId: sub.teamId,
+      teamName: sub.teamName,
+      pptFile: sub.pptFile,
+      submittedAt: sub.submittedAt
+    }));
+
+    // Build assigned submissions with judge information
+    const assignedSubmissions = submissions.filter(sub =>
+      (submissionAssignments[sub._id.toString()] || []).length > 0
+    ).map(sub => {
+      const submissionScoresList = submissionScores[sub._id.toString()] || [];
+      const averageScore = submissionScoresList.length > 0 
+        ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
+        : null;
+      
+      return {
+        _id: sub._id,
+        projectTitle: sub.projectTitle || sub.title,
+        teamId: sub.teamId,
+        teamName: sub.teamName,
+        pptFile: sub.pptFile,
+        submittedAt: sub.submittedAt,
+        assignedJudges: submissionAssignments[sub._id.toString()] || [],
+        evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
+        scoreCount: submissionScoresList.length,
+        averageScore: averageScore ? Math.round(averageScore * 10) / 10 : null,
+        scores: submissionScoresList.map(score => ({
+          judgeEmail: score.judgeEmail,
+          totalScore: score.totalScore,
+          criteria: score.criteria || []
+        }))
+      };
+    });
+
+    res.status(200).json({
+      judges,
+      unassignedSubmissions,
+      assignedSubmissions,
+      summary: {
+        totalSubmissions: submissions.length,
+        assignedSubmissions: assignedSubmissions.length,
+        unassignedSubmissions: unassignedSubmissions.length,
+        evaluatedSubmissions: assignedSubmissions.filter(s => s.evaluationStatus === 'evaluated').length,
+        pendingEvaluations: assignedSubmissions.filter(s => s.evaluationStatus === 'pending').length
+      }
+    });
+  } catch (error) {
+    console.error('Error in getAssignmentOverview:', error);
+    res.status(500).json({ message: 'Failed to get assignment overview' });
+  }
+};
+
+// 🎯 Get Submissions with Assignment Status for Round
+exports.getSubmissionsWithAssignmentStatus = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex } = req.params;
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get all submissions for this hackathon
+    const submissions = await Submission.find({ hackathonId: hackathonId, status: 'submitted' })
+      .select('_id projectTitle title teamId teamName pptFile submittedAt')
+      .lean();
+
+    // Get all judge assignments for this hackathon
+    const judgeAssignments = await JudgeAssignment.find({ hackathon: hackathonId })
+      .populate('judge')
+      .lean();
+
+    // Get all scores for these submissions
+    const scores = await Score.find({ 
+      submissionId: { $in: submissions.map(s => s._id) } 
+    }).lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submissionId.toString()]) {
+        submissionScores[score.submissionId.toString()] = [];
+      }
+      submissionScores[score.submissionId.toString()].push(score);
+    });
+
+    // Map: submissionId -> assigned judge emails for this round
+    const submissionAssignments = {};
+    submissions.forEach(sub => {
+      submissionAssignments[sub._id.toString()] = [];
+    });
+
+    // Build assignment map for this round
+    judgeAssignments.forEach(judgeAssignment => {
+      const judgeEmail = judgeAssignment.judge?.email || judgeAssignment.judge.email;
+      const roundAssignment = judgeAssignment.assignedRounds?.find(r => r.roundIndex === parseInt(roundIndex));
+      
+      if (roundAssignment?.assignedSubmissions) {
+        roundAssignment.assignedSubmissions.forEach(subId => {
+          if (submissionAssignments[subId.toString()]) {
+            submissionAssignments[subId.toString()].push({
+              judgeEmail,
+              judgeName: judgeAssignment.judge?.name || judgeEmail,
+              judgeType: judgeAssignment.judge?.type || 'platform',
+              roundIndex: roundAssignment.roundIndex,
+              roundName: roundAssignment.roundName,
+              roundType: roundAssignment.roundType
+            });
+          }
+        });
+      }
+    });
+
+    // Build submissions with assignment status
+    const submissionsWithStatus = submissions.map(sub => {
+      const submissionScoresList = submissionScores[sub._id.toString()] || [];
+      const averageScore = submissionScoresList.length > 0 
+        ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
+        : null;
+      
+      return {
+        _id: sub._id,
+        projectTitle: sub.projectTitle || sub.title,
+        teamId: sub.teamId,
+        teamName: sub.teamName,
+        pptFile: sub.pptFile,
+        submittedAt: sub.submittedAt,
+        isAssigned: (submissionAssignments[sub._id.toString()] || []).length > 0,
+        assignedJudges: submissionAssignments[sub._id.toString()] || [],
+        evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
+        scoreCount: submissionScoresList.length,
+        averageScore: averageScore ? Math.round(averageScore * 10) / 10 : null
+      };
+    });
+
+    // Separate assigned and unassigned submissions
+    const assignedSubmissions = submissionsWithStatus.filter(sub => sub.isAssigned);
+    const unassignedSubmissions = submissionsWithStatus.filter(sub => !sub.isAssigned);
+
+    res.status(200).json({
+      assignedSubmissions,
+      unassignedSubmissions,
+      summary: {
+        totalSubmissions: submissionsWithStatus.length,
+        assignedSubmissions: assignedSubmissions.length,
+        unassignedSubmissions: unassignedSubmissions.length,
+        evaluatedSubmissions: submissionsWithStatus.filter(s => s.evaluationStatus === 'evaluated').length,
+        pendingEvaluations: submissionsWithStatus.filter(s => s.evaluationStatus === 'pending').length
+      }
+    });
+  } catch (error) {
+    console.error('Error in getSubmissionsWithAssignmentStatus:', error);
+    res.status(500).json({ message: 'Failed to get submissions with assignment status' });
+  }
+};
+
+// 🎯 Get Leaderboard for Round 2 Shortlisting
+exports.getLeaderboard = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can view leaderboard' });
+    }
+
+    // Get all submissions for this hackathon and round
+    const submissions = await Submission.find({ 
+      hackathonId: hackathonId, 
+      status: 'submitted',
+      roundIndex: parseInt(roundIndex)
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+
+    // Get all scores for these submissions
+    const Score = require('../model/ScoreModel');
+    const scores = await Score.find({ 
+      submissionId: { $in: submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submissionId.toString()]) {
+        submissionScores[score.submissionId.toString()] = [];
+      }
+      submissionScores[score.submissionId.toString()].push(score);
+    });
+
+    // Calculate leaderboard entries
+    const leaderboard = submissions.map(submission => {
+      const submissionScoresList = submissionScores[submission._id.toString()] || [];
+      
+      // Calculate average score
+      let averageScore = 0;
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+      submissionScoresList.forEach(score => {
+        if (score.scores && Array.isArray(score.scores)) {
+          const criteriaScores = Object.values(score.scores).filter(s => typeof s === 'number');
+          if (criteriaScores.length > 0) {
+            const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+            totalScore += submissionScore;
+            scoreCount++;
+          }
+        }
+      });
+      
+      averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptFile: submission.pptFile,
+        submittedAt: submission.submittedAt,
+        averageScore: Math.round(averageScore * 10) / 10,
+        scoreCount,
+        totalScore: Math.round(totalScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by average score (descending) and then by submission date (ascending for ties)
+    leaderboard.sort((a, b) => {
+      if (b.averageScore !== a.averageScore) {
+        return b.averageScore - a.averageScore;
+      }
+      return new Date(a.submittedAt) - new Date(b.submittedAt);
+    });
+
+    // Add rank to each entry
+    leaderboard.forEach((entry, index) => {
+      entry.rank = index + 1;
+    });
+
+    res.status(200).json({
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        roundIndex: parseInt(roundIndex)
+      },
+      leaderboard,
+      summary: {
+        totalSubmissions: leaderboard.length,
+        evaluatedSubmissions: leaderboard.filter(s => s.scoreCount > 0).length,
+        pendingEvaluations: leaderboard.filter(s => s.scoreCount === 0).length,
+        averageScore: leaderboard.length > 0 
+          ? Math.round(leaderboard.reduce((sum, s) => sum + s.averageScore, 0) / leaderboard.length * 10) / 10
+          : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching leaderboard:', error);
+    res.status(500).json({ message: 'Failed to fetch leaderboard' });
+  }
+};
+
+// 🎯 Perform Shortlisting for Round 2
+exports.performShortlisting = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params;
+    const { shortlistCount, submissionIds } = req.body;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can perform shortlisting' });
+    }
+
+    // Validate input
+    if (!shortlistCount || shortlistCount < 1) {
+      return res.status(400).json({ message: 'Valid shortlist count is required' });
+    }
+
+    let submissionsToShortlist = [];
+
+    if (submissionIds && Array.isArray(submissionIds)) {
+      // Use provided submission IDs
+      submissionsToShortlist = submissionIds;
+    } else {
+      // Get top N submissions from leaderboard
+      const leaderboardResponse = await this.getLeaderboard(req, res);
+      if (leaderboardResponse.statusCode !== 200) {
+        return leaderboardResponse;
+      }
+      
+      const leaderboard = leaderboardResponse.data.leaderboard;
+      submissionsToShortlist = leaderboard
+        .slice(0, shortlistCount)
+        .map(entry => entry._id);
+    }
+
+    // Update submission statuses
+    const updatePromises = submissionsToShortlist.map(submissionId =>
+      Submission.findByIdAndUpdate(submissionId, { status: 'shortlisted' })
+    );
+
+    await Promise.all(updatePromises);
+
+    // Update hackathon round progress
+    const roundProgressIndex = hackathon.roundProgress.findIndex(rp => rp.roundIndex === parseInt(roundIndex));
+    
+    if (roundProgressIndex >= 0) {
+      // Update existing round progress
+      hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = submissionsToShortlist;
+    } else {
+      // Add new round progress
+      hackathon.roundProgress.push({
+        roundIndex: parseInt(roundIndex),
+        shortlistedSubmissions: submissionsToShortlist,
+        shortlistedAt: new Date()
+      });
+    }
+
+    await hackathon.save();
+
+    res.status(200).json({
+      message: `Successfully shortlisted ${submissionsToShortlist.length} submissions`,
+      shortlistedSubmissions: submissionsToShortlist,
+      roundIndex: parseInt(roundIndex),
+      shortlistedAt: new Date()
+    });
+
+  } catch (error) {
+    console.error('Error performing shortlisting:', error);
+    res.status(500).json({ message: 'Failed to perform shortlisting' });
+  }
+};
+
+// 🎯 Get Shortlisted Submissions
+exports.getShortlistedSubmissions = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get shortlisted submissions
+    const shortlistedSubmissions = await Submission.find({
+      hackathonId: hackathonId,
+      status: 'shortlisted',
+      roundIndex: parseInt(roundIndex)
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+
+    // Get scores for shortlisted submissions
+    const Score = require('../model/ScoreModel');
+    const scores = await Score.find({ 
+      submissionId: { $in: shortlistedSubmissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submissionId.toString()]) {
+        submissionScores[score.submissionId.toString()] = [];
+      }
+      submissionScores[score.submissionId.toString()].push(score);
+    });
+
+    // Format shortlisted submissions with scores
+    const formattedSubmissions = shortlistedSubmissions.map(submission => {
+      const submissionScoresList = submissionScores[submission._id.toString()] || [];
+      
+      let averageScore = 0;
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+      submissionScoresList.forEach(score => {
+        if (score.scores && Array.isArray(score.scores)) {
+          const criteriaScores = Object.values(score.scores).filter(s => typeof s === 'number');
+          if (criteriaScores.length > 0) {
+            const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+            totalScore += submissionScore;
+            scoreCount++;
+          }
+        }
+      });
+      
+      averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptFile: submission.pptFile,
+        submittedAt: submission.submittedAt,
+        averageScore: Math.round(averageScore * 10) / 10,
+        scoreCount,
+        totalScore: Math.round(totalScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by average score (descending)
+    formattedSubmissions.sort((a, b) => b.averageScore - a.averageScore);
+
+    res.status(200).json({
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        roundIndex: parseInt(roundIndex)
+      },
+      shortlistedSubmissions: formattedSubmissions,
+      summary: {
+        totalShortlisted: formattedSubmissions.length,
+        averageScore: formattedSubmissions.length > 0 
+          ? Math.round(formattedSubmissions.reduce((sum, s) => sum + s.averageScore, 0) / formattedSubmissions.length * 10) / 10
+          : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching shortlisted submissions:', error);
+    res.status(500).json({ message: 'Failed to fetch shortlisted submissions' });
   }
 };

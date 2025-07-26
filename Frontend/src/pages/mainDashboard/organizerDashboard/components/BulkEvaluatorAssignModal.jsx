@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/DashboardUI/dialog';
-import { X, Search, UserPlus, ChevronDown, CheckCircle, Clock, XCircle, Users } from 'lucide-react';
+import { X, Search, UserPlus, ChevronDown, CheckCircle, Clock, XCircle, Users, FileText } from 'lucide-react';
 import { useToast } from '../../../../hooks/use-toast';
+import AddEvaluatorModal from './AddEvaluatorModal';
 
 export default function BulkEvaluatorAssignModal({
   open,
@@ -11,6 +12,7 @@ export default function BulkEvaluatorAssignModal({
   hackathonId,
   roundIndex = 0,
   selectedSubmissionIds = [],
+  onAssignmentComplete,
 }) {
   const { toast } = useToast();
   const [evaluatorSearch, setEvaluatorSearch] = useState("");
@@ -25,13 +27,21 @@ export default function BulkEvaluatorAssignModal({
   const [multipleJudgesMode, setMultipleJudgesMode] = useState(false);
   const [judgesPerProject, setJudgesPerProject] = useState(1);
   const [judgesPerProjectMode, setJudgesPerProjectMode] = useState('manual'); // 'manual' or 'equal'
+  const [showAddEvaluatorModal, setShowAddEvaluatorModal] = useState(false);
+
+  // Assignment overview state
+  const [assignmentOverview, setAssignmentOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+
+
 
   // Fetch evaluators when modal opens
   useEffect(() => {
     if (open && hackathonId) {
       fetchEvaluators();
+      fetchAssignmentOverview();
     }
-  }, [open, hackathonId]);
+  }, [open, hackathonId, roundIndex]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -43,6 +53,7 @@ export default function BulkEvaluatorAssignModal({
       setMultipleJudgesMode(false);
       setJudgesPerProject(1);
       setJudgesPerProjectMode('manual');
+      setShowAddEvaluatorModal(false);
     }
   }, [open]);
 
@@ -72,6 +83,35 @@ export default function BulkEvaluatorAssignModal({
     }
   };
 
+  const fetchAssignmentOverview = async () => {
+    setOverviewLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/assignment-overview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAssignmentOverview(data);
+      } else {
+        console.error('Failed to fetch assignment overview');
+      }
+    } catch (error) {
+      console.error('Error fetching assignment overview:', error);
+    } finally {
+      setOverviewLoading(false);
+    }
+  };
+
+
+
+  const handleEvaluatorAdded = () => {
+    // Refresh the evaluators list
+    fetchEvaluators();
+    setShowAddEvaluatorModal(false);
+  };
+
   // Filter evaluators based on search
   const filteredEvaluators = allEvaluators.filter(ev =>
     ev.name.toLowerCase().includes(evaluatorSearch.toLowerCase()) ||
@@ -98,6 +138,18 @@ export default function BulkEvaluatorAssignModal({
       });
       return;
     }
+
+    if (!assignmentOverview) {
+      toast({
+        title: 'Assignment data not loaded',
+        description: 'Please wait for assignment data to load before assigning submissions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Refresh assignment overview to ensure we have the latest data
+    await fetchAssignmentOverview();
 
     // Validate multiple judges per project settings
     if (multipleJudgesMode) {
@@ -135,6 +187,43 @@ export default function BulkEvaluatorAssignModal({
     try {
       const token = localStorage.getItem('token');
       
+      // Filter out already assigned submissions using assignment overview data
+      console.log('🔍 Debugging assignment filtering:', {
+        selectedSubmissionIds,
+        assignmentOverview: assignmentOverview ? {
+          unassignedSubmissions: assignmentOverview.unassignedSubmissions?.map(s => s._id),
+          assignedSubmissions: assignmentOverview.assignedSubmissions?.map(s => s._id),
+          totalUnassigned: assignmentOverview.unassignedSubmissions?.length || 0,
+          totalAssigned: assignmentOverview.assignedSubmissions?.length || 0
+        } : null,
+        roundIndex
+      });
+
+      // Get list of unassigned submission IDs from assignment overview
+      const unassignedSubmissionIdsFromOverview = assignmentOverview?.unassignedSubmissions?.map(s => s._id) || [];
+      
+      console.log('🔍 Available unassigned submissions:', unassignedSubmissionIdsFromOverview);
+      console.log('🔍 Selected submissions:', selectedSubmissionIds);
+      
+      // Filter selected submissions to only include unassigned ones
+      const unassignedSubmissionIds = selectedSubmissionIds.filter(submissionId => {
+        const isUnassigned = unassignedSubmissionIdsFromOverview.includes(submissionId);
+        console.log(`🔍 Submission ${submissionId} is unassigned: ${isUnassigned}`);
+        return isUnassigned;
+      });
+
+      if (unassignedSubmissionIds.length === 0) {
+        toast({
+          title: 'No unassigned submissions',
+          description: `All ${selectedSubmissionIds.length} selected submissions are already assigned to judges. Only ${assignmentOverview?.unassignedSubmissions?.length || 0} submissions are available for assignment. Please select from the "Unassigned Submissions" section.`,
+          variant: 'destructive',
+        });
+        setAssignLoading(false);
+        return;
+      }
+
+      console.log(`🔍 Proceeding with assignment: ${unassignedSubmissionIds.length} unassigned submissions out of ${selectedSubmissionIds.length} selected`);
+
       // Prepare evaluator assignments
       const evaluatorAssignments = selectedEvaluators.map(evaluatorId => {
         const evaluator = allEvaluators.find(e => e.id === evaluatorId);
@@ -146,6 +235,17 @@ export default function BulkEvaluatorAssignModal({
         };
       });
 
+      console.log('🔍 Sending bulk assignment request:', {
+        originalSubmissionIds: selectedSubmissionIds,
+        filteredSubmissionIds: unassignedSubmissionIds,
+        evaluatorAssignments,
+        assignmentMode,
+        roundIndex,
+        multipleJudgesMode,
+        judgesPerProject,
+        judgesPerProjectMode
+      });
+
       const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/bulk-assign-submissions`, {
         method: 'POST',
         headers: { 
@@ -153,7 +253,7 @@ export default function BulkEvaluatorAssignModal({
           Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
-          submissionIds: selectedSubmissionIds,
+          submissionIds: unassignedSubmissionIds,
           evaluatorAssignments,
           assignmentMode,
           roundIndex,
@@ -170,11 +270,19 @@ export default function BulkEvaluatorAssignModal({
 
       const result = await response.json();
       
-      toast({
-        title: 'Assignments completed successfully',
-        description: `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators${multipleJudgesMode ? ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project` : ''}.`,
-        variant: 'default',
-      });
+      if (result.assignedSubmissions > 0) {
+        toast({
+          title: 'Assignments completed successfully',
+          description: `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators${multipleJudgesMode ? ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project` : ''}.`,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'No assignments made',
+          description: 'All selected submissions were already assigned to judges.',
+          variant: 'default',
+        });
+      }
 
       // Reset form
       setSelectedEvaluators([]);
@@ -185,8 +293,23 @@ export default function BulkEvaluatorAssignModal({
       setJudgesPerProject(1);
       setJudgesPerProjectMode('manual');
       
-      if (onClose) onClose();
-      if (onAssign) onAssign(selectedEvaluators);
+      // Refresh assignment overview and submissions status
+      console.log('🔄 Refreshing assignment overview after successful assignment...');
+      await fetchAssignmentOverview();
+      
+      // Notify parent component and close modal
+      if (onAssignmentComplete) {
+        console.log('🔄 Calling onAssignmentComplete callback...');
+        onAssignmentComplete();
+      }
+      if (onClose) {
+        console.log('🔄 Closing assignment modal...');
+        onClose();
+      }
+      if (onAssign) {
+        console.log('🔄 Calling onAssign callback...');
+        onAssign(selectedEvaluators);
+      }
       
     } catch (error) {
       console.error('Assignment error:', error);
@@ -257,11 +380,19 @@ export default function BulkEvaluatorAssignModal({
           <DialogHeader>
             <DialogTitle>Error</DialogTitle>
           </DialogHeader>
-          <div className="text-red-600 p-4">No hackathonId provided to BulkEvaluatorAssignModal.</div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
+          <div className="text-red-600 p-4">No hackathonId provided to BulkEvaluatorAssignModal.        </div>
+      </DialogContent>
+      
+      {/* Add Evaluator Modal */}
+      <AddEvaluatorModal
+        open={showAddEvaluatorModal}
+        onClose={() => setShowAddEvaluatorModal(false)}
+        hackathonId={hackathonId}
+        onEvaluatorAdded={handleEvaluatorAdded}
+      />
+    </Dialog>
+  );
+}
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -274,10 +405,47 @@ export default function BulkEvaluatorAssignModal({
           <p className="text-sm text-gray-600 mt-2">
             Select judges to evaluate the selected submissions. Judges will only see submissions assigned to them.
           </p>
+          
+          {/* Assignment Overview */}
+          {assignmentOverview && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span className="font-medium">Unassigned Projects:</span>
+                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
+                      {assignmentOverview.unassignedSubmissions?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-green-600" />
+                    <span className="font-medium">Assigned Projects:</span>
+                    <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">
+                      {assignmentOverview.assignedSubmissions?.length || 0}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-purple-600" />
+                    <span className="font-medium">Active Judges:</span>
+                    <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-semibold">
+                      {assignmentOverview.judges?.length || 0}
+                    </span>
+                  </div>
+                </div>
+                {overviewLoading && (
+                  <div className="text-xs text-gray-500">Loading...</div>
+                )}
+              </div>
+            </div>
+          )}
+          
           <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={onClose}>
             <X className="w-5 h-5" />
           </button>
         </DialogHeader>
+        
+
         
         {/* Selected Evaluators Section */}
         {selectedEvaluators.length > 0 && (
@@ -534,17 +702,10 @@ export default function BulkEvaluatorAssignModal({
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
           <button 
             className="flex items-center gap-2 text-gray-700 hover:text-blue-700 font-medium text-sm" 
-            onClick={() => {
-              // TODO: Implement add evaluator functionality
-              toast({
-                title: 'Add Evaluator',
-                description: 'This feature will be implemented soon.',
-                variant: 'default',
-              });
-            }}
+            onClick={() => setShowAddEvaluatorModal(true)}
           >
             <UserPlus className="w-4 h-4" />
-            Evaluator
+            Add Evaluator
           </button>
           <button 
             className={`px-6 py-2 rounded-lg font-semibold transition ${
@@ -559,6 +720,14 @@ export default function BulkEvaluatorAssignModal({
           </button>
         </div>
       </DialogContent>
+      
+      {/* Add Evaluator Modal */}
+      <AddEvaluatorModal
+        open={showAddEvaluatorModal}
+        onClose={() => setShowAddEvaluatorModal(false)}
+        hackathonId={hackathonId}
+        onEvaluatorAdded={handleEvaluatorAdded}
+      />
     </Dialog>
   );
 } 

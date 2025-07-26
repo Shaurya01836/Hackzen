@@ -137,13 +137,16 @@ router.get('/logout', (req, res) => {
 });
 router.get('/me/judge-hackathons', protect, async (req, res) => {
   try {
-    const invites = await RoleInvite.find({
-      invitedUser: req.user.id,
-      role: 'judge',
-      status: 'accepted'
-    }).populate('hackathon');
+    // Get active judge assignments
+    const JudgeAssignment = require('../model/JudgeAssignmentModel');
+    const activeAssignments = await JudgeAssignment.find({
+      'judge.email': req.user.email,
+      status: 'active'
+    }).populate('hackathon', 'name description startDate endDate');
 
-    const hackathons = invites.map(invite => invite.hackathon);
+    // Get hackathons from active assignments
+    const hackathons = activeAssignments.map(assignment => assignment.hackathon).filter(Boolean);
+
     res.status(200).json(hackathons);
   } catch (err) {
     console.error('Error fetching judge hackathons:', err);

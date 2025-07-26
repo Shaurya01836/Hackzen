@@ -2,41 +2,104 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "../components/CommonUI/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/CommonUI/card";
-import { CheckCircle, XCircle, Gavel, AlertCircle, Award } from "lucide-react";
+import { CheckCircle, XCircle, Gavel, AlertCircle, Award, LogIn, Mail } from "lucide-react";
 
 export default function InviteRole() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const [invite, setInvite] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [userLoading, setUserLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (token) {
+      // Fetch invite details
       fetch(`http://localhost:3000/api/role-invites/${token}`)
         .then(res => res.json())
         .then(data => setInvite(data))
+        .catch(err => {
+          console.error('Error fetching invite:', err);
+          setError('Failed to load invitation');
+        })
         .finally(() => setLoading(false));
+      
+      // Check if user is logged in
+      const userToken = localStorage.getItem('token');
+      if (userToken) {
+        // Verify token and get user info
+        fetch('http://localhost:3000/api/users/me', {
+          headers: { Authorization: `Bearer ${userToken}` }
+        })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Invalid token');
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (data._id) {
+            setUser(data);
+          } else {
+            // Invalid response, remove token
+            localStorage.removeItem('token');
+          }
+        })
+        .catch(err => {
+          console.error('Error fetching user:', err);
+          // Token might be invalid, remove it
+          localStorage.removeItem('token');
+        })
+        .finally(() => setUserLoading(false));
+      } else {
+        setUserLoading(false);
+      }
     }
   }, [token]);
 
   const respond = async (action) => {
-    const endpoint = action === "accept"
-      ? `/api/role-invites/${token}/accept`
-      : `/api/role-invites/${token}/decline`;
-    const res = await fetch(`http://localhost:3000${endpoint}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-    });
-    if (res.ok) {
-      alert(`Invite ${action}ed!`);
-      navigate("/dashboard/judge");
-    } else {
-      alert("Failed to respond to invite.");
+    try {
+      const endpoint = action === "accept"
+        ? `/api/role-invites/${token}/accept`
+        : `/api/role-invites/${token}/decline`;
+      
+      const userToken = localStorage.getItem("token");
+      if (!userToken) {
+        setError('You must be logged in to respond to this invitation');
+        return;
+      }
+
+      const res = await fetch(`http://localhost:3000${endpoint}`, {
+        method: "POST",
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${userToken}` 
+        }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(data.message || `Invite ${action}ed successfully!`);
+        navigate("/dashboard/judge");
+      } else {
+        const errorData = await res.json();
+        setError(errorData.error || `Failed to ${action} invite`);
+      }
+    } catch (err) {
+      console.error('Error responding to invite:', err);
+      setError('Network error. Please try again.');
     }
   };
 
-  if (loading) {
+  const handleLogin = () => {
+    // Redirect to login with return URL
+    const returnUrl = encodeURIComponent(window.location.href);
+    navigate(`/login?returnUrl=${returnUrl}`);
+  };
+
+  if (loading || userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         <Card className="w-full max-w-4xl border-0 shadow-xl">
@@ -56,7 +119,7 @@ export default function InviteRole() {
     );
   }
 
-  if (!invite || invite.error) {
+  if (!invite || invite.error || error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-pink-50">
         <Card className="w-full max-w-4xl border-0 shadow-xl">
@@ -64,10 +127,12 @@ export default function InviteRole() {
             <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mb-6 shadow-lg">
               <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Invitation Not Found</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              {error ? 'Error Loading Invitation' : 'Invitation Not Found'}
+            </h2>
             <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 rounded-xl border border-red-100 mb-6">
               <p className="text-red-800 leading-relaxed">
-                The invitation link is invalid or has expired. Please contact the hackathon organizer for a new invitation.
+                {error || 'The invitation link is invalid or has expired. Please contact the hackathon organizer for a new invitation.'}
               </p>
             </div>
             <Button 
@@ -162,27 +227,71 @@ export default function InviteRole() {
               <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-100 h-full flex flex-col justify-between">
                 <div>
                   <h4 className="text-xl font-semibold text-gray-900 mb-4">Ready to Judge?</h4>
-                  <p className="text-gray-600 mb-6">
-                    Accept this invitation to start your journey as a hackathon judge and help shape the future of innovation.
-                  </p>
-                </div>
-                
-                <div className="space-y-4">
-                  <Button 
-                    onClick={() => respond("accept")}
-                    className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-lg"
-                  >
-                    <CheckCircle className="w-6 h-6 mr-3" />
-                    Accept Invitation
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => respond("decline")}
-                    className="w-full h-14 border-red-200 text-red-700 hover:bg-red-50 font-medium rounded-lg text-lg"
-                  >
-                    <XCircle className="w-6 h-6 mr-3" />
-                    Decline Invitation
-                  </Button>
+                  
+                  {/* Authentication Status */}
+                  {!user ? (
+                    <div className="mb-6">
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <LogIn className="w-5 h-5 text-yellow-600" />
+                          <span className="text-yellow-800 font-medium">Login Required</span>
+                        </div>
+                        <p className="text-yellow-700 text-sm">
+                          You need to be logged in to respond to this invitation. Please log in with the email address: <strong>{invite.email}</strong>
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleLogin}
+                        className="w-full h-14 bg-yellow-600 hover:bg-yellow-700 text-white font-medium rounded-lg text-lg"
+                      >
+                        <LogIn className="w-6 h-6 mr-3" />
+                        Log In to Continue
+                      </Button>
+                    </div>
+                  ) : user.email !== invite.email ? (
+                    <div className="mb-6">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mail className="w-5 h-5 text-red-600" />
+                          <span className="text-red-800 font-medium">Email Mismatch</span>
+                        </div>
+                        <p className="text-red-700 text-sm">
+                          This invitation is for <strong>{invite.email}</strong> but you are logged in as <strong>{user.email}</strong>. Please log in with the correct email address.
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleLogin}
+                        className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-lg"
+                      >
+                        <LogIn className="w-6 h-6 mr-3" />
+                        Log In with Correct Email
+                      </Button>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-gray-600 mb-6">
+                        Accept this invitation to start your journey as a hackathon judge and help shape the future of innovation.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <Button 
+                          onClick={() => respond("accept")}
+                          className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-lg"
+                        >
+                          <CheckCircle className="w-6 h-6 mr-3" />
+                          Accept Invitation
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => respond("decline")}
+                          className="w-full h-14 border-red-200 text-red-700 hover:bg-red-50 font-medium rounded-lg text-lg"
+                        >
+                          <XCircle className="w-6 h-6 mr-3" />
+                          Decline Invitation
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
