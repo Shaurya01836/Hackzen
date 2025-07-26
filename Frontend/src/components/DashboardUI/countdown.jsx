@@ -70,9 +70,7 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
 
   if (timeLeft.isExpired) {
     return (
-      <Card
-  
-      >
+      <Card  className="hover:shadow-sm">
         <CardHeader className="pb-4">
           <CardTitle
             className={`flex items-center gap-3 text-lg font-semibold ${styles.textColor}`}
@@ -104,7 +102,7 @@ export function CountdownTimer({ deadline, title, type = "default" }) {
 
 
   return (
-    <Card>
+    <Card  className="hover:shadow-sm">
       <CardHeader className="pb-4">
         <CardTitle
           className={`flex items-center text-lg font-semibold ${styles.textColor}`}
@@ -426,7 +424,7 @@ export function SmartCountdown({ hackathon }) {
 
   if (!currentCountdown) {
     return (
-      <Card className="">
+     <Card  className="hover:shadow-sm">
         <CardContent className="py-6 px-6">
           <div className="flex items-center justify-center text-gray-500">
             <CheckCircle className="w-6 h-6 mr-2" />

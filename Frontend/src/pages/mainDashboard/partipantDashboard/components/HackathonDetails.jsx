@@ -298,7 +298,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
 
   const RightSideContent = (
     <div className="space-y-8">
-    <Card>
+    <Card className= "hover:shadow-sm">
   <CardHeader className="pb-3">
     <CardTitle className="text-lg">Event Details</CardTitle>
   </CardHeader>

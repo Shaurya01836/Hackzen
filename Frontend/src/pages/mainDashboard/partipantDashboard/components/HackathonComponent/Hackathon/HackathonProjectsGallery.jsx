@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Card, CardContent } from "../../../../../../components/CommonUI/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../../../components/CommonUI/card";
 import { Skeleton } from "../../../../../../components/DashboardUI/skeleton";
-import { ProjectCard } from "../../../../../../components/CommonUI/ProjectCard"; // ✅ adjust path
-import { Rocket, Code2, FileText, Sparkles } from "lucide-react";
+import { ProjectCard } from "../../../../../../components/CommonUI/ProjectCard";
+import { Rocket, Code2, FileText, Sparkles, FolderOpen } from "lucide-react";
 
-// Empty State Component (Adjusted for Card layout)
+// Empty State Component (Adjusted for consistent design)
 const EmptyProjectsState = ({ selectedType }) => {
   const getEmptyStateContent = () => {
     if (selectedType && selectedType !== "") {
@@ -27,38 +27,19 @@ const EmptyProjectsState = ({ selectedType }) => {
   const { title, subtitle, IconComponent } = getEmptyStateContent();
 
   return (
-    // Reduced padding (py-16) to fit nicely inside a CardContent
-    <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="text-center max-w-lg mx-auto">
-        {/* Icon Container */}
-        <div className="relative mx-auto w-32 h-32 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl flex items-center justify-center mb-8 shadow-lg border border-blue-100/50">
-          {/* Sparkle decoration */}
-          <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
-          <IconComponent className="w-16 h-16 text-blue-600" strokeWidth={1.5} />
-        </div>
-        
-        {/* Title */}
-        <h3 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">
-          {title}
-        </h3>
-        
-        {/* Subtitle */}
-        <p className="text-gray-600 text-base leading-relaxed mb-8 max-w-md mx-auto">
-          {subtitle}
-        </p>
-        
-        {/* Decorative Elements */}
-        <div className="flex justify-center items-center space-x-3 opacity-40">
-          <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-          <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        </div>
+    <div className="text-center py-12">
+      <div className="w-16 h-16 mx-auto mb-6 bg-indigo-100 rounded-full flex items-center justify-center">
+        <IconComponent className="w-8 h-8 text-indigo-600" />
       </div>
+      <h4 className="text-2xl font-bold text-gray-800 mb-3">{title}</h4>
+      <p className="text-gray-700 leading-relaxed text-lg mb-6 max-w-2xl mx-auto">
+        {subtitle}
+      </p>
     </div>
   );
 };
 
-export default function HackathonProjectsGallery({ hackathonId, onProjectClick, selectedType }) {
+export default function HackathonProjectsGallery({ hackathonId, onProjectClick, selectedType, sectionRef }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -156,32 +137,6 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
     fetchUserAndScores();
   }, []);
 
-  // Show skeletons while loading
-  if (loading) {
-    return (
-      <div className="space-y-8">
-        {/* Loading Header */}
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        
-        {/* Loading Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <Skeleton className="h-40 w-full" />
-              <CardContent className="space-y-3 p-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   // Filter by selected type
   const filteredProjects =
     selectedType && selectedType !== ""
@@ -193,60 +148,83 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         })
       : projects;
 
-  // Show attractive empty state when no projects
-  if (filteredProjects.length === 0) {
+  // Show skeletons while loading
+  if (loading) {
     return (
-      <div className="space-y-8">
-        {/* Page Header */}
-        <div className="flex flex-col space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-            {getPageHeading()}
-          </h2>
-          <p className="text-gray-600 text-lg">
-            Discover innovative solutions and creative projects from talented participants
-          </p>
-        </div>
-        
-        {/* Empty State is now wrapped in a Card */}
-        <Card>
-          <CardContent className="pt-6">
-            <EmptyProjectsState selectedType={selectedType} />
+      <section ref={sectionRef} className="space-y-6 max-w-5xl mx-auto">
+        <Card className="shadow-none hover:shadow-none">
+          <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+            <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
+              <Skeleton className="h-8 w-48" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="border rounded-lg p-4">
+                  <Skeleton className="h-40 w-full mb-4" />
+                  <Skeleton className="h-4 w-3/4 mb-2" />
+                  <Skeleton className="h-3 w-1/2" />
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-          {getPageHeading()}
-        </h2>
-        <p className="text-gray-600 text-lg">
-          {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} submitted for this hackathon
-        </p>
-      </div>
-      
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProjects.map((project) => (
-          <ProjectCard
-            key={project._id}
-            project={project}
-            user={user}
-            judgeScores={judgeScores}
-            onClick={() => {
-              if (onProjectClick) {
-                onProjectClick({ project, submission: project.__submission }); // ✅ Pass both
-              } else {
-                navigate(`/dashboard/project-archive/${project._id}`);
-              }
-            }}
-          />
-        ))}
-      </div>
-    </div>
+    <section ref={sectionRef} className="space-y-6 max-w-5xl mx-auto">
+      {/* Main Container Card */}
+      <Card className="shadow-none hover:shadow-none">
+        {/* Section Header */}
+        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+            <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
+            {getPageHeading()}
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="p-8 space-y-8">
+          {/* Projects Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 my-4">
+              <h3 className="text-xl font-semibold text-gray-900">Submitted Projects</h3>
+            </div>
+            
+            {filteredProjects.length === 0 ? (
+              <EmptyProjectsState selectedType={selectedType} />
+            ) : (
+              <div className="">
+                <p className="text-gray-700 leading-relaxed text-lg mb-6">
+                  {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'} submitted for this hackathon
+                </p>
+                
+                {/* Projects Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProjects.map((project) => (
+                    <ProjectCard
+                      key={project._id}
+                      project={project}
+                      user={user}
+                      judgeScores={judgeScores}
+                      onClick={() => {
+                        if (onProjectClick) {
+                          onProjectClick({ project, submission: project.__submission });
+                        } else {
+                          navigate(`/dashboard/project-archive/${project._id}`);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </section>
   );
 }

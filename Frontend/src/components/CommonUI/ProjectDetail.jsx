@@ -765,9 +765,11 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                     </div>
                   )}
                 </Card>
+                  {/* Horizontal line between video and description */}
+                <div className="border-t border-gray-200 my-6 w-full" />
                 {/* Description Section */}
                 {project.description && (
-                  <Card className="bg-white/50 px-6 py-6 mb-4">
+                  <Card className="px-6 py-6 mb-4 shadow-none hover:shadow-none">
                     <h2 className="text-xl font-bold mb-4 text-gray-900">
                       Description
                     </h2>
@@ -782,7 +784,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 <div className="border-t border-gray-200 my-6 w-full" />
                 {/* Skills Section */}
                 {project.skills && project.skills.length > 0 && (
-                  <div className=" px-6 py-5 mb-4">
+                  <div className=" px-2 pb-6">
                     <h2 className="text-xl font-bold mb-3 text-gray-900">
                       Tech Stack
                     </h2>
@@ -790,7 +792,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                       {project.skills.map((skill, index) => (
                         <span
                           key={index}
-                          className="px-4 py-1 rounded-full bg-gray-300 text-gray-800 font-semibold text-sm"
+                          className="px-4 py-1 rounded-full bg-indigo-100 text-indigo-600 font-semibold text-sm"
                         >
                           {skill}
                         </span>
@@ -798,29 +800,8 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                     </div>
                   </div>
                 )}
-                {/* Horizontal line between description and skills */}
-                <div className="border-t border-gray-200 my-6 w-full" />
-                {project.teamIntro && (
-                  <Card className="bg-white/50 px-6 py-6 mb-4">
-                    <h2 className="text-xl font-bold mb-4 text-gray-900">Team Introduction</h2>
-                    <div className="prose prose-lg max-w-none text-gray-800 leading-relaxed" style={{ whiteSpace: "pre-line" }}>
-                      {project.teamIntro}
-                    </div>
-                  </Card>
-                )}
-                {project.customAnswers && project.customAnswers.length > 0 && (
-                  <Card className="bg-white/50 px-6 py-6 mb-4">
-                    <h2 className="text-xl font-bold mb-4 text-gray-900">Custom Answers</h2>
-                    <ul className="list-disc pl-6">
-                      {project.customAnswers.map((ans, idx) => (
-                        <li key={ans.questionId || idx}>
-                          <strong>Q:</strong> {ans.questionId} <br />
-                          <strong>A:</strong> {ans.answer}
-                        </li>
-                      ))}
-                    </ul>
-                  </Card>
-                )}
+               
+              
               </TabsContent>
 
               {!onlyOverview && (
@@ -868,89 +849,136 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 </TabsContent>
               )}
 
-              {!onlyOverview && (
-                <TabsContent value="team" className="space-y-8 pb-10">
-                  <section>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-8">
-                      {/* Team Leader Card */}
-                      {project?.submittedBy && (
-                        <Card className="">
-                          <a
-                            href={`/dashboard/profile/${project.submittedBy._id}`}
-                            className="group flex flex-col items-center"
-                          >
-                            <img
-                              src={project.submittedBy.profileImage || "/placeholder.svg"}
-                              alt={project.submittedBy.name || "Team Leader"}
-                              className="w-full h-32 object-cover rounded-t-xl"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = "/placeholder.svg";
-                              }}
-                            />
-                            {/* Fallback for missing image: show first letter if using placeholder */}
-                            {(!project.submittedBy.profileImage || project.submittedBy.profileImage === "/placeholder.svg") && (
-                              <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl -mt-32 ">
-                                {project.submittedBy.name?.[0]?.toUpperCase() || "?"}
-                              </div>
-                            )}
-                            <div className="flex flex-col items-center w-full py-4">
-                              <span className="font-bold text-lg text-gray-700">
-                                {project.submittedBy.name || "Unknown"}
-                              </span>
-                              <span className="text-xs text-gray-500 mt-1">Team Leader</span>
-                            </div>
-                          </a>
-                        </Card>
-                      )}
-                      {/* Divider for visual separation if there are members */}
-                      {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length > 0 && (
-                        <div className="sm:col-span-2 md:col-span-3 flex items-center justify-center my-2">
-                          <div className="w-full h-px bg-gradient-to-r from-transparent via-indigo-200 to-transparent" />
+{!onlyOverview && (
+  <TabsContent value="team" className="space-y-8 pb-10">
+    <section>
+      <div className="max-w-4xl mx-auto px-8">
+        {/* Team Leader Section */}
+        {project?.submittedBy && (
+          <div className="mb-8">
+           
+            <Card className="shadow-none hover:shadow-none">
+              <a
+                href={`/dashboard/profile/${project.submittedBy._id}`}
+                className="group flex items-center p-6 hover:bg-gray-50 transition-colors duration-200"
+              >
+                <div className="relative flex-shrink-0 mr-4">
+                  {project.submittedBy.profileImage && project.submittedBy.profileImage !== "/placeholder.svg" ? (
+                    <img
+                      src={project.submittedBy.profileImage}
+                      alt={project.submittedBy.name || "Team Leader"}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-indigo-100"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/placeholder.svg";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center border-2 border-indigo-200">
+                      <span className="text-lg font-bold text-indigo-600">
+                        {project.submittedBy.name?.[0]?.toUpperCase() || "?"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                        {project.submittedBy.name || "Unknown"}
+                      </h4>
+                      <p className="text-sm text-gray-600">Team Leader</p>
+                    </div>
+                    <div className="flex items-center text-gray-400 group-hover:text-indigo-500 transition-colors">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </Card>
+          </div>
+        )}
+
+        {/* Team Members Section */}
+        {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-gray-600 rounded-full mr-3"></span>
+              Team Members
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                ({project.team.members.filter((member) => member._id !== project.submittedBy?._id).length})
+              </span>
+            </h3>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm divide-y divide-gray-100">
+              {project.team.members
+                .filter((member) => member._id !== project.submittedBy?._id)
+                .map((member, idx) => (
+                  <a
+                    key={member._id || idx}
+                    href={`/dashboard/profile/${member._id}`}
+                    className="group flex items-center p-6 hover:bg-gray-50 transition-colors duration-200 first:rounded-t-lg last:rounded-b-lg"
+                  >
+                    <div className="flex-shrink-0 mr-4">
+                      {(member.profileImage || member.avatar) && 
+                       member.profileImage !== "/placeholder.svg" && 
+                       member.avatar !== "/placeholder.svg" ? (
+                        <img
+                          src={member.profileImage || member.avatar}
+                          alt={member.name || "Team Member"}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-gray-100"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "/placeholder.svg";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center border-2 border-gray-200">
+                          <span className="text-lg font-bold text-gray-600">
+                            {member.name?.[0]?.toUpperCase() || "?"}
+                          </span>
                         </div>
                       )}
-                      {/* Team Members (excluding leader) */}
-                      {project.team && project.team.members &&
-                        project.team.members
-                          .filter((member) => member._id !== project.submittedBy?._id)
-                          .map((member, idx) => (
-                            <Card key={member._id || idx} className="">
-                              <a
-                                href={`/dashboard/profile/${member._id}`}
-                                className="group flex flex-col items-center"
-                              >
-                                <img
-                                  src={member.profileImage || member.avatar || "/placeholder.svg"}
-                                  alt={member.name || "Team Member"}
-                                  className="w-full h-32 object-cover rounded-t-xl border-b border-indigo-100 shadow"
-                                  onError={(e) => {
-                                    e.target.onerror = null;
-                                    e.target.src = "/placeholder.svg";
-                                  }}
-                                />
-                                {/* Fallback for missing image: show first letter if using placeholder */}
-                                {(!member.profileImage && !member.avatar) || member.profileImage === "/placeholder.svg" || member.avatar === "/placeholder.svg" ? (
-                                  <div className="w-full h-32 flex items-center justify-center bg-indigo-100 text-4xl font-bold text-indigo-600 rounded-t-xl border-b border-indigo-100 shadow -mt-32 mb-4">
-                                    {member.name?.[0]?.toUpperCase() || "?"}
-                                  </div>
-                                ) : null}
-                                <div className="flex flex-col items-center w-full py-4">
-                                  <span className="font-semibold text-gray-900 group-hover:underline">
-                                    {member.name}
-                                  </span>
-                                  <span className="text-xs text-gray-500 mt-1">Member</span>
-                                </div>
-                              </a>
-                            </Card>
-                          ))}
-                      {/* If no members, show a friendly message */}
-                      {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length === 0 && (
-                        <div className="text-center text-gray-400 mt-8">No other team members yet.</div>
-                      )}
                     </div>
-                  </section>
-                </TabsContent>
-              )}
+                    <div className="flex-grow">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-base font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+                            {member.name}
+                          </h4>
+                          <p className="text-sm text-gray-600">Team Member</p>
+                        </div>
+                        <div className="flex items-center text-gray-400 group-hover:text-indigo-500 transition-colors">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length === 0 && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <p className="text-gray-500 text-sm">No additional team members have joined yet.</p>
+          </div>
+        )}
+      </div>
+    </section>
+  </TabsContent>
+)}
+
+
             </div>
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">

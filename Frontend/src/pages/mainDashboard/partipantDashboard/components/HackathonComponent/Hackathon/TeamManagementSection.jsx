@@ -287,366 +287,359 @@ export default function TeamManagementSection({
 
   return (
     <>
-      <section ref={sectionRef} className="space-y-8">
-        {/* HEADING IS NOW HERE, OUTSIDE THE CONDITIONAL LOGIC */}
-        <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-          Team Management
-        </h2>
+      <section ref={sectionRef} className="space-y-6 max-w-5xl mx-auto">
+        {/* Main Container Card */}
+        <Card className="shadow-none hover:shadow-none">
+          {/* Section Header */}
+          <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+            <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+              <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
+              Team Management
+            </CardTitle>
+          </CardHeader>
 
-        {/* Ternary operator to switch between views */}
-        {!isRegistered ? (
-          // --- VIEW FOR UNREGISTERED USERS (NOW IN A CARD) ---
-          <Card>
-            <CardContent className="text-center py-16 px-6 pt-10">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-indigo-100 rounded-full mb-6">
-                <Users className="w-12 h-12 text-indigo-600" />
-              </div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-3">Team Up for Success!</h2>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-                Hackathons are better with a team. Collaborate, share ideas, and build something amazing together. You can either create a new team or join an existing one using a team code.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
-                  onClick={() => setShowRegistration(false)}
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Create a Team
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                  onClick={() => setShowJoinByCodeModal(true)}
-                >
-                  <UserPlus className="w-5 h-5 mr-2" />
-                  Join with a Code
-                </Button>
-              </div>
-              {/* Join by code modal */}
-              {showJoinByCodeModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                  <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-                    <h2 className="text-xl font-bold mb-4">Join Team by Code</h2>
-                    <Input
-                      value={joinCode}
-                      onChange={e => setJoinCode(e.target.value)}
-                      placeholder="Enter team code"
-                      className="mb-4"
-                    />
-                    {joinError && <div className="text-red-600 mb-2">{joinError}</div>}
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={() => setShowJoinByCodeModal(false)}>Cancel</Button>
-                      <Button
-                        variant="blue"
-                        onClick={handleJoinByCode}
-                        disabled={joiningTeam || !joinCode.trim()}
-                      >
-                        {joiningTeam ? "Joining..." : "Join"}
-                      </Button>
-                    </div>
+          <CardContent className="p-8 space-y-8">
+            {!isRegistered ? (
+              // Unregistered User Section
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 my-4">
+                  <h3 className="text-xl font-semibold text-gray-900">Get Started</h3>
+                </div>
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 mx-auto mb-6 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Users className="w-8 h-8 text-indigo-600" />
+                  </div>
+                  <h4 className="text-2xl font-bold text-gray-800 mb-3">Team Up for Success!</h4>
+                  <p className="text-gray-700 leading-relaxed text-lg mb-8 max-w-2xl mx-auto">
+                    Hackathons are better with a team. Collaborate, share ideas, and build something amazing together. You can either create a new team or join an existing one using a team code.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700"
+                      onClick={() => setShowRegistration(false)}
+                    >
+                      <Plus className="w-5 h-5 mr-2" />
+                      Create a Team
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      onClick={() => setShowJoinByCodeModal(true)}
+                    >
+                      <UserPlus className="w-5 h-5 mr-2" />
+                      Join with a Code
+                    </Button>
                   </div>
                 </div>
-              )}
-              {/* Registration form after joining by code */}
-              {showJoinRegistration && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-                  <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
-                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                      <p className="text-lg font-semibold text-blue-900">
-                        You are joining team <span className="font-bold">{pendingTeam?.name}</span> for hackathon <span className="font-bold">{hackathon?.title}</span>!
-                      </p>
-                    </div>
-                    <HackathonRegistration
-                      hackathon={hackathon}
-                      onBack={() => setShowJoinRegistration(false)}
-                      onSuccess={handleJoinRegistration}
-                      inviteMode={true}
-                    />
+              </div>
+            ) : (
+              // Registered User Section
+              <>
+                {/* Team Creation Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 my-4">
+                    <h3 className="text-xl font-semibold text-gray-900">Your Team</h3>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          // --- VIEW FOR REGISTERED USERS ---
-          <Card className="">
-            {/* Main content area */}
-            <div className="p-6">
-              {/* Create team section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-medium text-gray-700 mb-4">Create a team</h3>
-                
-                {userTeams.length > 0 ? (
-                  // Show existing team
-                  userTeams.map((team) => (
-                    <div key={team._id} className="bg-gray-50 rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                            Team Name: {team.name}
+                  
+                  {userTeams.length > 0 ? (
+                    // Show existing team
+                    userTeams.map((team) => (
+                      <div key={team._id} className="space-y-6">
+                        {/* Team Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <h4 className="text-lg font-semibold text-gray-900">
+                              {team.name}
+                            </h4>
                             {team.leader._id?.toString() === user?._id?.toString() && (
-                              <Button size="xs" variant="ghost" onClick={() => setEditingTeamName(team)}>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingTeamName(team)}>
                                 <Edit className="w-4 h-4" />
                               </Button>
                             )}
-                          </h4>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => setShowUnregisterDialog(true)}
+                          >
+                            Cancel Team
+                          </Button>
                         </div>
+
+                        {/* Team Members */}
+                        <div>
+                          <div className="flex items-center gap-3 mb-4">
+                            <Users className="w-5 h-5 text-gray-500" />
+                            <span className="text-sm font-medium text-gray-700">
+                              Team Members ({team.members.length}/{team.maxMembers})
+                            </span>
+                          </div>
+                          
+                          <ul className="space-y-3">
+                            {/* Team Leader */}
+                            <li className="flex items-start gap-3">
+                              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-indigo-600 font-semibold text-sm">
+                                  {team.leader.name?.[0]?.toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h5 className="font-medium text-gray-900">{team.leader.name}</h5>
+                                    <p className="text-sm text-gray-600">{team.leader.email}</p>
+                                  </div>
+                                  <Badge className="bg-indigo-100 text-indigo-700 text-xs">
+                                    Leader
+                                  </Badge>
+                                </div>
+                              </div>
+                            </li>
+
+                            {/* Other Members */}
+                            {team.members
+                              .filter(member => member._id !== team.leader._id)
+                              .map((member) => (
+                                <li key={member._id} className="flex items-start gap-3">
+                                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-gray-600 font-semibold text-sm">
+                                      {member.name?.[0]?.toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h5 className="font-medium text-gray-900">{member.name}</h5>
+                                        <p className="text-sm text-gray-600">{member.email}</p>
+                                      </div>
+                                      {team.leader._id?.toString() === user?._id?.toString() && (
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                          onClick={() => handleRemoveMember(team._id, member._id)}
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+
+                            {/* Add Member Button */}
+                            {team.leader._id?.toString() === user?._id?.toString() && team.members.length < team.maxMembers && (
+                              <li className="flex items-start gap-3">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full border-dashed border-2 border-gray-300 text-gray-500 hover:border-indigo-400 hover:text-indigo-600"
+                                  onClick={() => handleShowInviteModal(team)}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Team Member
+                                </Button>
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+
+                        {/* Team Actions */}
+                        <div className="flex flex-wrap gap-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (navigator.clipboard && navigator.clipboard.writeText) {
+                                navigator.clipboard.writeText(team.teamCode).then(() => {
+                                  setCopiedTeamId(team._id);
+                                  toast.success("Team code copied to clipboard!");
+                                  setTimeout(() => setCopiedTeamId(null), 1500);
+                                }).catch(() => {
+                                  const textArea = document.createElement("textarea");
+                                  textArea.value = team.teamCode;
+                                  document.body.appendChild(textArea);
+                                  textArea.select();
+                                  document.execCommand('copy');
+                                  document.body.removeChild(textArea);
+                                  setCopiedTeamId(team._id);
+                                  toast.success("Team code copied to clipboard!");
+                                  setTimeout(() => setCopiedTeamId(null), 1500);
+                                });
+                              }
+                            }}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            {copiedTeamId === team._id ? "Copied!" : "Copy Team Code"}
+                          </Button>
+                          
+                          {team.leader._id?.toString() !== user?._id?.toString() && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                                >
+                                  <LogOut className="w-4 h-4 mr-2" />
+                                  Leave Team
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Leave Team?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to leave the team <span className="font-semibold">{team.name}</span>? You will be removed from the team and the hackathon.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleLeaveTeam(team._id)}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                                  >
+                                    Yes, Leave
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    // Show create team options
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <Users className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-600 text-lg mb-6">You haven't created or joined a team yet.</p>
+                      <div className="flex flex-col sm:flex-row gap-3 justify-center">
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-500 hover:text-red-700"
-                          onClick={() => setShowUnregisterDialog(true)}
+                          onClick={() => setShowCreateTeam(true)}
+                          className="bg-indigo-600 hover:bg-indigo-700"
                         >
-                          Cancel Team
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create New Team
+                        </Button>
+                        <Button
+                          onClick={() => setShowJoinTeam(true)}
+                          variant="outline"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Join Existing Team
                         </Button>
                       </div>
+                    </div>
+                  )}
+                </div>
 
-                      {/* Team members section */}
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Users className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm font-medium text-gray-700">
-                            Teammates ({team.members.length}/{team.maxMembers})
-                          </span>
-                        </div>
-                      
+                <hr />
 
-                        {/* Current team member (leader) */}
-                        <div className="flex items-center justify-between p-3 bg-white rounded-lg border mb-2">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                              <span className="text-green-600 font-semibold text-sm">N</span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-800">{team.leader.name}</p>
-                            
-                            </div>
+                {/* Pending Invitations Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 my-4">
+                    <h3 className="text-xl font-semibold text-gray-900">Pending Invitations</h3>
+                  </div>
+                  
+                  {pendingInvites.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                        <UserCheck className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 text-lg">No pending invitations</p>
+                      <p className="text-gray-400 text-sm mt-2">Invited members will appear here</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3">
+                      {pendingInvites.map((invite) => (
+                        <li key={invite._id} className="flex items-start gap-3">
+                          <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-yellow-600 font-semibold text-sm">
+                              {invite.invitedEmail[0].toUpperCase()}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-indigo-500">Leader</span>
-                          </div>
-                        </div>
-
-                        {/* Other team members */}
-                        {team.members
-                          .filter(member => member._id !== team.leader._id)
-                          .map((member) => (
-                            <div key={member._id} className="flex items-center justify-between p-3 bg-white rounded-lg border mb-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <span className="text-blue-600 font-semibold text-sm">
-                                    {member.name?.[0]?.toUpperCase()}
-                                  </span>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-800">{member.name}</p>
-                                  <p className="text-sm text-gray-500">{member.email}</p>
-                                </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h5 className="font-medium text-gray-900">
+                                  {invite.invitedEmail.split('@')[0]}
+                                </h5>
+                                <p className="text-sm text-gray-600">{invite.invitedEmail}</p>
                               </div>
                               <div className="flex items-center gap-2">
-                            
-                                {team.leader._id?.toString() === user?._id?.toString() && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-700 ml-2"
-                                    onClick={() => handleRemoveMember(team._id, member._id)}
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </Button>
-                                )}
+                                <Badge className="bg-yellow-100 text-yellow-700 text-xs">
+                                  Pending
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                  onClick={() => setRevokeInviteData(invite)}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
                               </div>
                             </div>
-                          ))}
-
-                        {/* Add member button */}
-                        {team.leader._id?.toString() === user?._id?.toString() && team.members.length < team.maxMembers && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full border-dashed border-2 border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600"
-                            onClick={() => handleShowInviteModal(team)}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add another Member
-                          </Button>
-                        )}
-                      </div>
-
-                      {/* Action buttons */}
-                      <div className="flex gap-2 mt-4">
-                
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (navigator.clipboard && navigator.clipboard.writeText) {
-                              navigator.clipboard.writeText(team.teamCode).then(() => {
-                                setCopiedTeamId(team._id);
-                                // Use react-hot-toast directly instead of the prop
-                                toast.success("Team code copied to clipboard!");
-                                setTimeout(() => setCopiedTeamId(null), 1500);
-                              }).catch(() => {
-                                // Fallback for older browsers
-                                const textArea = document.createElement("textarea");
-                                textArea.value = team.teamCode;
-                                document.body.appendChild(textArea);
-                                textArea.select();
-                                document.execCommand('copy');
-                                document.body.removeChild(textArea);
-                                setCopiedTeamId(team._id);
-                                toast.success("Team code copied to clipboard!");
-                                setTimeout(() => setCopiedTeamId(null), 1500);
-                              });
-                            } else {
-                              // Fallback for browsers without clipboard API
-                              const textArea = document.createElement("textarea");
-                              textArea.value = team.teamCode;
-                              document.body.appendChild(textArea);
-                              textArea.select();
-                              document.execCommand('copy');
-                              document.body.removeChild(textArea);
-                              setCopiedTeamId(team._id);
-                              toast.success("Team code copied to clipboard!");
-                              setTimeout(() => setCopiedTeamId(null), 1500);
-                            }
-                          }}
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          {copiedTeamId === team._id ? "Copied!" : "Copy Team Code"}
-                        </Button>
-                        
-                        {team.leader._id?.toString() !== user?._id?.toString() && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                              >
-                                <LogOut className="w-4 h-4 mr-2" />
-                                Leave Team
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Leave Team?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to leave the team <span className="font-semibold">{team.name}</span>? You will be removed from the team and the hackathon.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleLeaveTeam(team._id)}
-                                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                                >
-                                  Yes, Leave
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  // Show create team options
-                  <div className="space-y-4">
-                    <Button
-                      onClick={() => setShowCreateTeam(true)}
-                      variant="primary"
-                      size="lg"
-                      className="w-full"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create New Team
-                    </Button>
-                    <div className="text-center text-gray-500">or</div>
-                    <Button
-                      onClick={() => setShowJoinTeam(true)}
-                      variant="outline"
-                      size="lg"
-                      className="w-full"
-                    >
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Join Existing Team
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              {/* Tabs section matching reference */}
-              <div className="border-b border-gray-200 mb-6">
-                <nav className="flex space-x-8" aria-label="Tabs">
-                  <button className="border-b-2 border-blue-500 text-blue-600 py-2 px-1 text-sm font-medium">
-                    Pending Teammates
-                  </button>
-                </nav>
-              </div>
-
-              {/* Suggestions section */}
-              <div className="space-y-4">
-
-              {/* Pending invites as suggestions */}
-              {pendingInvites.map((invite) => {
-              // Debug logging
-              console.log("Invite debug:", {
-                inviteId: invite._id,
-                inviteEmail: invite.invitedEmail,
-                teamLeaderId: invite.team.leader?._id,
-                currentUserId: user?._id,
-                isLeader: invite.team.leader?._id?.toString() === user?._id?.toString()
-              });
-              
-              return (
-                
-                <div key={invite._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">
-                      <span className="text-pink-600 font-semibold text-sm">
-                        {invite.invitedEmail[0].toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-800">
-                        {invite.invitedEmail.split('@')[0]} ({invite.invitedEmail})
-                      </p>
-                      <p className="text-sm text-gray-500">Poornima College of Engineering</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-yellow-600 bg-yellow-100 px-2 py-1 rounded">
-                      Pending
-                    </span>
-                    
-                    {/* Cross button to remove pending invite */}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1"
-                      onClick={() => setRevokeInviteData(invite)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              );
-              })}
-
-
-                {pendingInvites.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No pending invitations</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </section>
+
+      {/* Join by code modal */}
+      {showJoinByCodeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Join Team by Code</h2>
+            <Input
+              value={joinCode}
+              onChange={e => setJoinCode(e.target.value)}
+              placeholder="Enter team code"
+              className="mb-4"
+            />
+            {joinError && <div className="text-red-600 mb-2">{joinError}</div>}
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowJoinByCodeModal(false)}>Cancel</Button>
+              <Button
+                variant="blue"
+                onClick={handleJoinByCode}
+                disabled={joiningTeam || !joinCode.trim()}
+              >
+                {joiningTeam ? "Joining..." : "Join"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Registration form after joining by code */}
+      {showJoinRegistration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-2xl">
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+              <p className="text-lg font-semibold text-blue-900">
+                You are joining team <span className="font-bold">{pendingTeam?.name}</span> for hackathon <span className="font-bold">{hackathon?.title}</span>!
+              </p>
+            </div>
+            <HackathonRegistration
+              hackathon={hackathon}
+              onBack={() => setShowJoinRegistration(false)}
+              onSuccess={handleJoinRegistration}
+              inviteMode={true}
+            />
+          </div>
+        </div>
+      )}
 
       {/* --- MODALS AND DIALOGS (Remain Unchanged) --- */}
       <InviteModal

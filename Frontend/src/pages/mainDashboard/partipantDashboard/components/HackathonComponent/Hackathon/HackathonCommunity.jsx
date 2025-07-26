@@ -34,46 +34,65 @@ export default function HackathonCommunity({ sectionRef }) {
   ];
 
   return (
-    <section ref={sectionRef} className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-800">Community</h2>
-        <p className="mt-2 text-lg text-gray-600">
-          Get involved, ask questions, and connect with other hackers.
-        </p>
-      </div>
-
-      <Card className="overflow-hidden">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl">
-            Join the Conversation
+    <section ref={sectionRef} className="space-y-6 max-w-5xl mx-auto">
+      {/* Main Container Card */}
+      <Card className="shadow-none hover:shadow-none">
+        {/* Section Header */}
+        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+          <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+            <div className="w-1 h-8 bg-indigo-500 rounded-full"></div>
+            Community
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4 flex flex-col gap-2">
-            {communityLinks.map((link) => (
-              <a
-                key={link.platform}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group"
-              >
-                <div className="flex items-center justify-between p-4 border rounded-xl hover:bg-gray-50/75 hover:border-gray-300 transition-all duration-200">
-                  <div className="flex items-center gap-5">
-                    <div className="bg-gray-100 p-3 rounded-full">
+
+        <CardContent className="p-8 space-y-8">
+          {/* Community Introduction */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 my-4">
+              <h3 className="text-xl font-semibold text-gray-900">Join the Conversation</h3>
+            </div>
+            <div className="">
+              <p className="text-gray-700 leading-relaxed text-lg mb-6">
+                Get involved, ask questions, and connect with other hackers. Join our community platforms to stay updated and collaborate with fellow participants.
+              </p>
+              
+              <ul className="space-y-4">
+                {communityLinks.map((link, index) => (
+                  <li key={link.platform} className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                       {link.icon}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-800">{link.platform}</h3>
-                      <p className="text-sm text-gray-500">{link.description}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold text-lg text-gray-900 mb-1">
+                            {link.platform}
+                          </h4>
+                          <p className="text-gray-700 leading-relaxed">
+                            {link.description}
+                          </p>
+                        </div>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4"
+                        >
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-colors duration-200"
+                          >
+                            {link.action}
+                            <ArrowUpRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </a>
+                      </div>
                     </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="text-gray-400 group-hover:text-gray-800">
-                    <ArrowUpRight className="w-5 h-5" />
-                  </Button>
-                </div>
-              </a>
-            ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
