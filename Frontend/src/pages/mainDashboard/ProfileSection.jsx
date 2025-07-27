@@ -443,7 +443,7 @@ export function ProfileSection({ viewUserId }) {
   const renderOverview = () => (
     <div className="flex flex-col gap-8 w-full">
       {/* Hero Profile Card */}
-      <Card className="w-full overflow-hidden relative rounded-3xl border-0 bg-gradient-to-br from-white via-purple-50/30 to-white">
+      <Card className="w-full overflow-hidden relative rounded-3xl bg-gradient-to-br from-white via-purple-50/30 to-white">
         {/* Loader Overlay */}
         {isUploading && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/80 backdrop-blur-sm">

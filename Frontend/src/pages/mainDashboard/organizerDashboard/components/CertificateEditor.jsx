@@ -1,5 +1,6 @@
 import React, { useRef, useState, useCallback, useEffect } from "react"
 import { ArrowLeft, Plus, Upload, Save, Eye, Trash2, Type } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/CommonUI/card" 
 
 function getAverageColor(img, x, y, w, h) {
   const canvas = document.createElement("canvas")
@@ -473,7 +474,7 @@ export default function CertificateEditor({ onBack, template }) {
     ? getImageRelativePosition(selectedFieldData)
     : null
 
-  return (
+   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 p-4">
       {/* Enhanced Header */}
       <div className="flex items-center justify-between mb-6">
@@ -481,7 +482,7 @@ export default function CertificateEditor({ onBack, template }) {
           {onBack && (
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-white/80 rounded-lg transition-all duration-200 shadow-sm border border-gray-200"
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
@@ -509,7 +510,7 @@ export default function CertificateEditor({ onBack, template }) {
           <button
             onClick={handleSave}
             disabled={isSaving || !selectedImage || !certificateTitle.trim()}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-500 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
             <Save className="h-5 w-5" />
             {isSaving ? "Saving..." : "Save Template"}
@@ -518,122 +519,131 @@ export default function CertificateEditor({ onBack, template }) {
       </div>
 
       {/* Certificate Details Form */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Template Details
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Certificate Title *
-            </label>
-            <input
-              type="text"
-              value={certificateTitle}
-              onChange={e => setCertificateTitle(e.target.value)}
-              placeholder="e.g., Hackathon Winner Certificate"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-            />
+      <Card className="mb-6 shadow-none hover:shadow-none">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-gray-900">
+            Template Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Certificate Title *
+              </label>
+              <input
+                type="text"
+                value={certificateTitle}
+                onChange={e => setCertificateTitle(e.target.value)}
+                placeholder="e.g., Hackathon Winner Certificate"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
+              <input
+                type="text"
+                value={certificateDescription}
+                onChange={e => setCertificateDescription(e.target.value)}
+                placeholder="Brief description of the certificate"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <input
-              type="text"
-              value={certificateDescription}
-              onChange={e => setCertificateDescription(e.target.value)}
-              placeholder="Brief description of the certificate"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-            />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content */}
       <div className="flex gap-6">
         {/* Certificate Canvas */}
         <div className="flex-1">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Certificate Canvas
-              </h2>
-              <div className="flex gap-2">
-                <label className="inline-flex items-center gap-2 cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all duration-200 shadow-sm">
-                  <Upload className="h-4 w-4" />
-                  Upload Image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-                <button
-                  onClick={handleAddField}
-                  className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Text
-                </button>
-              </div>
-            </div>
-
-            <div
-              ref={canvasRef}
-              className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl overflow-hidden"
-              style={{ width: "100%", maxWidth: 1000, height: 600 }}
-              onClick={handleCanvasClick}
-            >
-              {!selectedImage && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">
-                      Upload a certificate template to get started
-                    </p>
-                  </div>
+          <Card className="shadow-none hover:shadow-none">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl font-semibold text-gray-900">
+                  Certificate Canvas
+                </CardTitle>
+                <div className="flex gap-2">
+                  <label className="inline-flex items-center gap-2 cursor-pointer bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all duration-200 shadow-sm">
+                    <Upload className="h-4 w-4" />
+                    Upload Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    onClick={handleAddField}
+                    className="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Text
+                  </button>
                 </div>
-              )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div
+                ref={canvasRef}
+                className="relative border-2 border-dashed border-gray-300 bg-gray-50 rounded-xl overflow-hidden"
+                style={{ width: "100%", maxWidth: 1000, height: 600 }}
+                onClick={handleCanvasClick}
+              >
+                {!selectedImage && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">
+                        Upload a certificate template to get started
+                      </p>
+                    </div>
+                  </div>
+                )}
 
-              {selectedImage && (
-                <img
-                  ref={imgRef}
-                  src={selectedImage}
-                  alt="Certificate Template"
-                  className="w-full h-full object-contain"
-                  style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}
-                />
-              )}
+                {selectedImage && (
+                  <img
+                    ref={imgRef}
+                    src={selectedImage}
+                    alt="Certificate Template"
+                    className="w-full h-full object-contain"
+                    style={{ position: "absolute", top: 0, left: 0, zIndex: 1 }}
+                  />
+                )}
 
-              {/* Text Fields */}
-              {fields.map(field => (
-                <DraggableTextField
-                  key={field.id}
-                  field={field}
-                  onUpdate={updateField}
-                  onSelect={setSelectedField}
-                  isSelected={selectedField === field.id}
-                  isPreview={isPreview}
-                  onFocus={handleFieldFocus}
-                  canvasRef={canvasRef}
-                  imgRef={imgRef}
-                />
-              ))}
-            </div>
-          </div>
+                {/* Text Fields */}
+                {fields.map(field => (
+                  <DraggableTextField
+                    key={field.id}
+                    field={field}
+                    onUpdate={updateField}
+                    onSelect={setSelectedField}
+                    isSelected={selectedField === field.id}
+                    isPreview={isPreview}
+                    onFocus={handleFieldFocus}
+                    canvasRef={canvasRef}
+                    imgRef={imgRef}
+                  />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Properties Panel */}
         {!isPreview && (
           <div className="w-80 space-y-4">
             {/* Add Field Section */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Add New Field
-              </h3>
-              <div className="space-y-3">
+            <Card className="shadow-none hover:shadow-none">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  Add New Field
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {/* Placeholder Buttons */}
                 <div className="flex flex-wrap gap-2 mb-2">
                   <button
@@ -678,230 +688,204 @@ export default function CertificateEditor({ onBack, template }) {
                   <Plus className="h-4 w-4" />
                   Add Field
                 </button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Fields List */}
             {fields.length > 0 && (
-              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Fields ({fields.length})
-                </h3>
-                <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {fields.map(field => (
-                    <div
-                      key={field.id}
-                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        selectedField === field.id
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedField(field.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900 truncate">
-                            {field.label}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {field.content}
-                          </p>
+              <Card className="shadow-none hover:shadow-none">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold text-gray-900">
+                    Fields ({fields.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {fields.map(field => (
+                      <div
+                        key={field.id}
+                        className={`p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                          selectedField === field.id
+                            ? "border-indigo-500 bg-indigo-50"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        }`}
+                        onClick={() => setSelectedField(field.id)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900 truncate">
+                              {field.label}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {field.content}
+                            </p>
+                          </div>
+                          <button
+                            onClick={e => {
+                              e.stopPropagation()
+                              removeField(field.id)
+                            }}
+                            className="p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
-                        <button
-                          onClick={e => {
-                            e.stopPropagation()
-                            removeField(field.id)
-                          }}
-                          className="p-1 text-red-500 hover:bg-red-100 rounded transition-colors"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Properties Section */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Properties
-              </h3>
+            <Card className="shadow-none hover:shadow-none">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900">
+                  Properties
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedFieldData ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-gray-700">
+                        {selectedFieldData.label}
+                      </h4>
+                      <button
+                        onClick={() => removeField(selectedFieldData.id)}
+                        className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
 
-              {selectedFieldData ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-gray-700">
-                      {selectedFieldData.label}
-                    </h4>
-                    <button
-                      onClick={() => removeField(selectedFieldData.id)}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                    {/* Field Name Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Field Name
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedFieldData.label}
+                        onChange={e =>
+                          updateFieldLabel(selectedFieldData.id, e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      />
+                    </div>
 
-                  {/* Field Name Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Field Name
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedFieldData.label}
-                      onChange={e =>
-                        updateFieldLabel(selectedFieldData.id, e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Font Size
+                      </label>
+                      <input
+                        type="range"
+                        min="8"
+                        max="72"
+                        value={selectedFieldData.fontSize}
+                        onChange={e =>
+                          updateField(selectedFieldData.id, {
+                            fontSize: parseInt(e.target.value)
+                          })
+                        }
+                        className="w-full"
+                      />
+                      <span className="text-sm text-gray-500">
+                        {selectedFieldData.fontSize}px
+                      </span>
+                    </div>
 
-                  {/* Live Position & Size Info */}
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h5 className="font-medium text-gray-700 mb-3">
-                      Position & Size (Image Relative)
-                    </h5>
-                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
-                      <div>
-                        <label className="font-medium block mb-1">X</label>
-                        <div className="bg-white px-2 py-1 rounded border">
-                          {imageRelativePosition?.x || 0}px
-                        </div>
-                      </div>
-                      <div>
-                        <label className="font-medium block mb-1">Y</label>
-                        <div className="bg-white px-2 py-1 rounded border">
-                          {imageRelativePosition?.y || 0}px
-                        </div>
-                      </div>
-                      <div>
-                        <label className="font-medium block mb-1">Width</label>
-                        <div className="bg-white px-2 py-1 rounded border">
-                          {imageRelativePosition?.width || 0}px
-                        </div>
-                      </div>
-                      <div>
-                        <label className="font-medium block mb-1">Height</label>
-                        <div className="bg-white px-2 py-1 rounded border">
-                          {imageRelativePosition?.height || 0}px
-                        </div>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Font Family
+                      </label>
+                      <select
+                        value={selectedFieldData.fontFamily}
+                        onChange={e =>
+                          updateField(selectedFieldData.id, {
+                            fontFamily: e.target.value
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Times New Roman, serif">
+                          Times New Roman
+                        </option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Helvetica, sans-serif">Helvetica</option>
+                        <option value="Courier New, monospace">
+                          Courier New
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Font Weight
+                      </label>
+                      <select
+                        value={selectedFieldData.fontWeight}
+                        onChange={e =>
+                          updateField(selectedFieldData.id, {
+                            fontWeight: e.target.value
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        <option value="normal">Normal</option>
+                        <option value="bold">Bold</option>
+                        <option value="lighter">Light</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Text Align
+                      </label>
+                      <select
+                        value={selectedFieldData.textAlign}
+                        onChange={e =>
+                          updateField(selectedFieldData.id, {
+                            textAlign: e.target.value
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      >
+                        <option value="left">Left</option>
+                        <option value="center">Center</option>
+                        <option value="right">Right</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Text Color
+                      </label>
+                      <input
+                        type="color"
+                        value={selectedFieldData.color}
+                        onChange={e =>
+                          updateField(selectedFieldData.id, {
+                            color: e.target.value
+                          })
+                        }
+                        className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
+                      />
                     </div>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Font Size
-                    </label>
-                    <input
-                      type="range"
-                      min="8"
-                      max="72"
-                      value={selectedFieldData.fontSize}
-                      onChange={e =>
-                        updateField(selectedFieldData.id, {
-                          fontSize: parseInt(e.target.value)
-                        })
-                      }
-                      className="w-full"
-                    />
-                    <span className="text-sm text-gray-500">
-                      {selectedFieldData.fontSize}px
-                    </span>
+                ) : (
+                  <div className="text-center py-8">
+                    <Type className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      {fields.length === 0
+                        ? "Add a field to get started"
+                        : "Select a field to edit its properties"}
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Font Family
-                    </label>
-                    <select
-                      value={selectedFieldData.fontFamily}
-                      onChange={e =>
-                        updateField(selectedFieldData.id, {
-                          fontFamily: e.target.value
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="Arial, sans-serif">Arial</option>
-                      <option value="Times New Roman, serif">
-                        Times New Roman
-                      </option>
-                      <option value="Georgia, serif">Georgia</option>
-                      <option value="Helvetica, sans-serif">Helvetica</option>
-                      <option value="Courier New, monospace">
-                        Courier New
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Font Weight
-                    </label>
-                    <select
-                      value={selectedFieldData.fontWeight}
-                      onChange={e =>
-                        updateField(selectedFieldData.id, {
-                          fontWeight: e.target.value
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="normal">Normal</option>
-                      <option value="bold">Bold</option>
-                      <option value="lighter">Light</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Text Align
-                    </label>
-                    <select
-                      value={selectedFieldData.textAlign}
-                      onChange={e =>
-                        updateField(selectedFieldData.id, {
-                          textAlign: e.target.value
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    >
-                      <option value="left">Left</option>
-                      <option value="center">Center</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Text Color
-                    </label>
-                    <input
-                      type="color"
-                      value={selectedFieldData.color}
-                      onChange={e =>
-                        updateField(selectedFieldData.id, {
-                          color: e.target.value
-                        })
-                      }
-                      className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Type className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">
-                    {fields.length === 0
-                      ? "Add a field to get started"
-                      : "Select a field to edit its properties"}
-                  </p>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
