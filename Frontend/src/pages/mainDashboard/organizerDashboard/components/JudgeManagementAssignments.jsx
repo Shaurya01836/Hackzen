@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw } from "lucide-react";
+import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw, Github, Globe, ExternalLink, Video, Code, BookOpen, User, Phone, MapPin, Star, Tag, Link, Download, Play, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../../../../components/DashboardUI/avatar";
 import { toast } from "../../../../hooks/use-toast";
 import {
@@ -19,6 +19,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
 // Removed circular import - stage selection functionality is now included directly
 import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
+import { ProjectDetail } from "../../../../components/CommonUI/ProjectDetail";
 
 // Mock stages data
 const stages = [
@@ -308,7 +309,7 @@ export default function JudgeManagementAssignments({
         });
         
         setSubmissionScores(scoresData);
-        console.log('🔍 Fetched submission scores:', scoresData);
+    
       }
     } catch (error) {
       console.error('Error fetching submission scores:', error);
@@ -375,7 +376,7 @@ export default function JudgeManagementAssignments({
         
         // Check if there are other submissions for this team that might have PPT files
         const teamSubmissions = assignmentOverview?.assignedSubmissions?.filter(s => s.teamName === submission.teamName) || [];
-        console.log('Team submissions:', teamSubmissions.map(s => ({ id: s._id, roundIndex: s.roundIndex, pptFile: s.pptFile })));
+    
         
 
         
@@ -388,15 +389,7 @@ export default function JudgeManagementAssignments({
           assignedJudges
         };
         
-        console.log('Original submission pptFile:', submission.pptFile);
-        console.log('API submission pptFile:', submissionData.submission?.pptFile);
-        console.log('Merged submission pptFile:', mergedSubmission.pptFile);
-        console.log('Project data:', mergedSubmission.projectId);
-        console.log('All submission fields:', Object.keys(mergedSubmission));
-        console.log('Project attachments:', mergedSubmission.projectId?.attachments);
-        console.log('Project files:', mergedSubmission.projectId?.files);
-        console.log('Full project data:', mergedSubmission.projectId);
-        console.log('All project fields:', Object.keys(mergedSubmission.projectId || {}));
+
         
 
         
@@ -1285,7 +1278,7 @@ export default function JudgeManagementAssignments({
 
       {/* Submission Details Modal */}
       <Dialog open={submissionDetailsModalOpen} onOpenChange={setSubmissionDetailsModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[98vw] max-h-[98vh] w-[98vw] h-[98vh] overflow-y-auto p-8">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
@@ -1301,61 +1294,381 @@ export default function JudgeManagementAssignments({
               <span className="ml-2 text-gray-600">Loading submission details...</span>
             </div>
           ) : submissionDetails ? (
-            <div className="space-y-6">
-                                      {/* Submission Header */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                {submissionDetails.projectTitle || submissionDetails.title || 'Untitled Project'}
-                              </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                  <span className="font-medium text-gray-700">Team:</span>
-                                  <span className="ml-2 text-gray-900">{submissionDetails.teamName}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-gray-700">Submission Type:</span>
-                                  <span className="ml-2 text-gray-900">
-                                    {(selectedStage === 'r1' || submissionDetails.pptFile || submissionDetails.type === 'ppt' || submissionDetails.submissionType === 'ppt' || submissionDetails.originalName?.includes('.ppt') || submissionDetails.originalName?.includes('.pptx')) ? 'PPT Presentation' : 'Project Files'}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-gray-700">Submitted:</span>
-                                  <span className="ml-2 text-gray-900">
-                                    {formatDate(submissionDetails.createdAt)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-bold text-blue-600">
-                                {submissionDetails.assignedJudges?.length || 0}
-                              </div>
-                              <div className="text-sm text-gray-500">Assigned Judges</div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                {(() => {
-                                  const evaluatedCount = submissionDetails.evaluations?.length || 0;
-                                  const totalCount = submissionDetails.assignedJudges?.length || 0;
-                                  return `${evaluatedCount}/${totalCount} Evaluated`;
-                                })()}
-                              </div>
+            <div className="bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 min-h-full">
+              {/* Project Summary Section */}
+              <div className="px-6 pt-8">
+                <div className="max-w-7xl mx-auto">
+                  <div className="flex flex-col md:flex-row items-center md:items-start gap-6 rounded-2xl bg-white/70 backdrop-blur-sm border-0 shadow-lg shadow-indigo-100/50 p-6">
+                    {/* Project Logo */}
+                    <div className="w-28 h-28 flex items-center justify-center rounded-2xl">
+                      <img
+                        src={submissionDetails.projectId?.logo?.url || submissionDetails.logo?.url || submissionDetails.projectId?.images?.[0]?.url || "/assets/default-banner.png"}
+                        alt="Project Logo"
+                        className="rounded-xl object-cover w-24 h-24"
+                      />
+                    </div>
+                    
+                    {/* Project Info */}
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-1 flex items-center gap-2">
+                          {submissionDetails.projectTitle || submissionDetails.title || submissionDetails.projectId?.title || 'Untitled Project'}
+                        </h1>
+                        {submissionDetails.projectId?.category && (
+                          <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            {submissionDetails.projectId.category}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {submissionDetails.projectId?.description && (
+                        <p className="text-gray-700 italic text-md mb-2 mt-1 max-w-2xl">
+                          {submissionDetails.projectId.description}
+                        </p>
+                      )}
+                      
+                      {/* Horizontal line below title/intro */}
+                      <div className="border-t border-gray-200 my-4 w-full" />
+                      
+                      {/* Project meta info */}
+                      <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4 text-blue-500" />
+                          {submissionDetails.teamName || submissionDetails.team?.name || 'Unknown Team'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-4 h-4 text-green-500" />
+                          {formatDate(submissionDetails.createdAt || submissionDetails.submittedAt)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Award className="w-4 h-4 text-yellow-500" />
+                          {submissionDetails.assignedJudges?.length || 0} Judges Assigned
+                        </span>
+                        {submissionDetails.evaluations?.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                            {submissionDetails.evaluations.length} Evaluations
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+                            {/* Main Content Area */}
+              <div className="px-6 py-8">
+                <div className="max-w-7xl mx-auto space-y-8">
+
+
+
+              {/* Project Information Grid */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Project Description */}
+                {(submissionDetails.projectId?.description || submissionDetails.description) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-blue-600" />
+                      Project Description
+                    </h4>
+                    <div className="prose prose-sm max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: submissionDetails.projectId?.description || submissionDetails.description }} />
+                    </div>
+                  </div>
+                )}
+
+                {/* Problem Statement */}
+                {(submissionDetails.projectId?.problemStatement || submissionDetails.problemStatement) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Code className="w-5 h-5 text-green-600" />
+                      Problem Statement
+                    </h4>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-gray-700 whitespace-pre-line">{submissionDetails.projectId?.problemStatement || submissionDetails.problemStatement}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tech Stack */}
+                {(submissionDetails.projectId?.techStack || submissionDetails.techStack) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-indigo-600" />
+                      Tech Stack
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(submissionDetails.projectId?.techStack || submissionDetails.techStack || []).map((tech, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Links */}
+                {(submissionDetails.projectId?.githubUrl || submissionDetails.projectId?.websiteUrl || submissionDetails.projectId?.demoUrl || submissionDetails.githubUrl || submissionDetails.websiteUrl || submissionDetails.demoUrl) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Link className="w-5 h-5 text-purple-600" />
+                      Project Links
+                    </h4>
+                    <div className="space-y-3">
+                      {(submissionDetails.projectId?.githubUrl || submissionDetails.githubUrl) && (
+                        <a
+                          href={submissionDetails.projectId?.githubUrl || submissionDetails.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <Github className="w-5 h-5 text-gray-600" />
+                          <span className="text-gray-700">GitHub Repository</span>
+                          <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                        </a>
+                      )}
+                      {(submissionDetails.projectId?.websiteUrl || submissionDetails.websiteUrl) && (
+                        <a
+                          href={submissionDetails.projectId?.websiteUrl || submissionDetails.websiteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <Globe className="w-5 h-5 text-gray-600" />
+                          <span className="text-gray-700">Live Website</span>
+                          <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                        </a>
+                      )}
+                      {(submissionDetails.projectId?.demoUrl || submissionDetails.demoUrl) && (
+                        <a
+                          href={submissionDetails.projectId?.demoUrl || submissionDetails.demoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <Video className="w-5 h-5 text-gray-600" />
+                          <span className="text-gray-700">Demo Video</span>
+                          <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Category */}
+                {(submissionDetails.projectId?.category || submissionDetails.category) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-orange-600" />
+                      Project Category
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 text-orange-800">
+                        {submissionDetails.projectId?.category || submissionDetails.category}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Status */}
+                {(submissionDetails.projectId?.status || submissionDetails.status) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Star className="w-5 h-5 text-yellow-600" />
+                      Project Status
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                        {submissionDetails.projectId?.status || submissionDetails.status}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Project Information */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                {/* Project Images */}
+                {(submissionDetails.projectId?.images && submissionDetails.projectId.images.length > 0) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Eye className="w-5 h-5 text-blue-600" />
+                      Project Images
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {submissionDetails.projectId.images.map((image, index) => (
+                        <img
+                          key={index}
+                          src={image.url}
+                          alt={`Project image ${index + 1}`}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Attachments */}
+                {(submissionDetails.projectId?.attachments && submissionDetails.projectId.attachments.length > 0) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <Download className="w-5 h-5 text-green-600" />
+                      Project Attachments
+                    </h4>
+                    <div className="space-y-2">
+                      {submissionDetails.projectId.attachments.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <div className="font-medium text-gray-900">{file.name}</div>
+                              <div className="text-sm text-gray-500">{file.type}</div>
                             </div>
                           </div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </a>
                         </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {/* Submission Files */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  Submission Files
-                </h4>
+                {/* Project Files */}
+                {(submissionDetails.projectId?.files && submissionDetails.projectId.files.length > 0) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                      Project Files
+                    </h4>
+                    <div className="space-y-2">
+                      {submissionDetails.projectId.files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <div className="font-medium text-gray-900">{file.name}</div>
+                              <div className="text-sm text-gray-500">{file.type}</div>
+                            </div>
+                          </div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Documents */}
+                {(submissionDetails.projectId?.documents && submissionDetails.projectId.documents.length > 0) && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-indigo-600" />
+                      Project Documents
+                    </h4>
+                    <div className="space-y-2">
+                      {submissionDetails.projectId.documents.map((doc, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <div className="font-medium text-gray-900">{doc.name}</div>
+                              <div className="text-sm text-gray-500">{doc.type}</div>
+                            </div>
+                          </div>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Team Information */}
+              {(submissionDetails.projectId?.team || submissionDetails.team || submissionDetails.teamMembers) && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-green-600" />
+                    Team Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {(submissionDetails.projectId?.team || submissionDetails.team || submissionDetails.teamMembers || []).map((member, index) => (
+                      <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={member.avatarUrl || member.profileImage} alt={member.name} />
+                          <AvatarFallback>{member.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-gray-900">{member.name}</div>
+                          <div className="text-sm text-gray-500">{member.role || member.position}</div>
+                          {member.email && (
+                            <div className="text-xs text-gray-400">{member.email}</div>
+                          )}
+                          {member.phone && (
+                            <div className="text-xs text-gray-400">{member.phone}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Project Statistics */}
+              {(submissionDetails.projectId?.views || submissionDetails.projectId?.likes || submissionDetails.views || submissionDetails.likes) && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Star className="w-5 h-5 text-yellow-600" />
+                    Project Statistics
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {(submissionDetails.projectId?.views || submissionDetails.views) && (
+                      <div className="text-center p-4 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{submissionDetails.projectId?.views || submissionDetails.views}</div>
+                        <div className="text-sm text-gray-600">Views</div>
+                      </div>
+                    )}
+                    {(submissionDetails.projectId?.likes || submissionDetails.likes) && (
+                      <div className="text-center p-4 bg-red-50 rounded-lg">
+                        <div className="text-2xl font-bold text-red-600">{submissionDetails.projectId?.likes || submissionDetails.likes}</div>
+                        <div className="text-sm text-gray-600">Likes</div>
+                      </div>
+                    )}
+                    {(submissionDetails.projectId?.comments || submissionDetails.comments) && (
+                      <div className="text-center p-4 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{submissionDetails.projectId?.comments || submissionDetails.comments}</div>
+                        <div className="text-sm text-gray-600">Comments</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Original Submission Files Section - Keep this intact */}
+           
+                
                 <div className="space-y-4">
-
-                  
-                  {/* Debug info - remove this later */}
-                  
-                  
                   {(selectedStage === 'r1' || submissionDetails.pptFile || submissionDetails.type === 'ppt' || submissionDetails.submissionType === 'ppt' || submissionDetails.originalName?.includes('.ppt') || submissionDetails.originalName?.includes('.pptx')) ? (
                     <div className="space-y-4">
                       {(() => {
@@ -1365,7 +1678,6 @@ export default function JudgeManagementAssignments({
                         
                         // If pptFile is not available but we have originalName, try to construct the URL
                         if (!pptFileUrl && submissionDetails.originalName) {
-                          // This is a fallback - you might need to adjust the base URL based on your setup
                           pptFileUrl = `/uploads/${submissionDetails.originalName}`;
                         }
                         
@@ -1495,14 +1807,7 @@ export default function JudgeManagementAssignments({
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                      <p>{selectedStage === 'r1' ? 'No PPT file available' : 'Project submission'}</p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        {selectedStage === 'r1' 
-                          ? 'This submission should have a PPT file for Round 1.' 
-                          : 'This is a project submission for Round 2.'
-                        }
-                      </p>
+                      
                     </div>
                   )}
                   {submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0 && (
@@ -1530,143 +1835,143 @@ export default function JudgeManagementAssignments({
                       ))}
                     </div>
                   )}
-                </div>
+              
               </div>
 
-                                      {/* Assigned Judges */}
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Users className="w-5 h-5 text-green-600" />
-                            Assigned Judges ({submissionDetails.assignedJudges?.length || 0})
-                          </h4>
-                          {submissionDetails.assignedJudges && submissionDetails.assignedJudges.length > 0 ? (
-                            <div className="space-y-4">
-                              {submissionDetails.assignedJudges.map((judge, index) => {
-                                // Check if this judge has evaluated
-                                const hasEvaluated = submissionDetails.evaluations?.some(evaluation => 
+              {/* Assigned Judges */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  Assigned Judges ({submissionDetails.assignedJudges?.length || 0})
+                </h4>
+                {submissionDetails.assignedJudges && submissionDetails.assignedJudges.length > 0 ? (
+                  <div className="space-y-4">
+                    {submissionDetails.assignedJudges.map((judge, index) => {
+                      // Check if this judge has evaluated
+                      const hasEvaluated = submissionDetails.evaluations?.some(evaluation => 
+                        evaluation.judge?._id === judge._id || 
+                        evaluation.judge?.email === judge.judgeEmail || 
+                        evaluation.judge?.email === judge.email
+                      );
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-4 rounded-lg border ${
+                          hasEvaluated ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={judge.avatarUrl} alt={judge.judgeName || judge.name || judge.judgeEmail || judge.email} />
+                              <AvatarFallback>
+                                {(judge.judgeName || judge.name || judge.judgeEmail || judge.email || 'J')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {judge.judgeName || judge.name || 'Unknown Judge'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {judge.judgeEmail || judge.email || 'No email available'}
+                              </div>
+                              <div className="text-xs font-medium">
+                                {hasEvaluated ? (
+                                  <span className="text-green-600">✅ Evaluated</span>
+                                ) : (
+                                  <span className="text-yellow-600">⏳ Pending Evaluation</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900">
+                              {hasEvaluated ? 'Completed' : 'Pending'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {hasEvaluated ? 
+                                formatDate(submissionDetails.evaluations?.find(evaluation => 
                                   evaluation.judge?._id === judge._id || 
                                   evaluation.judge?.email === judge.judgeEmail || 
                                   evaluation.judge?.email === judge.email
-                                );
-                                
-                                return (
-                                  <div key={index} className={`flex items-center justify-between p-4 rounded-lg border ${
-                                    hasEvaluated ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
-                                  }`}>
-                                    <div className="flex items-center gap-3">
-                                      <Avatar className="h-10 w-10">
-                                        <AvatarImage src={judge.avatarUrl} alt={judge.judgeName || judge.name || judge.judgeEmail || judge.email} />
-                                        <AvatarFallback>
-                                          {(judge.judgeName || judge.name || judge.judgeEmail || judge.email || 'J')[0].toUpperCase()}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <div className="font-medium text-gray-900">
-                                          {judge.judgeName || judge.name || 'Unknown Judge'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                          {judge.judgeEmail || judge.email || 'No email available'}
-                                        </div>
-                                        <div className="text-xs font-medium">
-                                          {hasEvaluated ? (
-                                            <span className="text-green-600">✅ Evaluated</span>
-                                          ) : (
-                                            <span className="text-yellow-600">⏳ Pending Evaluation</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-sm font-medium text-gray-900">
-                                        {hasEvaluated ? 'Completed' : 'Pending'}
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                                                                                                         {hasEvaluated ? 
-                                          formatDate(submissionDetails.evaluations?.find(evaluation => 
-                                            evaluation.judge?._id === judge._id || 
-                                            evaluation.judge?.email === judge.judgeEmail || 
-                                            evaluation.judge?.email === judge.email
-                                          )?.createdAt) : 
-                                          'Not evaluated yet'
-                                        }
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                                )?.createdAt) : 
+                                'Not evaluated yet'
+                              }
                             </div>
-                          ) : (
-                            <div className="text-center py-8 text-gray-500">
-                              <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                              <p>No judges assigned to this submission</p>
-                            </div>
-                          )}
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>No judges assigned to this submission</p>
+                  </div>
+                )}
+              </div>
 
-                                      {/* Judge Evaluations */}
-                        <div className="bg-white border border-gray-200 rounded-lg p-6">
-                          <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                            <Award className="w-5 h-5 text-purple-600" />
-                            Judge Evaluations ({submissionDetails.evaluations?.length || 0})
-                          </h4>
-                          {submissionDetails.evaluations && submissionDetails.evaluations.length > 0 ? (
-                            <div className="space-y-4">
-                              {submissionDetails.evaluations.map((evaluation, index) => (
-                                <div key={index} className="border border-gray-200 rounded-lg p-4">
-                                  <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                      <Avatar className="h-8 w-8">
-                                        <AvatarImage src={evaluation.judge?.avatarUrl} alt={evaluation.judge?.name || evaluation.judge?.email} />
-                                        <AvatarFallback>
-                                          {(evaluation.judge?.name || evaluation.judge?.email || 'J')[0].toUpperCase()}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div>
-                                        <div className="font-medium text-gray-900">
-                                          {evaluation.judge?.name || 'Unknown Judge'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                          {evaluation.judge?.email || 'No email available'}
-                                        </div>
-                                        <div className="text-xs text-blue-600 font-medium">
-                                          ✅ Evaluated
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="text-right">
-                                      <div className="text-lg font-bold text-green-600">
-                                        {evaluation.totalScore || (evaluation.scores && Object.values(evaluation.scores).reduce((sum, score) => sum + (score || 0), 0) / Object.keys(evaluation.scores).length) || 0}/10
-                                      </div>
-                                      <div className="text-xs text-gray-500">
-                                        {formatDate(evaluation.createdAt)}
-                                      </div>
-                                    </div>
-                                  </div>
+              {/* Judge Evaluations */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-purple-600" />
+                  Judge Evaluations ({submissionDetails.evaluations?.length || 0})
+                </h4>
+                {submissionDetails.evaluations && submissionDetails.evaluations.length > 0 ? (
+                  <div className="space-y-4">
+                    {submissionDetails.evaluations.map((evaluation, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={evaluation.judge?.avatarUrl} alt={evaluation.judge?.name || evaluation.judge?.email} />
+                              <AvatarFallback>
+                                {(evaluation.judge?.name || evaluation.judge?.email || 'J')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {evaluation.judge?.name || 'Unknown Judge'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {evaluation.judge?.email || 'No email available'}
+                              </div>
+                              <div className="text-xs text-blue-600 font-medium">
+                                ✅ Evaluated
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {evaluation.totalScore || (evaluation.scores && Object.values(evaluation.scores).reduce((sum, score) => sum + (score || 0), 0) / Object.keys(evaluation.scores).length) || 0}/10
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDate(evaluation.createdAt)}
+                            </div>
+                          </div>
+                        </div>
                         
-                                                 {/* Evaluation Criteria */}
-                         {evaluation.scores && Object.keys(evaluation.scores).length > 0 && (
-                           <div className="space-y-2">
-                             <h6 className="font-medium text-gray-900">Evaluation Criteria:</h6>
-                             {Object.entries(evaluation.scores).map(([criteria, score]) => (
-                               <div key={criteria} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                 <span className="text-sm text-gray-700 capitalize">{criteria}</span>
-                                 <span className="text-sm font-medium text-gray-900">
-                                   {score}/10
-                                 </span>
-                               </div>
-                             ))}
-                           </div>
-                         )}
+                        {/* Evaluation Criteria */}
+                        {evaluation.scores && Object.keys(evaluation.scores).length > 0 && (
+                          <div className="space-y-2">
+                            <h6 className="font-medium text-gray-900">Evaluation Criteria:</h6>
+                            {Object.entries(evaluation.scores).map(([criteria, score]) => (
+                              <div key={criteria} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm text-gray-700 capitalize">{criteria}</span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {score}/10
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         
-                                                 {/* Comments */}
-                         {evaluation.feedback && (
-                           <div className="mt-4">
-                             <h6 className="font-medium text-gray-900 mb-2">Comments:</h6>
-                             <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                               <p className="text-sm text-gray-700">{evaluation.feedback}</p>
-                             </div>
-                           </div>
-                         )}
+                        {/* Comments */}
+                        {evaluation.feedback && (
+                          <div className="mt-4">
+                            <h6 className="font-medium text-gray-900 mb-2">Comments:</h6>
+                            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <p className="text-sm text-gray-700">{evaluation.feedback}</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -1684,23 +1989,25 @@ export default function JudgeManagementAssignments({
                 <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
                   <div className="text-center">
                     <h4 className="text-lg font-semibold text-gray-900 mb-2">Overall Score</h4>
-                                         <div className="text-4xl font-bold text-green-600">
-                       {(() => {
-                         if (!submissionDetails.evaluations || submissionDetails.evaluations.length === 0) return '0.0';
-                         const totalScore = submissionDetails.evaluations.reduce((sum, evaluation) => {
-                           const score = evaluation.totalScore || 
-                             (evaluation.scores && Object.values(evaluation.scores).reduce((s, val) => s + (val || 0), 0) / Object.keys(evaluation.scores).length) || 0;
-                           return sum + score;
-                         }, 0);
-                         return (totalScore / submissionDetails.evaluations.length).toFixed(1);
-                       })()}/10
-                     </div>
+                    <div className="text-4xl font-bold text-green-600">
+                      {(() => {
+                        if (!submissionDetails.evaluations || submissionDetails.evaluations.length === 0) return '0.0';
+                        const totalScore = submissionDetails.evaluations.reduce((sum, evaluation) => {
+                          const score = evaluation.totalScore || 
+                            (evaluation.scores && Object.values(evaluation.scores).reduce((s, val) => s + (val || 0), 0) / Object.keys(evaluation.scores).length) || 0;
+                          return sum + score;
+                        }, 0);
+                        return (totalScore / submissionDetails.evaluations.length).toFixed(1);
+                      })()}/10
+                    </div>
                     <div className="text-sm text-gray-500 mt-2">
                       Based on {submissionDetails.evaluations.length} evaluation{submissionDetails.evaluations.length !== 1 ? 's' : ''}
                     </div>
                   </div>
                 </div>
               )}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">

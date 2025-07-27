@@ -3574,6 +3574,278 @@ exports.toggleSubmissionShortlist = async (req, res) => {
   }
 };
 
+// 🏆 Assign Winners for Round 2
+exports.assignWinners = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    const { winnerCount = 3, mode = 'topN' } = req.body; // topN, threshold, or manual
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign winners' });
+    }
+
+    // Verify this is Round 2
+    if (parseInt(roundIndex) !== 1) {
+      return res.status(400).json({ message: 'Winner assignment is only available for Round 2' });
+    }
+
+    // Get Round 2 submissions with combined scores
+    const submissions = await Submission.find({ 
+      hackathonId: hackathonId, 
+      roundIndex: 1 // Only Round 2 submissions
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+
+    if (submissions.length === 0) {
+      return res.status(400).json({ message: 'No Round 2 submissions found for winner assignment' });
+    }
+
+    // Get all scores for Round 2 submissions
+    const Score = require('../model/ScoreModel');
+    const round2Scores = await Score.find({ 
+      submission: { $in: submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Get Round 1 submissions for combined scoring
+    const round1Submissions = await Submission.find({
+      hackathonId: hackathonId,
+      roundIndex: 0
+    }).populate('teamId', 'name leader').lean();
+
+    const round1Scores = await Score.find({ 
+      submission: { $in: round1Submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create maps for scoring
+    const round2SubmissionScores = {};
+    round2Scores.forEach(score => {
+      if (!round2SubmissionScores[score.submission.toString()]) {
+        round2SubmissionScores[score.submission.toString()] = [];
+      }
+      round2SubmissionScores[score.submission.toString()].push(score);
+    });
+
+    const round1TeamScores = {};
+    round1Submissions.forEach(submission => {
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      if (teamId) {
+        const submissionScores = round1Scores.filter(s => s.submission.toString() === submission._id.toString());
+        if (submissionScores.length > 0) {
+          round1TeamScores[teamId] = submissionScores;
+        }
+      }
+    });
+
+    // Calculate combined scores for Round 2
+    const leaderboard = submissions.map(submission => {
+      const submissionScoresList = round2SubmissionScores[submission._id.toString()] || [];
+      
+      // Calculate Round 2 project score
+      let projectScore = 0;
+      let projectScoreCount = 0;
+      
+      submissionScoresList.forEach(score => {
+        let totalCriteriaScore = 0;
+        let criteriaCount = 0;
+        
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            }
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          Object.values(score.scores).forEach(value => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            } else if (typeof value === 'number') {
+              totalCriteriaScore += value;
+              criteriaCount++;
+            }
+          });
+        }
+        
+        if (criteriaCount > 0) {
+          const submissionScore = totalCriteriaScore / criteriaCount;
+          projectScore += submissionScore;
+          projectScoreCount++;
+        } else if (score.totalScore && typeof score.totalScore === 'number') {
+          projectScore += score.totalScore;
+          projectScoreCount++;
+        }
+      });
+      
+      projectScore = projectScoreCount > 0 ? projectScore / projectScoreCount : 0;
+      
+      // Calculate Round 1 PPT score
+      let pptScore = 0;
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      const round1TeamScoresList = round1TeamScores[teamId] || [];
+      
+      if (round1TeamScoresList.length > 0) {
+        let round1TotalScore = 0;
+        let round1ScoreCount = 0;
+        
+        round1TeamScoresList.forEach(score => {
+          let totalCriteriaScore = 0;
+          let criteriaCount = 0;
+          
+          if (score.scores && score.scores instanceof Map) {
+            score.scores.forEach((value, key) => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              }
+            });
+          } else if (score.scores && typeof score.scores === 'object') {
+            Object.values(score.scores).forEach(value => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              } else if (typeof value === 'number') {
+                totalCriteriaScore += value;
+                criteriaCount++;
+              }
+            });
+          }
+          
+          if (criteriaCount > 0) {
+            const submissionScore = totalCriteriaScore / criteriaCount;
+            round1TotalScore += submissionScore;
+            round1ScoreCount++;
+          } else if (score.totalScore && typeof score.totalScore === 'number') {
+            round1TotalScore += score.totalScore;
+            round1ScoreCount++;
+          }
+        });
+        
+        pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+      }
+      
+      // Calculate combined score: (PPT Score + Project Score) / 2
+      const combinedScore = (pptScore + projectScore) / 2;
+      
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptScore: Math.round(pptScore * 10) / 10,
+        projectScore: Math.round(projectScore * 10) / 10,
+        combinedScore: Math.round(combinedScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by combined score (descending)
+    leaderboard.sort((a, b) => b.combinedScore - a.combinedScore);
+
+    // Determine winners based on mode
+    let winners = [];
+    
+    if (mode === 'topN') {
+      winners = leaderboard.slice(0, winnerCount);
+    } else if (mode === 'threshold') {
+      const threshold = req.body.threshold || 7.0;
+      winners = leaderboard.filter(entry => entry.combinedScore >= threshold);
+    } else if (mode === 'manual') {
+      const winnerIds = req.body.winnerIds || [];
+      winners = leaderboard.filter(entry => winnerIds.includes(entry._id.toString()));
+    } else {
+      return res.status(400).json({ message: 'Invalid winner assignment mode. Use "topN", "threshold", or "manual"' });
+    }
+
+    if (winners.length === 0) {
+      return res.status(400).json({ message: 'No winners found with the specified criteria' });
+    }
+
+    // Update submission statuses to 'winner'
+    const updatePromises = winners.map(async (winner) => {
+      const submission = await Submission.findById(winner._id);
+      if (submission) {
+        submission.status = 'winner';
+        return submission.save();
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    // Create notifications for winners
+    try {
+      const Notification = require('../model/NotificationModel');
+      
+      for (const winner of winners) {
+        const submission = await Submission.findById(winner._id)
+          .populate('submittedBy', 'name')
+          .populate('teamId', 'name members');
+        
+        if (submission) {
+          let recipientId;
+          let participantName;
+          
+          if (submission.teamId) {
+            // For team submissions, notify all team members
+            const teamMembers = submission.teamId.members || [];
+            for (const memberId of teamMembers) {
+              await Notification.create({
+                recipient: memberId,
+                message: `🏆 Congratulations! Your team "${submission.teamId.name}" has won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+                type: 'success',
+                hackathon: hackathon._id,
+                createdAt: new Date()
+              });
+            }
+          } else if (submission.submittedBy) {
+            // For individual submissions
+            await Notification.create({
+              recipient: submission.submittedBy._id,
+              message: `🏆 Congratulations! You have won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+              type: 'success',
+              hackathon: hackathon._id,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error('🔍 Backend - Error creating winner notifications:', notificationError);
+      // Don't fail the request if notification fails
+    }
+
+    console.log('🔍 Backend - Winners assigned successfully:', winners.length);
+
+    res.status(200).json({
+      message: `Successfully assigned ${winners.length} winners`,
+      winners: winners.map(winner => ({
+        _id: winner._id,
+        projectTitle: winner.projectTitle,
+        teamName: winner.teamName,
+        leaderName: winner.leaderName,
+        pptScore: winner.pptScore,
+        projectScore: winner.projectScore,
+        combinedScore: winner.combinedScore
+      })),
+      mode,
+      winnerCount: winners.length,
+      assignedAt: new Date()
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error assigning winners:', error);
+    res.status(500).json({ message: 'Failed to assign winners', error: error.message });
+  }
+};
+
 // 🎯 Check if user/team is shortlisted for Round 2
 exports.checkRound2Eligibility = async (req, res) => {
   try {
@@ -4635,25 +4907,8 @@ exports.debugShortlistingData = async (req, res) => {
 // 🏆 Assign Winners for Round 2
 exports.assignWinners = async (req, res) => {
   try {
-    console.log('🔍 Backend - assignWinners called with:', { 
-      params: req.params, 
-      body: req.body,
-      userId: req.user.id 
-    });
-    
     const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
-    const { winnerCount = 3, mode = 'topN', threshold, winnerIds } = req.body; // topN, threshold, or manual
-    
-    console.log('🔍 Backend - Parsed parameters:', { hackathonId, roundIndex, winnerCount, mode, threshold, winnerIds });
-    
-    // Validate required parameters
-    if (mode === 'threshold' && !threshold) {
-      return res.status(400).json({ message: 'Threshold value is required for threshold mode' });
-    }
-    
-    if (mode === 'manual' && (!winnerIds || winnerIds.length === 0)) {
-      return res.status(400).json({ message: 'Winner IDs are required for manual mode' });
-    }
+    const { winnerCount = 3, mode = 'topN' } = req.body; // topN, threshold, or manual
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -4670,40 +4925,17 @@ exports.assignWinners = async (req, res) => {
       return res.status(400).json({ message: 'Winner assignment is only available for Round 2' });
     }
 
-    // Check if winners have already been assigned
-    const existingWinners = await Submission.find({ 
-      hackathonId: hackathonId, 
-      roundIndex: 1,
-      status: 'winner' 
-    });
-    
-    const isReassignment = existingWinners.length > 0;
-    console.log('🔍 Backend - Winner assignment type:', isReassignment ? 'Reassignment' : 'Initial assignment');
-    console.log('🔍 Backend - Existing winners found:', existingWinners.length);
-
     // Get Round 2 submissions with combined scores
     const submissions = await Submission.find({ 
       hackathonId: hackathonId, 
       roundIndex: 1 // Only Round 2 submissions
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
-      .populate('projectId', 'title')
       .lean();
 
     if (submissions.length === 0) {
-      console.log('🔍 Backend - No Round 2 submissions found');
       return res.status(400).json({ message: 'No Round 2 submissions found for winner assignment' });
     }
-
-    console.log('🔍 Backend - Found Round 2 submissions:', submissions.length);
-    console.log('🔍 Backend - Submission IDs:', submissions.map(s => s._id));
-    console.log('🔍 Backend - Sample submission:', submissions[0] ? {
-      id: submissions[0]._id,
-      projectId: submissions[0].projectId,
-      teamId: submissions[0].teamId,
-      submittedBy: submissions[0].submittedBy,
-      status: submissions[0].status
-    } : 'No submissions');
 
     // Get all scores for Round 2 submissions
     const Score = require('../model/ScoreModel');
@@ -4834,7 +5066,7 @@ exports.assignWinners = async (req, res) => {
       
       return {
         _id: submission._id,
-        projectTitle: submission.projectId?.title || submission.teamName || 'Untitled Project',
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptScore: Math.round(pptScore * 10) / 10,
@@ -4848,83 +5080,26 @@ exports.assignWinners = async (req, res) => {
     // Sort by combined score (descending)
     leaderboard.sort((a, b) => b.combinedScore - a.combinedScore);
 
-    console.log('🔍 Backend - Calculated leaderboard with', leaderboard.length, 'entries');
-    console.log('🔍 Backend - Top 5 leaderboard entries:', leaderboard.slice(0, 5).map(entry => ({
-      id: entry._id,
-      title: entry.projectTitle,
-      combinedScore: entry.combinedScore
-    })));
-
     // Determine winners based on mode
     let winners = [];
     
     if (mode === 'topN') {
       winners = leaderboard.slice(0, winnerCount);
     } else if (mode === 'threshold') {
-      const thresholdValue = threshold || 7.0;
-      winners = leaderboard.filter(entry => entry.combinedScore >= thresholdValue);
+      const threshold = req.body.threshold || 7.0;
+      winners = leaderboard.filter(entry => entry.combinedScore >= threshold);
     } else if (mode === 'manual') {
-      const manualWinnerIds = winnerIds || [];
-      winners = leaderboard.filter(entry => manualWinnerIds.includes(entry._id.toString()));
+      const winnerIds = req.body.winnerIds || [];
+      winners = leaderboard.filter(entry => winnerIds.includes(entry._id.toString()));
     } else {
       return res.status(400).json({ message: 'Invalid winner assignment mode. Use "topN", "threshold", or "manual"' });
     }
 
     if (winners.length === 0) {
-      console.log('🔍 Backend - No winners found with criteria');
       return res.status(400).json({ message: 'No winners found with the specified criteria' });
     }
 
-    console.log('🔍 Backend - Selected winners:', winners.length);
-    console.log('🔍 Backend - Winner details:', winners.map(w => ({
-      id: w._id,
-      title: w.projectTitle,
-      combinedScore: w.combinedScore
-    })));
-
-    // First, reset all previous winners to 'submitted' status
-    console.log('🔍 Backend - Resetting previous winners...');
-    const resetPreviousWinners = await Submission.updateMany(
-      { 
-        hackathonId: hackathonId, 
-        roundIndex: 1,
-        status: 'winner' 
-      },
-      { status: 'submitted' }
-    );
-    console.log('🔍 Backend - Reset previous winners:', resetPreviousWinners.modifiedCount);
-
-    // Clear previous winner notifications if this is a reassignment
-    if (isReassignment) {
-      try {
-        const Notification = require('../model/NotificationModel');
-        const deletedNotifications = await Notification.deleteMany({
-          hackathon: hackathonId,
-          message: { $regex: /Congratulations.*won/ },
-          type: 'success'
-        });
-        console.log('🔍 Backend - Cleared previous winner notifications:', deletedNotifications.deletedCount);
-      } catch (notificationError) {
-        console.error('🔍 Backend - Error clearing previous notifications:', notificationError);
-      }
-    }
-
-    // Save scores for all participants in the leaderboard
-    console.log('🔍 Backend - Saving scores for all participants...');
-    const scoreUpdatePromises = leaderboard.map(async (entry) => {
-      const submission = await Submission.findById(entry._id);
-      if (submission) {
-        submission.pptScore = entry.pptScore;
-        submission.projectScore = entry.projectScore;
-        submission.combinedScore = entry.combinedScore;
-        return submission.save();
-      }
-    });
-
-    await Promise.all(scoreUpdatePromises);
-    console.log('🔍 Backend - Saved scores for', leaderboard.length, 'participants');
-
-    // Update submission statuses to 'winner' for new winners
+    // Update submission statuses to 'winner'
     const updatePromises = winners.map(async (winner) => {
       const submission = await Submission.findById(winner._id);
       if (submission) {
@@ -4935,19 +5110,19 @@ exports.assignWinners = async (req, res) => {
 
     await Promise.all(updatePromises);
 
-    console.log('🔍 Backend - Updated submission statuses');
-
-    // Create notifications for winners (without emails - emails will be sent manually)
+    // Create notifications for winners
     try {
       const Notification = require('../model/NotificationModel');
       
-      // Create notifications for winners
       for (const winner of winners) {
         const submission = await Submission.findById(winner._id)
           .populate('submittedBy', 'name')
           .populate('teamId', 'name members');
         
         if (submission) {
+          let recipientId;
+          let participantName;
+          
           if (submission.teamId) {
             // For team submissions, notify all team members
             const teamMembers = submission.teamId.members || [];
@@ -4978,12 +5153,9 @@ exports.assignWinners = async (req, res) => {
     }
 
     console.log('🔍 Backend - Winners assigned successfully:', winners.length);
-    console.log('🔍 Backend - Emails will be sent manually via the email sending feature');
 
     res.status(200).json({
-      message: isReassignment 
-        ? `Successfully reassigned ${winners.length} winners (replaced ${existingWinners.length} previous winners). Emails can be sent manually.`
-        : `Successfully assigned ${winners.length} winners. Emails can be sent manually.`,
+      message: `Successfully assigned ${winners.length} winners`,
       winners: winners.map(winner => ({
         _id: winner._id,
         projectTitle: winner.projectTitle,
@@ -4995,137 +5167,12 @@ exports.assignWinners = async (req, res) => {
       })),
       mode,
       winnerCount: winners.length,
-      isReassignment,
-      previousWinnerCount: existingWinners.length,
       assignedAt: new Date()
     });
 
   } catch (error) {
     console.error('🔍 Backend - Error assigning winners:', error);
-    console.error('🔍 Backend - Error stack:', error.stack);
-    console.error('🔍 Backend - Error details:', {
-      message: error.message,
-      name: error.name,
-      code: error.code
-    });
     res.status(500).json({ message: 'Failed to assign winners', error: error.message });
-  }
-};
-
-// 📧 Send Winner Emails Manually
-exports.sendWinnerEmails = async (req, res) => {
-  try {
-    const { hackathonId } = req.params;
-    const { includeShortlisted = false } = req.body;
-    
-    console.log('🔍 Backend - Manual email sending requested for hackathon:', hackathonId);
-    
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
-
-    // Verify organizer permissions
-    if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can send winner emails' });
-    }
-
-    // Get current winners
-    const winners = await Submission.find({ 
-      hackathonId: hackathonId, 
-      roundIndex: 1,
-      status: 'winner' 
-    }).populate('teamId', 'name members')
-      .populate('submittedBy', 'name email')
-      .populate('projectId', 'title')
-      .lean();
-
-    if (winners.length === 0) {
-      return res.status(400).json({ message: 'No winners found to send emails to' });
-    }
-
-    // Prepare winners data for email with scores from database
-    const winnersForEmail = winners.map((winner, index) => ({
-      _id: winner._id,
-      projectTitle: winner.projectId?.title || winner.teamName || 'Untitled Project',
-      teamName: winner.teamName || winner.teamId?.name || 'No Team',
-      leaderName: winner.submittedBy?.name || winner.submittedBy?.email || 'Unknown',
-      pptScore: winner.pptScore || 0,
-      projectScore: winner.projectScore || 0,
-      combinedScore: winner.combinedScore || 0,
-      position: index + 1
-    }));
-
-    // Prepare complete hackathon data for email templates
-    const hackathonDataForEmail = {
-      ...hackathon.toObject(),
-      winners: winnersForEmail
-    };
-
-    console.log('🔍 Backend - Sending emails to', winnersForEmail.length, 'winners');
-
-    // Send bulk winner emails
-    const emailService = require('../services/emailService');
-    const emailResult = await emailService.sendBulkWinnerEmails(winnersForEmail, hackathonDataForEmail);
-    
-    console.log('🔍 Backend - Winner emails sent:', emailResult);
-
-    // Send emails to shortlisted participants if requested
-    let shortlistedEmailResult = null;
-    if (includeShortlisted) {
-      try {
-        // Get all shortlisted participants who didn't win
-        const shortlistedParticipants = await Submission.find({
-          hackathonId: hackathonId,
-          roundIndex: 1,
-          status: 'shortlisted'
-        }).populate('teamId', 'name members')
-          .populate('submittedBy', 'name email')
-          .populate('projectId', 'title')
-          .lean();
-
-        const shortlistedForEmail = shortlistedParticipants.map(participant => ({
-          _id: participant._id,
-          projectTitle: participant.projectId?.title || participant.teamName || 'Untitled Project',
-          teamName: participant.teamName || participant.teamId?.name || 'No Team',
-          leaderName: participant.submittedBy?.name || participant.submittedBy?.email || 'Unknown',
-          pptScore: participant.pptScore || 0,
-          projectScore: participant.projectScore || 0,
-          combinedScore: participant.combinedScore || 0
-        }));
-
-        if (shortlistedForEmail.length > 0) {
-          console.log('🔍 Backend - Sending emails to shortlisted participants:', shortlistedForEmail.length);
-          
-          const hackathonDataForShortlisted = {
-            ...hackathon.toObject(),
-            winners: winnersForEmail
-          };
-          
-          shortlistedEmailResult = await emailService.sendBulkShortlistedEmails(
-            shortlistedForEmail, 
-            hackathonDataForShortlisted, 
-            winnersForEmail
-          );
-          console.log('🔍 Backend - Shortlisted emails sent:', shortlistedEmailResult);
-        }
-      } catch (shortlistedEmailError) {
-        console.error('🔍 Backend - Error sending shortlisted emails:', shortlistedEmailError);
-      }
-    }
-
-    res.status(200).json({
-      message: `Successfully sent emails to ${emailResult.successful} winners${includeShortlisted && shortlistedEmailResult ? ` and ${shortlistedEmailResult.successful} shortlisted participants` : ''}`,
-      winnerEmails: emailResult,
-      shortlistedEmails: shortlistedEmailResult,
-      totalWinners: winnersForEmail.length,
-      totalShortlisted: includeShortlisted ? (shortlistedEmailResult?.total || 0) : 0,
-      sentAt: new Date()
-    });
-
-  } catch (error) {
-    console.error('🔍 Backend - Error sending winner emails:', error);
-    res.status(500).json({ message: 'Failed to send winner emails', error: error.message });
   }
 };
 
@@ -5156,7 +5203,6 @@ exports.getWinners = async (req, res) => {
       status: 'winner' // Only winners
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
-      .populate('projectId', 'title')
       .lean();
 
     if (submissions.length === 0) {
@@ -5269,7 +5315,7 @@ exports.getWinners = async (req, res) => {
       
       return {
         _id: submission._id,
-        projectTitle: submission.projectId?.title || submission.teamName || 'Untitled Project',
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptScore: Math.round(pptScore * 10) / 10,

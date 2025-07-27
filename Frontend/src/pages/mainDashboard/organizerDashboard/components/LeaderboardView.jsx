@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle, Crown, Star } from "lucide-react";
+import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle, Crown, Star, Mail } from "lucide-react";
 import { useToast } from "../../../../hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
+import EmailSenderModal from './EmailSenderModal';
 
 export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortlistingComplete }) {
   const { toast } = useToast();
@@ -43,6 +44,14 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [winnerThreshold, setWinnerThreshold] = useState(7.0);
   const [selectedWinnerIds, setSelectedWinnerIds] = useState([]);
   const [hasWinners, setHasWinners] = useState(false);
+  
+  // Winners Display States
+  const [winnersDisplayModalOpen, setWinnersDisplayModalOpen] = useState(false);
+  const [winners, setWinners] = useState([]);
+  const [loadingWinners, setLoadingWinners] = useState(false);
+  
+  // Email Sender States
+  const [emailSenderModalOpen, setEmailSenderModalOpen] = useState(false);
 
   useEffect(() => {
     if (hackathonId) {
@@ -90,9 +99,17 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       }
       
       // Check for winners
+      console.log('🔍 Frontend - Checking winners status:', {
+        hasWinnerSubmissions,
+        hasWinners,
+        winnerEntries: leaderboard.filter(entry => entry.status === 'winner').length
+      });
+      
       if (hasWinnerSubmissions && !hasWinners) {
+        console.log('🔍 Frontend - Setting hasWinners to true');
         setHasWinners(true);
       } else if (!hasWinnerSubmissions && hasWinners) {
+        console.log('🔍 Frontend - Setting hasWinners to false');
         setHasWinners(false);
       }
     }
@@ -394,6 +411,27 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     }
   };
 
+  const fetchWinnersDetails = async () => {
+    setLoadingWinners(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/winners`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setWinners(data.winners || []);
+      } else {
+        console.error('Failed to fetch winners details');
+      }
+    } catch (error) {
+      console.error('Error fetching winners details:', error);
+    } finally {
+      setLoadingWinners(false);
+    }
+  };
+
   const handleAssignWinners = async () => {
     setAssigningWinners(true);
     try {
@@ -417,12 +455,17 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       if (response.ok) {
         const data = await response.json();
         toast({
-          title: 'Winners Assigned Successfully',
-          description: `Successfully assigned ${data.winners.length} winners for Round 2`,
+          title: data.isReassignment ? 'Winners Reassigned Successfully' : 'Winners Assigned Successfully',
+          description: data.message,
           variant: 'default',
         });
         setWinnerAssignmentModalOpen(false);
         fetchLeaderboard(); // Refresh leaderboard to show winners
+        
+        // Show winners details modal
+        setWinners(data.winners || []);
+        setWinnersDisplayModalOpen(true);
+        
         if (onShortlistingComplete) {
           onShortlistingComplete();
         }
@@ -440,6 +483,15 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     } finally {
       setAssigningWinners(false);
     }
+  };
+
+  const handleEmailSent = (emailResult) => {
+    toast({
+      title: 'Emails Sent Successfully',
+      description: `Successfully sent emails to ${emailResult.winnerEmails.successful} winners${emailResult.shortlistedEmails ? ` and ${emailResult.shortlistedEmails.successful} shortlisted participants` : ''}`,
+      variant: 'default',
+    });
+    fetchLeaderboard(); // Refresh to show any updates
   };
 
   const getStatusIcon = (scoreCount) => {
@@ -563,6 +615,37 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                   4) Winners receive notifications and prizes
                 </p>
               </div>
+              
+              {/* Winners Summary */}
+              {hasWinners && (
+                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-6 h-6 text-yellow-600" />
+                      <div>
+                        <h4 className="font-semibold text-yellow-800">
+                          🏆 Winners Announced
+                        </h4>
+                        <p className="text-sm text-yellow-700">
+                          {leaderboard.filter(entry => entry.status === 'winner').length} winner{leaderboard.filter(entry => entry.status === 'winner').length !== 1 ? 's' : ''} selected
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        fetchWinnersDetails();
+                        setWinnersDisplayModalOpen(true);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      View Winners Details
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -629,31 +712,67 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
               {selectedRound === 1 && (
                 <>
                   {!hasWinners ? (
-                    <Button
-                      onClick={() => setWinnerAssignmentModalOpen(true)}
-                      className={`${
-                        summary.evaluatedSubmissions > 0 
-                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
-                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                      }`}
-                      disabled={summary.evaluatedSubmissions === 0}
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      {summary.evaluatedSubmissions > 0 
-                        ? 'Assign Winners' 
-                        : 'Assign Winners (No Evaluations Yet)'
-                      }
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => setWinnerAssignmentModalOpen(true)}
+                        className={`${
+                          summary.evaluatedSubmissions > 0 
+                            ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                            : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                        }`}
+                        disabled={summary.evaluatedSubmissions === 0}
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        {summary.evaluatedSubmissions > 0 
+                          ? 'Assign Winners' 
+                          : 'Assign Winners (No Evaluations Yet)'
+                        }
+                      </Button>
+                      <Button
+                        onClick={() => setEmailSenderModalOpen(true)}
+                        variant="outline"
+                        className="text-gray-400 border-gray-300"
+                        disabled={true}
+                        title="No winners assigned yet"
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Winner Emails (No Winners)
+                      </Button>
+                    </>
                   ) : (
-                    <Button
-                      onClick={() => setWinnerAssignmentModalOpen(true)}
-                      variant="outline"
-                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
-                      disabled={assigningWinners}
-                    >
-                      <Crown className="w-4 h-4 mr-2" />
-                      {assigningWinners ? 'Loading...' : 'Reassign Winners'}
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => setWinnerAssignmentModalOpen(true)}
+                        variant="outline"
+                        className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                        disabled={assigningWinners}
+                      >
+                        <Crown className="w-4 h-4 mr-2" />
+                        {assigningWinners ? 'Loading...' : 'Reassign Winners'}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          fetchWinnersDetails();
+                          setWinnersDisplayModalOpen(true);
+                        }}
+                        variant="outline"
+                        className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                        disabled={loadingWinners}
+                      >
+                        <Trophy className="w-4 h-4 mr-2" />
+                        {loadingWinners ? 'Loading...' : 'View Winners Details'}
+                      </Button>
+                      <Button
+                        onClick={() => setEmailSenderModalOpen(true)}
+                        variant="outline"
+                        className="text-green-600 border-green-600 hover:bg-green-50"
+                        disabled={false}
+                        title="Send emails to winners"
+                      >
+                        <Mail className="w-4 h-4 mr-2" />
+                        Send Winner Emails
+                      </Button>
+                    </>
                   )}
                 </>
               )}
@@ -867,10 +986,21 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredLeaderboard.map((entry, index) => (
-                    <tr key={entry._id} className="hover:bg-gray-50">
+                    <tr key={entry._id} className={`hover:bg-gray-50 ${
+                      entry.status === 'winner' ? 'bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500' : ''
+                    }`}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
-                          {index < 3 ? (
+                          {entry.status === 'winner' ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold bg-gradient-to-r from-yellow-500 to-orange-500">
+                                <Crown className="w-4 h-4" />
+                              </div>
+                              <span className="text-xs text-yellow-600 font-medium">
+                                Winner
+                              </span>
+                            </div>
+                          ) : index < 3 ? (
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
                               index === 0 ? 'bg-yellow-500' : 
                               index === 1 ? 'bg-gray-400' : 
@@ -881,7 +1011,11 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                           ) : (
                             <span className="text-gray-900 font-medium">{entry.rank}</span>
                           )}
-                          {index < 5 && (
+                          {entry.status === 'winner' ? (
+                            <span className="ml-2 text-xs text-yellow-600 font-medium">
+                              🏆 Champion
+                            </span>
+                          ) : index < 5 && (
                             <span className="ml-2 text-xs text-green-600 font-medium">
                               Top Performer
                             </span>
@@ -2180,9 +2314,9 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                   const token = localStorage.getItem('token');
                   const requestBody = {
                     winnerCount: winnerCount,
-                    winnerMode: winnerMode,
-                    winnerThreshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
-                    manualWinnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
+                    mode: winnerMode,
+                    threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
+                    winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
                   };
 
                   const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
@@ -2197,8 +2331,8 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                   if (response.ok) {
                     const data = await response.json();
                     toast({
-                      title: 'Winners Assigned',
-                      description: `Successfully assigned ${data.assignedWinners.length} winners.`,
+                      title: data.isReassignment ? 'Winners Reassigned' : 'Winners Assigned',
+                      description: data.message,
                       variant: 'default',
                     });
                     setWinnerAssignmentModalOpen(false);
@@ -2462,6 +2596,184 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Winners Display Modal */}
+      <Dialog open={winnersDisplayModalOpen} onOpenChange={setWinnersDisplayModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-600" />
+              Round 2 Winners - Detailed View
+            </DialogTitle>
+            <DialogDescription>
+              View detailed information about the winners including their scores, team details, and performance breakdown.
+            </DialogDescription>
+          </DialogHeader>
+          {loadingWinners ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+              <span className="ml-2 text-gray-600">Loading winners details...</span>
+            </div>
+          ) : winners.length > 0 ? (
+            <div className="space-y-6">
+              {/* Winners Summary */}
+              <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-6 rounded-lg border border-yellow-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold text-yellow-800 mb-2">
+                      🏆 Round 2 Winners
+                    </h3>
+                    <p className="text-yellow-700">
+                      {winners.length} winner{winners.length !== 1 ? 's' : ''} selected based on combined PPT + Project scores
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-yellow-600">
+                      {winners.length}
+                    </div>
+                    <div className="text-sm text-yellow-600">Winners</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Winners List */}
+              <div className="space-y-4">
+                {winners.map((winner, index) => (
+                  <div key={winner._id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                          index === 0 ? 'bg-yellow-500' : 
+                          index === 1 ? 'bg-gray-400' : 
+                          'bg-orange-500'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-900 mb-1">
+                            {winner.projectTitle}
+                          </h4>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Team:</span> {winner.teamName}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Leader:</span> {winner.leaderName}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {winner.combinedScore}/10
+                        </div>
+                        <div className="text-sm text-gray-500">Combined Score</div>
+                      </div>
+                    </div>
+
+                    {/* Score Breakdown */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                          <span className="font-medium text-blue-800">PPT Score</span>
+                        </div>
+                        <div className="text-2xl font-bold text-blue-600">
+                          {winner.pptScore}/10
+                        </div>
+                        <div className="text-xs text-blue-600 mt-1">
+                          Round 1 Presentation
+                        </div>
+                      </div>
+                      
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Award className="w-4 h-4 text-green-600" />
+                          <span className="font-medium text-green-800">Project Score</span>
+                        </div>
+                        <div className="text-2xl font-bold text-green-600">
+                          {winner.projectScore}/10
+                        </div>
+                        <div className="text-xs text-green-600 mt-1">
+                          Round 2 Project
+                        </div>
+                      </div>
+                      
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Trophy className="w-4 h-4 text-yellow-600" />
+                          <span className="font-medium text-yellow-800">Combined Score</span>
+                        </div>
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {winner.combinedScore}/10
+                        </div>
+                        <div className="text-xs text-yellow-600 mt-1">
+                          PPT + Project Average
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Winner Badge */}
+                    <div className="flex items-center justify-center">
+                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-2 rounded-full font-bold text-lg">
+                        🏆 WINNER #{index + 1}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Winner Assignment Info */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  Winner Assignment Details
+                </h4>
+                <div className="text-sm text-blue-700 space-y-1">
+                  <p>• Winners were selected based on combined scores from both rounds</p>
+                  <p>• Round 1 PPT scores and Round 2 project scores were averaged</p>
+                  <p>• All winners have been notified via email and in-app notifications</p>
+                  <p>• Winner status is now visible to participants in their dashboard</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No Winners Found</h3>
+              <p className="text-gray-500">
+                No winners have been assigned yet for Round 2. Assign winners to see detailed information.
+              </p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setWinnersDisplayModalOpen(false)}
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => {
+                setWinnersDisplayModalOpen(false);
+                setWinnerAssignmentModalOpen(true);
+              }}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white"
+            >
+              <Crown className="w-4 h-4 mr-2" />
+              Reassign Winners
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Sender Modal */}
+      <EmailSenderModal
+        isOpen={emailSenderModalOpen}
+        onClose={() => setEmailSenderModalOpen(false)}
+        hackathonId={hackathonId}
+        hackathonTitle={summary?.hackathonTitle || 'Hackathon'}
+        onEmailSent={handleEmailSent}
+      />
     </div>
   );
 } 

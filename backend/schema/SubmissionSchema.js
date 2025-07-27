@@ -13,7 +13,7 @@ const SubmissionSchema = new Schema({
     },
   ],
   submittedAt: { type: Date, default: Date.now },
-  status: { type: String, enum: ['submitted', 'reviewed', 'shortlisted', 'rejected'], default: 'submitted' },
+  status: { type: String, enum: ['submitted', 'reviewed', 'shortlisted', 'rejected', 'winner'], default: 'submitted' },
   shortlistedAt: { type: Date }, // When the submission was shortlisted
   shortlistedForRound: { type: Number }, // Which round the submission was shortlisted for (e.g., 2 for Round 2)
   problemStatement: { type: String },
@@ -30,6 +30,10 @@ const SubmissionSchema = new Schema({
   viewedBy: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   teamId: { type: Schema.Types.ObjectId, ref: 'Team' },
   teamName: { type: String },
+  // Score fields for Round 2
+  pptScore: { type: Number, default: 0 },
+  projectScore: { type: Number, default: 0 },
+  combinedScore: { type: Number, default: 0 },
 });
 
 module.exports = { SubmissionSchema }; 

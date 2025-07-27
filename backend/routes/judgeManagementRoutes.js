@@ -89,4 +89,10 @@ router.post('/hackathons/:hackathonId/rounds/:roundIndex/auto-progress-round2', 
 // 🏆 Assign Winners for Round 2
 router.post('/hackathons/:hackathonId/rounds/:roundIndex/assign-winners', protect, isOrganizerOrAdmin, judgeManagementController.assignWinners);
 
+// 📧 Send Winner Emails Manually
+router.post('/hackathons/:hackathonId/send-winner-emails', protect, isOrganizerOrAdmin, judgeManagementController.sendWinnerEmails);
+
+// 🏆 Get Winners for Round 2
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/winners', protect, isOrganizerOrAdmin, judgeManagementController.getWinners);
+
 module.exports = router; 

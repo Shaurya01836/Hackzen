@@ -75,6 +75,9 @@ app.use('/api/sponsor-proposals', sponsorProposalRoutes);
 // ✅ Judge Management Routes
 app.use("/api/judge-management", require("./routes/judgeManagementRoutes"));
 
+// ✅ Test Routes (for debugging)
+app.use("/api/test", require("./routes/testRoutes"));
+
 // ✅ User routes (including 2FA) - mount 2FA first to avoid conflicts
 app.use('/api/users/2fa', require('./routes/2fa'));
 app.use("/api/users", require("./routes/userRoutes"));
