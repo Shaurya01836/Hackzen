@@ -54,7 +54,7 @@ export default function CertificatesPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTemplates((prev) => prev.filter((t) => t._id !== id));
-    } catch (err) {
+    } catch  {
       alert("Failed to delete certificate.");
     }
   };
@@ -79,7 +79,7 @@ export default function CertificatesPage() {
   };
 
   return (
-    <div className="md:min-h-screen flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+    <div className="md:min-h-[91vh] flex flex-1 flex-col gap-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       {/* Page Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">
@@ -156,10 +156,11 @@ export default function CertificatesPage() {
         ))}
 
         {/* Upload New Template Card */}
-        <Card className="group relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/50 hover:shadow-xl hover:scale-[1.02] cursor-pointer h-64">
+        <Card className="group relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/50 hover:shadow-xl hover:scale-[1.02] cursor-pointer h-64"
+           onClick={() => setShowEditor(true)}>
           <CardContent className="p-0 h-full">
             <div className="h-full flex flex-col items-center justify-center gap-4 text-center p-6">
-              <div className="rounded-full bg-white p-4 shadow-sm group-hover:shadow-lg transition-all duration-300 group-hover:scale-110">
+              <div className="rounded-full bg-white p-4 shadow-sm transition-all duration-300 group-hover:scale-110">
                 <Plus className="h-8 w-8 text-gray-400 group-hover:text-indigo-600 transition-colors" />
               </div>
               <div className="space-y-2">
@@ -172,7 +173,6 @@ export default function CertificatesPage() {
               </div>
               <Button
                 variant="outline"
-                onClick={() => setShowEditor(true)}
                 className="border-gray-300 text-gray-700 hover:border-indigo-400 hover:text-indigo-700 hover:bg-indigo-50 transition-colors bg-transparent"
                 size="sm"
               >
@@ -182,22 +182,6 @@ export default function CertificatesPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Info Note */}
-      <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-full bg-yellow-100 p-1">
-            <Info className="h-4 w-4 text-yellow-600" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm text-yellow-800">
-              <span className="font-medium">Automatic Branding:</span> All
-              certificate templates automatically include your organization name
-              and HackZen branding for authenticity.
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Preview Modal */}
