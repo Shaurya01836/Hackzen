@@ -340,3 +340,43 @@ html {
 .ProseMirror h1 { font-size: 2em; font-weight: bold; margin: 0.67em 0; }
 .ProseMirror h2 { font-size: 1.5em; font-weight: bold; margin: 0.75em 0; }
 .ProseMirror h3 { font-size: 1.17em; font-weight: bold; margin: 0.83em 0; }
+
+
+/* Markdown content styling */
+.markdown-content {
+  /* Headers */
+  & h1 { @apply text-3xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200; }
+  & h2 { @apply text-2xl font-bold text-gray-800 mt-6 mb-3; }
+  & h3 { @apply text-xl font-semibold text-gray-800 mt-5 mb-2; }
+  & h4 { @apply text-lg font-semibold text-gray-700 mt-4 mb-2; }
+  
+  /* Paragraphs */
+  & p { @apply mb-4 leading-relaxed text-gray-700; }
+  
+  /* Lists */
+  & ul { @apply list-disc list-inside mb-4 space-y-1; }
+  & ol { @apply list-decimal list-inside mb-4 space-y-1; }
+  & li { @apply text-gray-700; }
+  
+  /* Code blocks */
+  & pre { @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto mb-4; }
+  & code { @apply bg-gray-100 text-gray-800 px-1 py-0.5 rounded text-sm; }
+  & pre code { @apply bg-transparent text-gray-100 p-0; }
+  
+  /* Blockquotes */
+  & blockquote { @apply border-l-4 border-indigo-500 pl-4 italic text-gray-600 mb-4; }
+  
+  /* Links */
+  & a { @apply text-indigo-600 hover:text-indigo-800 underline; }
+  
+  /* Images */
+  & img { @apply rounded-lg shadow-sm mb-4 max-w-full h-auto; }
+  
+  /* Tables */
+  & table { @apply w-full border-collapse border border-gray-300 mb-4; }
+  & th { @apply border border-gray-300 bg-gray-50 px-4 py-2 font-semibold; }
+  & td { @apply border border-gray-300 px-4 py-2; }
+  
+  /* Horizontal rules */
+  & hr { @apply border-t border-gray-300 my-8; }
+}

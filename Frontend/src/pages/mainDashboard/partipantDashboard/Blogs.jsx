@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
+import { marked } from 'marked';
+import DOMPurify from 'dompurify'; 
 import {
   ArrowLeft,
   Search,
@@ -51,26 +53,45 @@ export function Blogs() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState("list"); // "list" or "write"
+  const [currentView, setCurrentView] = useState("list");
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [submittedArticle, setSubmittedArticle] = useState(null);
   const [categories, setCategories] = useState(["all"]);
-
   const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0); // default 0
+  const [likeCount, setLikeCount] = useState(0);
 
   const navigate = useNavigate();
   const { id: blogId } = useParams();
   const location = useLocation();
 
+  // Add markdown parsing function
+  const parseMarkdownContent = (content) => {
+    if (!content) return '';
+    
+    // Configure marked options for better rendering
+    marked.setOptions({
+      breaks: true, // Convert line breaks to <br>
+      gfm: true,    // GitHub Flavored Markdown
+      sanitize: false, // We'll use DOMPurify instead
+    });
+    
+    // Parse markdown to HTML
+    const rawHTML = marked(content);
+    
+    // Sanitize the HTML to prevent XSS attacks
+    const cleanHTML = DOMPurify.sanitize(rawHTML);
+    
+    return cleanHTML;
+  };
+
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const token = localStorage.getItem("token"); // 👈 token uthao
+        const token = localStorage.getItem("token");
         const res = await fetch("http://localhost:3000/api/articles", {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // 👈 yeh jaruri hai
+            Authorization: `Bearer ${token}`,
           },
         });
 
@@ -100,7 +121,18 @@ export function Blogs() {
     }
   }, [location.pathname]);
 
-  // Handle write article navigation
+  // Add scroll to top effect when blog post changes
+  useEffect(() => {
+    if (blogId) {
+      // Scroll to top when a blog post is opened
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'smooth' // Smooth scrolling animation
+      });
+    }
+  }, [blogId]); // Trigger when blogId changes
+
   const handleWriteArticle = () => {
     navigate("/dashboard/blogs/write");
   };
@@ -111,7 +143,6 @@ export function Blogs() {
     navigate("/dashboard/blogs");
   };
 
-  // Only show published blogs in the main view
   const publishedBlogs = blogs.filter((blog) => blog.status === "published");
 
   const filteredBlogs = publishedBlogs.filter((blog) => {
@@ -126,17 +157,14 @@ export function Blogs() {
     return matchesSearch && matchesCategory;
   });
 
-  // Find the selected blog if blogId is present in the URL
   const selectedPost = blogId
     ? publishedBlogs.find((b) => b._id === blogId)
     : null;
 
-  // When a blog card is clicked, navigate to its URL
   const handleBlogClick = (blog) => {
     navigate(`/dashboard/blogs/${blog._id}`);
   };
 
-  // When back is clicked, go back to the blogs list URL
   const handleBackToBlogs = () => {
     navigate("/dashboard/blogs");
   };
@@ -149,7 +177,7 @@ export function Blogs() {
   }, [selectedPost]);
 
   const handleLike = async () => {
-    const token = localStorage.getItem("token"); // or sessionStorage
+    const token = localStorage.getItem("token");
 
     if (!token) {
       console.error("User not logged in");
@@ -163,7 +191,7 @@ export function Blogs() {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // ✅ add this line
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -175,7 +203,7 @@ export function Blogs() {
       }
 
       const data = await res.json();
-      setIsLiked(data.liked); // true or false
+      setIsLiked(data.liked);
       setLikeCount(data.likes);
     } catch (error) {
       console.error("Like request failed:", error);
@@ -185,7 +213,7 @@ export function Blogs() {
   if (currentView === "write") {
     return (
       <WriteArticle
-        onBack={() => navigate("/dashboard/blogs")} // Explicit navigation
+        onBack={() => navigate("/dashboard/blogs")}
         onSubmit={handleArticleSubmit}
       />
     );
@@ -195,7 +223,7 @@ export function Blogs() {
     return (
       <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
         {/* Back Button/Header */}
-        <header className="bg-white/20 px-6 pt-2">
+        <header className="bg-white/20 px-6 pt-2 sticky top-0 z-10 backdrop-blur-sm">
           <button
             variant="default"
             size="sm"
@@ -209,13 +237,13 @@ export function Blogs() {
 
         {/* Main Scrollable Area */}
         <div className="flex-1 overflow-auto px-6 py-4">
-          <div className=" mx-auto space-y-8">
-            {/* 1) Title */}
+          <div className="mx-auto space-y-8 max-w-6xl">
+            {/* Title */}
             <h1 className="text-4xl font-bold text-gray-900 leading-tight">
               {selectedPost.title}
             </h1>
 
-            {/* 2) Creator + Meta */}
+            {/* Creator + Meta */}
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 ring-2 ring-indigo-100">
@@ -235,7 +263,7 @@ export function Blogs() {
                 </div>
               </div>
 
-              {/* 3) Like & Share */}
+              {/* Like & Share */}
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -269,7 +297,7 @@ export function Blogs() {
               </div>
             </div>
 
-            {/* 4) Cover Image */}
+            {/* Cover Image */}
             {selectedPost.image && (
               <div className="overflow-hidden rounded-2xl shadow-sm">
                 <img
@@ -280,12 +308,17 @@ export function Blogs() {
               </div>
             )}
 
-            {/* 5) Full Article Content */}
-
-            <Card className="prose prose-lg max-w-none text-gray-800 leading-relaxed p-6 shadow-none hover:shadow-none">
+            {/* Full Article Content with Markdown Support */}
+            <Card className="prose prose-lg max-w-none text-gray-800 leading-relaxed p-8 shadow-sm hover:shadow-none border-gray-200">
               <div
-                className="whitespace-pre-wrap" // Add this class
-                dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+                className="markdown-content prose prose-lg max-w-none"
+                dangerouslySetInnerHTML={{ 
+                  __html: parseMarkdownContent(selectedPost.content) 
+                }}
+                style={{
+                  lineHeight: '1.8',
+                  fontSize: '16px'
+                }}
               />
             </Card>
           </div>
@@ -421,7 +454,7 @@ export function Blogs() {
                   <Card
                     key={blog._id}
                     onClick={() => handleBlogClick(blog)}
-                    className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
+                    className="group relative rounded-2xl border border-gray-200 bg-white/40 backdrop-blur-lg hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
                   >
                     {/* Image Section */}
                     <div className="relative h-48 overflow-hidden rounded-t-2xl">
