@@ -369,29 +369,30 @@ export function Blogs() {
 
       {/* Header */}
       <header className="px-1 pt-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
-            <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center gap-3">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Blogs & Articles
-                </h1>
-                <p className="text-sm text-gray-500">
-                  Discover insights from the community
-                </p>
-              </div>
-            </div>
-          </div>
-          <Button
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm"
-            onClick={handleWriteArticle}
-          >
-            <Plus className="w-4 h-4" />
-            Write Article
-          </Button>
+  <div className="flex items-center justify-between ">
+    <div className="flex items-center gap-5">
+      <Separator orientation="vertical" className="h-6" />
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Blogs & Articles
+          </h1>
+          <p className="text-sm text-gray-500">
+            Discover insights from the community
+          </p>
         </div>
-      </header>
+      </div>
+    </div>
+    <Button
+      className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm mr-10"
+      onClick={handleWriteArticle}
+    >
+      <Plus className="w-4 h-4" />
+      Write Article
+    </Button>
+  </div>
+</header>
+
 
       {/* Content */}
       <div className="flex-1 overflow-auto px-6 py-4">

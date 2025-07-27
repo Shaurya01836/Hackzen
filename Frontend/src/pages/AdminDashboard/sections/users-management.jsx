@@ -97,13 +97,20 @@ const getStatusColor = (status) => {
 
 
   const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole =
-      selectedRole === "All" || user.role === selectedRole.toLowerCase();
-    return matchesSearch && matchesRole;
-  });
+  // Check if user object is valid
+  if (!user) return false;
+
+  // Safely check name and email against the search term
+  const matchesSearch =
+    (user.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (user.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+  // Safely check the role
+  const matchesRole =
+    selectedRole === "All" || (user.role || "") === selectedRole.toLowerCase();
+    
+  return matchesSearch && matchesRole;
+});
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice(
