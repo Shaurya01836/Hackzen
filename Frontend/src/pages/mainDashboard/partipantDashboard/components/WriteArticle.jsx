@@ -137,33 +137,22 @@ export function WriteArticle({ onBack, onSubmit }) {
     }
   };
 
-  const handleSaveDraft = () => {
-    console.log("Saving draft:", formData);
-  };
-
   return (
     <div className="flex-1 flex flex-col h-full bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
       <header className="bg-white/20 border-b border-gray-200 px-6 py-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* Updated the onClick handler */}
-            <Button variant="default" size="sm" onClick={handleBackToBlog} className="flex items-center gap-2">
+            <button variant="default" size="sm" onClick={handleBackToBlog} className="flex items-center gap-1 text-sm font-semibold text-gray-800 hover:text-black">
               <ArrowLeft className="w-4 h-4" />
               Back to Blogs
-            </Button>
+            </button>
             <Separator orientation="vertical" className="h-6" />
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Plus className="w-5 h-5 text-indigo-600" />
-              </div>
               <h1 className="text-xl font-semibold text-gray-900">Write New Article</h1>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleSaveDraft} className="flex items-center gap-2">
-              <Save className="w-4 h-4" />
-              Save Draft
-            </Button>
             <Button
               onClick={handleSubmit}
               disabled={isSubmitting}
@@ -189,7 +178,7 @@ export function WriteArticle({ onBack, onSubmit }) {
         <div className="w-full mx-auto">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Image Upload */}
-            <Card className="bg-white/20 border-gray-200">
+            <Card className="bg-white/20 border-gray-200 shadow-none hover:shadow-none">
               <CardContent className="pt-6">
                 <Label className="text-base font-semibold text-gray-900 mb-4 block">Cover Image</Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-indigo-400 relative">
@@ -228,7 +217,7 @@ export function WriteArticle({ onBack, onSubmit }) {
             </Card>
 
             {/* Article Fields */}
-            <Card className="bg-white/20 border-gray-200">
+            <Card className="bg-white/20 border-gray-200 shadow-none hover:shadow-none">
               <CardContent className="pt-6 space-y-6">
                 {/* Title */}
                 <div>
@@ -311,7 +300,7 @@ export function WriteArticle({ onBack, onSubmit }) {
             </Card>
 
             {/* Content */}
-            <Card className="bg-white/20 border-gray-200">
+            <Card className="bg-white/20 border-gray-200 shadow-none hover:shadow-none">
               <CardContent className="pt-6">
                 <Label htmlFor="content" className="font-semibold text-gray-900 mb-4 block">
                   Article Content *
@@ -330,7 +319,7 @@ export function WriteArticle({ onBack, onSubmit }) {
 
             {/* Preview */}
             {formData.title && (
-              <Card className="bg-white/20 border-gray-200">
+              <Card className="bg-white/20 border-gray-200 shadow-none hover:shadow-none">
                 <CardContent className="pt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
                   <div className="border border-gray-200 rounded-lg p-6 bg-white">
