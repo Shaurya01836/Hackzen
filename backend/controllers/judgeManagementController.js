@@ -2438,20 +2438,10 @@ exports.getAssignmentOverview = async (req, res) => {
       .populate('judge')
       .lean();
       
-    console.log('🔍 Assignment Overview - Raw Judge Assignments from DB:', JSON.stringify(judgeAssignments, null, 2));
+
 
     // Get submissions for this hackathon with round filtering
-    let submissionsQuery = { hackathonId: hackathonId, status: 'submitted' };
-    
-    // Filter by round if specified
-    if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
-      const roundIndexNum = parseInt(roundIndex);
-      submissionsQuery.roundIndex = roundIndexNum;
-      console.log('🔍 Assignment Overview - Filtering by round:', {
-        roundIndex: roundIndexNum,
-        roundName: `Round ${roundIndexNum + 1}`
-      });
-    }
+    let submissionsQuery = { hackathonId: hackathonId, status: { $in: ['submitted', 'shortlisted'] } };
     
     // Filter by problem statement if specified
     if (problemStatementId) {
@@ -2465,9 +2455,29 @@ exports.getAssignmentOverview = async (req, res) => {
       }
     }
     
-    const submissions = await Submission.find(submissionsQuery)
+    // Get all submissions first, then filter by round logic
+    const allSubmissions = await Submission.find(submissionsQuery)
       .select('_id projectTitle title teamId teamName pptFile submittedAt roundIndex problemStatement')
       .lean();
+    
+
+    
+    // Filter submissions by round logic
+    let submissions = allSubmissions;
+    if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
+      const roundIndexNum = parseInt(roundIndex);
+      
+      if (roundIndexNum === 0) {
+        // Round 1: Show only PPT submissions (regardless of roundIndex in DB)
+        submissions = allSubmissions.filter(sub => sub.pptFile);
+      } else if (roundIndexNum === 1) {
+        // Round 2: Show only Project submissions (regardless of roundIndex in DB)
+        submissions = allSubmissions.filter(sub => !sub.pptFile);
+      } else {
+        // Other rounds: Use roundIndex from DB
+        submissions = allSubmissions.filter(sub => sub.roundIndex === roundIndexNum);
+      }
+    }
 
     // Get all scores for these submissions
     const scores = await Score.find({ 
@@ -2489,7 +2499,7 @@ exports.getAssignmentOverview = async (req, res) => {
       submissionAssignments[sub._id.toString()] = [];
     });
 
-    console.log('🔍 Assignment Overview - Processing Judge Assignments...');
+
 
     // Map: judge email -> assigned submission IDs with round info
     const judgeToSubmissions = {};
@@ -2513,26 +2523,82 @@ exports.getAssignmentOverview = async (req, res) => {
             submissionIds: round.assignedSubmissions || []
           });
           
-          if (round.assignedSubmissions && Array.isArray(round.assignedSubmissions)) {
+          // Filter assignments based on current round if specified
+          let shouldProcessRound = true;
+          if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
+            const roundIndexNum = parseInt(roundIndex);
+            // Check if any of the assigned submissions match the requested round
+            const submissionsInRound = round.assignedSubmissions?.filter(subId => {
+              const submission = allSubmissions.find(s => s._id.toString() === subId.toString());
+              if (!submission) return false;
+              
+              // For Round 1 (index 0): Show only PPT submissions
+              if (roundIndexNum === 0) {
+                return submission.pptFile;
+              }
+              // For Round 2 (index 1): Show only Project submissions
+              else if (roundIndexNum === 1) {
+                return !submission.pptFile;
+              }
+              // For other rounds: Use roundIndex from DB
+              else {
+                return submission.roundIndex === roundIndexNum;
+              }
+            }) || [];
+            
+            shouldProcessRound = submissionsInRound.length > 0;
+            console.log(`🔍 Round filtering: round.roundIndex=${round.roundIndex}, requested=${roundIndexNum}, shouldProcess=${shouldProcessRound}, matchingSubmissions=${submissionsInRound.length}`);
+          }
+          
+          if (shouldProcessRound && round.assignedSubmissions && Array.isArray(round.assignedSubmissions)) {
+            // Filter submissions to only include those that match the current round
+            const roundIndexNum = roundIndex !== undefined && roundIndex !== null && roundIndex !== '' ? parseInt(roundIndex) : null;
+            
             round.assignedSubmissions.forEach(subId => {
               const subIdStr = subId.toString();
-              console.log(`🔍 Assigning submission ${subIdStr} to judge ${judgeEmail}`);
+              const submission = allSubmissions.find(s => s._id.toString() === subIdStr);
               
-              judgeToSubmissions[judgeEmail].push({
-                submissionId: subIdStr,
-                roundIndex: round.roundIndex,
-                roundName: round.roundName,
-                roundType: round.roundType
-              });
+              if (!submission) {
+                console.log(`🔍 Skipping submission ${subIdStr} - not found in allSubmissions`);
+                return;
+              }
               
-              if (submissionAssignments[subIdStr]) {
-                submissionAssignments[subIdStr].push({
-                  judgeEmail,
-                  judgeName: judgeAssignment.judge?.name || judgeEmail,
+              // Check if this submission should be included in the current round
+              let shouldIncludeSubmission = true;
+              if (roundIndexNum !== null) {
+                if (roundIndexNum === 0) {
+                  // Round 1: Show only PPT submissions
+                  shouldIncludeSubmission = submission.pptFile;
+                } else if (roundIndexNum === 1) {
+                  // Round 2: Show only Project submissions
+                  shouldIncludeSubmission = !submission.pptFile;
+                } else {
+                  // Other rounds: Use roundIndex from DB
+                  shouldIncludeSubmission = submission.roundIndex === roundIndexNum;
+                }
+              }
+              
+              if (shouldIncludeSubmission) {
+                console.log(`🔍 Assigning submission ${subIdStr} to judge ${judgeEmail} (type: ${submission.pptFile ? 'PPT' : 'Project'})`);
+                
+                judgeToSubmissions[judgeEmail].push({
+                  submissionId: subIdStr,
                   roundIndex: round.roundIndex,
                   roundName: round.roundName,
                   roundType: round.roundType
                 });
+                
+                if (submissionAssignments[subIdStr]) {
+                  submissionAssignments[subIdStr].push({
+                    judgeEmail,
+                    judgeName: judgeAssignment.judge?.name || judgeEmail,
+                    roundIndex: round.roundIndex,
+                    roundName: round.roundName,
+                    roundType: round.roundType
+                  });
+                }
+              } else {
+                console.log(`🔍 Skipping submission ${subIdStr} - doesn't match current round filter`);
               }
             });
           }
@@ -2585,10 +2651,15 @@ exports.getAssignmentOverview = async (req, res) => {
     const unassignedSubmissions = submissions.filter(sub =>
       (submissionAssignments[sub._id.toString()] || []).length === 0
     ).map(sub => {
-      // Ensure roundIndex has a valid value (default to 0 for Round 1)
-      const roundIndex = (sub.roundIndex !== null && sub.roundIndex !== undefined && !isNaN(sub.roundIndex)) 
-        ? sub.roundIndex 
-        : 0;
+      // Determine correct roundIndex based on submission type
+      let correctRoundIndex;
+      if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
+        const roundIndexNum = parseInt(roundIndex);
+        correctRoundIndex = roundIndexNum; // Use the filtered round index
+      } else {
+        // If no round filtering, determine based on submission type
+        correctRoundIndex = sub.pptFile ? 0 : 1; // PPT = Round 1, Project = Round 2
+      }
       
       return {
         _id: sub._id,
@@ -2597,7 +2668,7 @@ exports.getAssignmentOverview = async (req, res) => {
         teamName: sub.teamName,
         pptFile: sub.pptFile,
         submittedAt: sub.submittedAt,
-        roundIndex: roundIndex,
+        roundIndex: correctRoundIndex,
         problemStatement: sub.problemStatement
       };
     });
@@ -2611,10 +2682,15 @@ exports.getAssignmentOverview = async (req, res) => {
         ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
         : null;
       
-      // Ensure roundIndex has a valid value (default to 0 for Round 1)
-      const roundIndex = (sub.roundIndex !== null && sub.roundIndex !== undefined && !isNaN(sub.roundIndex)) 
-        ? sub.roundIndex 
-        : 0;
+      // Determine correct roundIndex based on submission type
+      let correctRoundIndex;
+      if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
+        const roundIndexNum = parseInt(roundIndex);
+        correctRoundIndex = roundIndexNum; // Use the filtered round index
+      } else {
+        // If no round filtering, determine based on submission type
+        correctRoundIndex = sub.pptFile ? 0 : 1; // PPT = Round 1, Project = Round 2
+      }
       
       return {
         _id: sub._id,
@@ -2623,7 +2699,7 @@ exports.getAssignmentOverview = async (req, res) => {
         teamName: sub.teamName,
         pptFile: sub.pptFile,
         submittedAt: sub.submittedAt,
-        roundIndex: roundIndex,
+        roundIndex: correctRoundIndex,
         problemStatement: sub.problemStatement,
         assignedJudges: submissionAssignments[sub._id.toString()] || [],
         evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
@@ -2636,6 +2712,8 @@ exports.getAssignmentOverview = async (req, res) => {
         }))
       };
     });
+
+
 
     res.status(200).json({
       judges,

@@ -505,6 +505,8 @@ export default function JudgeManagementAssignments({
             <p className="text-gray-500 text-base">{roundDescription}</p>
           </div>
           
+
+          
           {/* Submission Round Content */}
           <div className="space-y-6">
             {/* Assignment Overview Cards */}
@@ -533,7 +535,13 @@ export default function JudgeManagementAssignments({
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="text-lg font-bold text-orange-700">{assignmentOverview.unassignedSubmissions?.length || 0}</div>
+                    <div className="text-lg font-bold text-orange-700">
+                      {assignmentOverview?.unassignedSubmissions?.filter(submission => {
+                        if (selectedStage === 'r1') return submission.pptFile;
+                        if (selectedStage === 'r2') return !submission.pptFile;
+                        return true;
+                      }).length || 0}
+                    </div>
                     <div className="text-sm text-orange-600">
                       Need judge assignment
                     </div>
@@ -575,7 +583,13 @@ export default function JudgeManagementAssignments({
                       </CardDescription>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-blue-600">{assignmentOverview?.assignedSubmissions?.length || 0}</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {assignmentOverview?.assignedSubmissions?.filter(submission => {
+                          if (selectedStage === 'r1') return submission.pptFile;
+                          if (selectedStage === 'r2') return !submission.pptFile;
+                          return true;
+                        }).length || 0}
+                      </div>
                       <div className="text-sm text-gray-500">Assigned to Judges</div>
                     </div>
                   </div>
@@ -595,7 +609,20 @@ export default function JudgeManagementAssignments({
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {assignmentOverview.assignedSubmissions.map((submission) => (
+                          {assignmentOverview.assignedSubmissions
+                            .filter(submission => {
+                              // Filter submissions based on current round
+                              if (selectedStage === 'r1') {
+                                // Round 1: Show only PPT submissions
+                                return submission.pptFile;
+                              } else if (selectedStage === 'r2') {
+                                // Round 2: Show only Project submissions
+                                return !submission.pptFile;
+                              }
+                              // For other stages, show all
+                              return true;
+                            })
+                            .map((submission) => (
                             <tr key={submission._id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div>
@@ -709,7 +736,20 @@ export default function JudgeManagementAssignments({
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {assignmentOverview.unassignedSubmissions.map((submission) => (
+                          {assignmentOverview.unassignedSubmissions
+                            .filter(submission => {
+                              // Filter submissions based on current round
+                              if (selectedStage === 'r1') {
+                                // Round 1: Show only PPT submissions
+                                return submission.pptFile;
+                              } else if (selectedStage === 'r2') {
+                                // Round 2: Show only Project submissions
+                                return !submission.pptFile;
+                              }
+                              // For other stages, show all
+                              return true;
+                            })
+                            .map((submission) => (
                             <tr key={submission._id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <input
