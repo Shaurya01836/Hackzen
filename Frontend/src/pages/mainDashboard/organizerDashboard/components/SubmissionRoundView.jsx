@@ -56,12 +56,12 @@ export default function JudgeManagementAssignments({
 
 
 
-  // Fetch assignment overview when component mounts or hackathon changes
+  // Fetch assignment overview when component mounts, hackathon changes, or selected stage changes
   useEffect(() => {
     if (hackathon?._id || hackathon?.id) {
       fetchAssignmentOverview();
     }
-  }, [hackathon?._id, hackathon?.id]);
+  }, [hackathon?._id, hackathon?.id, selectedStage]);
 
   // Refresh assignment overview periodically to ensure data is current
   useEffect(() => {
@@ -86,9 +86,11 @@ export default function JudgeManagementAssignments({
   const fetchAssignmentOverview = async () => {
     const hackathonId = hackathon?._id || hackathon?.id;
     if (!hackathonId) {
+      console.log('🔍 No hackathon ID available');
       return;
     }
     
+
     setOverviewLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -107,6 +109,8 @@ export default function JudgeManagementAssignments({
       if (params.toString()) {
         url += `?${params.toString()}`;
       }
+      
+
       
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -152,17 +156,16 @@ export default function JudgeManagementAssignments({
     return '';
   };
 
-  // Filter teams by selected stage (round)
-  let teamsToShow = teams;
-  if (selectedStage === 'r1' || selectedStage === 'r2') {
-    // Find all team IDs that have a submission in this round
-    const roundName = getRoundName(selectedStage);
-    const submittedTeamIds = submissions
-      .filter(sub => (sub.round === roundName || sub.roundName === roundName || sub.round?.name === roundName))
-      .map(sub => sub.team?._id || sub.teamId || sub.teamName)
-      .filter(Boolean);
-    teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
-  }
+      // Filter teams by selected stage (round) - Use assignmentOverview data instead of submissions prop
+    let teamsToShow = teams;
+    
+    if (selectedStage === 'r1' || selectedStage === 'r2') {
+      // Use assignmentOverview data which is properly filtered by the backend
+      if (assignmentOverview?.assignedSubmissions && !overviewLoading) {
+        const submittedTeamIds = assignmentOverview.assignedSubmissions.map(sub => sub.teamId || sub.teamName).filter(Boolean);
+        teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
+      }
+    }
 
   const handleUnassignAll = async (assignmentId) => {
     setUnassigning(prev => ({ ...prev, [assignmentId]: true }));
@@ -197,7 +200,9 @@ export default function JudgeManagementAssignments({
     
     const evaluatedSubmissions = judge.assignedRounds?.reduce((total, round) => {
       const evaluatedInRound = round.assignedSubmissions?.filter(subId => {
-        const submission = submissions.find(s => s._id === subId);
+        // Use assignmentOverview data instead of submissions prop
+        const submission = assignmentOverview?.assignedSubmissions?.find(s => s._id === subId) ||
+                          assignmentOverview?.unassignedSubmissions?.find(s => s._id === subId);
         return submission?.scores?.length > 0;
       }).length || 0;
       return total + evaluatedInRound;
@@ -210,7 +215,9 @@ export default function JudgeManagementAssignments({
     const assignedTeamIds = new Set();
     judge.assignedRounds?.forEach(round => {
       round.assignedSubmissions?.forEach(subId => {
-        const submission = submissions.find(s => s._id === subId);
+        // Use assignmentOverview data instead of submissions prop
+        const submission = assignmentOverview?.assignedSubmissions?.find(s => s._id === subId) ||
+                          assignmentOverview?.unassignedSubmissions?.find(s => s._id === subId);
         if (submission?.teamId) {
           assignedTeamIds.add(submission.teamId);
         }
@@ -453,13 +460,40 @@ export default function JudgeManagementAssignments({
 
       {/* Show Submission Round 1 or 2 view if selected */}
       {(selectedStage === 'r1' || selectedStage === 'r2') ? (
-        <div className="space-y-6">
+        <div key={`round-${selectedStage}`} className="space-y-6">
           {/* Round Header */}
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-              {getRoundName(selectedStage)}
-            </h2>
-            <p className="text-gray-500 text-base">{roundDescription}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                  {getRoundName(selectedStage)}
+                  {overviewLoading && <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />}
+                </h2>
+                <p className="text-gray-500 text-base">{roundDescription}</p>
+              </div>
+              
+              {/* Refresh Button */}
+              <button
+                onClick={async () => {
+                  console.log(`🔍 Manual refresh button clicked for ${selectedStage}`);
+                  await fetchAssignmentOverview();
+                  toast({
+                    title: 'Data Refreshed',
+                    description: `Successfully refreshed data for ${getRoundName(selectedStage)}`,
+                    variant: 'default',
+                  });
+                }}
+                disabled={overviewLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  overviewLoading
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+                }`}
+              >
+                <RefreshCw className={`w-4 h-4 ${overviewLoading ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </button>
+            </div>
           </div>
           
           {/* Submission Round Content */}
@@ -568,7 +602,7 @@ export default function JudgeManagementAssignments({
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4 text-gray-400" />
-                                  <span className="text-sm text-gray-900">PPT</span>
+                                  <span className="text-sm text-gray-900">{submission.pptFile ? 'PPT' : 'Project'}</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -680,7 +714,7 @@ export default function JudgeManagementAssignments({
                                <td className="px-6 py-4 whitespace-nowrap">
                                  <div className="flex items-center gap-2">
                                    <FileText className="w-4 h-4 text-gray-400" />
-                                   <span className="text-sm text-gray-900">PPT</span>
+                                   <span className="text-sm text-gray-900">{submission.pptFile ? 'PPT' : 'Project'}</span>
                                  </div>
                                </td>
                                <td className="px-6 py-4 whitespace-nowrap">
@@ -928,7 +962,7 @@ export default function JudgeManagementAssignments({
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-gray-400" />
-                                    <span className="text-sm text-gray-900">PPT</span>
+                                    <span className="text-sm text-gray-900">{submission.pptFile ? 'PPT' : 'Project'}</span>
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -1338,7 +1372,9 @@ export default function JudgeManagementAssignments({
                     {round.assignedSubmissions?.length > 0 ? (
                       <div className="space-y-2">
                         {round.assignedSubmissions.map(subId => {
-                          const submission = submissions.find(s => s._id === subId);
+                          // Use assignmentOverview data instead of submissions prop
+                          const submission = assignmentOverview?.assignedSubmissions?.find(s => s._id === subId) ||
+                                            assignmentOverview?.unassignedSubmissions?.find(s => s._id === subId);
                           const team = teams.find(t => t._id === submission?.teamId);
                           return submission ? (
                             <div key={subId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
