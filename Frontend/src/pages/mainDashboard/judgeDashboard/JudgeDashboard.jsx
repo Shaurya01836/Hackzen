@@ -63,8 +63,15 @@ export default function JudgeDashboard() {
         if (data.hasSpecificAssignments) {
           // Filter submissions for current round
           const roundSubmissions = data.submissions?.filter(sub => {
+            // If roundIndex is null, show all submissions (fallback)
+            if (sub.roundIndex === null) {
+              console.log('🔍 Frontend - Submission without roundIndex:', sub._id);
+              return true;
+            }
             return sub.roundIndex === currentRound;
           }) || [];
+          
+          console.log('🔍 Frontend - Filtered submissions for round', currentRound, ':', roundSubmissions.length);
           setAssignedSubmissions(roundSubmissions);
         } else {
           // Show no submissions when no specific assignments

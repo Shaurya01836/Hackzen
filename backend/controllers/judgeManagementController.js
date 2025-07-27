@@ -1660,13 +1660,49 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     const judgeEmail = req.user.email;
     console.log('🔍 Backend - getMyAssignedSubmissions called for judge:', judgeEmail);
     
-    // Find all judge assignments for this user
-    const assignments = await JudgeAssignment.find({ 
-      'judge.email': judgeEmail,
-      status: 'active'
-    }).populate('hackathon', 'name rounds').populate('judge', 'name email');
+    if (!judgeEmail) {
+      console.error('🔍 Backend - No judge email found in request');
+      return res.status(400).json({ 
+        message: 'Judge email not found',
+        error: 'User email is required'
+      });
+    }
     
-    console.log('🔍 Backend - Found assignments:', assignments.length);
+    console.log('🔍 Backend - About to query JudgeAssignment model');
+    
+    // Find all judge assignments for this user
+    let assignments = [];
+    try {
+      assignments = await JudgeAssignment.find({ 
+        'judge.email': judgeEmail,
+        status: 'active'
+      }).populate('hackathon', 'name rounds').populate('judge', 'name email');
+      
+      console.log('🔍 Backend - Found assignments:', assignments.length);
+    } catch (dbError) {
+      console.error('🔍 Backend - Database query error:', dbError);
+      console.error('🔍 Backend - Error stack:', dbError.stack);
+      return res.status(500).json({
+        message: 'Database query failed',
+        error: dbError.message,
+        stack: dbError.stack
+      });
+    }
+    
+    // Log detailed assignment information
+    for (const assignment of assignments) {
+      console.log('🔍 Backend - Assignment details:', {
+        hackathon: assignment.hackathon?.name,
+        judge: assignment.judge?.email,
+        status: assignment.status,
+        assignedRounds: assignment.assignedRounds?.map(r => ({
+          roundIndex: r.roundIndex,
+          roundName: r.roundName,
+          assignedSubmissions: r.assignedSubmissions?.length || 0,
+          submissionIds: r.assignedSubmissions || []
+        }))
+      });
+    }
     
     // Defensive: Collect all assigned submission IDs from all rounds
     const assignedSubmissionIds = new Set();
@@ -1710,23 +1746,74 @@ exports.getMyAssignedSubmissions = async (req, res) => {
       try {
         const Submission = require('../model/SubmissionModel');
         const Score = require('../model/ScoreModel');
+        
+        console.log('🔍 Backend - Fetching submissions for IDs:', Array.from(assignedSubmissionIds));
+        
+        // Validate submission IDs
+        const validSubmissionIds = Array.from(assignedSubmissionIds).filter(id => {
+          try {
+            return require('mongoose').Types.ObjectId.isValid(id);
+          } catch (error) {
+            console.error('🔍 Backend - Invalid submission ID:', id);
+            return false;
+          }
+        });
+        
+        if (validSubmissionIds.length === 0) {
+          console.log('🔍 Backend - No valid submission IDs found');
+          return res.status(200).json({
+            submissions: [],
+            rounds: [],
+            hackathons: [],
+            totalSubmissions: 0,
+            totalRounds: 0,
+            totalHackathons: 0,
+            hasSpecificAssignments: false
+          });
+        }
+        
         const submissionsToFetch = await Submission.find({
-          _id: { $in: Array.from(assignedSubmissionIds) }
+          _id: { $in: validSubmissionIds }
         }).populate('teamId', 'name members')
           .populate('hackathonId', 'name');
+          
+        console.log('🔍 Backend - Found submissions:', submissionsToFetch.length);
         // Add evaluation status for each submission
         for (const submission of submissionsToFetch) {
-          const existingScore = await Score.findOne({
-            submission: submission._id,
-            judgeEmail: judgeEmail
-          });
-          allSubmissions.push({
-            ...submission.toObject(),
-            evaluationStatus: existingScore ? 'evaluated' : 'pending',
-            score: existingScore?.score || null,
-            feedback: existingScore?.feedback || null,
-            isAssigned: true
-          });
+          try {
+            const existingScore = await Score.findOne({
+              submission: submission._id,
+              judgeEmail: judgeEmail
+            });
+            
+            // Find which round this submission is assigned to for this judge
+            let submissionRoundIndex = null;
+            for (const assignment of assignments) {
+              if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
+                for (const round of assignment.assignedRounds) {
+                  if (round.isAssigned && Array.isArray(round.assignedSubmissions)) {
+                    if (round.assignedSubmissions.some(id => id.toString() === submission._id.toString())) {
+                      submissionRoundIndex = round.roundIndex;
+                      break;
+                    }
+                  }
+                }
+              }
+              if (submissionRoundIndex !== null) break;
+            }
+            
+            allSubmissions.push({
+              ...submission.toObject(),
+              evaluationStatus: existingScore ? 'evaluated' : 'pending',
+              score: existingScore?.score || null,
+              feedback: existingScore?.feedback || null,
+              isAssigned: true,
+              roundIndex: submissionRoundIndex
+            });
+          } catch (submissionError) {
+            console.error('🔍 Backend - Error processing submission:', submission._id, submissionError);
+            // Continue with other submissions
+          }
         }
       } catch (submissionError) {
         console.error('🔍 Backend - Error fetching assigned submissions:', submissionError);
@@ -1739,6 +1826,15 @@ exports.getMyAssignedSubmissions = async (req, res) => {
       index === self.findIndex(h => h._id.toString() === hackathon._id.toString())
     );
 
+    console.log('🔍 Backend - Final response:', {
+      totalSubmissions: allSubmissions.length,
+      totalRounds: rounds.length,
+      totalHackathons: uniqueHackathons.length,
+      hasSpecificAssignments: allSubmissions.length > 0,
+      submissionsWithRoundIndex: allSubmissions.filter(s => s.roundIndex !== null).length,
+      submissionsWithoutRoundIndex: allSubmissions.filter(s => s.roundIndex === null).length
+    });
+
     res.status(200).json({
       submissions: allSubmissions,
       rounds,
@@ -1746,7 +1842,7 @@ exports.getMyAssignedSubmissions = async (req, res) => {
       totalSubmissions: allSubmissions.length,
       totalRounds: rounds.length,
       totalHackathons: uniqueHackathons.length,
-      hasSpecificAssignments: true
+      hasSpecificAssignments: allSubmissions.length > 0
     });
   } catch (error) {
     console.error('🔍 Backend - Error in getMyAssignedSubmissions:', error);
@@ -2877,8 +2973,14 @@ exports.performShortlisting = async (req, res) => {
       console.log('🔍 Backend - Shortlisted submissions:', submissionsToShortlist);
       console.log('🔍 Backend - Mode:', mode);
       
-      await exports.sendShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
-      console.log('🔍 Backend - Email notifications sent successfully');
+      // Ensure email configuration is available
+      if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+        console.warn('🔍 Backend - Email configuration missing, skipping email notifications');
+        console.warn('🔍 Backend - Please configure MAIL_USER and MAIL_PASS environment variables');
+      } else {
+        await exports.sendShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
+        console.log('🔍 Backend - Email notifications sent successfully');
+      }
     } catch (emailError) {
       console.error('🔍 Backend - Error sending shortlisting emails:', emailError);
       console.error('🔍 Backend - Email error details:', {
@@ -3014,6 +3116,10 @@ exports.toggleSubmissionShortlist = async (req, res) => {
   }
 };
 
+
+
+
+
 // 🎯 Check if user/team is shortlisted for Round 2
 exports.checkRound2Eligibility = async (req, res) => {
   try {
@@ -3064,44 +3170,126 @@ exports.checkRound2Eligibility = async (req, res) => {
       status: 'active' 
     });
 
+    // Also check if there are any teams for this hackathon
+    const allTeams = await Team.find({ hackathon: hackathonId, status: 'active' });
+    
+    // Check if user is in any team (alternative lookup)
+    const userTeams = await Team.find({ 
+      hackathon: hackathonId, 
+      members: userId,
+      status: 'active' 
+    });
+
     let isShortlisted = false;
     let shortlistingDetails = null;
+    let shortlistingSource = null;
 
-    if (userTeam) {
-      // Check if team was shortlisted
-      const shortlistedSubmission = await Submission.findOne({
-        hackathonId: hackathonId,
-        teamId: userTeam._id,
-        shortlistedForRound: 2,
-        status: 'shortlisted'
-      });
+    // Method 1: Check hackathon round progress data
+    let round1Progress = null;
+    if (hackathon.roundProgress && hackathon.roundProgress.length > 0) {
+      round1Progress = hackathon.roundProgress.find(rp => rp.roundIndex === 0);
       
-      if (shortlistedSubmission) {
-        isShortlisted = true;
-        shortlistingDetails = {
-          submissionId: shortlistedSubmission._id,
-          projectTitle: shortlistedSubmission.projectTitle,
-          shortlistedAt: shortlistedSubmission.shortlistedAt
-        };
-      }
-    } else {
-      // Check if individual user was shortlisted
-      const shortlistedSubmission = await Submission.findOne({
-        hackathonId: hackathonId,
-        submittedBy: userId,
-        shortlistedForRound: 2,
-        status: 'shortlisted'
-      });
-      
-      if (shortlistedSubmission) {
-        isShortlisted = true;
-        shortlistingDetails = {
-          submissionId: shortlistedSubmission._id,
-          projectTitle: shortlistedSubmission.projectTitle,
-          shortlistedAt: shortlistedSubmission.shortlistedAt
-        };
+              if (round1Progress && round1Progress.shortlistedTeams) {
+          // Check if any of the user's teams are shortlisted
+          if (userTeams.length > 0) {
+            const shortlistedTeamIds = round1Progress.shortlistedTeams.map(id => id.toString());
+            const userTeamIds = userTeams.map(t => t._id.toString());
+            
+            const shortlistedTeam = userTeams.find(team => 
+              shortlistedTeamIds.includes(team._id.toString())
+            );
+            
+            if (shortlistedTeam) {
+              isShortlisted = true;
+              shortlistingSource = 'hackathon_round_progress';
+            }
+          } else {
+            // Check if individual user is in shortlisted teams
+            const userIdStr = userId.toString();
+            const shortlistedTeamsStr = round1Progress.shortlistedTeams.map(id => id.toString());
+            const isUserShortlisted = shortlistedTeamsStr.includes(userIdStr);
+            
+            if (isUserShortlisted) {
+              isShortlisted = true;
+              shortlistingSource = 'hackathon_round_progress';
+            }
+          }
+        }
+    }
+
+    // Method 2: Check submission status (fallback)
+    if (!isShortlisted) {
+      if (userTeams.length > 0) {
+        // Check if any of the user's teams have shortlisted submissions
+        for (const team of userTeams) {
+          const shortlistedSubmission = await Submission.findOne({
+            hackathonId: hackathonId,
+            teamId: team._id,
+            shortlistedForRound: 2,
+            status: 'shortlisted'
+          });
+          
+          if (shortlistedSubmission) {
+            isShortlisted = true;
+            shortlistingSource = 'submission_status';
+            shortlistingDetails = {
+              submissionId: shortlistedSubmission._id,
+              projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
+              shortlistedAt: shortlistedSubmission.shortlistedAt
+            };
+            break;
+          }
+          
+          // Also check if team has any submission that was shortlisted (alternative check)
+          const teamSubmissions = await Submission.find({
+            hackathonId: hackathonId,
+            teamId: team._id
+          });
+          
+          const hasShortlistedSubmission = teamSubmissions.some(sub => 
+            sub.status === 'shortlisted' || sub.shortlistedForRound === 2
+          );
+          
+          if (hasShortlistedSubmission) {
+            isShortlisted = true;
+            shortlistingSource = 'submission_status_alternative';
+            break;
+          }
+        }
+      } else {
+        // Check if individual user has shortlisted submission
+        const shortlistedSubmission = await Submission.findOne({
+          hackathonId: hackathonId,
+          submittedBy: userId,
+          shortlistedForRound: 2,
+          status: 'shortlisted'
+        });
+        
+        if (shortlistedSubmission) {
+          isShortlisted = true;
+          shortlistingSource = 'submission_status';
+          shortlistingDetails = {
+            submissionId: shortlistedSubmission._id,
+            projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
+            shortlistedAt: shortlistedSubmission.shortlistedAt
+          };
+
+        }
       }
     }
+
+    // Method 3: Check if user is in advancedParticipantIds (legacy support)
+    if (!isShortlisted && hackathon.roundProgress) {
+      for (const progress of hackathon.roundProgress) {
+        if (progress.advancedParticipantIds && progress.advancedParticipantIds.includes(userId.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'advanced_participants';
+          break;
+        }
+      }
+    }
+
+
 
     return res.status(200).json({
       eligible: isShortlisted,
@@ -3109,14 +3297,14 @@ exports.checkRound2Eligibility = async (req, res) => {
         ? 'You are eligible to submit to Round 2' 
         : 'Your team was not shortlisted for Round 2',
       round2Started: true,
-      shortlistingDetails
+      shortlistingDetails,
+      shortlistingSource
     });
 
   } catch (error) {
-    console.error('🔍 Error checking Round 2 eligibility:', error);
     return res.status(500).json({ 
       message: 'Failed to check eligibility', 
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -3724,3 +3912,136 @@ function getSelectionMethodText(mode) {
       return 'Manual Selection';
   }
 }
+
+// 🎯 Debug endpoint to check shortlisting data
+exports.debugShortlistingData = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const userId = req.user._id;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get user's team
+    const Team = require("../model/TeamModel");
+    const userTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId, 
+      status: 'active' 
+    });
+
+    // Get all submissions for this user/team
+    const userSubmissions = await Submission.find({
+      hackathonId: hackathonId,
+      $or: [
+        { submittedBy: userId },
+        { teamId: userTeam?._id }
+      ]
+    }).populate('teamId', 'name members').populate('submittedBy', 'name email');
+
+    // Get hackathon round progress data
+    const roundProgress = hackathon.roundProgress || [];
+
+    // Check eligibility using the same logic as checkRound2Eligibility
+    let isShortlisted = false;
+    let shortlistingSource = null;
+    let shortlistingDetails = null;
+
+    // Method 1: Check hackathon round progress data
+    if (roundProgress.length > 0) {
+      const round1Progress = roundProgress.find(rp => rp.roundIndex === 0);
+      if (round1Progress && round1Progress.shortlistedTeams) {
+        if (userTeam) {
+          if (round1Progress.shortlistedTeams.includes(userTeam._id.toString())) {
+            isShortlisted = true;
+            shortlistingSource = 'hackathon_round_progress';
+          }
+        } else {
+          if (round1Progress.shortlistedTeams.includes(userId.toString())) {
+            isShortlisted = true;
+            shortlistingSource = 'hackathon_round_progress';
+          }
+        }
+      }
+    }
+
+    // Method 2: Check submission status
+    if (!isShortlisted) {
+      const shortlistedSubmission = await Submission.findOne({
+        hackathonId: hackathonId,
+        $or: [
+          { teamId: userTeam?._id },
+          { submittedBy: userId }
+        ],
+        shortlistedForRound: 2,
+        status: 'shortlisted'
+      });
+      
+      if (shortlistedSubmission) {
+        isShortlisted = true;
+        shortlistingSource = 'submission_status';
+        shortlistingDetails = {
+          submissionId: shortlistedSubmission._id,
+          projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
+          shortlistedAt: shortlistedSubmission.shortlistedAt
+        };
+      }
+    }
+
+    // Method 3: Check advanced participants
+    if (!isShortlisted) {
+      for (const progress of roundProgress) {
+        if (progress.advancedParticipantIds && progress.advancedParticipantIds.includes(userId.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'advanced_participants';
+          break;
+        }
+      }
+    }
+
+    return res.status(200).json({
+      debug: {
+        userId: userId.toString(),
+        userTeam: userTeam ? {
+          _id: userTeam._id.toString(),
+          name: userTeam.name,
+          members: userTeam.members.map(m => m.toString())
+        } : null,
+        submissions: userSubmissions.map(s => ({
+          _id: s._id.toString(),
+          status: s.status,
+          shortlistedForRound: s.shortlistedForRound,
+          teamId: s.teamId?._id?.toString(),
+          submittedBy: s.submittedBy?._id?.toString(),
+          title: s.projectTitle || s.title
+        })),
+        hackathonRoundProgress: roundProgress.map(rp => ({
+          roundIndex: rp.roundIndex,
+          shortlistedTeams: rp.shortlistedTeams || [],
+          shortlistedSubmissions: rp.shortlistedSubmissions || [],
+          advancedParticipantIds: rp.advancedParticipantIds || []
+        })),
+        eligibilityResult: {
+          isShortlisted,
+          shortlistingSource,
+          shortlistingDetails
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('🔍 Error in debug shortlisting data:', error);
+    return res.status(500).json({ 
+      message: 'Failed to debug shortlisting data', 
+      error: error.message 
+    });
+  }
+};
+
+
+
+
+
+

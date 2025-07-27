@@ -42,6 +42,52 @@ exports.submitProjectWithAnswers = async (req, res) => {
       });
     }
 
+    // Get hackathon details for deadline checking
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ error: "Hackathon not found" });
+    }
+
+    // Check deadline conditions
+    const now = new Date();
+    let deadlinePassed = false;
+    let deadlineMessage = "";
+
+    if (roundIndex !== undefined && roundIndex >= 0 && hackathon.rounds && hackathon.rounds[roundIndex]) {
+      // Check round-specific deadline
+      const round = hackathon.rounds[roundIndex];
+      if (round.endDate && now > new Date(round.endDate)) {
+        deadlinePassed = true;
+        deadlineMessage = new Date(round.endDate).toLocaleString("en-IN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kolkata"
+        });
+      }
+    } else if (hackathon.submissionDeadline && now > new Date(hackathon.submissionDeadline)) {
+      // Check general submission deadline
+      deadlinePassed = true;
+      deadlineMessage = new Date(hackathon.submissionDeadline).toLocaleString("en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata"
+      });
+    }
+
+    if (deadlinePassed) {
+      return res.status(400).json({ 
+        error: `The hackathon submission window is closed. The deadline was ${deadlineMessage}.` 
+      });
+    }
+
     // Check if this is Round 2 submission and validate shortlisting
     if (roundIndex === 1) { // Round 2 (index 1 in rounds array)
       // Check if the user's team was shortlisted for Round 2
@@ -76,10 +122,6 @@ exports.submitProjectWithAnswers = async (req, res) => {
     }
 
     // Check if user has reached the max submissions for this hackathon
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ error: "Hackathon not found" });
-    }
     const userSubmissionCount = await Submission.countDocuments({
       hackathonId,
       submittedBy: userId,
@@ -131,12 +173,61 @@ exports.submitPPTForRound = async (req, res) => {
     if (!hackathonId || typeof roundIndex !== 'number' || !pptFile) {
       return res.status(400).json({ success: false, error: 'hackathonId, roundIndex, and pptFile are required' });
     }
+    
     // Check registration
     const Registration = require("../model/HackathonRegistrationModel");
     const isRegistered = await Registration.findOne({ hackathonId, userId });
     if (!isRegistered) {
       return res.status(400).json({ success: false, error: 'You must be registered for this hackathon to submit a PPT.' });
     }
+
+    // Get hackathon details for deadline checking
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ success: false, error: "Hackathon not found" });
+    }
+
+    // Check deadline conditions
+    const now = new Date();
+    let deadlinePassed = false;
+    let deadlineMessage = "";
+
+    if (roundIndex >= 0 && hackathon.rounds && hackathon.rounds[roundIndex]) {
+      // Check round-specific deadline
+      const round = hackathon.rounds[roundIndex];
+      if (round.endDate && now > new Date(round.endDate)) {
+        deadlinePassed = true;
+        deadlineMessage = new Date(round.endDate).toLocaleString("en-IN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+          timeZone: "Asia/Kolkata"
+        });
+      }
+    } else if (hackathon.submissionDeadline && now > new Date(hackathon.submissionDeadline)) {
+      // Check general submission deadline
+      deadlinePassed = true;
+      deadlineMessage = new Date(hackathon.submissionDeadline).toLocaleString("en-IN", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata"
+      });
+    }
+
+    if (deadlinePassed) {
+      return res.status(400).json({ 
+        success: false,
+        error: `The hackathon submission window is closed. The deadline was ${deadlineMessage}.` 
+      });
+    }
+
     // Check for existing submission for this user/round/hackathon
     let submission = await Submission.findOne({ hackathonId, roundIndex, submittedBy: userId });
     if (submission) {

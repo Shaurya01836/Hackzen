@@ -62,6 +62,11 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [judgeScores, setJudgeScores] = useState([]);
+  
+  console.log('🔍 Frontend - JudgeAssignedProjectsGallery props:', {
+    hackathonId,
+    selectedType
+  });
   const navigate = useNavigate();
 
   // Get dynamic heading based on filter
@@ -76,6 +81,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
   useEffect(() => {
     const fetchAssignedSubmissions = async () => {
       setLoading(true);
+      console.log('🔍 Frontend - Fetching assigned submissions for hackathonId:', hackathonId);
       try {
         const token = localStorage.getItem("token");
         
@@ -87,12 +93,30 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         const data = response.data;
         const submissions = data.submissions || [];
         
+        console.log('🔍 Frontend - API Response:', {
+          totalSubmissions: submissions.length,
+          hackathonId,
+          submissions: submissions.map(s => ({
+            id: s._id,
+            title: s.projectTitle || s.title,
+            hackathonId: s.hackathonId?._id || s.hackathonId
+          }))
+        });
+        
         // Filter submissions for this specific hackathon
         const hackathonSubmissions = submissions.filter(sub => {
           // Check both hackathonId and hackathonId._id (in case it's populated)
           const submissionHackathonId = sub.hackathonId?._id || sub.hackathonId;
           const submissionHackathonIdStr = submissionHackathonId?.toString();
           const expectedHackathonIdStr = hackathonId?.toString();
+          
+          console.log('🔍 Frontend - Filtering submission:', {
+            submissionId: sub._id,
+            submissionHackathonId,
+            submissionHackathonIdStr,
+            expectedHackathonIdStr,
+            matches: submissionHackathonId === hackathonId || submissionHackathonIdStr === expectedHackathonIdStr
+          });
           
           // If no hackathonId is provided, show all submissions
           if (!hackathonId) {
@@ -102,6 +126,8 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
           const matches = submissionHackathonId === hackathonId || submissionHackathonIdStr === expectedHackathonIdStr;
           return matches;
         });
+        
+        console.log('🔍 Frontend - Filtered submissions:', hackathonSubmissions.length);
 
         // Transform submissions into project format
         const projects = hackathonSubmissions.map(submission => {
@@ -142,6 +168,17 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         setAssignedSubmissions(projects);
       } catch (err) {
         console.error("Error fetching assigned submissions", err);
+        console.error("Error details:", {
+          message: err.message,
+          status: err.response?.status,
+          data: err.response?.data
+        });
+        
+        // Show user-friendly error message
+        if (err.response?.status === 500) {
+          console.error("Server error - check backend logs");
+        }
+        
         setAssignedSubmissions([]);
       } finally {
         setLoading(false);

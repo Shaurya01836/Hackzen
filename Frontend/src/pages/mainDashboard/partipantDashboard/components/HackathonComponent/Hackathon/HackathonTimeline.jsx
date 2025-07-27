@@ -43,6 +43,8 @@ export default function HackathonTimeline({
   const now = new Date();
   const { toast } = useToast ? useToast() : { toast: () => {} };
   const { user } = useAuth ? useAuth() : { user: null };
+  
+
   const [uploadingIdx, setUploadingIdx] = useState(null);
   const [pptSubmissions, setPptSubmissions] = useState([]);
   const [pptModal, setPptModal] = useState({ open: false, roundIdx: null });
@@ -61,6 +63,8 @@ export default function HackathonTimeline({
   // Add state for round2 eligibility
   const [round2Eligibility, setRound2Eligibility] = useState(null);
   const [loadingEligibility, setLoadingEligibility] = useState(false);
+  
+
 
   // Fetch user's PPT submissions for this hackathon
   useEffect(() => {
@@ -72,6 +76,7 @@ export default function HackathonTimeline({
 
   // Fetch user's project submissions for this hackathon
   useEffect(() => {
+    
     async function fetchProjectSubmissions() {
       if (!hackathon._id || !user?._id) return;
       try {
@@ -91,33 +96,89 @@ export default function HackathonTimeline({
     fetchProjectSubmissions();
   }, [hackathon._id, user?._id, refreshKey]);
 
+  // Fetch Round 2 eligibility function
+  const fetchRound2Eligibility = async () => {
+    if (!hackathon._id || !user?._id) {
+      return;
+    }
+    
+    // Only check for Round 2 (index 1)
+    const round2Exists = hackathon.rounds && hackathon.rounds.length > 1;
+    if (!round2Exists) {
+      return;
+    }
+    
+    setLoadingEligibility(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:3000/api/judge-management/hackathons/${hackathon._id}/round2-eligibility`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setRound2Eligibility(res.data);
+    } catch (error) {
+      console.error("Error fetching Round 2 eligibility:", error);
+      setRound2Eligibility(null);
+    } finally {
+      setLoadingEligibility(false);
+    }
+  };
+
   // Fetch Round 2 eligibility
   useEffect(() => {
-    async function fetchRound2Eligibility() {
-      if (!hackathon._id || !user?._id || !isRegistered) return;
-      
-      // Only check for Round 2 (index 1)
-      const round2Exists = hackathon.rounds && hackathon.rounds.length > 1;
-      if (!round2Exists) return;
-      
-      setLoadingEligibility(true);
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get(
-          `http://localhost:3000/api/judge-management/hackathons/${hackathon._id}/round2-eligibility`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        console.log("🔍 Round 2 Eligibility Response:", res.data);
-        setRound2Eligibility(res.data);
-      } catch (error) {
-        console.error("Error fetching Round 2 eligibility:", error);
-        setRound2Eligibility(null);
-      } finally {
-        setLoadingEligibility(false);
-      }
-    }
     fetchRound2Eligibility();
   }, [hackathon._id, user?._id, isRegistered, refreshKey]);
+
+  // Helper function to check if deadline has passed
+  const hasDeadlinePassed = (endDate) => {
+    if (!endDate) return false;
+    return now > new Date(endDate);
+  };
+
+  // Helper function to format deadline message
+  const formatDeadlineMessage = (endDate) => {
+    if (!endDate) return "";
+    const deadline = new Date(endDate);
+    return deadline.toLocaleString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata"
+    });
+  };
+
+  // Helper function to check if user has submitted in previous round
+  const hasSubmittedInPreviousRound = (currentRoundIdx) => {
+    if (currentRoundIdx === 0) return true; // First round, no previous submission needed
+    const previousRoundSubmissions = getProjectSubmissionsForRound(currentRoundIdx - 1);
+    return previousRoundSubmissions.length > 0;
+  };
+
+  // Helper function to check if user is shortlisted for next round
+  const isShortlistedForNextRound = (currentRoundIdx) => {
+    if (currentRoundIdx === 0) {
+      return true; // First round, everyone is eligible
+    }
+    if (currentRoundIdx === 1 && round2Eligibility) {
+      return round2Eligibility.eligible === true;
+    }
+    return false; // For other rounds, implement as needed
+  };
+
+  // Helper function to check if user is not selected for next round
+  const isNotSelectedForNextRound = (currentRoundIdx) => {
+    if (currentRoundIdx === 0) {
+      return false; // First round, no selection needed
+    }
+    if (currentRoundIdx === 1 && round2Eligibility) {
+      // Only show "not selected" if Round 2 has started and user is explicitly not eligible
+      return round2Eligibility.round2Started === true && round2Eligibility.eligible === false;
+    }
+    return false;
+  };
 
   const handlePPTUpload = async (e, roundIdx) => {
     const file = e.target.files[0];
@@ -381,6 +442,7 @@ export default function HackathonTimeline({
                         .findIndex((r) => r === round) === 0;
 
                     let projectSubmissionUI = null;
+                    let pptSubmissionUI = null;
                     
                     // Check if this is Round 2 and user needs to be shortlisted
                     const isRound2 = idx === 1;
@@ -390,98 +452,100 @@ export default function HackathonTimeline({
                     const round1Submissions = getProjectSubmissionsForRound(0);
                     const hasSubmittedRound1 = round1Submissions.length > 0;
                     
-                    // Only show "You did not submit in the previous round" message under very specific conditions
-                    const shouldShowBlockedMessage = idx > 0 && isProjectSubmission && !needsShortlisting;
+                    // Check deadline conditions
+                    const deadlinePassed = hasDeadlinePassed(end);
+                    const hasSubmittedInPrevious = hasSubmittedInPreviousRound(idx);
+                    const isShortlisted = isShortlistedForNextRound(idx);
+                    const isNotSelected = isNotSelectedForNextRound(idx);
                     
-                    if (shouldShowBlockedMessage) {
-                      // Only show this message if user didn't submit in Round 1 and Round 1 has ended
-                      const round1EndDate = rounds[0]?.endDate ? new Date(rounds[0].endDate) : null;
-                      const round1Ended = round1EndDate && now > round1EndDate;
-                      
-                      if (!hasSubmittedRound1 && round1Ended) {
-                        projectSubmissionUI = (
+
+                    
+                    // Condition 1: Missed Deadline (No Submission)
+                    if (deadlinePassed && !projectSubmissionsForRound.length && !submission) {
+                      const deadlineMessage = formatDeadlineMessage(end);
+                      projectSubmissionUI = (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
+                          The hackathon submission window is closed. The deadline was {deadlineMessage}.
+                        </div>
+                      );
+                      if (isSubmission) {
+                        pptSubmissionUI = (
                           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
-                            You did not submit in the previous round, so you cannot submit in this round.
+                            The hackathon submission window is closed. The deadline was {deadlineMessage}.
                           </div>
                         );
                       }
-                    } else if (needsShortlisting) {
-                      // Debug shortlisting logic
-                      console.log("🔍 Shortlisting Debug:", {
-                        round2Eligibility,
-                        isLive,
-                        canEdit: canEdit(end),
-                        isRegistered
-                      });
-                      
-                      // Check if user is shortlisted for Round 2
-                      if (round2Eligibility?.eligible === true) {
-                        console.log("🔍 User is eligible for Round 2!");
-                        // User is shortlisted - show submit button if round is live
-                        if (isLive && canEdit(end)) {
-                          projectSubmissionUI = (
-                            <div className="flex gap-2 items-center">
-                              <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                🎉 You are selected for Round 2!
-                              </div>
-                              <button
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                onClick={() =>
-                                  isRegistered && handleOpenNewSubmission(idx)
-                                }
-                                disabled={!isRegistered}
-                                title={
-                                  isRegistered
-                                    ? "Submit your project for Round 2"
-                                    : "Register for the hackathon to submit"
-                                }
-                              >
-                                Submit Project
-                              </button>
-                            </div>
-                          );
-                        } else if (!isLive) {
-                          projectSubmissionUI = (
-                            <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
-                              🎉 You are selected for Round 2! You can submit your project when the round starts.
-                            </div>
-                          );
-                        } else {
-                          projectSubmissionUI = (
-                            <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
-                              🎉 You are selected for Round 2! Round has ended.
-                            </div>
-                          );
-                        }
-                      } else if (round2Eligibility?.round2Started === true) {
-                        // Round 2 has started but user is not shortlisted
+                    }
+                    // Condition 2: Round Selection - User is shortlisted for next round
+                    else if (isShortlisted && isProjectSubmission) {
+                      if (isLive && canEdit(end)) {
                         projectSubmissionUI = (
-                          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
-                            You were not shortlisted for Round 2. Thank you for participating in Round 1!
+                          <div className="flex gap-2 items-center">
+                            <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                              🎉 You are selected for the next round!
+                            </div>
+                            <button
+                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                              onClick={() =>
+                                isRegistered && handleOpenNewSubmission(idx)
+                              }
+                              disabled={!isRegistered}
+                              title={
+                                isRegistered
+                                  ? "Submit your project for the next round"
+                                  : "Register for the hackathon to submit"
+                              }
+                            >
+                              Submit Project
+                            </button>
                           </div>
                         );
-                      } else if (loadingEligibility) {
-                        // Still loading eligibility data
+                      } else if (!isLive) {
                         projectSubmissionUI = (
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-blue-700 font-medium">
-                            Loading eligibility status...
+                          <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
+                            🎉 You are selected for the next round! You can submit your project when the round starts.
                           </div>
                         );
                       } else {
-                        // Waiting for shortlisting results or eligibility not determined
                         projectSubmissionUI = (
-                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
-                            Round 2 submission requires shortlisting from Round 1. Please wait for results.
+                          <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
+                            🎉 You are selected for the next round! Round has ended.
                           </div>
                         );
                       }
-                    } else if (isProjectSubmission) {
+                    }
+                    // Fallback: Show shortlisting message if Round 2 exists but no eligibility data
+                    else if (isRound2 && isProjectSubmission && !round2Eligibility && !loadingEligibility) {
+                      projectSubmissionUI = (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
+                          ⚠️ Shortlisting status is being determined. Please check back later.
+                          <button 
+                            className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                            onClick={() => {
+                              fetchRound2Eligibility();
+                            }}
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      );
+                    }
+                    // Condition 3: Not Selected for Next Round
+                    else if (isNotSelected && isProjectSubmission) {
+                      projectSubmissionUI = (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
+                          You are not selected for the next round.
+                        </div>
+                      );
+                    }
+                    // Normal submission logic for active rounds
+                    else if (isLive && canEdit(end)) {
                       // Project submission logic
-                      if (
-                        submissionType === "single-project" &&
-                        roundType2 === "single-round"
-                      ) {
-                        if (isLive && canEdit(end)) {
+                      if (isProjectSubmission) {
+                        if (
+                          submissionType === "single-project" &&
+                          roundType2 === "single-round"
+                        ) {
                           projectSubmissionUI =
                             projectSubmissionsForRound.length > 0 ? (
                               <div className="flex gap-2 items-center">
@@ -500,49 +564,45 @@ export default function HackathonTimeline({
                                 </button>
                               </div>
                             ) : (
-                              isLive && (
-                                <button
-                                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                  onClick={() =>
-                                    isRegistered && handleOpenNewSubmission(idx)
-                                  }
-                                  disabled={!isRegistered}
-                                  title={
-                                    isRegistered
-                                      ? "Submit your project"
-                                      : "Register for the hackathon to submit"
-                                  }
-                                >
-                                  Submit Project
-                                </button>
-                              )
+                              <button
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                onClick={() =>
+                                  isRegistered && handleOpenNewSubmission(idx)
+                                }
+                                disabled={!isRegistered}
+                                title={
+                                  isRegistered
+                                    ? "Submit your project"
+                                    : "Register for the hackathon to submit"
+                                }
+                              >
+                                Submit Project
+                              </button>
                             );
-                        }
-                      } else if (
-                        submissionType === "single-project" &&
-                        roundType2 === "multi-round"
-                      ) {
-                        projectSubmissionUI =
-                          projectSubmissionsForRound.length > 0 ? (
-                            <div className="flex gap-2 items-center">
-                              <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                Project Submitted
+                        } else if (
+                          submissionType === "single-project" &&
+                          roundType2 === "multi-round"
+                        ) {
+                          projectSubmissionUI =
+                            projectSubmissionsForRound.length > 0 ? (
+                              <div className="flex gap-2 items-center">
+                                <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                  Project Submitted
+                                </div>
+                                {canEdit(end) && (
+                                  <button
+                                    className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                    onClick={() =>
+                                      handleDeleteProjectSubmission(
+                                        projectSubmissionsForRound[0]
+                                      )
+                                    }
+                                  >
+                                    Delete
+                                  </button>
+                                )}
                               </div>
-                              {isLive && canEdit(end) && (
-                                <button
-                                  className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
-                                  onClick={() =>
-                                    handleDeleteProjectSubmission(
-                                      projectSubmissionsForRound[0]
-                                    )
-                                  }
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            isLive && (
+                            ) : (
                               <button
                                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
                                 onClick={() =>
@@ -557,13 +617,50 @@ export default function HackathonTimeline({
                               >
                                 Submit Project
                               </button>
-                            )
+                            );
+                        } else if (
+                          submissionType === "multi-project" &&
+                          roundType2 === "single-round"
+                        ) {
+                          const submittedCount = projectSubmissionsForRound.length;
+                          const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
+                          const canSubmitMore = submittedCount < maxAllowed;
+                          
+                          projectSubmissionUI = (
+                            <div className="flex flex-col gap-2">
+                              {submittedCount > 0 && (
+                                <div className="text-sm text-gray-600">
+                                  Submitted: {submittedCount}/{maxAllowed} projects
+                                </div>
+                              )}
+                              <div className="flex gap-2 items-center">
+                                {canSubmitMore ? (
+                                  <button
+                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                    onClick={() =>
+                                      isRegistered && handleOpenNewSubmission(idx)
+                                    }
+                                    disabled={!isRegistered}
+                                    title={
+                                      isRegistered
+                                        ? "Submit another project"
+                                        : "Register for the hackathon to submit"
+                                    }
+                                  >
+                                    Submit Project
+                                  </button>
+                                ) : (
+                                  <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
+                                    Max Submissions Reached
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           );
-                      } else if (
-                        submissionType === "multi-project" &&
-                        roundType2 === "single-round"
-                      ) {
-                        if (isLive && canEdit(end)) {
+                        } else if (
+                          submissionType === "multi-project" &&
+                          roundType2 === "multi-round"
+                        ) {
                           const submittedCount = projectSubmissionsForRound.length;
                           const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
                           const canSubmitMore = submittedCount < maxAllowed;
@@ -600,47 +697,68 @@ export default function HackathonTimeline({
                             </div>
                           );
                         }
-                      } else if (
-                        submissionType === "multi-project" &&
-                        roundType2 === "multi-round"
-                      ) {
-                        if (isLive && canEdit(end)) {
-                          const submittedCount = projectSubmissionsForRound.length;
-                          const maxAllowed = hackathon.maxSubmissionsPerParticipant || 1;
-                          const canSubmitMore = submittedCount < maxAllowed;
-                          
-                          projectSubmissionUI = (
-                            <div className="flex flex-col gap-2">
-                              {submittedCount > 0 && (
-                                <div className="text-sm text-gray-600">
-                                  Submitted: {submittedCount}/{maxAllowed} projects
+                      }
+                      
+                      // PPT submission logic
+                      if (isSubmission) {
+                        if (submission) {
+                          pptSubmissionUI = (
+                            <div className="flex gap-2 items-center">
+                              {submission.originalName ? (
+                                <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                  {submission.originalName}
+                                </div>
+                              ) : (
+                                <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
+                                  PPT Submitted
                                 </div>
                               )}
-                              <div className="flex gap-2 items-center">
-                                {canSubmitMore ? (
-                                  <button
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                    onClick={() =>
-                                      isRegistered && handleOpenNewSubmission(idx)
-                                    }
-                                    disabled={!isRegistered}
-                                    title={
-                                      isRegistered
-                                        ? "Submit another project"
-                                        : "Register for the hackathon to submit"
-                                    }
-                                  >
-                                    Submit Project
-                                  </button>
-                                ) : (
-                                  <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
-                                    Max Submissions Reached
-                                  </div>
-                                )}
-                              </div>
+                              <button
+                                className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
+                                onClick={() => handleDeletePPT(idx)}
+                              >
+                                Delete
+                              </button>
                             </div>
                           );
+                        } else {
+                          pptSubmissionUI = (
+                            <button
+                              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                              onClick={() =>
+                                isRegistered &&
+                                setPptModal({ open: true, roundIdx: idx })
+                              }
+                              disabled={
+                                uploadingIdx === idx || !isRegistered
+                              }
+                              title={
+                                isRegistered
+                                  ? "Submit your PPT"
+                                  : "Register for the hackathon to submit"
+                              }
+                            >
+                              Submit PPT
+                            </button>
+                          );
                         }
+                      }
+                    }
+                    // Round has ended but no deadline passed message
+                    else if (!isLive && !deadlinePassed) {
+                      if (isProjectSubmission) {
+                        projectSubmissionUI = (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
+                            This round has not started yet. You can submit when the round begins.
+                          </div>
+                        );
+                      }
+                      if (isSubmission) {
+                        pptSubmissionUI = (
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
+                            This round has not started yet. You can submit when the round begins.
+                          </div>
+                        );
                       }
                     }
 
@@ -693,64 +811,7 @@ export default function HackathonTimeline({
 
                               <div className="flex items-center gap-3 pt-2">
                                 {projectSubmissionUI}
-                                
-                                {/* PPT submission buttons - only show if this is a PPT round */}
-                                {isSubmission && (
-                                  submission ? (
-                                    <div className="flex gap-2 items-center">
-                                      {submission.originalName ? (
-                                        <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                          {submission.originalName}
-                                        </div>
-                                      ) : (
-                                        <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                                          PPT Submitted
-                                        </div>
-                                      )}
-                                      {isLive && (
-                                        <>
-                                          <button
-                                            className="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition text-sm"
-                                            onClick={() =>
-                                              setPptModal({
-                                                open: true,
-                                                roundIdx: idx,
-                                              })
-                                            }
-                                          >
-                                            Edit
-                                          </button>
-                                          <button
-                                            className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition text-sm"
-                                            onClick={() => handleDeletePPT(idx)}
-                                          >
-                                            Delete
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    isLive && (
-                                      <button
-                                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                        onClick={() =>
-                                          isRegistered &&
-                                          setPptModal({ open: true, roundIdx: idx })
-                                        }
-                                        disabled={
-                                          uploadingIdx === idx || !isRegistered
-                                        }
-                                        title={
-                                          isRegistered
-                                            ? "Submit your PPT"
-                                            : "Register for the hackathon to submit"
-                                        }
-                                      >
-                                        Submit PPT
-                                      </button>
-                                    )
-                                  )
-                                )}
+                                {pptSubmissionUI}
                                 
                                 {round.resultsAvailable && (
                                   <button className="px-4 py-2 border border-blue-500 text-blue-600 rounded hover:bg-blue-50 transition">
