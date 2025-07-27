@@ -14,6 +14,8 @@ const SubmissionSchema = new Schema({
   ],
   submittedAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['submitted', 'reviewed', 'shortlisted', 'rejected'], default: 'submitted' },
+  shortlistedAt: { type: Date }, // When the submission was shortlisted
+  shortlistedForRound: { type: Number }, // Which round the submission was shortlisted for (e.g., 2 for Round 2)
   problemStatement: { type: String },
   customAnswers: [
     {

@@ -85,6 +85,9 @@ const HackathonSchema = new Schema({
     {
       roundIndex: { type: Number }, // index in rounds array
       advancedParticipantIds: [{ type: Schema.Types.ObjectId, ref: 'User' }], // or ref: 'Team' if team-based
+      shortlistedSubmissions: [{ type: Schema.Types.ObjectId, ref: 'Submission' }], // Shortlisted submission IDs
+      shortlistedTeams: [{ type: Schema.Types.ObjectId }], // Shortlisted team/user IDs
+      shortlistedAt: { type: Date }, // When shortlisting was performed
     }
   ],
 

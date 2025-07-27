@@ -163,7 +163,8 @@ export default function HackathonTimeline({
       return true; // First round, everyone is eligible
     }
     if (currentRoundIdx === 1 && round2Eligibility) {
-      return round2Eligibility.eligible === true;
+      // Use shortlisted field if available, otherwise fall back to eligible
+      return round2Eligibility.shortlisted === true || round2Eligibility.eligible === true;
     }
     return false; // For other rounds, implement as needed
   };
@@ -174,8 +175,10 @@ export default function HackathonTimeline({
       return false; // First round, no selection needed
     }
     if (currentRoundIdx === 1 && round2Eligibility) {
-      // Only show "not selected" if Round 2 has started and user is explicitly not eligible
-      return round2Eligibility.round2Started === true && round2Eligibility.eligible === false;
+      // Only show "not selected" if user is explicitly not shortlisted
+      // Use shortlisted field if available, otherwise fall back to eligible
+      const isShortlisted = round2Eligibility.shortlisted === true || round2Eligibility.eligible === true;
+      return isShortlisted === false;
     }
     return false;
   };
@@ -458,6 +461,57 @@ export default function HackathonTimeline({
                     const isShortlisted = isShortlistedForNextRound(idx);
                     const isNotSelected = isNotSelectedForNextRound(idx);
                     
+                    // Debug logging
+                    // Enhanced debug logging
+                    console.log(`🔍 Round ${idx} Enhanced Debug:`, {
+                      isRound2: idx === 1,
+                      isProjectSubmission,
+                      isShortlisted,
+                      isNotSelected,
+                      round2Eligibility: round2Eligibility ? {
+                        eligible: round2Eligibility.eligible,
+                        shortlisted: round2Eligibility.shortlisted,
+                        round2Started: round2Eligibility.round2Started,
+                        message: round2Eligibility.message,
+                        shortlistingSource: round2Eligibility.shortlistingSource
+                      } : null,
+                      condition1: isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true),
+                      condition2: isNotSelected && isProjectSubmission && round2Eligibility && round2Eligibility.shortlisted === false
+                    });
+                    
+                    // Show loading state for Round 2 eligibility check
+                    if (isRound2 && isProjectSubmission && loadingEligibility) {
+                      projectSubmissionUI = (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-spin">
+                              <div className="w-3 h-3 bg-white rounded-full"></div>
+                            </div>
+                            <h3 className="font-semibold text-blue-800">Checking Shortlisting Status</h3>
+                          </div>
+                          <p className="text-sm text-blue-700">
+                            Please wait while we check your Round 2 eligibility...
+                          </p>
+                        </div>
+                      );
+                    }
+                    // Show pending status when eligibility check is complete but no data
+                    else if (isRound2 && isProjectSubmission && !round2Eligibility && !loadingEligibility) {
+                      projectSubmissionUI = (
+                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-spin">
+                              <div className="w-3 h-3 bg-white rounded-full"></div>
+                            </div>
+                            <h3 className="font-semibold text-blue-800">Checking Shortlisting Status</h3>
+                          </div>
+                          <p className="text-sm text-blue-700">
+                            Please wait while we check your Round 2 eligibility...
+                          </p>
+                        </div>
+                      );
+                    }
+                    
 
                     
                     // Condition 1: Missed Deadline (No Submission)
@@ -477,39 +531,68 @@ export default function HackathonTimeline({
                       }
                     }
                     // Condition 2: Round Selection - User is shortlisted for next round
-                    else if (isShortlisted && isProjectSubmission) {
+                    else if (isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true)) {
                       if (isLive && canEdit(end)) {
                         projectSubmissionUI = (
-                          <div className="flex gap-2 items-center">
-                            <div className="px-4 py-2 bg-green-600 text-white rounded text-center cursor-default select-none opacity-80">
-                              🎉 You are selected for the next round!
+                          <div className="space-y-3">
+                            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-sm">✓</span>
+                                </div>
+                                <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                              </div>
+                              <p className="text-sm text-green-700 mb-3">
+                                Your Round 1 submission has been shortlisted. You can now submit a new project for Round 2.
+                              </p>
+                              <button
+                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed font-medium"
+                                onClick={() =>
+                                  isRegistered && handleOpenNewSubmission(idx)
+                                }
+                                disabled={!isRegistered}
+                                title={
+                                  isRegistered
+                                    ? "Submit your project for Round 2"
+                                    : "Register for the hackathon to submit"
+                                }
+                              >
+                                Submit Project for Round 2
+                              </button>
                             </div>
-                            <button
-                              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                              onClick={() =>
-                                isRegistered && handleOpenNewSubmission(idx)
-                              }
-                              disabled={!isRegistered}
-                              title={
-                                isRegistered
-                                  ? "Submit your project for the next round"
-                                  : "Register for the hackathon to submit"
-                              }
-                            >
-                              Submit Project
-                            </button>
                           </div>
                         );
                       } else if (!isLive) {
                         projectSubmissionUI = (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
-                            🎉 You are selected for the next round! You can submit your project when the round starts.
+                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm">✓</span>
+                              </div>
+                              <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                            </div>
+                            <p className="text-sm text-green-700">
+                              Your Round 1 submission has been shortlisted. You can submit your project when Round 2 starts.
+                            </p>
+                            {round2Eligibility && round2Eligibility.round2StartDate && (
+                              <p className="text-xs text-green-600 mt-2">
+                                Round 2 starts: {new Date(round2Eligibility.round2StartDate).toLocaleDateString()}
+                              </p>
+                            )}
                           </div>
                         );
                       } else {
                         projectSubmissionUI = (
-                          <div className="p-3 bg-green-50 border border-green-200 rounded text-green-700 font-medium">
-                            🎉 You are selected for the next round! Round has ended.
+                          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                                <span className="text-white text-sm">✓</span>
+                              </div>
+                              <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                            </div>
+                            <p className="text-sm text-green-700">
+                              Your Round 1 submission has been shortlisted. Round 2 has ended.
+                            </p>
                           </div>
                         );
                       }
@@ -517,24 +600,43 @@ export default function HackathonTimeline({
                     // Fallback: Show shortlisting message if Round 2 exists but no eligibility data
                     else if (isRound2 && isProjectSubmission && !round2Eligibility && !loadingEligibility) {
                       projectSubmissionUI = (
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-yellow-700 font-medium">
-                          ⚠️ Shortlisting status is being determined. Please check back later.
+                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm">⏳</span>
+                            </div>
+                            <h3 className="font-semibold text-yellow-800">Shortlisting Status Pending</h3>
+                          </div>
+                          <p className="text-sm text-yellow-700 mb-3">
+                            Round 1 evaluations are in progress. Your shortlisting status will be determined soon.
+                          </p>
                           <button 
-                            className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                            className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition"
                             onClick={() => {
                               fetchRound2Eligibility();
                             }}
                           >
-                            Retry
+                            Check Status
                           </button>
                         </div>
                       );
                     }
-                    // Condition 3: Not Selected for Next Round
-                    else if (isNotSelected && isProjectSubmission) {
+                    // Condition 3: Not Selected for Next Round (only show if explicitly not shortlisted)
+                    else if (isNotSelected && isProjectSubmission && round2Eligibility && round2Eligibility.shortlisted === false) {
                       projectSubmissionUI = (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 font-medium">
-                          You are not selected for the next round.
+                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm">✗</span>
+                            </div>
+                            <h3 className="font-semibold text-red-800">Not Selected for Round 2</h3>
+                          </div>
+                          <p className="text-sm text-red-700 mb-2">
+                            Thank you for participating in Round 1. After careful evaluation, you are not shortlisted for Round 2.
+                          </p>
+                          <p className="text-xs text-red-600">
+                            Keep an eye on future hackathons and continue building amazing projects!
+                          </p>
                         </div>
                       );
                     }

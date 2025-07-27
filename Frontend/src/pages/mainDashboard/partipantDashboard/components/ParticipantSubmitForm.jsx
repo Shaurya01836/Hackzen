@@ -582,20 +582,30 @@ export default function ProjectSubmissionForm({
                   <span className="text-blue-800">Checking Round 2 eligibility...</span>
                 </div>
               </div>
-            ) : round2Eligibility.eligible ? (
+            ) : (round2Eligibility.shortlisted || round2Eligibility.eligible) ? (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-xs">✓</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-green-800">Congratulations! You're eligible for Round 2</h3>
+                    <h3 className="font-semibold text-green-800">
+                      {round2Eligibility.round2Started ? 'Congratulations! You\'re eligible for Round 2' : 'Congratulations! You\'re selected for Round 2'}
+                    </h3>
                     <p className="text-sm text-green-700 mt-1">
-                      Your team was shortlisted for Round 2. You can now submit a new project for this round.
+                      {round2Eligibility.round2Started 
+                        ? 'Your team was shortlisted for Round 2. You can now submit a new project for this round.'
+                        : 'Your team was shortlisted for Round 2. You can submit your project when Round 2 starts.'
+                      }
                     </p>
                     {round2Eligibility.shortlistingDetails && (
                       <p className="text-xs text-green-600 mt-2">
                         Shortlisted project: {round2Eligibility.shortlistingDetails.projectTitle}
+                      </p>
+                    )}
+                    {!round2Eligibility.round2Started && round2Eligibility.round2StartDate && (
+                      <p className="text-xs text-green-600 mt-2">
+                        Round 2 starts: {new Date(round2Eligibility.round2StartDate).toLocaleDateString()}
                       </p>
                     )}
                   </div>

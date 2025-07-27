@@ -6,7 +6,7 @@ import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
 
-export default function LeaderboardView({ hackathonId, roundIndex = 1, onShortlistingComplete }) {
+export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortlistingComplete }) {
   const { toast } = useToast();
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
