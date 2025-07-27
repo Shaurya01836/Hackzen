@@ -173,17 +173,6 @@ export default function HackZenDashboard() {
       key: "project-archive",
       onClick: () => changeView("project-archive"),
     },
-    // Conditionally add Sponsored PS
-    ...(hasApprovedSponsoredPS
-      ? [
-          {
-            title: "Sponsored PS",
-            icon: Handshake,
-            key: "sponsored-ps",
-            onClick: () => changeView("sponsored-ps"),
-          },
-        ]
-      : []),
   ];
 
   const organizerMenuItems = [
@@ -263,8 +252,8 @@ export default function HackZenDashboard() {
         return <ExploreHackathons onBack={() => changeView("profile")} />;
       case "organization-hub":
         return <OrganizationHub onBack={() => changeView("profile")} />;
-      case "sponsored-ps":
-        return <SponsoredPS onBack={() => changeView("profile")} />;
+      // case "sponsored-ps":
+      //   return <SponsoredPS onBack={() => changeView("profile")} />;
       case "created-hackathons":
         return (
           <CreatedHackathons

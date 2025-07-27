@@ -50,34 +50,44 @@ function DraggableTextField({
   const fieldRef = useRef(null)
 
   // Helper function to get field position relative to image
-  const getImageRelativePosition = useCallback(() => {
-    if (!imgRef.current || !canvasRef.current)
-      return { x: 0, y: 0, width: 0, height: 0 }
+   const getImageRelativePosition = useCallback((field) => {
+    if (
+      !imgRef.current ||
+      !canvasRef.current ||
+      !imgRef.current.complete ||
+      imgRef.current.naturalWidth === 0
+    ) {
+      return { x: NaN, y: NaN, width: NaN, height: NaN }; // Return NaN to be caught by validator
+    }
 
-    const canvasRect = canvasRef.current.getBoundingClientRect()
-    const imgRect = imgRef.current.getBoundingClientRect()
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const imgRect = imgRef.current.getBoundingClientRect();
 
-    // Calculate the offset of the image within the canvas
-    const imgOffsetX = imgRect.left - canvasRect.left
-    const imgOffsetY = imgRect.top - canvasRect.top
+    if (imgRect.width === 0 || imgRect.height === 0) {
+      return { x: NaN, y: NaN, width: NaN, height: NaN }; // Return NaN
+    }
 
     // Calculate scale factors
-    const scaleX = imgRef.current.naturalWidth / imgRect.width
-    const scaleY = imgRef.current.naturalHeight / imgRect.height
+    const scaleX = imgRef.current.naturalWidth / imgRect.width;
+    const scaleY = imgRef.current.naturalHeight / imgRect.height;
 
-    // Convert field position to image coordinates
-    const imageRelativeX = Math.round((field.x - imgOffsetX) * scaleX)
-    const imageRelativeY = Math.round((field.y - imgOffsetY) * scaleY)
-    const imageRelativeWidth = Math.round(field.width * scaleX)
-    const imageRelativeHeight = Math.round(field.height * scaleY)
+    // Calculate offset of the image inside the canvas container
+    const imgOffsetX = imgRect.left - canvasRect.left;
+    const imgOffsetY = imgRect.top - canvasRect.top;
+
+    // Convert field's screen coordinates to image-relative coordinates
+    const imageRelativeX = Math.round((field.x - imgOffsetX) * scaleX);
+    const imageRelativeY = Math.round((field.y - imgOffsetY) * scaleY);
+    const imageRelativeWidth = Math.round(field.width * scaleX);
+    const imageRelativeHeight = Math.round(field.height * scaleY);
 
     return {
       x: Math.max(0, imageRelativeX),
       y: Math.max(0, imageRelativeY),
       width: imageRelativeWidth,
-      height: imageRelativeHeight
-    }
-  }, [field, imgRef, canvasRef])
+      height: imageRelativeHeight,
+    };
+  }, []);
 
   const handleMouseDown = useCallback(
     e => {
@@ -121,33 +131,55 @@ function DraggableTextField({
     [field, isSelected, isPreview, onSelect, canvasRef]
   )
 
-  const handleMouseMove = useCallback(
-    e => {
-      if (!isDragging && !isResizing) return
+  // Inside DraggableTextField component
 
-      const deltaX = e.clientX - dragStart.x
-      const deltaY = e.clientY - dragStart.y
+const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDragging && !isResizing) return;
+      if (!imgRef.current) return;
+
+      const deltaX = e.clientX - dragStart.x;
+      const deltaY = e.clientY - dragStart.y;
 
       if (isResizing) {
-        const newWidth = Math.max(50, initialSize.width + deltaX)
-        const newHeight = Math.max(20, initialSize.height + deltaY)
-        onUpdate(field.id, { width: newWidth, height: newHeight })
+        const newWidth = Math.max(50, initialSize.width + deltaX);
+        const newHeight = Math.max(20, initialSize.height + deltaY);
+        onUpdate(field.id, { width: newWidth, height: newHeight });
       } else if (isDragging) {
-        const newX = Math.max(0, initialPos.x + deltaX)
-        const newY = Math.max(0, initialPos.y + deltaY)
-        onUpdate(field.id, { x: newX, y: newY })
+        // ✅ CORRECTED LOGIC STARTS HERE
+        const canvasRect = canvasRef.current.getBoundingClientRect();
+        const imgRect = imgRef.current.getBoundingClientRect();
+
+        // Calculate the image's offset within the canvas
+        const imgOffsetX = imgRect.left - canvasRect.left;
+        const imgOffsetY = imgRect.top - canvasRect.top;
+
+        // Calculate the proposed new top-left corner of the field
+        let newX = initialPos.x + deltaX;
+        let newY = initialPos.y + deltaY;
+
+        // Clamp the position to be within the image's bounds
+        newX = Math.max(imgOffsetX, newX);
+        newY = Math.max(imgOffsetY, newY);
+        newX = Math.min(newX, imgOffsetX + imgRect.width - field.width);
+        newY = Math.min(newY, imgOffsetY + imgRect.height - field.height);
+        // ✅ CORRECTED LOGIC ENDS HERE
+
+        onUpdate(field.id, { x: newX, y: newY });
       }
     },
     [
-      isDragging,
-      isResizing,
-      dragStart,
-      initialPos,
-      initialSize,
-      field.id,
-      onUpdate
+        isDragging,
+        isResizing,
+        dragStart,
+        initialPos,
+        initialSize,
+        field, // Added field to dependencies for width/height
+        onUpdate,
+        canvasRef, // Added ref dependencies
+        imgRef,      // Added ref dependencies
     ]
-  )
+);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false)
@@ -379,32 +411,44 @@ export default function CertificateEditor({ onBack, template }) {
 
   const handleSave = async () => {
     if (!selectedImage || !certificateTitle.trim()) {
-      alert(
-        "Please upload a certificate image and enter a title before saving."
-      )
-      return
+      alert("Please upload a certificate image and enter a title before saving.");
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
 
     try {
-      const token = localStorage.getItem("token") // or sessionStorage or your auth context
+      const token = localStorage.getItem("token");
 
       if (!token) {
-        alert("You are not logged in. Please log in first.")
-        setIsSaving(false)
-        return
+        alert("Authentication error. Please log in again.");
+        setIsSaving(false);
+        return;
       }
 
-      // Save all fields as image-relative coordinates
+      // VALIDATE and MAP fields in one go to create a clean payload
       const mappedFields = fields.map(f => {
         const rel = getImageRelativePosition(f);
+
+        // Check for non-finite numbers to prevent sending bad data
+        if (!Number.isFinite(rel.x) || !Number.isFinite(rel.y) || !Number.isFinite(rel.width) || !Number.isFinite(rel.height)) {
+          throw new Error(`Failed to calculate valid dimensions for field "${f.label}". The image may not have loaded correctly. Please try again.`);
+        }
+
+        // Return a clean object for the payload
         return {
-          ...f,
+          id: f.id,
+          label: f.label,
+          content: f.content,
           x: rel.x,
           y: rel.y,
           width: rel.width,
           height: rel.height,
+          fontSize: f.fontSize,
+          fontFamily: f.fontFamily,
+          fontWeight: f.fontWeight,
+          textAlign: f.textAlign,
+          color: f.color,
         };
       });
 
@@ -413,52 +457,38 @@ export default function CertificateEditor({ onBack, template }) {
         description: certificateDescription,
         preview: selectedImage,
         fields: mappedFields,
-        createdAt: new Date().toISOString()
-      }
+      };
 
-      let response;
-      if (template && template._id) {
-        // EDIT: Update existing template
-        response = await fetch(
-          `http://localhost:3000/api/certificate-pages/${template._id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(certificateData)
-          }
-        );
-      } else {
-        // CREATE: New template
-        response = await fetch(
-          "http://localhost:3000/api/certificate-pages",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify(certificateData)
-          }
-        );
-      }
+      const url = template?._id
+        ? `http://localhost:3000/api/certificate-pages/${template._id}`
+        : "http://localhost:3000/api/certificate-pages";
+      
+      const method = template?._id ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(certificateData),
+      });
 
       if (response.ok) {
-        alert("Certificate template saved successfully!")
-        onBack && onBack()
+        alert("Certificate template saved successfully!");
+        onBack?.();
       } else {
-        const err = await response.json()
-        throw new Error(err?.message || "Failed to save certificate")
+        const errData = await response.json();
+        // Provide specific error from backend if available
+        throw new Error(errData.message || `Server responded with status ${response.status}`);
       }
     } catch (error) {
-      console.error("Error saving certificate:", error)
-      alert("Failed to save certificate. Please try again.")
+      console.error("Error saving certificate:", error);
+      alert(`Failed to save certificate: ${error.message}`);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleCanvasClick = e => {
     if (isPreview) return
