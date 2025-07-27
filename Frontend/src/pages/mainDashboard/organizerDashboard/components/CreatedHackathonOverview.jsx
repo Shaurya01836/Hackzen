@@ -52,11 +52,14 @@ export default function CreatedHackathonOverview({
   onDeleteHackathon,
   onReviewSponsoredPS,
   submissions = [],
+  onRefresh,
 }) {
   const navigate = useNavigate();
   const [showJudgeManagement, setShowJudgeManagement] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showPromoteModal, setShowPromoteModal] = useState(false); // New state
+
+  const isPromotionActive = hackathon.isFeatured && new Date(hackathon.featuredEndDate) > new Date();
 
   const handleBack = () => {
     navigate('/dashboard/created-hackathons');
@@ -273,14 +276,25 @@ export default function CreatedHackathonOverview({
                 </CardHeader>
                 <CardContent className="pt-6 space-y-3">
                   {/* New Promote Button */}
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start gap-2 text-left bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-none hover:from-indigo-600 hover:to-indigo-500"
-                    onClick={() => setShowPromoteModal(true)}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                    Promote Hackathon
-                  </Button>
+                  {isPromotionActive ? (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2 text-left bg-gradient-to-r from-green-500 to-green-600 text-white border-none hover:from-green-600 hover:to-green-500"
+                      onClick={() => setShowPromoteModal(true)}
+                    >
+                      <Activity className="h-4 w-4" />
+                      Promotion Active
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-2 text-left bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-none hover:from-indigo-600 hover:to-indigo-500"
+                      onClick={() => setShowPromoteModal(true)}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                      Promote Hackathon
+                    </Button>
+                  )}
                   
                   <Button
                     variant="outline"
@@ -373,6 +387,12 @@ export default function CreatedHackathonOverview({
         <PromoteModal
           hackathon={hackathon}
           onClose={() => setShowPromoteModal(false)}
+          onSuccess={() => {
+            setShowPromoteModal(false);
+            if (onRefresh) {
+              onRefresh(); // This will refetch data to show the updated button state
+            }
+          }}
         />
       )}
     </div>

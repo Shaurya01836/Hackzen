@@ -9,44 +9,58 @@ const {
   deleteHackathon,
   updateApprovalStatus,
   getAllHackathonsRaw,
-  getMyHackathons, // ✅ ADD THIS
-  sendCertificates // <-- add this
+  getMyHackathons,
+  sendCertificates,
+  promoteHackathon // ✅ Import the new controller function
 } = require('../controllers/hackathonController');
 
 
 const {
   protect,
   isOrganizerOrAdmin,
-  isAdmin // ✅ correct name
+  isAdmin
 } = require('../middleware/authMiddleware');
 
-// 🛡️ Organizer or Admin required for creation/modification
+// --- Core Hackathon Routes ---
+
+// 🛡️ Create, Update, Delete (Organizer or Admin required)
 router.post('/', protect, isOrganizerOrAdmin, createHackathon);
 router.put('/:id', protect, isOrganizerOrAdmin, updateHackathon);
 router.delete('/:id', protect, isOrganizerOrAdmin, deleteHackathon);
 
-// ✅ Admin-only route for approving/rejecting hackathons
+// ✨ Promote a Hackathon (Organizer or Admin required)
+router.post('/:id/promote', protect, isOrganizerOrAdmin, promoteHackathon);
+
+// --- Admin Routes ---
+
+// 审批 (Approval)
 router.patch('/:id/approval', protect, isAdmin, updateApprovalStatus);
-// ✅ Admin-only route to get all hackathons regardless of approval status
 router.get('/all', protect, isAdmin, getAllHackathonsRaw);
 
-// ✅ Admin Dashboard Routes
+// 📊 Admin Dashboard Analytics
 router.get('/admin/stats', protect, isAdmin, require('../controllers/hackathonController').getHackathonStats);
 router.get('/admin/monthly-stats', protect, isAdmin, require('../controllers/hackathonController').getMonthlyHackathonStats);
 router.get('/admin/category-breakdown', protect, isAdmin, require('../controllers/hackathonController').getCategoryBreakdown);
 router.get('/admin/status-breakdown', protect, isAdmin, require('../controllers/hackathonController').getHackathonStatusBreakdown);
 
-// Organizer-only route: get hackathons created by logged-in organizer
-router.get('/my', protect, getMyHackathons); 
 
-// Organizer/Admin: Mark which participants advance to a round
+// --- Organizer-Specific Routes ---
+
+// 📂 Get hackathons created by the logged-in organizer
+router.get('/my', protect, getMyHackathons);
+
+// 🏅 Mark round advancement
 router.patch('/:id/round-advancement', protect, isOrganizerOrAdmin, require('../controllers/hackathonController').markRoundAdvancement);
 
-// Add: Send certificates to registered participants
+// ✉️ Send certificates to participants
 router.post('/:hackathonId/send-certificates', protect, isOrganizerOrAdmin, sendCertificates);
 
-// 🆓 Public routes
+
+// --- Public Routes ---
+
+// 🌐 Get all approved hackathons and a single hackathon by ID
 router.get('/', getAllHackathons);
 router.get('/:id', getHackathonById);
 
-module.exports = router; // ✅ this was already correct
+
+module.exports = router;
