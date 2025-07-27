@@ -83,6 +83,7 @@ exports.assignJudges = async (req, res) => {
         sponsorCompany, 
         canJudgeSponsoredPS, 
         maxSubmissionsPerJudge, 
+        problemStatementIds = [],
         sendEmail = true,
         firstName,
         lastName,
@@ -102,6 +103,26 @@ exports.assignJudges = async (req, res) => {
           error: 'Judge already invited to this hackathon'
         });
         continue;
+      }
+
+      // Validate problem statement assignments
+      const assignedProblemStatements = [];
+      if (problemStatementIds && problemStatementIds.length > 0) {
+        for (const psId of problemStatementIds) {
+          const problemStatement = hackathon.problemStatements.find(
+            ps => ps._id.toString() === psId.toString()
+          );
+          
+          if (problemStatement) {
+            assignedProblemStatements.push({
+              problemStatementId: problemStatement._id.toString(),
+              problemStatement: problemStatement.statement,
+              type: problemStatement.type,
+              sponsorCompany: problemStatement.sponsorCompany,
+              isAssigned: true
+            });
+          }
+        }
       }
 
       // Create assignedRounds for each hackathon round, with assignedSubmissions: []
@@ -125,7 +146,7 @@ exports.assignJudges = async (req, res) => {
           sponsorCompany: judgeType === 'sponsor' ? sponsorCompany : null,
           canJudgeSponsoredPS: judgeType === 'hybrid' || (judgeType === 'platform' && canJudgeSponsoredPS)
         },
-        assignedProblemStatements: [],
+        assignedProblemStatements,
         assignedRounds,
         permissions: {
           canJudgeGeneralPS: judgeType !== 'sponsor',
@@ -1089,7 +1110,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       roundIndex,
       multipleJudgesMode = false,
       judgesPerProject = 1,
-      judgesPerProjectMode = 'manual' // 'manual' or 'equal'
+      judgesPerProjectMode = 'manual', // 'manual' or 'equal'
+      problemStatementId = null
     } = req.body;
 
     console.log('🔍 Bulk Assignment Request:', {
@@ -1100,7 +1122,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       roundIndex,
       multipleJudgesMode,
       judgesPerProject,
-      judgesPerProjectMode
+      judgesPerProjectMode,
+      problemStatementId
     });
 
     const hackathon = await Hackathon.findById(hackathonId);
@@ -1152,16 +1175,52 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     const availableSubmissionIds = submissionIds.filter(id => !alreadyAssignedSubmissions.has(id.toString()));
     const duplicateSubmissionIds = submissionIds.filter(id => alreadyAssignedSubmissions.has(id.toString()));
 
+    // Filter by problem statement if specified
+    let filteredSubmissionIds = availableSubmissionIds;
+    if (problemStatementId) {
+      // Get the selected problem statement text
+      const selectedPS = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+      
+      if (selectedPS) {
+        // Get submissions that were originally submitted for this specific problem statement
+        const submissions = await Submission.find({
+          _id: { $in: availableSubmissionIds },
+          problemStatement: selectedPS.statement // Exact match with the problem statement text
+        });
+        
+        filteredSubmissionIds = submissions.map(sub => sub._id.toString());
+        
+        console.log('🔍 Problem Statement Filter:', {
+          selectedProblemStatementId: problemStatementId,
+          selectedProblemStatementText: selectedPS.statement.slice(0, 50) + '...',
+          availableSubmissions: availableSubmissionIds.length,
+          filteredSubmissions: filteredSubmissionIds.length,
+          matchingSubmissions: submissions.map(s => ({
+            id: s._id,
+            problemStatement: s.problemStatement?.slice(0, 30) + '...'
+          }))
+        });
+      } else {
+        console.warn('Selected problem statement not found:', problemStatementId);
+        filteredSubmissionIds = [];
+      }
+    }
+
     console.log('🔍 Assignment Analysis:', {
       totalSubmissions: submissionIds.length,
       alreadyAssigned: alreadyAssignedSubmissions.size,
       availableSubmissions: availableSubmissionIds.length,
-      duplicateSubmissions: duplicateSubmissionIds.length
+      filteredSubmissions: filteredSubmissionIds.length,
+      duplicateSubmissions: duplicateSubmissionIds.length,
+      problemStatementFilter: problemStatementId ? 'active' : 'none'
     });
 
-    if (availableSubmissionIds.length === 0) {
+    if (filteredSubmissionIds.length === 0) {
+      const message = problemStatementId 
+        ? 'No submissions found for the selected problem statement that are available for assignment.'
+        : 'All selected submissions are already assigned to judges for this round.';
       return res.status(400).json({ 
-        message: 'All selected submissions are already assigned to judges for this round.',
+        message,
         duplicateSubmissions: duplicateSubmissionIds
       });
     }
@@ -1195,8 +1254,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
     }
 
     const results = [];
-    const totalSubmissions = availableSubmissionIds.length;
-    let remainingSubmissions = [...availableSubmissionIds];
+    const totalSubmissions = filteredSubmissionIds.length;
+    let remainingSubmissions = [...filteredSubmissionIds];
 
     // Get round details
     const roundDetails = hackathon.rounds[roundIndex] || {};
@@ -1220,11 +1279,11 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       const submissionJudgeMap = new Map();
       
       // Initialize the map for all submissions
-      availableSubmissionIds.forEach(submissionId => {
+      filteredSubmissionIds.forEach(submissionId => {
         submissionJudgeMap.set(submissionId.toString(), []);
       });
 
-      console.log('🔍 Multiple Judges Mode - Available submissions:', availableSubmissionIds.length);
+      console.log('🔍 Multiple Judges Mode - Available submissions:', filteredSubmissionIds.length);
       console.log('🔍 Multiple Judges Mode - Selected evaluators:', evaluatorAssignments.length);
 
       // For multiple judges mode, we want to assign multiple judges to each submission
@@ -1234,8 +1293,8 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
         console.log('🔍 Equal distribution mode - Judges per submission:', judgesPerSubmission);
         
         // Assign each submission to multiple judges
-        for (let i = 0; i < availableSubmissionIds.length; i++) {
-          const submissionId = availableSubmissionIds[i];
+        for (let i = 0; i < filteredSubmissionIds.length; i++) {
+          const submissionId = filteredSubmissionIds[i];
           const currentJudges = submissionJudgeMap.get(submissionId.toString()) || [];
           
           // Find judges that haven't been assigned to this submission yet
@@ -1261,39 +1320,26 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
               currentJudges.push(evaluatorAssignment._id.toString());
               submissionJudgeMap.set(submissionId.toString(), currentJudges);
               
-              // Update the judge's assignment to include this submission
-              const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
+              // Use the updateJudgeAssignment helper function to properly save the assignment
               const submissionsToAdd = [submissionId];
               
-              if (existingRoundIndex >= 0) {
-                // Add to existing round assignment
-                const existingSubmissions = evaluatorAssignment.assignedRounds[existingRoundIndex].assignedSubmissions || [];
-                evaluatorAssignment.assignedRounds[existingRoundIndex].assignedSubmissions = [...existingSubmissions, ...submissionsToAdd];
-              } else {
-                // Create new round assignment
-                evaluatorAssignment.assignedRounds.push({
-                  roundIndex,
-                  roundId,
-                  roundName,
-                  roundType,
-                  isAssigned: true,
-                  assignedSubmissions: submissionsToAdd,
-                  maxSubmissions: 1
-                });
+              try {
+                await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAdd, 1);
+                
+                // Send email notification
+                await sendSubmissionAssignmentEmail(
+                  evaluatorAssignment.judge.email,
+                  evaluatorAssignment.judge.name,
+                  hackathon,
+                  submissionsToAdd,
+                  roundName
+                );
+                
+                console.log(`✅ Assigned submission ${submissionId} to judge ${evaluatorAssignment.judge.email}`);
+              } catch (saveError) {
+                console.error(`❌ Error saving assignment for judge ${evaluatorAssignment.judge.email}:`, saveError);
+                throw saveError;
               }
-              
-              await evaluatorAssignment.save();
-              
-              // Send email notification
-              await sendSubmissionAssignmentEmail(
-                evaluatorAssignment.judge.email,
-                evaluatorAssignment.judge.name,
-                hackathon,
-                submissionsToAdd,
-                roundName
-              );
-              
-              console.log(`✅ Assigned submission ${submissionId} to judge ${evaluatorAssignment.judge.email}`);
             }
           }
         }
@@ -1369,17 +1415,30 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
           });
 
           // Update the judge assignment
-          await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
-
-          // Send email notification
-          if (submissionsToAssign.length > 0) {
-            await sendSubmissionAssignmentEmail(
-              evaluatorAssignment.judge.email,
-              evaluatorAssignment.judge.name,
-              hackathon,
-              submissionsToAssign,
-              roundName
-            );
+          try {
+            await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
+            
+            // Send email notification
+            if (submissionsToAssign.length > 0) {
+              await sendSubmissionAssignmentEmail(
+                evaluatorAssignment.judge.email,
+                evaluatorAssignment.judge.name,
+                hackathon,
+                submissionsToAssign,
+                roundName
+              );
+            }
+          } catch (saveError) {
+            console.error(`❌ Error saving assignment for judge ${evaluatorAssignment.judge.email}:`, saveError);
+            results.push({
+              evaluatorId: evaluatorAssignment._id,
+              evaluatorEmail: evaluatorAssignment.judge.email,
+              evaluatorName: evaluatorAssignment.judge.name,
+              success: false,
+              error: `Failed to save assignment: ${saveError.message}`,
+              status: evaluatorAssignment.status
+            });
+            continue;
           }
 
           results.push({
@@ -1459,17 +1518,30 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
         remainingSubmissions = remainingSubmissions.filter(id => !submissionsToAssign.includes(id));
 
         // Update the judge assignment
-        await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
-
-        // Send email notification
-        if (submissionsToAssign.length > 0) {
-          await sendSubmissionAssignmentEmail(
-            evaluatorAssignment.judge.email,
-            evaluatorAssignment.judge.name,
-            hackathon,
-            submissionsToAssign,
-            roundName
-          );
+        try {
+          await updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, roundName, roundType, submissionsToAssign, actualMaxSubmissions);
+          
+          // Send email notification
+          if (submissionsToAssign.length > 0) {
+            await sendSubmissionAssignmentEmail(
+              evaluatorAssignment.judge.email,
+              evaluatorAssignment.judge.name,
+              hackathon,
+              submissionsToAssign,
+              roundName
+            );
+          }
+        } catch (saveError) {
+          console.error(`❌ Error saving assignment for judge ${evaluatorAssignment.judge.email}:`, saveError);
+          results.push({
+            evaluatorId: evaluatorAssignment._id,
+            evaluatorEmail: evaluatorAssignment.judge.email,
+            evaluatorName: evaluatorAssignment.judge.name,
+            success: false,
+            error: `Failed to save assignment: ${saveError.message}`,
+            status: evaluatorAssignment.status
+          });
+          continue;
         }
 
         results.push({
@@ -1535,13 +1607,20 @@ async function updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, r
       judge: evaluatorAssignment.judge.email,
       roundIndex,
       submissionsToAssign: submissionsToAssign.length,
-      maxSubmissions
+      maxSubmissions,
+      existingRounds: evaluatorAssignment.assignedRounds?.length || 0
     });
 
     const existingRoundIndex = evaluatorAssignment.assignedRounds.findIndex(r => r.roundIndex === roundIndex);
     
     if (existingRoundIndex >= 0) {
-      // Update existing round assignment
+      // Update existing round assignment - ADD to existing submissions, don't replace
+      const existingSubmissions = evaluatorAssignment.assignedRounds[existingRoundIndex].assignedSubmissions || [];
+      const newSubmissions = [...existingSubmissions, ...submissionsToAssign];
+      
+      // Remove duplicates
+      const uniqueSubmissions = [...new Set(newSubmissions.map(id => id.toString()))];
+      
       evaluatorAssignment.assignedRounds[existingRoundIndex] = {
         ...evaluatorAssignment.assignedRounds[existingRoundIndex],
         roundIndex,
@@ -1549,8 +1628,8 @@ async function updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, r
         roundName,
         roundType,
         isAssigned: true,
-        assignedSubmissions: submissionsToAssign,
-        maxSubmissions
+        assignedSubmissions: uniqueSubmissions,
+        maxSubmissions: Math.max(maxSubmissions, evaluatorAssignment.assignedRounds[existingRoundIndex].maxSubmissions || 0)
       };
     } else {
       // Add new round assignment
@@ -1567,6 +1646,14 @@ async function updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, r
 
     await evaluatorAssignment.save();
     console.log('✅ Successfully updated judge assignment for:', evaluatorAssignment.judge.email);
+    console.log('🔍 Updated assignment details:', {
+      judge: evaluatorAssignment.judge.email,
+      totalRounds: evaluatorAssignment.assignedRounds?.length || 0,
+      roundAssignments: evaluatorAssignment.assignedRounds?.map(r => ({
+        roundIndex: r.roundIndex,
+        assignedSubmissions: r.assignedSubmissions?.length || 0
+      })) || []
+    });
   } catch (error) {
     console.error('❌ Error updating judge assignment:', error);
     throw error;
@@ -1659,6 +1746,7 @@ exports.getMyAssignedSubmissions = async (req, res) => {
   try {
     const judgeEmail = req.user.email;
     console.log('🔍 Backend - getMyAssignedSubmissions called for judge:', judgeEmail);
+    console.log('🔍 Backend - Request user:', req.user);
     
     if (!judgeEmail) {
       console.error('🔍 Backend - No judge email found in request');
@@ -1673,15 +1761,42 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     // Find all judge assignments for this user
     let assignments = [];
     try {
+      console.log('🔍 Backend - About to query JudgeAssignment model for email:', judgeEmail);
+      
       assignments = await JudgeAssignment.find({ 
         'judge.email': judgeEmail,
         status: 'active'
       }).populate('hackathon', 'name rounds').populate('judge', 'name email');
       
+      console.log('🔍 Backend - Raw assignments data:', assignments.map(a => ({
+        id: a._id,
+        hackathon: a.hackathon?._id || a.hackathon,
+        hackathonName: a.hackathon?.name,
+        judge: a.judge?.email,
+        status: a.status,
+        assignedRounds: a.assignedRounds?.length || 0
+      })));
+      
       console.log('🔍 Backend - Found assignments:', assignments.length);
+      
+      // If no assignments found, return empty response instead of error
+      if (assignments.length === 0) {
+        console.log('🔍 Backend - No assignments found for judge, returning empty response');
+        return res.status(200).json({
+          submissions: [],
+          rounds: [],
+          hackathons: [],
+          totalSubmissions: 0,
+          totalRounds: 0,
+          totalHackathons: 0,
+          hasSpecificAssignments: false
+        });
+      }
     } catch (dbError) {
       console.error('🔍 Backend - Database query error:', dbError);
       console.error('🔍 Backend - Error stack:', dbError.stack);
+      console.error('🔍 Backend - Error name:', dbError.name);
+      console.error('🔍 Backend - Error message:', dbError.message);
       return res.status(500).json({
         message: 'Database query failed',
         error: dbError.message,
@@ -1710,6 +1825,13 @@ exports.getMyAssignedSubmissions = async (req, res) => {
     const rounds = [];
     for (const assignment of assignments) {
       const hackathon = assignment.hackathon;
+      console.log('🔍 Backend - Processing assignment:', {
+        assignmentId: assignment._id,
+        hackathon: hackathon?._id || assignment.hackathon,
+        hackathonName: hackathon?.name,
+        assignedRounds: assignment.assignedRounds?.length || 0
+      });
+      
       if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
         for (const round of assignment.assignedRounds) {
           if (round.isAssigned && Array.isArray(round.assignedSubmissions)) {
@@ -1720,11 +1842,11 @@ exports.getMyAssignedSubmissions = async (req, res) => {
               name: round.roundName || 'Round',
               type: round.roundType || 'project',
               submissionCount: round.assignedSubmissions?.length || 0,
-              hackathonId: hackathon._id,
-              hackathonName: hackathon.name,
+              hackathonId: hackathon?._id || assignment.hackathon,
+              hackathonName: hackathon?.name || 'Unknown Hackathon',
               hasSpecificAssignments: true
             };
-            if (!rounds.find(r => r.index === roundInfo.index && r.hackathonId.toString() === hackathon._id.toString())) {
+            if (!rounds.find(r => r.index === roundInfo.index && r.hackathonId?.toString() === roundInfo.hackathonId?.toString())) {
               rounds.push(roundInfo);
             }
           }
@@ -1737,15 +1859,44 @@ exports.getMyAssignedSubmissions = async (req, res) => {
           name: hackathon.name || 'Unknown Hackathon',
           hasSpecificAssignments: true
         });
+      } else if (assignment.hackathon) {
+        // Fallback to assignment.hackathon if populated hackathon is null
+        hackathons.push({
+          _id: assignment.hackathon,
+          name: 'Unknown Hackathon',
+          hasSpecificAssignments: true
+        });
       }
+    }
+    
+    // If no assigned submissions found, return empty response
+    if (assignedSubmissionIds.size === 0) {
+      console.log('🔍 Backend - No assigned submissions found for judge, returning empty response');
+      return res.status(200).json({
+        submissions: [],
+        rounds: [],
+        hackathons: [],
+        totalSubmissions: 0,
+        totalRounds: 0,
+        totalHackathons: 0,
+        hasSpecificAssignments: false
+      });
     }
 
     // Fetch all assigned submissions
     let allSubmissions = [];
     if (assignedSubmissionIds.size > 0) {
       try {
-        const Submission = require('../model/SubmissionModel');
-        const Score = require('../model/ScoreModel');
+        console.log('🔍 Backend - About to require Submission and Score models');
+        let Submission, Score;
+        try {
+          Submission = require('../model/SubmissionModel');
+          Score = require('../model/ScoreModel');
+          console.log('🔍 Backend - Successfully required models');
+        } catch (modelError) {
+          console.error('🔍 Backend - Error requiring models:', modelError);
+          throw modelError;
+        }
         
         console.log('🔍 Backend - Fetching submissions for IDs:', Array.from(assignedSubmissionIds));
         
@@ -1781,6 +1932,8 @@ exports.getMyAssignedSubmissions = async (req, res) => {
         // Add evaluation status for each submission
         for (const submission of submissionsToFetch) {
           try {
+            console.log('🔍 Backend - Processing submission:', submission._id);
+            
             const existingScore = await Score.findOne({
               submission: submission._id,
               judgeEmail: judgeEmail
@@ -1788,27 +1941,40 @@ exports.getMyAssignedSubmissions = async (req, res) => {
             
             // Find which round this submission is assigned to for this judge
             let submissionRoundIndex = null;
-            for (const assignment of assignments) {
-              if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
-                for (const round of assignment.assignedRounds) {
-                  if (round.isAssigned && Array.isArray(round.assignedSubmissions)) {
-                    if (round.assignedSubmissions.some(id => id.toString() === submission._id.toString())) {
-                      submissionRoundIndex = round.roundIndex;
-                      break;
+            try {
+              for (const assignment of assignments) {
+                if (assignment.assignedRounds && Array.isArray(assignment.assignedRounds)) {
+                  for (const round of assignment.assignedRounds) {
+                    if (round.isAssigned && Array.isArray(round.assignedSubmissions)) {
+                      if (round.assignedSubmissions.some(id => id.toString() === submission._id.toString())) {
+                        submissionRoundIndex = round.roundIndex;
+                        break;
+                      }
                     }
                   }
                 }
+                if (submissionRoundIndex !== null) break;
               }
-              if (submissionRoundIndex !== null) break;
+            } catch (roundError) {
+              console.error('🔍 Backend - Error finding submission round:', roundError);
+              submissionRoundIndex = 0; // Default to round 0
             }
             
-            allSubmissions.push({
+            const submissionObject = {
               ...submission.toObject(),
               evaluationStatus: existingScore ? 'evaluated' : 'pending',
               score: existingScore?.score || null,
               feedback: existingScore?.feedback || null,
               isAssigned: true,
               roundIndex: submissionRoundIndex
+            };
+            
+            allSubmissions.push(submissionObject);
+            console.log('🔍 Backend - Added submission to results:', {
+              id: submission._id,
+              title: submission.projectTitle || submission.title,
+              roundIndex: submissionRoundIndex,
+              evaluationStatus: submissionObject.evaluationStatus
             });
           } catch (submissionError) {
             console.error('🔍 Backend - Error processing submission:', submission._id, submissionError);
@@ -2260,6 +2426,8 @@ exports.deleteJudge = async (req, res) => {
 exports.getAssignmentOverview = async (req, res) => {
   try {
     const { hackathonId } = req.params;
+    const { problemStatementId, roundIndex } = req.query; // Add query parameters for filtering
+    
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
       return res.status(404).json({ message: 'Hackathon not found' });
@@ -2272,9 +2440,33 @@ exports.getAssignmentOverview = async (req, res) => {
       
     console.log('🔍 Assignment Overview - Raw Judge Assignments from DB:', JSON.stringify(judgeAssignments, null, 2));
 
-    // Get all submissions for this hackathon (including Round 2 submissions)
-    const submissions = await Submission.find({ hackathonId: hackathonId, status: 'submitted' })
-      .select('_id projectTitle title teamId teamName pptFile submittedAt roundIndex')
+    // Get submissions for this hackathon with round filtering
+    let submissionsQuery = { hackathonId: hackathonId, status: 'submitted' };
+    
+    // Filter by round if specified
+    if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
+      const roundIndexNum = parseInt(roundIndex);
+      submissionsQuery.roundIndex = roundIndexNum;
+      console.log('🔍 Assignment Overview - Filtering by round:', {
+        roundIndex: roundIndexNum,
+        roundName: `Round ${roundIndexNum + 1}`
+      });
+    }
+    
+    // Filter by problem statement if specified
+    if (problemStatementId) {
+      const selectedPS = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+      if (selectedPS) {
+        submissionsQuery.problemStatement = selectedPS.statement;
+        console.log('🔍 Assignment Overview - Filtering by problem statement:', {
+          problemStatementId,
+          problemStatementText: selectedPS.statement.slice(0, 50) + '...'
+        });
+      }
+    }
+    
+    const submissions = await Submission.find(submissionsQuery)
+      .select('_id projectTitle title teamId teamName pptFile submittedAt roundIndex problemStatement')
       .lean();
 
     // Get all scores for these submissions
@@ -2392,14 +2584,23 @@ exports.getAssignmentOverview = async (req, res) => {
     // Find unassigned submissions
     const unassignedSubmissions = submissions.filter(sub =>
       (submissionAssignments[sub._id.toString()] || []).length === 0
-    ).map(sub => ({
-      _id: sub._id,
-      projectTitle: sub.projectTitle || sub.title,
-      teamId: sub.teamId,
-      teamName: sub.teamName,
-      pptFile: sub.pptFile,
-      submittedAt: sub.submittedAt
-    }));
+    ).map(sub => {
+      // Ensure roundIndex has a valid value (default to 0 for Round 1)
+      const roundIndex = (sub.roundIndex !== null && sub.roundIndex !== undefined && !isNaN(sub.roundIndex)) 
+        ? sub.roundIndex 
+        : 0;
+      
+      return {
+        _id: sub._id,
+        projectTitle: sub.projectTitle || sub.title,
+        teamId: sub.teamId,
+        teamName: sub.teamName,
+        pptFile: sub.pptFile,
+        submittedAt: sub.submittedAt,
+        roundIndex: roundIndex,
+        problemStatement: sub.problemStatement
+      };
+    });
 
     // Build assigned submissions with judge information
     const assignedSubmissions = submissions.filter(sub =>
@@ -2410,6 +2611,11 @@ exports.getAssignmentOverview = async (req, res) => {
         ? submissionScoresList.reduce((sum, score) => sum + (score.totalScore || 0), 0) / submissionScoresList.length
         : null;
       
+      // Ensure roundIndex has a valid value (default to 0 for Round 1)
+      const roundIndex = (sub.roundIndex !== null && sub.roundIndex !== undefined && !isNaN(sub.roundIndex)) 
+        ? sub.roundIndex 
+        : 0;
+      
       return {
         _id: sub._id,
         projectTitle: sub.projectTitle || sub.title,
@@ -2417,6 +2623,8 @@ exports.getAssignmentOverview = async (req, res) => {
         teamName: sub.teamName,
         pptFile: sub.pptFile,
         submittedAt: sub.submittedAt,
+        roundIndex: roundIndex,
+        problemStatement: sub.problemStatement,
         assignedJudges: submissionAssignments[sub._id.toString()] || [],
         evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
         scoreCount: submissionScoresList.length,
@@ -2595,17 +2803,30 @@ exports.getLeaderboard = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can view leaderboard' });
     }
 
-    // Get all submissions for this hackathon and round - handle both roundIndex 0 and 1 for Round 1
-    const submissions = await Submission.find({ 
-      hackathonId: hackathonId, 
-      $or: [
-        { roundIndex: parseInt(roundIndex) },
-        { roundIndex: 0 }, // Many submissions are in round 0
-        { roundIndex: { $exists: false } } // Some submissions have no roundIndex
-      ]
-    }).populate('teamId', 'name leader')
-      .populate('submittedBy', 'name email')
-      .lean();
+    // For Round 2, we need to get both Round 1 and Round 2 submissions to calculate combined scores
+    let submissions = [];
+    
+    if (parseInt(roundIndex) === 1) {
+      // Round 2: Get only Round 2 submissions but also fetch Round 1 data for combined scoring
+      submissions = await Submission.find({ 
+        hackathonId: hackathonId, 
+        roundIndex: 1 // Only Round 2 submissions
+      }).populate('teamId', 'name leader')
+        .populate('submittedBy', 'name email')
+        .lean();
+        
+      console.log('🔍 Backend - Round 2: Found Round 2 submissions:', submissions.length);
+    } else {
+      // Round 1: Get only Round 1 submissions
+      submissions = await Submission.find({ 
+        hackathonId: hackathonId, 
+        roundIndex: 0 // Only Round 1 submissions
+      }).populate('teamId', 'name leader')
+        .populate('submittedBy', 'name email')
+        .lean();
+        
+      console.log('🔍 Backend - Round 1: Found Round 1 submissions:', submissions.length);
+    }
 
     console.log('🔍 Backend - Found submissions:', submissions.length);
     console.log('🔍 Backend - Submissions:', submissions.map(s => ({ 
@@ -2619,12 +2840,49 @@ exports.getLeaderboard = async (req, res) => {
 
     // Get all scores for these submissions
     const Score = require('../model/ScoreModel');
-    const scores = await Score.find({ 
-      submission: { $in: submissions.map(s => s._id) } 
-    }).populate('judge', 'name email').lean();
+    let scores = [];
+    let round1Scores = {};
+    
+    if (parseInt(roundIndex) === 1) {
+      // Round 2: Get scores for Round 2 submissions AND Round 1 submissions for combined scoring
+      const round2SubmissionIds = submissions.map(s => s._id);
+      
+      // Get Round 1 submissions for the same teams
+      const round1Submissions = await Submission.find({
+        hackathonId: hackathonId,
+        roundIndex: 0
+      }).populate('teamId', 'name leader').lean();
+      
+      const round1SubmissionIds = round1Submissions.map(s => s._id);
+      
+      // Get all scores for both rounds
+      scores = await Score.find({ 
+        submission: { $in: [...round2SubmissionIds, ...round1SubmissionIds] } 
+      }).populate('judge', 'name email').lean();
+      
+      // Create map of Round 1 scores by team
+      round1Submissions.forEach(submission => {
+        const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+        if (teamId) {
+          const submissionScores = scores.filter(s => s.submission.toString() === submission._id.toString());
+          if (submissionScores.length > 0) {
+            round1Scores[teamId] = submissionScores;
+          }
+        }
+      });
+      
+      console.log('🔍 Backend - Round 2: Found Round 2 scores:', scores.filter(s => round2SubmissionIds.includes(s.submission)).length);
+      console.log('🔍 Backend - Round 2: Found Round 1 scores for combined scoring:', Object.keys(round1Scores).length);
+    } else {
+      // Round 1: Get scores for Round 1 submissions only
+      scores = await Score.find({ 
+        submission: { $in: submissions.map(s => s._id) } 
+      }).populate('judge', 'name email').lean();
+      
+      console.log('🔍 Backend - Round 1: Found scores:', scores.length);
+    }
 
     console.log('🔍 Backend - Found scores:', scores.length);
-    console.log('🔍 Backend - Scores data:', scores);
 
     // Create a map of submission scores
     const submissionScores = {};
@@ -2642,10 +2900,10 @@ exports.getLeaderboard = async (req, res) => {
       const submissionScoresList = submissionScores[submission._id.toString()] || [];
       console.log('🔍 Backend - Processing submission:', submission._id, 'with scores:', submissionScoresList.length);
       
-      // Calculate average score
-      let averageScore = 0;
-      let totalScore = 0;
-      let scoreCount = 0;
+      // Calculate scores for current round
+      let roundScore = 0;
+      let roundScoreCount = 0;
+      let roundTotalScore = 0;
       
       submissionScoresList.forEach(score => {
         console.log('🔍 Backend - Processing score:', score);
@@ -2680,18 +2938,85 @@ exports.getLeaderboard = async (req, res) => {
         
         if (criteriaCount > 0) {
           const submissionScore = totalCriteriaScore / criteriaCount;
-          totalScore += submissionScore;
-          scoreCount++;
+          roundTotalScore += submissionScore;
+          roundScoreCount++;
           console.log('🔍 Backend - Submission score calculated:', submissionScore);
         } else if (score.totalScore && typeof score.totalScore === 'number') {
           // Fallback to totalScore if criteria calculation fails
-          totalScore += score.totalScore;
-          scoreCount++;
+          roundTotalScore += score.totalScore;
+          roundScoreCount++;
           console.log('🔍 Backend - Using totalScore fallback:', score.totalScore);
         }
       });
       
-      averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+      roundScore = roundScoreCount > 0 ? roundTotalScore / roundScoreCount : 0;
+      
+      // For Round 2, calculate combined score with Round 1
+      let combinedScore = roundScore;
+      let pptScore = 0;
+      let projectScore = roundScore;
+      let totalScore = roundTotalScore;
+      let scoreCount = roundScoreCount;
+      
+      if (parseInt(roundIndex) === 1) {
+        // Round 2: Calculate combined score with Round 1 PPT score
+        const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+        const round1TeamScores = round1Scores[teamId] || [];
+        
+        if (round1TeamScores.length > 0) {
+          let round1TotalScore = 0;
+          let round1ScoreCount = 0;
+          
+          round1TeamScores.forEach(score => {
+            let totalCriteriaScore = 0;
+            let criteriaCount = 0;
+            
+            if (score.scores && score.scores instanceof Map) {
+              score.scores.forEach((value, key) => {
+                if (value && typeof value.score === 'number') {
+                  totalCriteriaScore += value.score;
+                  criteriaCount++;
+                }
+              });
+            } else if (score.scores && typeof score.scores === 'object') {
+              Object.values(score.scores).forEach(value => {
+                if (value && typeof value.score === 'number') {
+                  totalCriteriaScore += value.score;
+                  criteriaCount++;
+                } else if (typeof value === 'number') {
+                  totalCriteriaScore += value;
+                  criteriaCount++;
+                }
+              });
+            }
+            
+            if (criteriaCount > 0) {
+              const submissionScore = totalCriteriaScore / criteriaCount;
+              round1TotalScore += submissionScore;
+              round1ScoreCount++;
+            } else if (score.totalScore && typeof score.totalScore === 'number') {
+              round1TotalScore += score.totalScore;
+              round1ScoreCount++;
+            }
+          });
+          
+          pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+          
+          // Calculate combined score: (PPT Score + Project Score) / 2
+          combinedScore = (pptScore + projectScore) / 2;
+          totalScore = round1TotalScore + roundTotalScore;
+          scoreCount = round1ScoreCount + roundScoreCount;
+          
+          console.log('🔍 Backend - Round 2 combined scoring:', {
+            teamId,
+            pptScore,
+            projectScore,
+            combinedScore,
+            round1ScoreCount,
+            roundScoreCount
+          });
+        }
+      }
 
       return {
         _id: submission._id,
@@ -2700,11 +3025,15 @@ exports.getLeaderboard = async (req, res) => {
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,
         submittedAt: submission.submittedAt,
-        averageScore: Math.round(averageScore * 10) / 10,
+        averageScore: Math.round(combinedScore * 10) / 10,
         scoreCount,
         totalScore: Math.round(totalScore * 10) / 10,
         status: submission.status,
-        roundIndex: submission.roundIndex
+        roundIndex: submission.roundIndex,
+        // Round 2 specific fields
+        pptScore: parseInt(roundIndex) === 1 ? Math.round(pptScore * 10) / 10 : null,
+        projectScore: parseInt(roundIndex) === 1 ? Math.round(projectScore * 10) / 10 : null,
+        isRound2: parseInt(roundIndex) === 1
       };
     });
 
@@ -3167,11 +3496,277 @@ exports.toggleSubmissionShortlist = async (req, res) => {
   }
 };
 
+// 🏆 Assign Winners for Round 2
+exports.assignWinners = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    const { winnerCount = 3, mode = 'topN' } = req.body; // topN, threshold, or manual
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
 
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign winners' });
+    }
 
+    // Verify this is Round 2
+    if (parseInt(roundIndex) !== 1) {
+      return res.status(400).json({ message: 'Winner assignment is only available for Round 2' });
+    }
 
+    // Get Round 2 submissions with combined scores
+    const submissions = await Submission.find({ 
+      hackathonId: hackathonId, 
+      roundIndex: 1 // Only Round 2 submissions
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
 
-// 🎯 Check if user/team is shortlisted for Round 2
+    if (submissions.length === 0) {
+      return res.status(400).json({ message: 'No Round 2 submissions found for winner assignment' });
+    }
+
+    // Get all scores for Round 2 submissions
+    const Score = require('../model/ScoreModel');
+    const round2Scores = await Score.find({ 
+      submission: { $in: submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Get Round 1 submissions for combined scoring
+    const round1Submissions = await Submission.find({
+      hackathonId: hackathonId,
+      roundIndex: 0
+    }).populate('teamId', 'name leader').lean();
+
+    const round1Scores = await Score.find({ 
+      submission: { $in: round1Submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create maps for scoring
+    const round2SubmissionScores = {};
+    round2Scores.forEach(score => {
+      if (!round2SubmissionScores[score.submission.toString()]) {
+        round2SubmissionScores[score.submission.toString()] = [];
+      }
+      round2SubmissionScores[score.submission.toString()].push(score);
+    });
+
+    const round1TeamScores = {};
+    round1Submissions.forEach(submission => {
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      if (teamId) {
+        const submissionScores = round1Scores.filter(s => s.submission.toString() === submission._id.toString());
+        if (submissionScores.length > 0) {
+          round1TeamScores[teamId] = submissionScores;
+        }
+      }
+    });
+
+    // Calculate combined scores for Round 2
+    const leaderboard = submissions.map(submission => {
+      const submissionScoresList = round2SubmissionScores[submission._id.toString()] || [];
+      
+      // Calculate Round 2 project score
+      let projectScore = 0;
+      let projectScoreCount = 0;
+      
+      submissionScoresList.forEach(score => {
+        let totalCriteriaScore = 0;
+        let criteriaCount = 0;
+        
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            }
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          Object.values(score.scores).forEach(value => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            } else if (typeof value === 'number') {
+              totalCriteriaScore += value;
+              criteriaCount++;
+            }
+          });
+        }
+        
+        if (criteriaCount > 0) {
+          const submissionScore = totalCriteriaScore / criteriaCount;
+          projectScore += submissionScore;
+          projectScoreCount++;
+        } else if (score.totalScore && typeof score.totalScore === 'number') {
+          projectScore += score.totalScore;
+          projectScoreCount++;
+        }
+      });
+      
+      projectScore = projectScoreCount > 0 ? projectScore / projectScoreCount : 0;
+      
+      // Calculate Round 1 PPT score
+      let pptScore = 0;
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      const round1TeamScoresList = round1TeamScores[teamId] || [];
+      
+      if (round1TeamScoresList.length > 0) {
+        let round1TotalScore = 0;
+        let round1ScoreCount = 0;
+        
+        round1TeamScoresList.forEach(score => {
+          let totalCriteriaScore = 0;
+          let criteriaCount = 0;
+          
+          if (score.scores && score.scores instanceof Map) {
+            score.scores.forEach((value, key) => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              }
+            });
+          } else if (score.scores && typeof score.scores === 'object') {
+            Object.values(score.scores).forEach(value => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              } else if (typeof value === 'number') {
+                totalCriteriaScore += value;
+                criteriaCount++;
+              }
+            });
+          }
+          
+          if (criteriaCount > 0) {
+            const submissionScore = totalCriteriaScore / criteriaCount;
+            round1TotalScore += submissionScore;
+            round1ScoreCount++;
+          } else if (score.totalScore && typeof score.totalScore === 'number') {
+            round1TotalScore += score.totalScore;
+            round1ScoreCount++;
+          }
+        });
+        
+        pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+      }
+      
+      // Calculate combined score: (PPT Score + Project Score) / 2
+      const combinedScore = (pptScore + projectScore) / 2;
+      
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptScore: Math.round(pptScore * 10) / 10,
+        projectScore: Math.round(projectScore * 10) / 10,
+        combinedScore: Math.round(combinedScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by combined score (descending)
+    leaderboard.sort((a, b) => b.combinedScore - a.combinedScore);
+
+    // Determine winners based on mode
+    let winners = [];
+    
+    if (mode === 'topN') {
+      winners = leaderboard.slice(0, winnerCount);
+    } else if (mode === 'threshold') {
+      const threshold = req.body.threshold || 7.0;
+      winners = leaderboard.filter(entry => entry.combinedScore >= threshold);
+    } else if (mode === 'manual') {
+      const winnerIds = req.body.winnerIds || [];
+      winners = leaderboard.filter(entry => winnerIds.includes(entry._id.toString()));
+    } else {
+      return res.status(400).json({ message: 'Invalid winner assignment mode. Use "topN", "threshold", or "manual"' });
+    }
+
+    if (winners.length === 0) {
+      return res.status(400).json({ message: 'No winners found with the specified criteria' });
+    }
+
+    // Update submission statuses to 'winner'
+    const updatePromises = winners.map(async (winner) => {
+      const submission = await Submission.findById(winner._id);
+      if (submission) {
+        submission.status = 'winner';
+        return submission.save();
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    // Create notifications for winners
+    try {
+      const Notification = require('../model/NotificationModel');
+      
+      for (const winner of winners) {
+        const submission = await Submission.findById(winner._id)
+          .populate('submittedBy', 'name')
+          .populate('teamId', 'name members');
+        
+        if (submission) {
+          let recipientId;
+          let participantName;
+          
+          if (submission.teamId) {
+            // For team submissions, notify all team members
+            const teamMembers = submission.teamId.members || [];
+            for (const memberId of teamMembers) {
+              await Notification.create({
+                recipient: memberId,
+                message: `🏆 Congratulations! Your team "${submission.teamId.name}" has won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+                type: 'success',
+                hackathon: hackathon._id,
+                createdAt: new Date()
+              });
+            }
+          } else if (submission.submittedBy) {
+            // For individual submissions
+            await Notification.create({
+              recipient: submission.submittedBy._id,
+              message: `🏆 Congratulations! You have won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+              type: 'success',
+              hackathon: hackathon._id,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error('🔍 Backend - Error creating winner notifications:', notificationError);
+      // Don't fail the request if notification fails
+    }
+
+    console.log('🔍 Backend - Winners assigned successfully:', winners.length);
+
+    res.status(200).json({
+      message: `Successfully assigned ${winners.length} winners`,
+      winners: winners.map(winner => ({
+        _id: winner._id,
+        projectTitle: winner.projectTitle,
+        teamName: winner.teamName,
+        leaderName: winner.leaderName,
+        pptScore: winner.pptScore,
+        projectScore: winner.projectScore,
+        combinedScore: winner.combinedScore
+      })),
+      mode,
+      winnerCount: winners.length,
+      assignedAt: new Date()
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error assigning winners:', error);
+    res.status(500).json({ message: 'Failed to assign winners', error: error.message });
+  }
+};
 
 // 🎯 Check if user/team is shortlisted for Round 2
 exports.checkRound2Eligibility = async (req, res) => {
@@ -3314,7 +3909,6 @@ exports.checkRound2Eligibility = async (req, res) => {
     });
   }
 };
-;
 
 // 🎯 Check and Auto-Progress Round 2
 exports.checkAndAutoProgressRound2 = async (req, res) => {
@@ -4229,6 +4823,278 @@ exports.debugShortlistingData = async (req, res) => {
       message: 'Failed to debug shortlisting data', 
       error: error.message 
     });
+  }
+};
+
+// 🏆 Assign Winners for Round 2
+exports.assignWinners = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    const { winnerCount = 3, mode = 'topN' } = req.body; // topN, threshold, or manual
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can assign winners' });
+    }
+
+    // Verify this is Round 2
+    if (parseInt(roundIndex) !== 1) {
+      return res.status(400).json({ message: 'Winner assignment is only available for Round 2' });
+    }
+
+    // Get Round 2 submissions with combined scores
+    const submissions = await Submission.find({ 
+      hackathonId: hackathonId, 
+      roundIndex: 1 // Only Round 2 submissions
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+
+    if (submissions.length === 0) {
+      return res.status(400).json({ message: 'No Round 2 submissions found for winner assignment' });
+    }
+
+    // Get all scores for Round 2 submissions
+    const Score = require('../model/ScoreModel');
+    const round2Scores = await Score.find({ 
+      submission: { $in: submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Get Round 1 submissions for combined scoring
+    const round1Submissions = await Submission.find({
+      hackathonId: hackathonId,
+      roundIndex: 0
+    }).populate('teamId', 'name leader').lean();
+
+    const round1Scores = await Score.find({ 
+      submission: { $in: round1Submissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create maps for scoring
+    const round2SubmissionScores = {};
+    round2Scores.forEach(score => {
+      if (!round2SubmissionScores[score.submission.toString()]) {
+        round2SubmissionScores[score.submission.toString()] = [];
+      }
+      round2SubmissionScores[score.submission.toString()].push(score);
+    });
+
+    const round1TeamScores = {};
+    round1Submissions.forEach(submission => {
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      if (teamId) {
+        const submissionScores = round1Scores.filter(s => s.submission.toString() === submission._id.toString());
+        if (submissionScores.length > 0) {
+          round1TeamScores[teamId] = submissionScores;
+        }
+      }
+    });
+
+    // Calculate combined scores for Round 2
+    const leaderboard = submissions.map(submission => {
+      const submissionScoresList = round2SubmissionScores[submission._id.toString()] || [];
+      
+      // Calculate Round 2 project score
+      let projectScore = 0;
+      let projectScoreCount = 0;
+      
+      submissionScoresList.forEach(score => {
+        let totalCriteriaScore = 0;
+        let criteriaCount = 0;
+        
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            }
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          Object.values(score.scores).forEach(value => {
+            if (value && typeof value.score === 'number') {
+              totalCriteriaScore += value.score;
+              criteriaCount++;
+            } else if (typeof value === 'number') {
+              totalCriteriaScore += value;
+              criteriaCount++;
+            }
+          });
+        }
+        
+        if (criteriaCount > 0) {
+          const submissionScore = totalCriteriaScore / criteriaCount;
+          projectScore += submissionScore;
+          projectScoreCount++;
+        } else if (score.totalScore && typeof score.totalScore === 'number') {
+          projectScore += score.totalScore;
+          projectScoreCount++;
+        }
+      });
+      
+      projectScore = projectScoreCount > 0 ? projectScore / projectScoreCount : 0;
+      
+      // Calculate Round 1 PPT score
+      let pptScore = 0;
+      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+      const round1TeamScoresList = round1TeamScores[teamId] || [];
+      
+      if (round1TeamScoresList.length > 0) {
+        let round1TotalScore = 0;
+        let round1ScoreCount = 0;
+        
+        round1TeamScoresList.forEach(score => {
+          let totalCriteriaScore = 0;
+          let criteriaCount = 0;
+          
+          if (score.scores && score.scores instanceof Map) {
+            score.scores.forEach((value, key) => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              }
+            });
+          } else if (score.scores && typeof score.scores === 'object') {
+            Object.values(score.scores).forEach(value => {
+              if (value && typeof value.score === 'number') {
+                totalCriteriaScore += value.score;
+                criteriaCount++;
+              } else if (typeof value === 'number') {
+                totalCriteriaScore += value;
+                criteriaCount++;
+              }
+            });
+          }
+          
+          if (criteriaCount > 0) {
+            const submissionScore = totalCriteriaScore / criteriaCount;
+            round1TotalScore += submissionScore;
+            round1ScoreCount++;
+          } else if (score.totalScore && typeof score.totalScore === 'number') {
+            round1TotalScore += score.totalScore;
+            round1ScoreCount++;
+          }
+        });
+        
+        pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+      }
+      
+      // Calculate combined score: (PPT Score + Project Score) / 2
+      const combinedScore = (pptScore + projectScore) / 2;
+      
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptScore: Math.round(pptScore * 10) / 10,
+        projectScore: Math.round(projectScore * 10) / 10,
+        combinedScore: Math.round(combinedScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by combined score (descending)
+    leaderboard.sort((a, b) => b.combinedScore - a.combinedScore);
+
+    // Determine winners based on mode
+    let winners = [];
+    
+    if (mode === 'topN') {
+      winners = leaderboard.slice(0, winnerCount);
+    } else if (mode === 'threshold') {
+      const threshold = req.body.threshold || 7.0;
+      winners = leaderboard.filter(entry => entry.combinedScore >= threshold);
+    } else if (mode === 'manual') {
+      const winnerIds = req.body.winnerIds || [];
+      winners = leaderboard.filter(entry => winnerIds.includes(entry._id.toString()));
+    } else {
+      return res.status(400).json({ message: 'Invalid winner assignment mode. Use "topN", "threshold", or "manual"' });
+    }
+
+    if (winners.length === 0) {
+      return res.status(400).json({ message: 'No winners found with the specified criteria' });
+    }
+
+    // Update submission statuses to 'winner'
+    const updatePromises = winners.map(async (winner) => {
+      const submission = await Submission.findById(winner._id);
+      if (submission) {
+        submission.status = 'winner';
+        return submission.save();
+      }
+    });
+
+    await Promise.all(updatePromises);
+
+    // Create notifications for winners
+    try {
+      const Notification = require('../model/NotificationModel');
+      
+      for (const winner of winners) {
+        const submission = await Submission.findById(winner._id)
+          .populate('submittedBy', 'name')
+          .populate('teamId', 'name members');
+        
+        if (submission) {
+          let recipientId;
+          let participantName;
+          
+          if (submission.teamId) {
+            // For team submissions, notify all team members
+            const teamMembers = submission.teamId.members || [];
+            for (const memberId of teamMembers) {
+              await Notification.create({
+                recipient: memberId,
+                message: `🏆 Congratulations! Your team "${submission.teamId.name}" has won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+                type: 'success',
+                hackathon: hackathon._id,
+                createdAt: new Date()
+              });
+            }
+          } else if (submission.submittedBy) {
+            // For individual submissions
+            await Notification.create({
+              recipient: submission.submittedBy._id,
+              message: `🏆 Congratulations! You have won ${hackathon.title}! Your combined score: ${winner.combinedScore}/10 (PPT: ${winner.pptScore}/10, Project: ${winner.projectScore}/10)`,
+              type: 'success',
+              hackathon: hackathon._id,
+              createdAt: new Date()
+            });
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error('🔍 Backend - Error creating winner notifications:', notificationError);
+      // Don't fail the request if notification fails
+    }
+
+    console.log('🔍 Backend - Winners assigned successfully:', winners.length);
+
+    res.status(200).json({
+      message: `Successfully assigned ${winners.length} winners`,
+      winners: winners.map(winner => ({
+        _id: winner._id,
+        projectTitle: winner.projectTitle,
+        teamName: winner.teamName,
+        leaderName: winner.leaderName,
+        pptScore: winner.pptScore,
+        projectScore: winner.projectScore,
+        combinedScore: winner.combinedScore
+      })),
+      mode,
+      winnerCount: winners.length,
+      assignedAt: new Date()
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error assigning winners:', error);
+    res.status(500).json({ message: 'Failed to assign winners', error: error.message });
   }
 };
 

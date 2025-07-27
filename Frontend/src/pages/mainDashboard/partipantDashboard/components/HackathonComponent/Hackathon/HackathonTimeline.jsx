@@ -203,7 +203,7 @@ export default function HackathonTimeline({
       const result = await uploadPPTFile(file);
       await savePPTSubmission({
         hackathonId: hackathon._id,
-        roundIndex: roundIdx,
+        roundIndex: 0, // PPT submissions always go to Round 1 (index 0)
         pptFile: result.url,
       });
       toast({
@@ -234,7 +234,7 @@ export default function HackathonTimeline({
     try {
       await deletePPTSubmission({
         hackathonId: hackathon._id,
-        roundIndex: roundIdx,
+        roundIndex: 0, // PPT submissions always go to Round 1 (index 0)
       });
       toast({
         title: "PPT Deleted",
@@ -326,10 +326,15 @@ export default function HackathonTimeline({
   };
 
   const getSubmissionForRound = (roundIdx) => {
-    const found = pptSubmissions.find(
-      (s) => String(s.roundIndex) === String(roundIdx)
-    );
-    return found;
+    // PPT submissions should only appear in Round 1 (idx 0)
+    if (roundIdx === 0) {
+      const found = pptSubmissions.find(
+        (s) => String(s.roundIndex) === String(roundIdx)
+      );
+      return found;
+    }
+    // For Round 2 and beyond, no PPT submissions should be shown
+    return null;
   };
 
   const getPPTDownloadLink = (
@@ -354,7 +359,18 @@ export default function HackathonTimeline({
 
   const getProjectSubmissionsForRound = (roundIdx) => {
     const submissions = projectSubmissions.filter(
-      (s) => String(s.roundIndex) === String(roundIdx)
+      (s) => {
+        // For Round 1 (idx 0): Show both PPT and Project submissions
+        if (roundIdx === 0) {
+          return String(s.roundIndex) === String(roundIdx);
+        }
+        // For Round 2 (idx 1): Only show Project submissions (not PPT)
+        if (roundIdx === 1) {
+          return String(s.roundIndex) === String(roundIdx) && s.projectId;
+        }
+        // For other rounds: Show all submissions for that round
+        return String(s.roundIndex) === String(roundIdx);
+      }
     );
     console.log(`🔍 getProjectSubmissionsForRound(${roundIdx}): ${submissions.length} submissions`, submissions);
     return submissions;

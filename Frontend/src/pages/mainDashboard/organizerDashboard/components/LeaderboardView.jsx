@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle } from "lucide-react";
+import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle, Crown, Star } from "lucide-react";
 import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../../components/DashboardUI/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
@@ -34,6 +34,15 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [previousShortlistCount, setPreviousShortlistCount] = useState(null);
   const [previousShortlistThreshold, setPreviousShortlistThreshold] = useState(null);
   const [shortlistFilter, setShortlistFilter] = useState('all'); // 'all', 'shortlisted', 'not-shortlisted'
+  
+  // Round 2 Winner Assignment States
+  const [winnerAssignmentModalOpen, setWinnerAssignmentModalOpen] = useState(false);
+  const [assigningWinners, setAssigningWinners] = useState(false);
+  const [winnerCount, setWinnerCount] = useState(3);
+  const [winnerMode, setWinnerMode] = useState('topN'); // 'topN', 'threshold', 'manual'
+  const [winnerThreshold, setWinnerThreshold] = useState(7.0);
+  const [selectedWinnerIds, setSelectedWinnerIds] = useState([]);
+  const [hasWinners, setHasWinners] = useState(false);
 
   useEffect(() => {
     if (hackathonId) {
@@ -54,12 +63,14 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     if (leaderboard.length > 0) {
       const hasShortlistedSubmissions = leaderboard.some(entry => entry.status === 'shortlisted');
       const shortlistedCount = leaderboard.filter(entry => entry.status === 'shortlisted').length;
+      const hasWinnerSubmissions = leaderboard.some(entry => entry.status === 'winner');
       
       console.log('🔍 Frontend - Checking shortlisting status:', {
         totalEntries: leaderboard.length,
         shortlistedEntries: shortlistedCount,
         hasShortlistedSubmissions,
         hasShortlisted: hasShortlisted, // Current state
+        hasWinnerSubmissions,
         entries: leaderboard.map(entry => ({ 
           id: entry._id, 
           status: entry.status, 
@@ -76,6 +87,13 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       } else if (shortlistedCount === 0 && hasShortlisted) {
         console.log('🔍 Frontend - No shortlisted entries found, setting hasShortlisted to false');
         setHasShortlisted(false);
+      }
+      
+      // Check for winners
+      if (hasWinnerSubmissions && !hasWinners) {
+        setHasWinners(true);
+      } else if (!hasWinnerSubmissions && hasWinners) {
+        setHasWinners(false);
       }
     }
   }, [leaderboard]);
@@ -376,6 +394,54 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     }
   };
 
+  const handleAssignWinners = async () => {
+    setAssigningWinners(true);
+    try {
+      const token = localStorage.getItem('token');
+      const requestBody = {
+        winnerCount: winnerCount,
+        mode: winnerMode,
+        threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
+        winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
+      };
+
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: 'Winners Assigned Successfully',
+          description: `Successfully assigned ${data.winners.length} winners for Round 2`,
+          variant: 'default',
+        });
+        setWinnerAssignmentModalOpen(false);
+        fetchLeaderboard(); // Refresh leaderboard to show winners
+        if (onShortlistingComplete) {
+          onShortlistingComplete();
+        }
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to assign winners');
+      }
+    } catch (error) {
+      console.error('Error assigning winners:', error);
+      toast({
+        title: 'Winner Assignment Failed',
+        description: error.message || 'Failed to assign winners',
+        variant: 'destructive',
+      });
+    } finally {
+      setAssigningWinners(false);
+    }
+  };
+
   const getStatusIcon = (scoreCount) => {
     if (scoreCount > 0) {
       return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -443,28 +509,62 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
               'Leaderboard data'
             )}
           </p>
-          <p className="text-sm text-blue-600 mt-1">
-            Shortlist top performers to advance to Round 2
-          </p>
-          {summary && summary.evaluatedSubmissions > 0 && (
-            <p className="text-sm text-green-600 mt-1">
-              ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for shortlisting
-            </p>
+          
+          {/* Round 1 Specific Content */}
+          {selectedRound === 0 && (
+            <>
+              <p className="text-sm text-blue-600 mt-1">
+                Shortlist top performers to advance to Round 2
+              </p>
+              {summary && summary.evaluatedSubmissions > 0 && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for shortlisting
+                </p>
+              )}
+              {summary && summary.evaluatedSubmissions === 0 && (
+                <p className="text-sm text-yellow-600 mt-1">
+                  ⏳ Waiting for judge evaluations to begin shortlisting
+                </p>
+              )}
+              <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                <p className="text-xs text-gray-600">
+                  <strong>Shortlisting Process:</strong> 
+                  1) Judges evaluate Round 1 submissions → 
+                  2) Scores appear in leaderboard → 
+                  3) Organizer shortlists top performers → 
+                  4) Shortlisted teams can submit to Round 2
+                </p>
+              </div>
+            </>
           )}
-          {summary && summary.evaluatedSubmissions === 0 && (
-            <p className="text-sm text-yellow-600 mt-1">
-              ⏳ Waiting for judge evaluations to begin shortlisting
-            </p>
+          
+          {/* Round 2 Specific Content */}
+          {selectedRound === 1 && (
+            <>
+              <p className="text-sm text-yellow-600 mt-1">
+                🏆 Assign winners based on combined PPT + Project scores
+              </p>
+              {summary && summary.evaluatedSubmissions > 0 && (
+                <p className="text-sm text-green-600 mt-1">
+                  ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for winner assignment
+                </p>
+              )}
+              {summary && summary.evaluatedSubmissions === 0 && (
+                <p className="text-sm text-yellow-600 mt-1">
+                  ⏳ Waiting for judge evaluations to begin winner assignment
+                </p>
+              )}
+              <div className="mt-2 p-3 bg-yellow-50 rounded-md border border-yellow-200">
+                <p className="text-xs text-yellow-800">
+                  <strong>Winner Assignment Process:</strong> 
+                  1) Judges evaluate Round 2 projects → 
+                  2) Combined scores calculated (PPT + Project) → 
+                  3) Organizer assigns winners → 
+                  4) Winners receive notifications and prizes
+                </p>
+              </div>
+            </>
           )}
-          <div className="mt-2 p-3 bg-gray-50 rounded-md">
-            <p className="text-xs text-gray-600">
-              <strong>Shortlisting Process:</strong> 
-              1) Judges evaluate Round 1 submissions → 
-              2) Scores appear in leaderboard → 
-              3) Organizer shortlists top performers → 
-              4) Shortlisted teams can submit to Round 2
-            </p>
-          </div>
         </div>
         <div className="flex items-center gap-4">
           <Button
@@ -481,43 +581,81 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
 
           {summary && summary.totalSubmissions > 0 && (
             <>
-              {!hasShortlisted ? (
-                <Button
-                  onClick={() => setShortlistModalOpen(true)}
-                  className={`${
-                    summary.evaluatedSubmissions > 0 
-                      ? 'bg-green-600 hover:bg-green-700 text-white' 
-                      : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                  }`}
-                  disabled={summary.evaluatedSubmissions === 0}
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  {summary.evaluatedSubmissions > 0 
-                    ? 'Shortlist for Round 2' 
-                    : 'Shortlist (No Evaluations Yet)'
-                  }
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setEditShortlistModalOpen(true)}
-                  variant="outline"
-                  className="text-purple-600 border-purple-600 hover:bg-purple-50"
-                  disabled={loadingShortlisted}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  {loadingShortlisted ? 'Loading...' : 'Edit Shortlist'}
-                </Button>
+              {/* Round 1 Actions */}
+              {selectedRound === 0 && (
+                <>
+                  {!hasShortlisted ? (
+                    <Button
+                      onClick={() => setShortlistModalOpen(true)}
+                      className={`${
+                        summary.evaluatedSubmissions > 0 
+                          ? 'bg-green-600 hover:bg-green-700 text-white' 
+                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                      }`}
+                      disabled={summary.evaluatedSubmissions === 0}
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      {summary.evaluatedSubmissions > 0 
+                        ? 'Shortlist for Round 2' 
+                        : 'Shortlist (No Evaluations Yet)'
+                      }
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setEditShortlistModalOpen(true)}
+                      variant="outline"
+                      className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                      disabled={loadingShortlisted}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      {loadingShortlisted ? 'Loading...' : 'Edit Shortlist'}
+                    </Button>
+                  )}
+                  {hasShortlisted && (
+                    <Button
+                      onClick={handleEditAllShortlist}
+                      variant="outline"
+                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
+                      disabled={loadingShortlisted}
+                    >
+                      <List className="w-4 h-4 mr-2" />
+                      {loadingShortlisted ? 'Loading...' : 'View All Shortlisted'}
+                    </Button>
+                  )}
+                </>
               )}
-              {hasShortlisted && (
-                <Button
-                  onClick={handleEditAllShortlist}
-                  variant="outline"
-                  className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                  disabled={loadingShortlisted}
-                >
-                  <List className="w-4 h-4 mr-2" />
-                  {loadingShortlisted ? 'Loading...' : 'View All Shortlisted'}
-                </Button>
+              
+              {/* Round 2 Actions */}
+              {selectedRound === 1 && (
+                <>
+                  {!hasWinners ? (
+                    <Button
+                      onClick={() => setWinnerAssignmentModalOpen(true)}
+                      className={`${
+                        summary.evaluatedSubmissions > 0 
+                          ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
+                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                      }`}
+                      disabled={summary.evaluatedSubmissions === 0}
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      {summary.evaluatedSubmissions > 0 
+                        ? 'Assign Winners' 
+                        : 'Assign Winners (No Evaluations Yet)'
+                      }
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => setWinnerAssignmentModalOpen(true)}
+                      variant="outline"
+                      className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                      disabled={assigningWinners}
+                    >
+                      <Crown className="w-4 h-4 mr-2" />
+                      {assigningWinners ? 'Loading...' : 'Reassign Winners'}
+                    </Button>
+                  )}
+                </>
               )}
             </>
           )}
@@ -690,18 +828,38 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Average Score
-                    </th>
+                    {selectedRound === 1 ? (
+                      <>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          PPT Score
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Project Score
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-yellow-600 uppercase tracking-wider">
+                          Combined Score
+                        </th>
+                      </>
+                    ) : (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Average Score
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Evaluations
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Shortlisted
-                    </th>
+                    {selectedRound === 0 ? (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Shortlisted
+                      </th>
+                    ) : (
+                      <th className="px-6 py-3 text-left text-xs font-medium text-yellow-600 uppercase tracking-wider">
+                        Winner
+                      </th>
+                    )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
@@ -753,11 +911,31 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {entry.averageScore > 0 ? `${entry.averageScore}/10` : 'N/A'}
-                        </div>
-                      </td>
+                      {selectedRound === 1 ? (
+                        <>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {entry.pptScore ? `${entry.pptScore}/10` : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {entry.projectScore ? `${entry.projectScore}/10` : 'N/A'}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-bold text-yellow-600">
+                              {entry.averageScore > 0 ? `${entry.averageScore}/10` : 'N/A'}
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {entry.averageScore > 0 ? `${entry.averageScore}/10` : 'N/A'}
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-600">
                           {entry.scoreCount} evaluation{entry.scoreCount !== 1 ? 's' : ''}
@@ -771,32 +949,61 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                           </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {entry.status === 'shortlisted' ? (
-                          <div className="flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span className="text-sm text-green-600 font-medium">Shortlisted</span>
-                          </div>
-                        ) : shortlistModalOpen && shortlistMode === 'topN' && 
-                           leaderboard.filter(e => e.scoreCount > 0).findIndex(e => e._id === entry._id) < shortlistCount ? (
-                          <div className="flex items-center gap-1">
-                            <div className="w-4 h-4 bg-green-200 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">
-                              ✓
+                      {selectedRound === 0 ? (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {entry.status === 'shortlisted' ? (
+                            <div className="flex items-center gap-1">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-sm text-green-600 font-medium">Shortlisted</span>
                             </div>
-                            <span className="text-sm text-green-600 font-medium">Will be shortlisted</span>
-                          </div>
-                        ) : shortlistModalOpen && shortlistMode === 'threshold' && 
-                           entry.scoreCount > 0 && entry.averageScore >= shortlistThreshold ? (
-                          <div className="flex items-center gap-1">
-                            <div className="w-4 h-4 bg-green-200 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">
-                              ✓
+                          ) : shortlistModalOpen && shortlistMode === 'topN' && 
+                             leaderboard.filter(e => e.scoreCount > 0).findIndex(e => e._id === entry._id) < shortlistCount ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-green-200 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                ✓
+                              </div>
+                              <span className="text-sm text-green-600 font-medium">Will be shortlisted</span>
                             </div>
-                            <span className="text-sm text-green-600 font-medium">Will be shortlisted</span>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-gray-400">-</span>
-                        )}
-                      </td>
+                          ) : shortlistModalOpen && shortlistMode === 'threshold' && 
+                             entry.scoreCount > 0 && entry.averageScore >= shortlistThreshold ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-green-200 text-green-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                ✓
+                              </div>
+                              <span className="text-sm text-green-600 font-medium">Will be shortlisted</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      ) : (
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {entry.status === 'winner' ? (
+                            <div className="flex items-center gap-1">
+                              <Crown className="w-4 h-4 text-yellow-500" />
+                              <span className="text-sm text-yellow-600 font-medium">Winner</span>
+                            </div>
+                          ) : winnerAssignmentModalOpen && winnerMode === 'topN' && 
+                             leaderboard.filter(e => e.scoreCount > 0).findIndex(e => e._id === entry._id) < winnerCount ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                👑
+                              </div>
+                              <span className="text-sm text-yellow-600 font-medium">Will be winner</span>
+                            </div>
+                          ) : winnerAssignmentModalOpen && winnerMode === 'threshold' && 
+                             entry.scoreCount > 0 && entry.averageScore >= winnerThreshold ? (
+                            <div className="flex items-center gap-1">
+                              <div className="w-4 h-4 bg-yellow-200 text-yellow-700 rounded-full flex items-center justify-center text-xs font-bold">
+                                👑
+                              </div>
+                              <span className="text-sm text-yellow-600 font-medium">Will be winner</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
                           <Button
@@ -887,25 +1094,48 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
                 </h4>
                 <div className="space-y-4">
                   {submissionDetails.pptFile && (
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <div className="font-medium text-gray-900">PPT Presentation</div>
-                          <div className="text-sm text-gray-500">
-                            {submissionDetails.pptFile.split('/').pop()}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                          <div>
+                            <div className="font-medium text-gray-900">PPT Presentation</div>
+                            <div className="text-sm text-gray-500">
+                              {submissionDetails.pptFile.split('/').pop()}
+                            </div>
                           </div>
                         </div>
+                        <a
+                          href={submissionDetails.pptFile}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Open in New Tab
+                        </a>
                       </div>
-                      <a
-                        href={submissionDetails.pptFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View PPT
-                      </a>
+                      
+                      {/* PPT Preview Section */}
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-blue-600" />
+                          PPT Preview
+                        </h5>
+                        <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                          <iframe
+                            src={`https://docs.google.com/gview?url=${encodeURIComponent(submissionDetails.pptFile)}&embedded=true`}
+                            style={{ 
+                              width: "100%", 
+                              height: "600px", 
+                              border: "none"
+                            }}
+                            title="PPT Preview"
+                            allowFullScreen
+                            className="rounded-lg"
+                          />
+                        </div>
+                      </div>
                     </div>
                   )}
                   {submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0 && (
@@ -1700,6 +1930,536 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Winner Assignment Modal */}
+      <Dialog open={winnerAssignmentModalOpen} onOpenChange={setWinnerAssignmentModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-600" />
+              Assign Winners for Round 2
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Winner Count Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Number of Winners
+              </label>
+              <input
+                type="number"
+                min="1"
+                max={leaderboard.length}
+                value={winnerCount}
+                onChange={(e) => setWinnerCount(parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Maximum: {leaderboard.length} projects
+              </p>
+            </div>
+
+            {/* Winner Selection Mode */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Winner Selection Mode
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="topN"
+                    checked={winnerMode === 'topN'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Top N Projects</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="threshold"
+                    checked={winnerMode === 'threshold'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Score Threshold</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="manual"
+                    checked={winnerMode === 'manual'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Manual Selection</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Top N Mode */}
+            {winnerMode === 'topN' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of projects to be winners
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={leaderboard.length}
+                  value={winnerCount}
+                  onChange={(e) => setWinnerCount(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum: {leaderboard.length} projects
+                </p>
+              </div>
+            )}
+
+            {/* Threshold Mode */}
+            {winnerMode === 'threshold' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum score threshold for winners
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={winnerThreshold}
+                  onChange={(e) => setWinnerThreshold(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Projects with average score ≥ {winnerThreshold}/10 will be winners
+                </p>
+              </div>
+            )}
+
+            {/* Manual Selection Mode */}
+            {winnerMode === 'manual' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select submissions to be winners
+                </label>
+                <div className="space-y-2">
+                  {leaderboard.map((entry, index) => (
+                    <div key={entry._id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedWinnerIds.includes(entry._id)}
+                          onChange={() => {
+                            if (selectedWinnerIds.includes(entry._id)) {
+                              setSelectedWinnerIds(selectedWinnerIds.filter(id => id !== entry._id));
+                            } else {
+                              setSelectedWinnerIds([...selectedWinnerIds, entry._id]);
+                            }
+                          }}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{entry.projectTitle}</span>
+                        <span className="text-gray-500">({entry.averageScore}/10)</span>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {entry.scoreCount} evaluations
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Hold Ctrl/Cmd to select multiple.
+                </p>
+              </div>
+            )}
+
+            {/* Preview Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Preview</span>
+              </div>
+              <div className="text-sm text-blue-700">
+                {winnerMode === 'topN' && (
+                  <div>
+                    <p>Will assign {winnerCount} winners:</p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
+                      {Math.min(winnerCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be winners
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {leaderboard
+                        .filter(entry => entry.scoreCount > 0)
+                        .slice(0, winnerCount)
+                        .map((entry, index) => (
+                          <div key={entry._id} className="flex items-center gap-2 text-xs">
+                            <Star className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{entry.projectTitle}</span>
+                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {winnerMode === 'threshold' && (
+                  <div>
+                    <p>Will assign winners with score ≥ {winnerThreshold}/10:</p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length} projects meet the threshold
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {leaderboard
+                        .filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold)
+                        .map((entry, index) => (
+                          <div key={entry._id} className="flex items-center gap-2 text-xs">
+                            <Star className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{entry.projectTitle}</span>
+                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
+                          </div>
+                        ))}
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length === 0 && (
+                        <p className="text-orange-600 text-xs">No projects meet the threshold criteria</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {winnerMode === 'manual' && (
+                  <div>
+                    <p>Selected {selectedWinnerIds.length} submissions to be winners:</p>
+                    <div className="mt-2 space-y-1">
+                      {selectedWinnerIds.map((id, index) => {
+                        const winnerEntry = leaderboard.find(entry => entry._id === id);
+                        return (
+                          <div key={id} className="flex items-center gap-2 text-xs">
+                            <Star className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{winnerEntry?.projectTitle || 'Untitled Project'}</span>
+                            <span className="text-yellow-600">({winnerEntry?.averageScore}/10)</span>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm text-yellow-800">
+                  {winnerMode === 'topN' 
+                    ? `This will assign the top ${winnerCount} projects as winners for Round 2.`
+                    : winnerMode === 'threshold'
+                    ? `This will assign all projects with average score ≥ ${winnerThreshold}/10 as winners for Round 2.`
+                    : `This will assign the selected ${selectedWinnerIds.length} submissions as winners for Round 2.`
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setWinnerAssignmentModalOpen(false)}
+              disabled={assigningWinners}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setAssigningWinners(true);
+                try {
+                  const token = localStorage.getItem('token');
+                  const requestBody = {
+                    winnerCount: winnerCount,
+                    winnerMode: winnerMode,
+                    winnerThreshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
+                    manualWinnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
+                  };
+
+                  const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(requestBody)
+                  });
+
+                  if (response.ok) {
+                    const data = await response.json();
+                    toast({
+                      title: 'Winners Assigned',
+                      description: `Successfully assigned ${data.assignedWinners.length} winners.`,
+                      variant: 'default',
+                    });
+                    setWinnerAssignmentModalOpen(false);
+                    fetchLeaderboard(); // Refresh leaderboard to show winners
+                    if (onShortlistingComplete) {
+                      onShortlistingComplete();
+                    }
+                  } else {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to assign winners');
+                  }
+                } catch (error) {
+                  console.error('Error assigning winners:', error);
+                  toast({
+                    title: 'Assign Winners Failed',
+                    description: error.message || 'Failed to assign winners',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setAssigningWinners(false);
+                }
+              }}
+              disabled={assigningWinners}
+              className="bg-gold-600 hover:bg-gold-700 text-white"
+            >
+              {assigningWinners ? 'Assigning Winners...' : 'Assign Winners'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Winner Assignment Modal */}
+      <Dialog open={winnerAssignmentModalOpen} onOpenChange={setWinnerAssignmentModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-yellow-600" />
+              Assign Winners for Round 2
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Winner Selection Mode */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Winner Selection Mode
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="topN"
+                    checked={winnerMode === 'topN'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Top N Projects</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="threshold"
+                    checked={winnerMode === 'threshold'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Score Threshold</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="manual"
+                    checked={winnerMode === 'manual'}
+                    onChange={(e) => setWinnerMode(e.target.value)}
+                    className="text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm">Manual Selection</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Top N Mode */}
+            {winnerMode === 'topN' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Number of winners to assign
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={leaderboard.length}
+                  value={winnerCount}
+                  onChange={(e) => setWinnerCount(parseInt(e.target.value) || 1)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum: {leaderboard.length} projects
+                </p>
+              </div>
+            )}
+
+            {/* Threshold Mode */}
+            {winnerMode === 'threshold' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Minimum combined score threshold
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
+                  value={winnerThreshold}
+                  onChange={(e) => setWinnerThreshold(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Projects with combined score ≥ {winnerThreshold}/10 will be winners
+                </p>
+              </div>
+            )}
+
+            {/* Manual Selection Mode */}
+            {winnerMode === 'manual' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select submissions to be winners
+                </label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {leaderboard.map((entry, index) => (
+                    <div key={entry._id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedWinnerIds.includes(entry._id)}
+                          onChange={() => {
+                            if (selectedWinnerIds.includes(entry._id)) {
+                              setSelectedWinnerIds(selectedWinnerIds.filter(id => id !== entry._id));
+                            } else {
+                              setSelectedWinnerIds([...selectedWinnerIds, entry._id]);
+                            }
+                          }}
+                          className="text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="font-medium">{entry.projectTitle}</span>
+                        <span className="text-gray-500">({entry.averageScore}/10)</span>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {entry.scoreCount} evaluations
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Selected {selectedWinnerIds.length} submissions
+                </p>
+              </div>
+            )}
+
+            {/* Preview Section */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Preview</span>
+              </div>
+              <div className="text-sm text-blue-700">
+                {winnerMode === 'topN' && (
+                  <div>
+                    <p>Will assign {winnerCount} winners:</p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
+                      {Math.min(winnerCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be winners
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {leaderboard
+                        .filter(entry => entry.scoreCount > 0)
+                        .slice(0, winnerCount)
+                        .map((entry, index) => (
+                          <div key={entry._id} className="flex items-center gap-2 text-xs">
+                            <Crown className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{entry.projectTitle}</span>
+                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+                {winnerMode === 'threshold' && (
+                  <div>
+                    <p>Will assign winners with combined score ≥ {winnerThreshold}/10:</p>
+                    <p className="text-xs text-blue-600 mb-2">
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length} projects meet the threshold
+                    </p>
+                    <div className="mt-2 space-y-1">
+                      {leaderboard
+                        .filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold)
+                        .map((entry, index) => (
+                          <div key={entry._id} className="flex items-center gap-2 text-xs">
+                            <Crown className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{entry.projectTitle}</span>
+                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
+                          </div>
+                        ))}
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length === 0 && (
+                        <p className="text-orange-600 text-xs">No projects meet the threshold criteria</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {winnerMode === 'manual' && (
+                  <div>
+                    <p>Selected {selectedWinnerIds.length} submissions to be winners:</p>
+                    <div className="mt-2 space-y-1">
+                      {selectedWinnerIds.map((id, index) => {
+                        const winnerEntry = leaderboard.find(entry => entry._id === id);
+                        return (
+                          <div key={id} className="flex items-center gap-2 text-xs">
+                            <Crown className="w-4 h-4 text-yellow-600" />
+                            <span className="font-medium">{winnerEntry?.projectTitle || 'Untitled Project'}</span>
+                            <span className="text-yellow-600">({winnerEntry?.averageScore}/10)</span>
+                            <span className="text-xs text-gray-500">#{index + 1}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm text-yellow-800">
+                  {winnerMode === 'topN' 
+                    ? `This will assign the top ${winnerCount} projects as winners for Round 2.`
+                    : winnerMode === 'threshold'
+                    ? `This will assign all projects with combined score ≥ ${winnerThreshold}/10 as winners for Round 2.`
+                    : `This will assign the selected ${selectedWinnerIds.length} submissions as winners for Round 2.`
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setWinnerAssignmentModalOpen(false)}
+              disabled={assigningWinners}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignWinners}
+              disabled={assigningWinners}
+              className="bg-gold-600 hover:bg-gold-700 text-white"
+            >
+              {assigningWinners ? 'Assigning Winners...' : 'Assign Winners'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

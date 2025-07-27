@@ -343,6 +343,14 @@ const changeUserRole = async (req, res) => {
     }
     // You can add more logic for other roles if needed
 
+    // Clean enum fields before saving to prevent validation errors
+    if (user.courseDuration === '') user.courseDuration = undefined;
+    if (user.currentYear === '') user.currentYear = undefined;
+    if (user.yearsOfExperience === '') user.yearsOfExperience = undefined;
+    if (user.preferredHackathonTypes && user.preferredHackathonTypes.includes('')) {
+      user.preferredHackathonTypes = user.preferredHackathonTypes.filter(type => type !== '');
+    }
+
     await user.save();
     console.log("Role updated successfully for user:", user._id);
     res.json({ message: "Role updated", user });
@@ -369,6 +377,15 @@ const changePassword = async (req, res) => {
 
     const newHash = await bcrypt.hash(newPassword, 10);
     user.passwordHash = newHash;
+    
+    // Clean enum fields before saving to prevent validation errors
+    if (user.courseDuration === '') user.courseDuration = undefined;
+    if (user.currentYear === '') user.currentYear = undefined;
+    if (user.yearsOfExperience === '') user.yearsOfExperience = undefined;
+    if (user.preferredHackathonTypes && user.preferredHackathonTypes.includes('')) {
+      user.preferredHackathonTypes = user.preferredHackathonTypes.filter(type => type !== '');
+    }
+    
     await user.save();
 
     res.json({ message: "Password updated successfully" });

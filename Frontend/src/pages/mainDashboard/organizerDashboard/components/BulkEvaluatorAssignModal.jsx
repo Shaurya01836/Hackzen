@@ -37,6 +37,10 @@ export default function BulkEvaluatorAssignModal({
   // Evaluator selector modal state
   const [showEvaluatorSelector, setShowEvaluatorSelector] = useState(false);
 
+  // Problem statement selection state
+  const [selectedProblemStatement, setSelectedProblemStatement] = useState("");
+  const [hackathonData, setHackathonData] = useState(null);
+
 
 
   // Fetch evaluators when modal opens
@@ -44,8 +48,25 @@ export default function BulkEvaluatorAssignModal({
     if (open && hackathonId) {
       fetchEvaluators();
       fetchAssignmentOverview();
+      fetchHackathonData();
     }
   }, [open, hackathonId, roundIndex]);
+
+  // Refetch assignment overview when problem statement selection changes
+  useEffect(() => {
+    if (open && hackathonId) {
+      fetchAssignmentOverview();
+    }
+  }, [selectedProblemStatement]);
+
+  // Reset assignment counts when problem statement selection changes
+  useEffect(() => {
+    if (selectedProblemStatement) {
+      // Reset assignment counts when problem statement filter is applied
+      setAssignCounts({});
+      setAssignmentMode('manual');
+    }
+  }, [selectedProblemStatement]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -97,7 +118,25 @@ export default function BulkEvaluatorAssignModal({
     setOverviewLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`, {
+      
+      // Build URL with filters
+      let url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      const params = new URLSearchParams();
+      
+      if (selectedProblemStatement) {
+        params.append('problemStatementId', selectedProblemStatement);
+      }
+      
+      // Add roundIndex filter
+      if (roundIndex !== undefined && roundIndex !== null) {
+        params.append('roundIndex', roundIndex.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -111,6 +150,24 @@ export default function BulkEvaluatorAssignModal({
       console.error('Error fetching assignment overview:', error);
     } finally {
       setOverviewLoading(false);
+    }
+  };
+
+  const fetchHackathonData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/hackathons/${hackathonId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHackathonData(data);
+      } else {
+        console.error('Failed to fetch hackathon data');
+      }
+    } catch (error) {
+      console.error('Error fetching hackathon data:', error);
     }
   };
 
@@ -132,6 +189,19 @@ export default function BulkEvaluatorAssignModal({
   const activeEvaluators = filteredEvaluators.filter(ev => ev.status === 'active');
   const pendingEvaluators = filteredEvaluators.filter(ev => ev.status === 'pending');
   const declinedEvaluators = filteredEvaluators.filter(ev => ev.status === 'declined');
+
+  // Calculate actual submission count after filtering
+  const actualSubmissionCount = selectedProblemStatement ? 
+    assignmentOverview?.unassignedSubmissions?.length || 0 : selectedCount;
+
+  // Calculate total assigned, but cap it at the actual submission count when filtering is active
+  const totalAssigned = selectedEvaluators.reduce((sum, id) => {
+    const count = parseInt(assignCounts[id] || 0);
+    return sum + count;
+  }, 0);
+
+  // When filtering is active, show the actual submission count instead of the assigned count
+  const displayTotalAssigned = selectedProblemStatement ? actualSubmissionCount : totalAssigned;
 
   const handleEvaluatorToggle = (id) => {
     setSelectedEvaluators(prev =>
@@ -178,16 +248,13 @@ export default function BulkEvaluatorAssignModal({
       }
     }
 
-    // Check if we have enough evaluators for all submissions
-    const totalAssigned = selectedEvaluators.reduce((sum, id) => {
-      const count = parseInt(assignCounts[id] || 0);
-      return sum + count;
-    }, 0);
+    // Use the computed actual submission count
 
-    if (totalAssigned < selectedCount) {
+    // Only validate if we're trying to assign more than available (skip validation for multiple judges mode)
+    if (!multipleJudgesMode && totalAssigned > actualSubmissionCount) {
       toast({
-        title: 'Insufficient assignments',
-        description: `You need to assign ${selectedCount} submissions, but only assigned ${totalAssigned}.`,
+        title: 'Too many assignments',
+        description: `You're trying to assign ${totalAssigned} submissions but only ${actualSubmissionCount} are available (${selectedProblemStatement ? 'filtered by problem statement' : 'total'}).`,
         variant: 'destructive',
       });
       return;
@@ -201,23 +268,55 @@ export default function BulkEvaluatorAssignModal({
       const unassignedSubmissionIdsFromOverview = assignmentOverview?.unassignedSubmissions?.map(s => s._id) || [];
       
       // Filter selected submissions to only include unassigned ones
-      const unassignedSubmissionIds = selectedSubmissionIds.filter(submissionId => {
+      let unassignedSubmissionIds = selectedSubmissionIds.filter(submissionId => {
         const isUnassigned = unassignedSubmissionIdsFromOverview.includes(submissionId);
         return isUnassigned;
       });
 
+      // Filter by problem statement if selected
+      if (selectedProblemStatement) {
+        const selectedPS = hackathonData?.problemStatements?.find(ps => ps._id === selectedProblemStatement || ps._id === selectedProblemStatement.toString());
+        
+        if (selectedPS) {
+          // Since the backend already filtered by problem statement, we just use the unassigned submissions from overview
+          unassignedSubmissionIds = assignmentOverview?.unassignedSubmissions?.map(s => s._id) || [];
+          
+          console.log('🔍 Problem Statement Filter Applied:', {
+            selectedProblemStatement,
+            selectedProblemStatementText: selectedPS.statement.slice(0, 50) + '...',
+            originalSelectedCount: selectedSubmissionIds.length,
+            filteredCount: unassignedSubmissionIds.length
+          });
+        }
+      }
+
       if (unassignedSubmissionIds.length === 0) {
         console.log('🔍 DEBUG: No unassigned submissions to assign');
+        
+        let errorMessage = `All ${selectedSubmissionIds.length} selected submissions are already assigned to judges.`;
+        
+        if (selectedProblemStatement) {
+          const selectedPS = hackathonData?.problemStatements?.find(ps => ps._id === selectedProblemStatement || ps._id === selectedProblemStatement.toString());
+          errorMessage = `No submissions found for the selected problem statement "${selectedPS?.statement?.slice(0, 30)}..." that are available for assignment.`;
+        } else {
+          errorMessage += ` Only ${assignmentOverview?.unassignedSubmissions?.length || 0} submissions are available for assignment.`;
+        }
+        
         toast({
-          title: 'No unassigned submissions',
-          description: `All ${selectedSubmissionIds.length} selected submissions are already assigned to judges. Only ${assignmentOverview?.unassignedSubmissions?.length || 0} submissions are available for assignment. Please select from the "Unassigned Submissions" section.`,
+          title: 'No submissions to assign',
+          description: errorMessage,
           variant: 'destructive',
         });
         setAssignLoading(false);
         return;
       }
 
-      console.log(`🔍 DEBUG: Proceeding with assignment: ${unassignedSubmissionIds.length} unassigned submissions out of ${selectedSubmissionIds.length} selected`);
+      console.log(`🔍 DEBUG: Proceeding with assignment: ${unassignedSubmissionIds.length} filtered submissions out of ${selectedSubmissionIds.length} originally selected`);
+      
+      if (selectedProblemStatement && unassignedSubmissionIds.length < selectedSubmissionIds.length) {
+        const selectedPS = hackathonData?.problemStatements?.find(ps => ps._id === selectedProblemStatement || ps._id === selectedProblemStatement.toString());
+        console.log(`🔍 INFO: Problem statement filter applied. Only ${unassignedSubmissionIds.length} submissions match "${selectedPS?.statement?.slice(0, 30)}..."`);
+      }
 
       // Prepare evaluator assignments
       const evaluatorAssignments = selectedEvaluators.map(evaluatorId => {
@@ -238,7 +337,8 @@ export default function BulkEvaluatorAssignModal({
         roundIndex,
         multipleJudgesMode,
         judgesPerProject,
-        judgesPerProjectMode
+        judgesPerProjectMode,
+        selectedProblemStatement
       });
 
       const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/bulk-assign-submissions`;
@@ -256,7 +356,8 @@ export default function BulkEvaluatorAssignModal({
           roundIndex,
           multipleJudgesMode,
           judgesPerProject,
-          judgesPerProjectMode
+          judgesPerProjectMode,
+          problemStatementId: selectedProblemStatement || null
         }),
       });
 
@@ -269,15 +370,32 @@ export default function BulkEvaluatorAssignModal({
       const result = await response.json();
       
       if (result.assignedSubmissions > 0) {
+        let description = `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators`;
+        
+        if (selectedProblemStatement && result.assignedSubmissions < selectedSubmissionIds.length) {
+          const selectedPS = hackathonData?.problemStatements?.find(ps => ps._id === selectedProblemStatement || ps._id === selectedProblemStatement.toString());
+          description += ` (filtered by problem statement: "${selectedPS?.statement?.slice(0, 30)}...")`;
+        }
+        
+        if (multipleJudgesMode) {
+          description += ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project`;
+        }
+        
         toast({
           title: 'Assignments completed successfully',
-          description: `Assigned ${result.assignedSubmissions} submissions to ${selectedEvaluators.length} evaluators${multipleJudgesMode ? ` with ${judgesPerProjectMode === 'manual' ? judgesPerProject : Math.ceil(selectedEvaluators.length / selectedCount)} judges per project` : ''}.`,
+          description: description + '.',
           variant: 'default',
         });
       } else {
+        let description = 'All selected submissions were already assigned to judges.';
+        
+        if (selectedProblemStatement) {
+          description = 'No submissions matching the selected problem statement were available for assignment.';
+        }
+        
         toast({
           title: 'No assignments made',
-          description: 'All selected submissions were already assigned to judges.',
+          description: description,
           variant: 'default',
         });
       }
@@ -318,14 +436,18 @@ export default function BulkEvaluatorAssignModal({
   };
 
   const handleCountChange = (id, value) => {
-    const numValue = parseInt(value.replace(/[^0-9]/g, '')) || 0;
-    setAssignCounts(prev => ({ ...prev, [id]: numValue }));
+    const numValue = parseInt(value) || 0;
+    const maxValue = actualSubmissionCount;
+    const clampedValue = Math.max(0, Math.min(maxValue, numValue));
+    setAssignCounts(prev => ({ ...prev, [id]: clampedValue }));
   };
 
   const handleAssignEqually = () => {
     if (selectedEvaluators.length === 0) return;
     
-    const equalCount = Math.ceil(selectedCount / selectedEvaluators.length);
+    // Use the computed actual submission count
+    
+    const equalCount = Math.ceil(displayTotalAssigned / selectedEvaluators.length);
     const newCounts = {};
     selectedEvaluators.forEach(id => {
       newCounts[id] = equalCount;
@@ -360,12 +482,8 @@ export default function BulkEvaluatorAssignModal({
     }
   };
 
-  const totalAssigned = selectedEvaluators.reduce((sum, id) => {
-    const count = parseInt(assignCounts[id] || 0);
-    return sum + count;
-  }, 0);
-
-  const remainingToAssign = selectedCount - totalAssigned;
+  // Calculate remaining to assign based on actual available submissions
+  const remainingToAssign = actualSubmissionCount - displayTotalAssigned;
 
   if (!hackathonId) {
     return (
@@ -477,6 +595,31 @@ export default function BulkEvaluatorAssignModal({
             Select judges to evaluate the selected submissions. Judges will only see submissions assigned to them.
           </p>
           
+          {/* Problem Statement Selection */}
+          {hackathonData?.problemStatements && hackathonData.problemStatements.length > 0 && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-800">Filter by Problem Statement</span>
+              </div>
+              <select
+                value={selectedProblemStatement}
+                onChange={(e) => setSelectedProblemStatement(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="">All Problem Statements</option>
+                {hackathonData.problemStatements.map((ps, index) => (
+                  <option key={ps._id || index} value={ps._id || index.toString()}>
+                    {ps.statement?.slice(0, 60)}...
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-600 mt-1">
+                Select a problem statement to show only submissions that were originally submitted for that specific problem. Only those submissions will be available for assignment to judges.
+              </p>
+            </div>
+          )}
+          
           {/* Assignment Overview */}
           {assignmentOverview && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -484,10 +627,17 @@ export default function BulkEvaluatorAssignModal({
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-blue-600" />
-                    <span className="font-medium">Unassigned Projects:</span>
+                    <span className="font-medium">
+                      {selectedProblemStatement ? 'Filtered Unassigned Projects:' : 'Unassigned Projects:'}
+                    </span>
                     <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">
                       {assignmentOverview.unassignedSubmissions?.length || 0}
                     </span>
+                    {selectedProblemStatement && (
+                      <span className="text-xs text-gray-500">
+                        (filtered by problem statement)
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <FileText className="w-4 h-4 text-green-600" />
@@ -523,23 +673,79 @@ export default function BulkEvaluatorAssignModal({
           <div className="mb-6">
             <div className="text-sm font-semibold mb-3 flex items-center justify-between">
               <span>Select Evaluator</span>
-              <div className="flex items-center gap-4">
-                <button 
-                  className="text-blue-600 text-xs font-semibold flex items-center gap-1 hover:text-blue-700" 
-                  onClick={handleAssignEqually}
-                >
-                  Assign Equally <ChevronDown className="w-3 h-3" />
-                </button>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center"
-                    value={totalAssigned}
-                    readOnly
-                  />
-                </div>
-              </div>
+                      <div className="flex items-center gap-4">
+          <button 
+            className="text-blue-600 text-xs font-semibold flex items-center gap-1 hover:text-blue-700" 
+            onClick={handleAssignEqually}
+          >
+            Assign Equally <ChevronDown className="w-3 h-3" />
+          </button>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0"
+              max={actualSubmissionCount}
+              step="1"
+              className="w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center"
+              value={displayTotalAssigned}
+              onChange={(e) => {
+                const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
+                // Distribute the new value equally among selected evaluators
+                if (selectedEvaluators.length > 0) {
+                  const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                  const newCounts = {};
+                  selectedEvaluators.forEach(id => {
+                    newCounts[id] = equalCount;
+                  });
+                  setAssignCounts(newCounts);
+                }
+              }}
+              onKeyDown={(e) => {
+                // Handle arrow keys for increment/decrement
+                if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  const newValue = Math.min(actualSubmissionCount, displayTotalAssigned + 1);
+                  if (selectedEvaluators.length > 0) {
+                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
+                      newCounts[id] = equalCount;
+                    });
+                    setAssignCounts(newCounts);
+                  }
+                } else if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  const newValue = Math.max(0, displayTotalAssigned - 1);
+                  if (selectedEvaluators.length > 0) {
+                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
+                      newCounts[id] = equalCount;
+                    });
+                    setAssignCounts(newCounts);
+                  }
+                }
+              }}
+              onInput={(e) => {
+                // Handle browser's native increment/decrement arrows
+                const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
+                if (selectedEvaluators.length > 0) {
+                  const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                  const newCounts = {};
+                  selectedEvaluators.forEach(id => {
+                    newCounts[id] = equalCount;
+                  });
+                  setAssignCounts(newCounts);
+                }
+              }}
+            />
+            {selectedProblemStatement && (
+              <span className="text-xs text-gray-500">
+                (filtered: {actualSubmissionCount})
+              </span>
+            )}
+          </div>
+        </div>
             </div>
             
             {/* Selected Evaluators Display */}
@@ -576,7 +782,7 @@ export default function BulkEvaluatorAssignModal({
                     type="number"
                     min="0"
                     className="w-12 border border-gray-200 rounded px-1 py-1 text-xs text-center"
-                    value={Math.ceil(selectedCount / selectedEvaluators.length) || 0}
+                    value={Math.ceil(actualSubmissionCount / selectedEvaluators.length) || 0}
                     readOnly
                   />
                 </div>
@@ -696,16 +902,43 @@ export default function BulkEvaluatorAssignModal({
                       <div className="text-xs text-gray-500">{ev.email}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="rounded-full border border-gray-200 p-1 bg-white text-gray-500 hover:text-blue-600" title="Assign equally">
+                      <button 
+                        className="rounded-full border border-gray-200 p-1 bg-white text-gray-500 hover:text-blue-600" 
+                        title="Assign equally"
+                        onClick={() => {
+                          const equalCount = Math.ceil(actualSubmissionCount / selectedEvaluators.length);
+                          setAssignCounts(prev => ({ ...prev, [id]: equalCount }));
+                        }}
+                      >
                         <UserPlus className="w-4 h-4" />
                       </button>
                       <input
                         type="number"
                         min="0"
-                        max={selectedCount}
+                        max={actualSubmissionCount}
+                        step="1"
                         className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center"
                         value={assignCounts[id] || "0"}
                         onChange={e => handleCountChange(id, e.target.value)}
+                        onKeyDown={(e) => {
+                          // Handle arrow keys for increment/decrement
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            const currentCount = parseInt(assignCounts[id] || 0);
+                            const newCount = Math.min(actualSubmissionCount, currentCount + 1);
+                            setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+                          } else if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            const currentCount = parseInt(assignCounts[id] || 0);
+                            const newCount = Math.max(0, currentCount - 1);
+                            setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+                          }
+                        }}
+                        onInput={(e) => {
+                          // Handle browser's native increment/decrement arrows
+                          const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
+                          setAssignCounts(prev => ({ ...prev, [id]: newValue }));
+                        }}
                         placeholder="0"
                       />
                     </div>
@@ -800,7 +1033,7 @@ export default function BulkEvaluatorAssignModal({
         )}
 
         {/* Warning Bar */}
-        {remainingToAssign > 0 && (
+        {!multipleJudgesMode && totalAssigned < actualSubmissionCount && selectedEvaluators.length > 0 && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mt-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -808,7 +1041,7 @@ export default function BulkEvaluatorAssignModal({
                   <span className="text-white text-xs font-bold">i</span>
                 </div>
                 <span className="text-orange-800 text-sm">
-                  +{remainingToAssign} candidate(s) still need to be selected!
+                  {actualSubmissionCount - totalAssigned} submission(s) still need to be assigned!
                 </span>
               </div>
               <button 
@@ -832,12 +1065,12 @@ export default function BulkEvaluatorAssignModal({
           </button>
           <button 
             className={`px-6 py-2 rounded-lg font-semibold transition ${
-              remainingToAssign === 0 && selectedEvaluators.length > 0
+              selectedEvaluators.length > 0 && (multipleJudgesMode ? true : totalAssigned <= actualSubmissionCount)
                 ? 'bg-blue-600 text-white hover:bg-blue-700'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             onClick={handleAssign} 
-            disabled={remainingToAssign > 0 || selectedEvaluators.length === 0 || assignLoading}
+            disabled={selectedEvaluators.length === 0 || (multipleJudgesMode ? false : totalAssigned > actualSubmissionCount) || assignLoading}
           >
             {assignLoading ? 'Assigning...' : 'Assign'}
           </button>

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw } from "lucide-react";
+import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw, Clock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../../../../components/DashboardUI/avatar";
 import { toast } from "../../../../hooks/use-toast";
 import {
@@ -48,6 +48,10 @@ export default function JudgeManagementAssignments({
   const [judgeDetailsModalOpen, setJudgeDetailsModalOpen] = useState(false);
   const [loadingAvailableJudges, setLoadingAvailableJudges] = useState(false);
   const [submissionScores, setSubmissionScores] = useState({});
+  const [submissionDetailsModalOpen, setSubmissionDetailsModalOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [submissionDetails, setSubmissionDetails] = useState(null);
+  const [loadingSubmissionDetails, setLoadingSubmissionDetails] = useState(false);
 
 
 
@@ -89,7 +93,20 @@ export default function JudgeManagementAssignments({
     try {
       const token = localStorage.getItem('token');
       
-      const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      // Build URL with filters
+      let url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      const params = new URLSearchParams();
+      
+      // Add roundIndex filter based on selected stage
+      if (selectedStage === 'r1') {
+        params.append('roundIndex', '0');
+      } else if (selectedStage === 'r2') {
+        params.append('roundIndex', '1');
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
       
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -348,6 +365,55 @@ export default function JudgeManagementAssignments({
     }
   };
 
+  const handleViewSubmission = async (submission) => {
+    setSelectedSubmission(submission);
+    setSubmissionDetailsModalOpen(true);
+    setLoadingSubmissionDetails(true);
+    
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch detailed submission information
+      const response = await fetch(`/api/submission-form/admin/${submission._id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const submissionData = await response.json();
+        
+        // Fetch judge evaluations for this submission
+        const evaluationsResponse = await fetch(`/api/scores/submission/${submission._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        let evaluations = [];
+        if (evaluationsResponse.ok) {
+          evaluations = await evaluationsResponse.json();
+        }
+        
+        setSubmissionDetails({
+          ...submissionData.submission,
+          evaluations
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch submission details",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching submission details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch submission details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingSubmissionDetails(false);
+    }
+  };
+
   // Fetch available judges when component mounts
   React.useEffect(() => {
     fetchAvailableJudges();
@@ -525,7 +591,10 @@ export default function JudgeManagementAssignments({
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <button className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <button 
+                                  onClick={() => handleViewSubmission(submission)}
+                                  className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                >
                                   <Eye className="w-4 h-4" />
                                   View
                                 </button>
@@ -882,7 +951,10 @@ export default function JudgeManagementAssignments({
                                   )}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <button className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                  <button 
+                                    onClick={() => handleViewSubmission(submission)}
+                                    className="inline-flex items-center gap-2 px-3 py-1 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                  >
                                     <Eye className="w-4 h-4" />
                                     View
                                   </button>
@@ -1254,7 +1326,9 @@ export default function JudgeManagementAssignments({
                   <div key={index} className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <h5 className="font-semibold text-gray-900">
-                        {round.roundName || `Round ${round.roundIndex + 1}`}
+                        {round.roundName || (round.roundIndex !== null && round.roundIndex !== undefined && !isNaN(round.roundIndex) 
+                          ? `Round ${round.roundIndex + 1}` 
+                          : 'Round 1')}
                       </h5>
                       <span className="text-sm text-gray-500">
                         {round.assignedSubmissions?.length || 0} submissions
@@ -1342,6 +1416,283 @@ export default function JudgeManagementAssignments({
           }, 1000);
             }}
           />
+
+      {/* Submission Details Modal */}
+      <Dialog open={submissionDetailsModalOpen} onOpenChange={setSubmissionDetailsModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              Submission Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete view of submission, assigned judges, and evaluations
+            </DialogDescription>
+          </DialogHeader>
+          {loadingSubmissionDetails ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Loading submission details...</span>
+            </div>
+          ) : submissionDetails ? (
+            <div className="space-y-6">
+              {/* Submission Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      {submissionDetails.projectTitle || submissionDetails.title || 'Untitled Project'}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium text-gray-700">Team:</span>
+                        <span className="ml-2 text-gray-900">{submissionDetails.teamName}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Submission Type:</span>
+                        <span className="ml-2 text-gray-900">
+                          {submissionDetails.pptFile ? 'PPT Presentation' : 'Project Files'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-700">Submitted:</span>
+                        <span className="ml-2 text-gray-900">
+                          {formatDate(submissionDetails.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {submissionDetails.assignedJudges?.length || 0}
+                    </div>
+                    <div className="text-sm text-gray-500">Assigned Judges</div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {(() => {
+                        const evaluatedCount = submissionDetails.evaluations?.length || 0;
+                        const totalCount = submissionDetails.assignedJudges?.length || 0;
+                        return `${evaluatedCount}/${totalCount} Evaluated`;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Submission Files */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Submission Files
+                </h4>
+                <div className="space-y-4">
+                  {submissionDetails.pptFile && (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-blue-600" />
+                          <div>
+                            <div className="font-medium text-gray-900">PPT Presentation</div>
+                            <div className="text-sm text-gray-500">
+                              {submissionDetails.pptFile.split('/').pop()}
+                            </div>
+                          </div>
+                        </div>
+                        <a
+                          href={submissionDetails.pptFile}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                          Open in New Tab
+                        </a>
+                      </div>
+                      
+                      {/* PPT Preview Section */}
+                      <div className="bg-white border border-gray-200 rounded-lg p-6">
+                        <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-blue-600" />
+                          PPT Preview
+                        </h5>
+                        <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                          <iframe
+                            src={`https://docs.google.com/gview?url=${encodeURIComponent(submissionDetails.pptFile)}&embedded=true`}
+                            style={{ 
+                              width: "100%", 
+                              height: "600px", 
+                              border: "none"
+                            }}
+                            title="PPT Preview"
+                            allowFullScreen
+                            className="rounded-lg"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0 && (
+                    <div className="space-y-2">
+                      <h5 className="font-medium text-gray-900">Project Files:</h5>
+                      {submissionDetails.projectFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                            <div>
+                              <div className="font-medium text-gray-900">{file.name}</div>
+                              <div className="text-sm text-gray-500">{file.type}</div>
+                            </div>
+                          </div>
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                          >
+                            <Eye className="w-4 h-4" />
+                            View
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Assigned Judges */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  Assigned Judges ({submissionDetails.assignedJudges?.length || 0})
+                </h4>
+                {submissionDetails.assignedJudges && submissionDetails.assignedJudges.length > 0 ? (
+                  <div className="space-y-4">
+                    {submissionDetails.assignedJudges.map((judge, index) => {
+                      // Check if this judge has evaluated
+                      const hasEvaluated = submissionDetails.evaluations?.some(evaluation => 
+                        evaluation.judge?._id === judge._id || 
+                        evaluation.judge?.email === judge.judgeEmail || 
+                        evaluation.judge?.email === judge.email
+                      );
+                      
+                      return (
+                        <div key={index} className={`flex items-center justify-between p-4 rounded-lg border ${
+                          hasEvaluated ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={judge.avatarUrl} alt={judge.judgeName || judge.name || judge.judgeEmail || judge.email} />
+                              <AvatarFallback>
+                                {(judge.judgeName || judge.name || judge.judgeEmail || judge.email || 'J')[0].toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {judge.judgeName || judge.name || 'Unknown Judge'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {judge.judgeEmail || judge.email || 'No email available'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            {hasEvaluated ? (
+                              <div className="flex items-center gap-2">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                                <span className="text-sm font-medium text-green-700">Evaluated</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-yellow-600" />
+                                <span className="text-sm font-medium text-yellow-700">Pending</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p>No judges assigned yet</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Judge Evaluations */}
+              {submissionDetails.evaluations && submissionDetails.evaluations.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-purple-600" />
+                    Judge Evaluations ({submissionDetails.evaluations.length})
+                  </h4>
+                  <div className="space-y-4">
+                    {submissionDetails.evaluations.map((evaluation, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-semibold text-blue-700">
+                                {(evaluation.judge?.name || evaluation.judge?.email || 'J')[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {evaluation.judge?.name || evaluation.judge?.email || 'Unknown Judge'}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {evaluation.judge?.email || 'No email available'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600">
+                              {evaluation.totalScore || (evaluation.scores && Object.values(evaluation.scores).reduce((sum, score) => sum + (score || 0), 0) / Object.keys(evaluation.scores).length) || 0}/10
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDate(evaluation.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Evaluation Criteria */}
+                        {evaluation.scores && Object.keys(evaluation.scores).length > 0 && (
+                          <div className="space-y-2">
+                            <h6 className="font-medium text-gray-900">Evaluation Criteria:</h6>
+                            {Object.entries(evaluation.scores).map(([criteria, score]) => (
+                              <div key={criteria} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                <span className="text-sm text-gray-700 capitalize">{criteria}</span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {score}/10
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Feedback */}
+                        {evaluation.feedback && (
+                          <div className="mt-4">
+                            <h6 className="font-medium text-gray-900 mb-2">Feedback:</h6>
+                            <div className="p-3 bg-gray-50 rounded-lg">
+                              <p className="text-sm text-gray-700">{evaluation.feedback}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+              <p>No submission details available</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

@@ -86,4 +86,7 @@ router.get('/hackathons/:hackathonId/round2-eligibility', protect, judgeManageme
 router.get('/hackathons/:hackathonId/shortlisting-notifications', protect, judgeManagementController.getShortlistingNotifications);
 router.post('/hackathons/:hackathonId/rounds/:roundIndex/auto-progress-round2', protect, isOrganizerOrAdmin, judgeManagementController.checkAndAutoProgressRound2);
 
+// 🏆 Assign Winners for Round 2
+router.post('/hackathons/:hackathonId/rounds/:roundIndex/assign-winners', protect, isOrganizerOrAdmin, judgeManagementController.assignWinners);
+
 module.exports = router; 

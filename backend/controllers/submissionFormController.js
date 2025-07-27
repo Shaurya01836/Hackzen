@@ -509,7 +509,7 @@ exports.getSubmissionByIdAdmin = async (req, res) => {
     let submission = await Submission.findById(id)
       .populate({
         path: 'projectId',
-        select: 'title description repoLink websiteLink videoLink socialLinks logo category customCategory team submittedBy hackathon scores status submittedAt oneLineIntro skills teamIntro customAnswers createdAt likes likedBy views viewedBy',
+        select: 'title description repoLink websiteLink videoLink socialLinks logo category customCategory team submittedBy hackathon scores status submittedAt oneLineIntro skills teamIntro customAnswers createdAt likes likedBy views viewedBy attachments files',
         populate: [
           { path: 'team', populate: [ { path: 'members', select: 'name profileImage email' }, { path: 'leader', select: 'name profileImage email' } ] },
           { path: 'submittedBy', select: 'name profileImage email' },

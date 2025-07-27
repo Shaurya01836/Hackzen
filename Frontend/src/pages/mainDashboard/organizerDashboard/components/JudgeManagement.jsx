@@ -59,6 +59,7 @@ import JudgeManagementJudges from './JudgeManagementJudges';
 import JudgeManagementAssignments from './JudgeManagementAssignments';
 import LeaderboardView from './LeaderboardView';
 import { useLocation, useNavigate } from "react-router-dom";
+import { Checkbox } from "../../../../components/DashboardUI/checkbox";
 
 export default function JudgeManagement({ hackathonId, hideHackathonSelector = false, onBack, submissions: propSubmissions = [] }) {
   const { token } = useAuth();
@@ -298,6 +299,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
               judgeType: newJudgeAssignment.judgeType,
               sponsorCompany: newJudgeAssignment.sponsorCompany,
               canJudgeSponsoredPS: newJudgeAssignment.canJudgeSponsoredPS,
+              problemStatementIds: newJudgeAssignment.problemStatementIds,
               maxSubmissionsPerJudge: newJudgeAssignment.maxSubmissionsPerJudge,
             }],
           }),

@@ -38,6 +38,15 @@ async function awardOrganizerBadges(user) {
     const alreadyHas = user.badges.some(b => b.badge?.toString() === badge._id.toString());
     if (!alreadyHas) {
       user.badges.push({ badge: badge._id, unlockedAt: new Date() });
+      
+      // Clean enum fields before saving to prevent validation errors
+      if (user.courseDuration === '') user.courseDuration = undefined;
+      if (user.currentYear === '') user.currentYear = undefined;
+      if (user.yearsOfExperience === '') user.yearsOfExperience = undefined;
+      if (user.preferredHackathonTypes && user.preferredHackathonTypes.includes('')) {
+        user.preferredHackathonTypes = user.preferredHackathonTypes.filter(type => type !== '');
+      }
+      
       await user.save();
       // console.log(`[Badge] Awarded badge: ${type} to user: ${user.email}`);
     } else {

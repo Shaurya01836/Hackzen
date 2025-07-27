@@ -305,6 +305,14 @@ const checkAndUnlockBadges = async (userId, forceCheck = false) => {
     }
     
     if (unlockedBadges.length > 0) {
+      // Clean enum fields before saving to prevent validation errors
+      if (user.courseDuration === '') user.courseDuration = undefined;
+      if (user.currentYear === '') user.currentYear = undefined;
+      if (user.yearsOfExperience === '') user.yearsOfExperience = undefined;
+      if (user.preferredHackathonTypes && user.preferredHackathonTypes.includes('')) {
+        user.preferredHackathonTypes = user.preferredHackathonTypes.filter(type => type !== '');
+      }
+      
       await user.save();
       console.log(`[Badge] 💾 Saved ${unlockedBadges.length} new badges for user: ${user.email}`);
     } else {

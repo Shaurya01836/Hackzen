@@ -93,7 +93,21 @@ export default function JudgeManagementAssignments({
     try {
       const token = localStorage.getItem('token');
       
-      const url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      // Build URL with filters
+      let url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/assignment-overview`;
+      const params = new URLSearchParams();
+      
+      // Add roundIndex filter based on selected stage
+      if (selectedStage === 'r1') {
+        params.append('roundIndex', '0');
+      } else if (selectedStage === 'r2') {
+        params.append('roundIndex', '1');
+      }
+      // Note: We could add problem statement filtering here too if needed
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
       
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
@@ -329,6 +343,7 @@ export default function JudgeManagementAssignments({
   };
 
   const handleViewSubmission = async (submission) => {
+    
     setSelectedSubmission(submission);
     setSubmissionDetailsModalOpen(true);
     setLoadingSubmissionDetails(true);
@@ -358,11 +373,34 @@ export default function JudgeManagementAssignments({
         // Get assigned judges for this submission
         const assignedJudges = assignmentOverview?.assignedSubmissions?.find(s => s._id === submission._id)?.assignedJudges || [];
         
-        setSubmissionDetails({
-          ...submissionData.submission,
+        // Check if there are other submissions for this team that might have PPT files
+        const teamSubmissions = assignmentOverview?.assignedSubmissions?.filter(s => s.teamName === submission.teamName) || [];
+        console.log('Team submissions:', teamSubmissions.map(s => ({ id: s._id, roundIndex: s.roundIndex, pptFile: s.pptFile })));
+        
+
+        
+        // Merge with original submission data to ensure we have all fields
+        // Prioritize original submission data for pptFile since assignment overview includes it
+        const mergedSubmission = {
+          ...submissionData.submission,  // API response
+          ...submission,  // Original submission from table (prioritize pptFile from here)
           evaluations,
           assignedJudges
-        });
+        };
+        
+        console.log('Original submission pptFile:', submission.pptFile);
+        console.log('API submission pptFile:', submissionData.submission?.pptFile);
+        console.log('Merged submission pptFile:', mergedSubmission.pptFile);
+        console.log('Project data:', mergedSubmission.projectId);
+        console.log('All submission fields:', Object.keys(mergedSubmission));
+        console.log('Project attachments:', mergedSubmission.projectId?.attachments);
+        console.log('Project files:', mergedSubmission.projectId?.files);
+        console.log('Full project data:', mergedSubmission.projectId);
+        console.log('All project fields:', Object.keys(mergedSubmission.projectId || {}));
+        
+
+        
+        setSubmissionDetails(mergedSubmission);
         
         // Also fetch scores for this submission to update the table
         const scoresResponse = await fetch(`http://localhost:3000/api/scores/submission/${submission._id}`, {
@@ -573,7 +611,9 @@ export default function JudgeManagementAssignments({
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4 text-gray-400" />
-                                  <span className="text-sm text-gray-900">PPT</span>
+                                  <span className="text-sm text-gray-900">
+                                    {selectedStage === 'r1' ? 'PPT' : 'Project'}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -692,13 +732,17 @@ export default function JudgeManagementAssignments({
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-900">
-                                  Round {submission.roundIndex + 1}
+                                  {submission.roundIndex !== null && submission.roundIndex !== undefined && !isNaN(submission.roundIndex) 
+                                    ? `Round ${submission.roundIndex + 1}` 
+                                    : 'Round 1'}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4 text-gray-400" />
-                                  <span className="text-sm text-gray-900">PPT</span>
+                                  <span className="text-sm text-gray-900">
+                                    {selectedStage === 'r1' ? 'PPT' : 'Project'}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -935,7 +979,9 @@ export default function JudgeManagementAssignments({
                               </div>
                             </div>
                             <div className="text-sm text-gray-600 mb-2">
-                              {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'} • Round {submission.roundIndex + 1}
+                              {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'} • {submission.roundIndex !== null && submission.roundIndex !== undefined && !isNaN(submission.roundIndex) 
+                                ? `Round ${submission.roundIndex + 1}` 
+                                : 'Round 1'}
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-500">
                               <div className="flex items-center gap-2">
@@ -1231,7 +1277,7 @@ export default function JudgeManagementAssignments({
                                 <div>
                                   <span className="font-medium text-gray-700">Submission Type:</span>
                                   <span className="ml-2 text-gray-900">
-                                    {submissionDetails.pptFile ? 'PPT Presentation' : 'Project Files'}
+                                    {(selectedStage === 'r1' || submissionDetails.pptFile || submissionDetails.type === 'ppt' || submissionDetails.submissionType === 'ppt' || submissionDetails.originalName?.includes('.ppt') || submissionDetails.originalName?.includes('.pptx')) ? 'PPT Presentation' : 'Project Files'}
                                   </span>
                                 </div>
                                 <div>
@@ -1265,26 +1311,158 @@ export default function JudgeManagementAssignments({
                   Submission Files
                 </h4>
                 <div className="space-y-4">
-                  {submissionDetails.pptFile && (
-                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-blue-600" />
-                        <div>
-                          <div className="font-medium text-gray-900">PPT Presentation</div>
-                          <div className="text-sm text-gray-500">
-                            {submissionDetails.pptFile.split('/').pop()}
-                          </div>
-                        </div>
-                      </div>
-                      <a
-                        href={submissionDetails.pptFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View PPT
-                      </a>
+
+                  
+                  {/* Debug info - remove this later */}
+                  
+                  
+                  {(selectedStage === 'r1' || submissionDetails.pptFile || submissionDetails.type === 'ppt' || submissionDetails.submissionType === 'ppt' || submissionDetails.originalName?.includes('.ppt') || submissionDetails.originalName?.includes('.pptx')) ? (
+                    <div className="space-y-4">
+                      {(() => {
+                        // Determine the PPT file URL
+                        let pptFileUrl = submissionDetails.pptFile;
+                        let pptFileName = submissionDetails.originalName || 'PPT Presentation';
+                        
+                        // If pptFile is not available but we have originalName, try to construct the URL
+                        if (!pptFileUrl && submissionDetails.originalName) {
+                          // This is a fallback - you might need to adjust the base URL based on your setup
+                          pptFileUrl = `/uploads/${submissionDetails.originalName}`;
+                        }
+                        
+                        // Additional fallback: check if there are any files in the submission that might be PPT
+                        if (!pptFileUrl && submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0) {
+                          const pptFile = submissionDetails.projectFiles.find(file => 
+                            file.name?.toLowerCase().includes('.ppt') || 
+                            file.name?.toLowerCase().includes('.pptx') ||
+                            file.type?.includes('powerpoint')
+                          );
+                          if (pptFile) {
+                            pptFileUrl = pptFile.url;
+                            pptFileName = pptFile.name;
+                          }
+                        }
+                        
+                        // Check project attachments if no PPT file found
+                        if (!pptFileUrl && submissionDetails.projectId && submissionDetails.projectId.attachments) {
+                          const pptFile = submissionDetails.projectId.attachments.find(file => 
+                            file.name?.toLowerCase().includes('.ppt') || 
+                            file.name?.toLowerCase().includes('.pptx') ||
+                            file.type?.includes('powerpoint')
+                          );
+                          if (pptFile) {
+                            pptFileUrl = pptFile.url;
+                            pptFileName = pptFile.name;
+                          }
+                        }
+                        
+                        // Check project files if no PPT file found
+                        if (!pptFileUrl && submissionDetails.projectId && submissionDetails.projectId.files) {
+                          const pptFile = submissionDetails.projectId.files.find(file => 
+                            file.name?.toLowerCase().includes('.ppt') || 
+                            file.name?.toLowerCase().includes('.pptx') ||
+                            file.type?.includes('powerpoint')
+                          );
+                          if (pptFile) {
+                            pptFileUrl = pptFile.url;
+                            pptFileName = pptFile.name;
+                          }
+                        }
+                        
+                        // Check if project has any other file fields
+                        if (!pptFileUrl && submissionDetails.projectId) {
+                          const project = submissionDetails.projectId;
+                          const possibleFileFields = ['attachments', 'files', 'documents', 'presentations', 'slides'];
+                          for (const field of possibleFileFields) {
+                            if (project[field] && Array.isArray(project[field])) {
+                              const pptFile = project[field].find(file => 
+                                file.name?.toLowerCase().includes('.ppt') || 
+                                file.name?.toLowerCase().includes('.pptx') ||
+                                file.type?.includes('powerpoint')
+                              );
+                              if (pptFile) {
+                                pptFileUrl = pptFile.url;
+                                pptFileName = pptFile.name;
+                                break;
+                              }
+                            }
+                          }
+                        }
+                        
+                        return (
+                          <>
+                            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                              <div className="flex items-center gap-3">
+                                <FileText className="w-6 h-6 text-blue-600" />
+                                <div>
+                                  <div className="font-medium text-gray-900">PPT Presentation</div>
+                                  <div className="text-sm text-gray-500">
+                                    {pptFileName}
+                                  </div>
+                                </div>
+                              </div>
+                              {pptFileUrl && (
+                                <a
+                                  href={pptFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  Open in New Tab
+                                </a>
+                              )}
+                            </div>
+                            
+                            {/* PPT Preview Section */}
+                            {pptFileUrl ? (
+                              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                  <FileText className="w-5 h-5 text-blue-600" />
+                                  PPT Preview
+                                </h5>
+                                <div className="relative bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                  <iframe
+                                    src={`https://docs.google.com/gview?url=${encodeURIComponent(pptFileUrl)}&embedded=true`}
+                                    style={{ 
+                                      width: "100%", 
+                                      height: "600px", 
+                                      border: "none"
+                                    }}
+                                    title="PPT Preview"
+                                    allowFullScreen
+                                    className="rounded-lg"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                                <h5 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                                  <FileText className="w-5 h-5 text-blue-600" />
+                                  PPT Preview
+                                </h5>
+                                <div className="text-center py-8 text-gray-500">
+                                  <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                  <p>No PPT file uploaded</p>
+                                  <p className="text-sm text-gray-400 mt-1">
+                                    This submission is for Round 1 (PPT round) but no PPT file has been uploaded.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                      <p>{selectedStage === 'r1' ? 'No PPT file available' : 'Project submission'}</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        {selectedStage === 'r1' 
+                          ? 'This submission should have a PPT file for Round 1.' 
+                          : 'This is a project submission for Round 2.'
+                        }
+                      </p>
                     </div>
                   )}
                   {submissionDetails.projectFiles && submissionDetails.projectFiles.length > 0 && (
@@ -1621,7 +1799,9 @@ export default function JudgeManagementAssignments({
                   <div key={index} className="p-4 border border-gray-200 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <h5 className="font-semibold text-gray-900">
-                        {round.roundName || `Round ${round.roundIndex + 1}`}
+                        {round.roundName || (round.roundIndex !== null && round.roundIndex !== undefined && !isNaN(round.roundIndex) 
+                          ? `Round ${round.roundIndex + 1}` 
+                          : 'Round 1')}
                       </h5>
                       <span className="text-sm text-gray-500">
                         {round.assignedSubmissions?.length || 0} submissions

@@ -313,7 +313,7 @@ export default function ProjectSubmissionForm({
       problemStatement: selectedProblem,
       customAnswers: answersArray,
       selectedMembers,
-      roundIndex: currentRound?.roundIndex || 0, // Include roundIndex for Round 2 submissions
+      roundIndex: 1, // Project submissions go to Round 2 (index 1)
     };
     console.log('handleSubmit: payload =', payload);
 
@@ -406,7 +406,7 @@ export default function ProjectSubmissionForm({
       const uploadData = await uploadRes.json();
       if (!uploadRes.ok) throw new Error(uploadData.message || "Upload failed");
       // 2. Submit the PPT submission
-      const submissionRes = await fetch("http://localhost:3000/api/submission-form/submit", {
+      const submissionRes = await fetch("http://localhost:3000/api/submission-form/ppt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -415,7 +415,7 @@ export default function ProjectSubmissionForm({
         body: JSON.stringify({
           hackathonId: hackathon._id || hackathon.id,
           pptFile: uploadData.url,
-          roundIndex: currentRound.roundIndex,
+          roundIndex: 0, // PPT submissions go to Round 1 (index 0)
         }),
       });
       const submissionData = await submissionRes.json();
@@ -446,7 +446,7 @@ export default function ProjectSubmissionForm({
     setPptLinkSubmitting(true);
     try {
       const token = localStorage.getItem("token");
-      const submissionRes = await fetch("http://localhost:3000/api/submission-form/submit", {
+      const submissionRes = await fetch("http://localhost:3000/api/submission-form/ppt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -456,7 +456,7 @@ export default function ProjectSubmissionForm({
           hackathonId: hackathon._id || hackathon.id,
           pptFile: pptLink.trim(),
           problemStatement: pptProblem,
-          roundIndex: currentRound.roundIndex,
+          roundIndex: 0, // PPT submissions go to Round 1 (index 0)
         }),
       });
       const submissionData = await submissionRes.json();

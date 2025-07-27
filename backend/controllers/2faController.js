@@ -26,6 +26,15 @@ exports.generate2FA = async (req, res) => {
     });
     
     req.user.twoFA = { enabled: false, secret: secret.base32 };
+    
+    // Clean enum fields before saving to prevent validation errors
+    if (req.user.courseDuration === '') req.user.courseDuration = undefined;
+    if (req.user.currentYear === '') req.user.currentYear = undefined;
+    if (req.user.yearsOfExperience === '') req.user.yearsOfExperience = undefined;
+    if (req.user.preferredHackathonTypes && req.user.preferredHackathonTypes.includes('')) {
+      req.user.preferredHackathonTypes = req.user.preferredHackathonTypes.filter(type => type !== '');
+    }
+    
     await req.user.save();
 
     const otpauth_url = secret.otpauth_url;
@@ -82,6 +91,15 @@ exports.verify2FA = async (req, res) => {
 
     if (verified) {
       user.twoFA.enabled = true;
+      
+      // Clean enum fields before saving to prevent validation errors
+      if (user.courseDuration === '') user.courseDuration = undefined;
+      if (user.currentYear === '') user.currentYear = undefined;
+      if (user.yearsOfExperience === '') user.yearsOfExperience = undefined;
+      if (user.preferredHackathonTypes && user.preferredHackathonTypes.includes('')) {
+        user.preferredHackathonTypes = user.preferredHackathonTypes.filter(type => type !== '');
+      }
+      
       await user.save();
       console.log('2FA verified and enabled for user:', user.email);
       return res.json({ 

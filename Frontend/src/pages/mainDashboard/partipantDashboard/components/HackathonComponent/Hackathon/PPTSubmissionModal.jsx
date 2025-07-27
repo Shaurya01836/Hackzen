@@ -83,7 +83,7 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
         }
         pptUrl = result.url;
       }
-      const saveRes = await savePPTSubmission({ hackathonId, roundIndex, pptFile: pptUrl, problemStatement: selectedProblem, originalName: file ? file.name : (editingSubmission?.originalName || undefined) });
+      const saveRes = await savePPTSubmission({ hackathonId, roundIndex: 0, pptFile: pptUrl, problemStatement: selectedProblem, originalName: file ? file.name : (editingSubmission?.originalName || undefined) });
       if (!saveRes || !saveRes.success) {
         toast({ title: 'Save failed', description: saveRes && saveRes.error ? saveRes.error : 'Unknown error saving PPT', variant: 'destructive' });
         setUploading(false);

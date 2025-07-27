@@ -267,7 +267,7 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
           },
           body: JSON.stringify({
             hackathonId: hackathon._id,
-            roundIndex,
+            roundIndex: 1, // Project submissions go to Round 2 (index 1)
             projectId: selectedProject,
             problemStatement: selectedProblem,
           }),
