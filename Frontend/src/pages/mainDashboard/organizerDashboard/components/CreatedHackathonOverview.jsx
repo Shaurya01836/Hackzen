@@ -26,10 +26,12 @@ import {
   Activity,
   Calendar,
   LucideJoystick,
+  TrendingUp, // Added for promote button
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import JudgeManagement from '../components/JudgeManagement'; // adjust path
+import JudgeManagement from '../components/JudgeManagement';
 import SendCertificateModal from "./SendCertificateModal";
+import PromoteModal from "./PromoteModal"; // New import
 
 export default function CreatedHackathonOverview({
   hackathon,
@@ -49,17 +51,16 @@ export default function CreatedHackathonOverview({
   onSendAnnouncements,
   onDeleteHackathon,
   onReviewSponsoredPS,
-  submissions = [], // <-- add this lin
-  // onFetchSponsorProposals,
+  submissions = [],
 }) {
   const navigate = useNavigate();
   const [showJudgeManagement, setShowJudgeManagement] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showPromoteModal, setShowPromoteModal] = useState(false); // New state
 
   const handleBack = () => {
     navigate('/dashboard/created-hackathons');
   };
-
 
   if (showJudgeManagement) {
     return (
@@ -67,7 +68,6 @@ export default function CreatedHackathonOverview({
     );
   }
 
-  // Assume you have access to hackathonId from props or context
   const hackathonId = hackathon._id;
 
   return (
@@ -272,6 +272,16 @@ export default function CreatedHackathonOverview({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-3">
+                  {/* New Promote Button */}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start gap-2 text-left bg-gradient-to-r from-indigo-500 to-indigo-600 text-white border-none hover:from-indigo-600 hover:to-indigo-500"
+                    onClick={() => setShowPromoteModal(true)}
+                  >
+                    <TrendingUp className="h-4 w-4" />
+                    Promote Hackathon
+                  </Button>
+                  
                   <Button
                     variant="outline"
                     className="w-full justify-start gap-2 text-left bg-transparent"
@@ -350,10 +360,19 @@ export default function CreatedHackathonOverview({
           </div>
         </div>
       </div>
+      
+      {/* Modals */}
       {showSendModal && (
         <SendCertificateModal
           hackathonId={hackathonId}
           onClose={() => setShowSendModal(false)}
+        />
+      )}
+      
+      {showPromoteModal && (
+        <PromoteModal
+          hackathon={hackathon}
+          onClose={() => setShowPromoteModal(false)}
         />
       )}
     </div>
