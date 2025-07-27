@@ -99,6 +99,21 @@ const HackathonSchema = new Schema({
   mentors: [{ type: String }],      // Email strings
   participants: [{ type: String }],
   
+  isFeatured: {
+  type: Boolean, default: false,
+ },
+ featuredType: {
+  type: String,
+  enum: ['card', 'banner', 'both', 'none'],
+  default: 'none',
+ },
+  // ✅ NEW: Fields for promotion duration and impressions
+  featuredStartDate: { type: Date },
+  featuredEndDate: { type: Date },
+  featuredImpressions: { type: Number, default: 0 },
+  featuredDuration: { type: Number, default: 0 }, // Duration in days
+
+  
   teams: [{ type: Schema.Types.ObjectId, ref: 'Team' }],
   submissions: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
 

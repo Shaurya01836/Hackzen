@@ -308,7 +308,7 @@ export function ExploreHackathons() {
        <div className="relative h-40 w-full">
          {isPromoted && (
            <div className="absolute top-2 left-2 z-10">
-             <Badge className="bg-purple-500 text-white font-semibold shadow-md">
+             <Badge className="bg-indigo-600 text-white font-semibold shadow-md">
                <Sparkles className="w-3 h-3 mr-1" />
                Featured
              </Badge>

@@ -313,6 +313,7 @@ export default function ProjectSubmissionForm({
       problemStatement: selectedProblem,
       customAnswers: answersArray,
       selectedMembers,
+      roundIndex: currentRound?.roundIndex || 0, // Include roundIndex for Round 2 submissions
     };
     console.log('handleSubmit: payload =', payload);
 

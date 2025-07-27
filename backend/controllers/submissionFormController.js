@@ -32,6 +32,8 @@ exports.submitProjectWithAnswers = async (req, res) => {
   try {
     const { hackathonId, projectId, customAnswers, problemStatement, selectedMembers = [], pptFile, roundIndex } = req.body;
     const userId = req.user._id;
+    
+
 
     // ✅ Check if user is currently registered for this hackathon
     const Registration = require("../model/HackathonRegistrationModel");
@@ -90,24 +92,62 @@ exports.submitProjectWithAnswers = async (req, res) => {
 
     // Check if this is Round 2 submission and validate shortlisting
     if (roundIndex === 1) { // Round 2 (index 1 in rounds array)
-      // Check if the user's team was shortlisted for Round 2
+      // Check if the user or their team was shortlisted for Round 2
+      let isShortlisted = false;
+      
+      // First check if user is part of a team
       const userTeam = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+      
       if (userTeam) {
-        const shortlistedSubmission = await Submission.findOne({
-          hackathonId,
-          teamName: userTeam.name,
-          shortlistedForRound: 2,
-          status: 'shortlisted'
-        });
+        // Check if team is in hackathon's shortlisted teams for Round 2
+        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === 0); // Round 1 progress
+        if (roundProgress && roundProgress.shortlistedTeams) {
+          isShortlisted = roundProgress.shortlistedTeams.includes(userTeam._id.toString());
+        }
         
-        if (!shortlistedSubmission) {
-          return res.status(403).json({ 
-            error: "Your team was not shortlisted for Round 2. Only shortlisted teams can submit to Round 2." 
+        // Check for team shortlisted submissions
+        if (!isShortlisted) {
+          const shortlistedSubmission = await Submission.findOne({
+            hackathonId,
+            teamName: userTeam.name,
+            shortlistedForRound: 2,
+            status: 'shortlisted'
           });
+          isShortlisted = !!shortlistedSubmission;
+        }
+        
+        // Also check for individual submissions by team members
+        if (!isShortlisted) {
+          const shortlistedSubmission = await Submission.findOne({
+            hackathonId,
+            submittedBy: userId,
+            shortlistedForRound: 2,
+            status: 'shortlisted'
+          });
+          isShortlisted = !!shortlistedSubmission;
         }
       } else {
+        // Check if user is individually shortlisted
+        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === 0); // Round 1 progress
+        if (roundProgress && roundProgress.shortlistedTeams) {
+          isShortlisted = roundProgress.shortlistedTeams.includes(userId.toString());
+        }
+        
+        // Check for individual shortlisted submissions
+        if (!isShortlisted) {
+          const shortlistedSubmission = await Submission.findOne({
+            hackathonId,
+            submittedBy: userId,
+            shortlistedForRound: 2,
+            status: 'shortlisted'
+          });
+          isShortlisted = !!shortlistedSubmission;
+        }
+      }
+      
+      if (!isShortlisted) {
         return res.status(403).json({ 
-          error: "You must be part of a team to submit to Round 2." 
+          error: "Your team was not shortlisted for Round 2. Only shortlisted teams can submit to Round 2." 
         });
       }
     }

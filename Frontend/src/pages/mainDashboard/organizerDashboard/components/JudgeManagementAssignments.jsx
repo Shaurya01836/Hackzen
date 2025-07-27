@@ -143,9 +143,9 @@ export default function JudgeManagementAssignments({
   let teamsToShow = teams;
   if (selectedStage === 'r1' || selectedStage === 'r2') {
     // Find all team IDs that have a submission in this round
-    const roundName = getRoundName(selectedStage);
+    const roundIndex = selectedStage === 'r1' ? 0 : 1; // Round 1 = index 0, Round 2 = index 1
     const submittedTeamIds = submissions
-      .filter(sub => (sub.round === roundName || sub.roundName === roundName || sub.round?.name === roundName))
+      .filter(sub => sub.roundIndex === roundIndex)
       .map(sub => sub.team?._id || sub.teamId || sub.teamName)
       .filter(Boolean);
     teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
@@ -663,6 +663,7 @@ export default function JudgeManagementAssignments({
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROUND</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STATUS</th>
                           </tr>
@@ -687,6 +688,11 @@ export default function JudgeManagementAssignments({
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-900">
                                   {submission.projectTitle || submission.title || 'Untitled Project'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  Round {submission.roundIndex + 1}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -929,7 +935,7 @@ export default function JudgeManagementAssignments({
                               </div>
                             </div>
                             <div className="text-sm text-gray-600 mb-2">
-                              {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'}
+                              {submission.teamName} • {submission.pptFile ? 'PPT' : 'Project'} • Round {submission.roundIndex + 1}
                             </div>
                             <div className="flex items-center justify-between text-xs text-gray-500">
                               <div className="flex items-center gap-2">

@@ -79,6 +79,17 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     // eslint-disable-next-line
   }, [location.search]);
 
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedProject("");
+      setSelectedProblem("");
+      setSubmitting(false);
+      setShowSubmitConfirm(false);
+      setPendingSubmit(false);
+    }
+  }, [open]);
+
   // Fetch projects and auto-select the latest if redirected from create
   useEffect(() => {
     if (!open) {
@@ -144,8 +155,22 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
   };
 
   const handleSubmit = async () => {
-    if (!selectedProject) return;
-    if (hackathon.problemStatements?.length && !selectedProblem) return;
+    console.log('[ProjectSubmissionModal] handleSubmit called with:', {
+      selectedProject,
+      selectedProblem,
+      roundIndex,
+      isEditMode,
+      editingId
+    });
+    
+    if (!selectedProject) {
+      toast({ title: 'Error', description: 'Please select a project to submit.', variant: 'destructive' });
+      return;
+    }
+    if (hackathon.problemStatements?.length && !selectedProblem) {
+      toast({ title: 'Error', description: 'Please select a problem statement.', variant: 'destructive' });
+      return;
+    }
     if (typeof roundIndex !== 'number' || isNaN(roundIndex)) {
       toast({ title: 'Submission Error', description: 'Round index is missing or invalid. Please refresh and try again.', variant: 'destructive' });
       console.error('Submission aborted: roundIndex is', roundIndex);
@@ -186,13 +211,19 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
           }),
         });
         const data = await res.json();
+        console.log('[ProjectSubmissionModal] Update response:', data);
         if (!res.ok) {
           console.error('Submission error details:', data);
-          throw new Error(data.message || "Update failed");
+          throw new Error(data.error || data.message || "Update failed");
         }
         toast({ title: "Submission Updated!", description: "Your project submission has been updated.", variant: "success" });
+        // Close modal and refresh data
         if (onOpenChange) onOpenChange(false);
         if (onSuccess) onSuccess();
+        // Reset form state
+        setSelectedProject("");
+        setSelectedProblem("");
+        setSubmitting(false);
       } else {
         // Create new submission (existing logic)
         // Find the selected project
@@ -242,17 +273,24 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
           }),
         });
         const data = await res.json();
+        console.log('[ProjectSubmissionModal] Submission response:', data);
         if (!res.ok) {
           console.error('Submission error details:', data);
-          throw new Error(data.message || "Submission failed");
+          throw new Error(data.error || data.message || "Submission failed");
         }
         toast({ title: "Project Submitted!", description: "Your project has been submitted successfully.", variant: "success" });
+        // Close modal and refresh data
         if (onOpenChange) onOpenChange(false);
         if (onSuccess) onSuccess();
+        // Reset form state
+        setSelectedProject("");
+        setSelectedProblem("");
+        setSubmitting(false);
       }
     } catch (err) {
       console.error("[ProjectSubmissionModal] Project submission error:", err);
       toast({ title: isEditMode ? "Update failed" : "Submission failed", description: err.message || "Could not submit project", variant: "destructive" });
+      // Don't close modal on error, let user try again
     } finally {
       setSubmitting(false);
     }
@@ -337,7 +375,10 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
 
   // Handler for submit button click
   const handlePreSubmit = () => {
-    if (!isEditMode) {
+    // For Round 2 submissions, skip confirmation dialog
+    if (roundIndex === 1) {
+      handleSubmit();
+    } else if (!isEditMode) {
       setShowSubmitConfirm(true);
       setPendingSubmit(true);
     } else {

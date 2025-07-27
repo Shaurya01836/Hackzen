@@ -255,7 +255,28 @@ export default function HackathonTimeline({
   };
 
   const handleAfterAction = () => {
+    console.log('🔄 handleAfterAction called - refreshing data...');
     setRefreshKey((k) => k + 1);
+    // Also directly fetch updated data after a short delay to ensure backend has processed
+    setTimeout(() => {
+      if (hackathon._id && user?._id) {
+        const token = localStorage.getItem("token");
+        axios.get(
+          `http://localhost:3000/api/submission-form/submissions?hackathonId=${hackathon._id}&userId=${user._id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+        .then(res => {
+          const updatedSubs = (res.data.submissions || []).filter(
+            (s) => s.projectId
+          );
+          console.log('📊 Updated project submissions:', updatedSubs);
+          setProjectSubmissions(updatedSubs);
+        })
+        .catch(() => {
+          // Silently fail, the useEffect will handle it
+        });
+      }
+    }, 500); // Small delay to ensure backend has processed
   };
 
   const handleDeleteProjectSubmission = (submission) => {
@@ -332,9 +353,11 @@ export default function HackathonTimeline({
   };
 
   const getProjectSubmissionsForRound = (roundIdx) => {
-    return projectSubmissions.filter(
+    const submissions = projectSubmissions.filter(
       (s) => String(s.roundIndex) === String(roundIdx)
     );
+    console.log(`🔍 getProjectSubmissionsForRound(${roundIdx}): ${submissions.length} submissions`, submissions);
+    return submissions;
   };
 
   const canEdit = (end) => {
@@ -410,6 +433,13 @@ export default function HackathonTimeline({
                     const isProjectSubmission =
                       round.type && round.type.toLowerCase().includes("project");
                     
+                    console.log(`🔍 Round ${idx} Debug:`, {
+                      roundType: round.type,
+                      isProjectSubmission,
+                      isLive,
+                      canEdit: canEdit(end)
+                    });
+                    
                     const dayNum = start ? start.getDate() : idx + 24;
                     const monthStr = start
                       ? start.toLocaleString("en-US", { month: "short" })
@@ -437,6 +467,20 @@ export default function HackathonTimeline({
                     const maxProjects = hackathon.maxSubmissionsPerParticipant || 1;
                     const submission = getSubmissionForRound(idx);
                     const roundType2 = hackathon.roundType || "single-round";
+                    
+                    // Debug for Round 2 specifically
+                    if (idx === 1) {
+                      console.log(`🔍 ROUND 2 DEBUG:`, {
+                        roundIndex: idx,
+                        projectSubmissionsForRound: projectSubmissionsForRound,
+                        submissionType: hackathon.submissionType,
+                        roundType2,
+                        isProjectSubmission,
+                        isLive,
+                        canEdit: canEdit(end),
+                        submissionCount: projectSubmissionsForRound.length
+                      });
+                    }
                     const isFirstProjectRound =
                       rounds
                         .filter(
@@ -530,8 +574,9 @@ export default function HackathonTimeline({
                         );
                       }
                     }
-                    // Condition 2: Round Selection - User is shortlisted for next round
-                    else if (isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true)) {
+                    // Condition 2: Round Selection - User is shortlisted for next round (but check if already submitted)
+                    else if (isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true) && projectSubmissionsForRound.length === 0) {
+                      console.log(`🔍 Round ${idx} - Showing shortlisted message (no submissions yet)`);
                       if (isLive && canEdit(end)) {
                         projectSubmissionUI = (
                           <div className="space-y-3">
@@ -642,12 +687,15 @@ export default function HackathonTimeline({
                     }
                     // Normal submission logic for active rounds
                     else if (isLive && canEdit(end)) {
+                      console.log(`🔍 Round ${idx} - isLive && canEdit(end): true`);
                       // Project submission logic
                       if (isProjectSubmission) {
+                        console.log(`🔍 Round ${idx} - isProjectSubmission: true`);
                         if (
                           submissionType === "single-project" &&
                           roundType2 === "single-round"
                         ) {
+                          console.log(`🔍 Timeline Round ${idx}: projectSubmissionsForRound.length = ${projectSubmissionsForRound.length}`, projectSubmissionsForRound);
                           projectSubmissionUI =
                             projectSubmissionsForRound.length > 0 ? (
                               <div className="flex gap-2 items-center">
@@ -685,6 +733,8 @@ export default function HackathonTimeline({
                           submissionType === "single-project" &&
                           roundType2 === "multi-round"
                         ) {
+                          console.log(`🔍 Timeline Round ${idx} (multi-round): projectSubmissionsForRound.length = ${projectSubmissionsForRound.length}`, projectSubmissionsForRound);
+                          console.log(`🔍 Round ${idx} - Condition: single-project && multi-round`);
                           projectSubmissionUI =
                             projectSubmissionsForRound.length > 0 ? (
                               <div className="flex gap-2 items-center">

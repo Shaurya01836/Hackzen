@@ -17,7 +17,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [shortlistMode, setShortlistMode] = useState('topN'); // 'topN', 'threshold', or 'date'
   const [summary, setSummary] = useState(null);
   const [selectedRound, setSelectedRound] = useState(roundIndex);
-  const [showOnlyEvaluated, setShowOnlyEvaluated] = useState(false);
+  const [showOnlyEvaluated, setShowOnlyEvaluated] = useState(selectedRound === 1); // Auto-enable for Round 2
   const [viewSubmissionModalOpen, setViewSubmissionModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [submissionDetails, setSubmissionDetails] = useState(null);
@@ -41,6 +41,13 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       checkAutoProgress();
     }
   }, [hackathonId, selectedRound]);
+
+  // Auto-enable "Show only evaluated" filter for Round 2
+  useEffect(() => {
+    if (selectedRound === 1) {
+      setShowOnlyEvaluated(true);
+    }
+  }, [selectedRound]);
 
   // Check if shortlisting has been done
   useEffect(() => {
@@ -532,8 +539,8 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">Round 1</SelectItem>
-              <SelectItem value="2">Round 2</SelectItem>
+              <SelectItem value="0">Round 1</SelectItem>
+              <SelectItem value="1">Round 2</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -547,7 +554,12 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
               onChange={(e) => setShowOnlyEvaluated(e.target.checked)}
               className="rounded text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-600">Show only evaluated</span>
+            <span className="text-sm text-gray-600">
+              Show only evaluated
+              {selectedRound === 1 && (
+                <span className="text-blue-600 ml-1">(Auto-enabled for Round 2)</span>
+              )}
+            </span>
           </label>
           <Button
             onClick={() => setShowOnlyEvaluated(!showOnlyEvaluated)}
@@ -581,6 +593,11 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
           {hasShortlisted && (
             <span className="ml-2">
               • {leaderboard.filter(entry => entry.status === 'shortlisted').length} shortlisted
+            </span>
+          )}
+          {selectedRound === 1 && showOnlyEvaluated && (
+            <span className="ml-2 text-blue-600">
+              • Only judged evaluations shown for Round 2
             </span>
           )}
         </div>

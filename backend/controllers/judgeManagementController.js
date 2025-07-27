@@ -2272,9 +2272,9 @@ exports.getAssignmentOverview = async (req, res) => {
       
     console.log('🔍 Assignment Overview - Raw Judge Assignments from DB:', JSON.stringify(judgeAssignments, null, 2));
 
-    // Get all submissions for this hackathon
+    // Get all submissions for this hackathon (including Round 2 submissions)
     const submissions = await Submission.find({ hackathonId: hackathonId, status: 'submitted' })
-      .select('_id projectTitle title teamId teamName pptFile submittedAt')
+      .select('_id projectTitle title teamId teamName pptFile submittedAt roundIndex')
       .lean();
 
     // Get all scores for these submissions
