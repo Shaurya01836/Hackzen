@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../components/CommonUI/ProjectDetail";
 import axios from "axios";
 
 export default function AdminSubmissionDetailsPage({ hackathonId, submissionId }) {

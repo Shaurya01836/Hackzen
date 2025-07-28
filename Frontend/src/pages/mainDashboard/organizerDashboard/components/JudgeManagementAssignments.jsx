@@ -19,7 +19,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
 // Removed circular import - stage selection functionality is now included directly
 import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
-import { ProjectDetail } from "../../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../../components/CommonUI/ProjectDetail";
 
 // Mock stages data
 const stages = [

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../components/CommonUI/ProjectDetail";
 import { Button } from "../../../components/CommonUI/button";
 import { ArrowLeft } from "lucide-react";
 
