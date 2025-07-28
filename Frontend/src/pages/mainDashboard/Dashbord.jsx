@@ -226,9 +226,10 @@ export default function HackZenDashboard() {
   ];
 
   // Function to render content based on current view
+  const isJudgeGalleryRoute = location.pathname.match(/^\/dashboard\/judge\/hackathon\/[^/]+\/gallery/);
   const renderContent = () => {
     // Special case: judge project gallery route
-    if (location.pathname.match(/^\/dashboard\/judge\/hackathon\/[^/]+\/gallery/)) {
+    if (isJudgeGalleryRoute) {
       return <JudgeProjectGallery />;
     }
     switch (currentView) {
@@ -427,10 +428,10 @@ export default function HackZenDashboard() {
             )}
 
             {/* Judge Menu - Show to judges and only on judge dashboard sections */}
-            {authUser?.role === "judge" && [
+            {authUser?.role === "judge" && ([
               "judge-panel",
               "my-judgments"
-            ].includes(currentView) && (
+            ].includes(currentView) || isJudgeGalleryRoute) && (
               <SidebarGroup>
                 <SidebarGroupLabel className="flex items-center gap-2 text-orange-600">
                   <Gavel className="w-4 h-4" />
