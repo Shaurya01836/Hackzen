@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle, Crown, Star, Mail } from "lucide-react";
+import { Trophy, Award, Users, FileText, CheckCircle, Clock, AlertCircle, RefreshCw, Info, Eye, Filter, List, XCircle, Crown, Star, Mail, Target } from "lucide-react";
 import { useToast } from "../../../../hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../../../../components/DashboardUI/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
 import EmailSenderModal from './EmailSenderModal';
+import { Label } from "../../../../components/CommonUI/label";
+import { Checkbox } from "../../../../components/DashboardUI/checkbox";
+
 
 export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortlistingComplete }) {
   const { toast } = useToast();
@@ -553,114 +556,124 @@ if (loading) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Round {selectedRound + 1} Leaderboard</h2>
-          <p className="text-gray-600">
-            {summary ? (
-              <>
-                {summary.totalSubmissions} total submissions • {summary.evaluatedSubmissions} evaluated • {summary.pendingEvaluations} pending
-              </>
-            ) : (
-              'Leaderboard data'
-            )}
-          </p>
-          
+     {/* Enhanced Header */}
+<div className="space-y-6 mb-8">
+  {/* Main Header Section */}
+  <Card className="shadow-none hover:shadow-none ">
+    <CardContent className="p-6 pt-6">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-4">
+           
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">
+                Round {selectedRound + 1} Leaderboard
+              </h2>
+              <p className="text-gray-600 text-base">
+                {selectedRound === 0 
+                  ? 'Track evaluation progress and shortlist top performers' 
+                  : 'Final rankings and winner selection for Round 2'
+                }
+              </p>
+            </div>
+          </div>
+
           {/* Round 1 Specific Content */}
           {selectedRound === 0 && (
-            <>
-              <p className="text-sm text-blue-600 mt-1">
-                Shortlist top performers to advance to Round 2
-              </p>
-              {summary && summary.evaluatedSubmissions > 0 && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for shortlisting
-                </p>
-              )}
-              {summary && summary.evaluatedSubmissions === 0 && (
-                <p className="text-sm text-yellow-600 mt-1">
-                  ⏳ Waiting for judge evaluations to begin shortlisting
-                </p>
-              )}
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                <p className="text-xs text-gray-600">
-                  <strong>Shortlisting Process:</strong> 
-                  1) Judges evaluate Round 1 submissions → 
-                  2) Scores appear in leaderboard → 
-                  3) Organizer shortlists top performers → 
-                  4) Shortlisted teams can submit to Round 2
-                </p>
+            <div className="">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  
+                  {summary && summary.evaluatedSubmissions > 0 && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-green-700 font-medium">
+                        {summary.evaluatedSubmissions} submissions evaluated • Ready for shortlisting
+                      </span>
+                    </div>
+                  )}
+                  
+                  {summary && summary.evaluatedSubmissions === 0 && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <span className="text-yellow-700 font-medium">
+                        Waiting for judge evaluations to begin shortlisting
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </>
+            </div>
           )}
           
           {/* Round 2 Specific Content */}
           {selectedRound === 1 && (
-            <>
-              <p className="text-sm text-yellow-600 mt-1">
-                🏆 Assign winners based on combined PPT + Project scores
-              </p>
-              {summary && summary.evaluatedSubmissions > 0 && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✅ {summary.evaluatedSubmissions} submissions evaluated • Ready for winner assignment
-                </p>
-              )}
-              {summary && summary.evaluatedSubmissions === 0 && (
-                <p className="text-sm text-yellow-600 mt-1">
-                  ⏳ Waiting for judge evaluations to begin winner assignment
-                </p>
-              )}
-              <div className="mt-2 p-3 bg-yellow-50 rounded-md border border-yellow-200">
-                <p className="text-xs text-yellow-800">
-                  <strong>Winner Assignment Process:</strong> 
-                  1) Judges evaluate Round 2 projects → 
-                  2) Combined scores calculated (PPT + Project) → 
-                  3) Organizer assigns winners → 
-                  4) Winners receive notifications and prizes
-                </p>
-              </div>
-              
-              {/* Winners Summary */}
-              {hasWinners && (
-                <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border border-yellow-300">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Trophy className="w-6 h-6 text-yellow-600" />
-                      <div>
-                        <h4 className="font-semibold text-yellow-800">
-                          🏆 Winners Announced
-                        </h4>
-                        <p className="text-sm text-yellow-700">
-                          {leaderboard.filter(entry => entry.status === 'winner').length} winner{leaderboard.filter(entry => entry.status === 'winner').length !== 1 ? 's' : ''} selected
-                        </p>
+            <div className="">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  {summary && summary.evaluatedSubmissions > 0 && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <span className="text-green-700 font-medium">
+                        {summary.evaluatedSubmissions} submissions evaluated • Ready for winner assignment
+                      </span>
+                    </div>
+                  )}
+                  
+                  {summary && summary.evaluatedSubmissions === 0 && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <span className="text-yellow-700 font-medium">
+                        Waiting for judge evaluations to begin winner assignment
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Winners Summary */}
+                  {hasWinners && (
+                    <div className="bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg p-4 border border-yellow-300">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Crown className="w-6 h-6 text-yellow-600" />
+                          <div>
+                            <h4 className="font-semibold text-yellow-800">
+                              🏆 Winners Announced
+                            </h4>
+                            <p className="text-sm text-yellow-700">
+                              {leaderboard.filter(entry => entry.status === 'winner').length} winner{leaderboard.filter(entry => entry.status === 'winner').length !== 1 ? 's' : ''} selected
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            fetchWinnersDetails();
+                            setWinnersDisplayModalOpen(true);
+                          }}
+                          variant="outline"
+                          size="sm"
+                          className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
+                        >
+                          <Trophy className="w-4 h-4 mr-2" />
+                          View Winners Details
+                        </Button>
                       </div>
                     </div>
-                    <Button
-                      onClick={() => {
-                        fetchWinnersDetails();
-                        setWinnersDisplayModalOpen(true);
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="text-yellow-700 border-yellow-300 hover:bg-yellow-100"
-                    >
-                      <Trophy className="w-4 h-4 mr-2" />
-                      View Winners Details
-                    </Button>
-                  </div>
+                  )}
                 </div>
-              )}
-            </>
+              </div>
+            </div>
           )}
         </div>
-        <div className="flex items-center gap-4">
+
+        {/* Action Buttons Section */}
+        <div className="flex flex-col gap-3 ml-6">
           <Button
             onClick={() => {
               console.log('🔍 Frontend - Manual refresh triggered');
               fetchLeaderboard();
             }}
             variant="outline"
-            className="text-blue-600 border-blue-600 hover:bg-blue-50"
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh
@@ -670,7 +683,7 @@ if (loading) {
             <>
               {/* Round 1 Actions */}
               {selectedRound === 0 && (
-                <>
+                <div className="flex flex-col gap-2">
                   {!hasShortlisted ? (
                     <Button
                       onClick={() => setShortlistModalOpen(true)}
@@ -688,33 +701,33 @@ if (loading) {
                       }
                     </Button>
                   ) : (
-                    <Button
-                      onClick={() => setEditShortlistModalOpen(true)}
-                      variant="outline"
-                      className="text-purple-600 border-purple-600 hover:bg-purple-50"
-                      disabled={loadingShortlisted}
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      {loadingShortlisted ? 'Loading...' : 'Edit Shortlist'}
-                    </Button>
+                    <>
+                      <Button
+                        onClick={() => setEditShortlistModalOpen(true)}
+                        variant="outline"
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                        disabled={loadingShortlisted}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        {loadingShortlisted ? 'Loading...' : 'Edit Shortlist'}
+                      </Button>
+                      <Button
+                        onClick={handleEditAllShortlist}
+                        variant="outline"
+                        className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        disabled={loadingShortlisted}
+                      >
+                        <List className="w-4 h-4 mr-2" />
+                        {loadingShortlisted ? 'Loading...' : 'View All Shortlisted'}
+                      </Button>
+                    </>
                   )}
-                  {hasShortlisted && (
-                    <Button
-                      onClick={handleEditAllShortlist}
-                      variant="outline"
-                      className="text-blue-600 border-blue-600 hover:bg-blue-50"
-                      disabled={loadingShortlisted}
-                    >
-                      <List className="w-4 h-4 mr-2" />
-                      {loadingShortlisted ? 'Loading...' : 'View All Shortlisted'}
-                    </Button>
-                  )}
-                </>
+                </div>
               )}
               
               {/* Round 2 Actions */}
               {selectedRound === 1 && (
-                <>
+                <div className="flex flex-col gap-2">
                   {!hasWinners ? (
                     <>
                       <Button
@@ -740,7 +753,7 @@ if (loading) {
                         title="No winners assigned yet"
                       >
                         <Mail className="w-4 h-4 mr-2" />
-                        Send Winner Emails (No Winners)
+                        Send Winner Emails
                       </Button>
                     </>
                   ) : (
@@ -748,7 +761,7 @@ if (loading) {
                       <Button
                         onClick={() => setWinnerAssignmentModalOpen(true)}
                         variant="outline"
-                        className="text-yellow-600 border-yellow-600 hover:bg-yellow-50"
+                        className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
                         disabled={assigningWinners}
                       >
                         <Crown className="w-4 h-4 mr-2" />
@@ -760,7 +773,7 @@ if (loading) {
                           setWinnersDisplayModalOpen(true);
                         }}
                         variant="outline"
-                        className="text-purple-600 border-purple-600 hover:bg-purple-50"
+                        className="text-purple-600 border-purple-200 hover:bg-purple-50"
                         disabled={loadingWinners}
                       >
                         <Trophy className="w-4 h-4 mr-2" />
@@ -769,7 +782,7 @@ if (loading) {
                       <Button
                         onClick={() => setEmailSenderModalOpen(true)}
                         variant="outline"
-                        className="text-green-600 border-green-600 hover:bg-green-50"
+                        className="text-green-600 border-green-200 hover:bg-green-50"
                         disabled={false}
                         title="Send emails to winners"
                       >
@@ -778,145 +791,218 @@ if (loading) {
                       </Button>
                     </>
                   )}
-                </>
+                </div>
               )}
             </>
           )}
         </div>
       </div>
+    </CardContent>
+  </Card>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">Filters:</span>
+  {/* Enhanced Filters Section */}
+  <Card className="shadow-none hover:shadow-none ">
+    <CardContent className="p-6 pt-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-gray-600 rounded-lg">
+            <Filter className="w-5 h-5 text-white" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">Filters & View Options</h3>
         </div>
-        
+        <div className="text-sm text-gray-600 bg-white px-3 py-1 rounded-full border">
+          Showing {filteredLeaderboard.length} of {leaderboard.length} submissions
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Round Filter */}
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Round:</label>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Round Selection</Label>
           <Select value={selectedRound.toString()} onValueChange={(value) => setSelectedRound(parseInt(value))}>
-            <SelectTrigger className="w-24">
+            <SelectTrigger className="bg-white border-gray-200">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Round 1</SelectItem>
-              <SelectItem value="1">Round 2</SelectItem>
+              <SelectItem value="0">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  Round 1
+                </div>
+              </SelectItem>
+              <SelectItem value="1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  Round 2
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Show Only Evaluated Filter */}
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Evaluation Status</Label>
+          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            <Checkbox
+              id="show-evaluated"
               checked={showOnlyEvaluated}
-              onChange={(e) => setShowOnlyEvaluated(e.target.checked)}
-              className="rounded text-blue-600 focus:ring-blue-500"
+              onCheckedChange={(checked) => setShowOnlyEvaluated(checked)}
+              className="text-blue-600 focus:ring-blue-500"
             />
-            <span className="text-sm text-gray-600">
+            <Label htmlFor="show-evaluated" className="text-sm text-gray-700 cursor-pointer">
               Show only evaluated
               {selectedRound === 1 && (
-                <span className="text-blue-600 ml-1">(Auto-enabled for Round 2)</span>
+                <span className="text-blue-600 ml-1 text-xs">(Auto-enabled for Round 2)</span>
               )}
-            </span>
-          </label>
-          <Button
-            onClick={() => setShowOnlyEvaluated(!showOnlyEvaluated)}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-          >
-            Toggle Filter
-          </Button>
+            </Label>
+          </div>
         </div>
 
         {/* Shortlist Status Filter */}
         {hasShortlisted && (
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">Shortlist Status:</label>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Shortlist Status</Label>
             <Select value={shortlistFilter} onValueChange={setShortlistFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="bg-white border-gray-200">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Submissions</SelectItem>
-                <SelectItem value="shortlisted">Shortlisted Only</SelectItem>
-                <SelectItem value="not-shortlisted">Not Shortlisted</SelectItem>
+                <SelectItem value="shortlisted">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    Shortlisted Only
+                  </div>
+                </SelectItem>
+                <SelectItem value="not-shortlisted">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-gray-500" />
+                    Not Shortlisted
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
         )}
 
-        <div className="text-sm text-gray-500">
-          Showing {filteredLeaderboard.length} of {leaderboard.length} submissions
-          {hasShortlisted && (
-            <span className="ml-2">
-              • {leaderboard.filter(entry => entry.status === 'shortlisted').length} shortlisted
-            </span>
-          )}
-          {selectedRound === 1 && showOnlyEvaluated && (
-            <span className="ml-2 text-blue-600">
-              • Only judged evaluations shown for Round 2
-            </span>
-          )}
+        {/* Summary Stats */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Summary</Label>
+          <div className="bg-white p-3 rounded-lg border border-gray-200 space-y-1">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Total:</span>
+              <span className="font-semibold text-gray-900">{leaderboard.length}</span>
+            </div>
+            {hasShortlisted && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-green-600">Shortlisted:</span>
+                <span className="font-semibold text-green-700">
+                  {leaderboard.filter(entry => entry.status === 'shortlisted').length}
+                </span>
+              </div>
+            )}
+            {selectedRound === 1 && showOnlyEvaluated && (
+              <div className="text-xs text-blue-600 mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                <Info className="w-3 h-3 inline mr-1" />
+                Only judged evaluations shown for Round 2
+              </div>
+            )}
+          </div>
         </div>
       </div>
+    </CardContent>
+  </Card>
+</div>
 
       {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-600" />
-                <span className="font-semibold text-blue-900">Total Submissions</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-700">{summary.totalSubmissions}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-green-900">Evaluated</span>
-              </div>
-              <p className="text-2xl font-bold text-green-700">{summary.evaluatedSubmissions}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-yellow-600" />
-                <span className="font-semibold text-yellow-900">Pending</span>
-              </div>
-              <p className="text-2xl font-bold text-yellow-700">{summary.pendingEvaluations}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-purple-600" />
-                <span className="font-semibold text-purple-900">Avg Score</span>
-              </div>
-              <p className="text-2xl font-bold text-purple-700">{summary.averageScore}/10</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-600" />
-                <span className="font-semibold text-yellow-900">Shortlisted</span>
-              </div>
-              <p className="text-2xl font-bold text-yellow-700">{summary.shortlistedCount || 0}</p>
-            </CardContent>
-          </Card>
+{summary && (
+  <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+    <Card className="shadow-none hover:shadow-none border-0 bg-gradient-to-br from-blue-50 to-blue-100">
+      <CardContent className="p-6 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-blue-600 rounded-xl">
+            <Users className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-blue-900">
+              {summary.totalSubmissions}
+            </p>
+            <p className="text-sm font-medium text-blue-700">Total Submissions</p>
+          </div>
         </div>
-      )}
+      </CardContent>
+    </Card>
+    
+    <Card className="shadow-none hover:shadow-none border-0 bg-gradient-to-br from-green-50 to-green-100">
+      <CardContent className="p-6 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-green-600 rounded-xl">
+            <CheckCircle className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-green-900">
+              {summary.evaluatedSubmissions}
+            </p>
+            <p className="text-sm font-medium text-green-700">Evaluated</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+    
+    <Card className="shadow-none hover:shadow-none border-0 bg-gradient-to-br from-yellow-50 to-yellow-100">
+      <CardContent className="p-6 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-yellow-600 rounded-xl">
+            <Clock className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-yellow-900">
+              {summary.pendingEvaluations}
+            </p>
+            <p className="text-sm font-medium text-yellow-700">Pending</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+    
+    <Card className="shadow-none hover:shadow-none border-0 bg-gradient-to-br from-purple-50 to-purple-100">
+      <CardContent className="p-6 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-purple-600 rounded-xl">
+            <Award className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-purple-900">
+              {summary.averageScore || 0}/10
+            </p>
+            <p className="text-sm font-medium text-purple-700">Avg Score</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+    
+    <Card className="shadow-none hover:shadow-none border-0 bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <CardContent className="p-6 pt-6">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-indigo-600 rounded-xl">
+            <Trophy className="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <p className="text-3xl font-bold text-indigo-900">
+              {summary.shortlistedCount || 0}
+            </p>
+            <p className="text-sm font-medium text-indigo-700">Shortlisted</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
+)}
+
 
       {/* Leaderboard Table */}
-      <Card>
+      <Card className="shadow-none hover:shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-yellow-600" />
@@ -945,9 +1031,7 @@ if (loading) {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Team
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Project
-                    </th>
+                  
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Type
                     </th>
@@ -1015,15 +1099,7 @@ if (loading) {
                           ) : (
                             <span className="text-gray-900 font-medium">{entry.rank}</span>
                           )}
-                          {entry.status === 'winner' ? (
-                            <span className="ml-2 text-xs text-yellow-600 font-medium">
-                              🏆 Champion
-                            </span>
-                          ) : index < 5 && (
-                            <span className="ml-2 text-xs text-green-600 font-medium">
-                              Top Performer
-                            </span>
-                          )}
+                
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1032,11 +1108,7 @@ if (loading) {
                           <div className="text-sm text-gray-500">{entry.leaderName}</div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {entry.projectTitle}
-                        </div>
-                      </td>
+                    
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           {entry.pptFile ? (
