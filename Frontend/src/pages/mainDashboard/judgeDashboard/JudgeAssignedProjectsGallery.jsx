@@ -5,59 +5,46 @@ import axios from "axios";
 import { Card, CardContent } from "../../../components/CommonUI/card";
 import { Skeleton } from "../../../components/DashboardUI/skeleton";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
-import { Rocket, Code2, FileText, Sparkles, Gavel } from "lucide-react";
+import { Rocket, Code2, FileText, Sparkles, Gavel, Users, TrendingUp, Award, Target, CheckCircle } from "lucide-react";
 
-// Empty State Component for Judges
+// Enhanced Empty State Component for Judges
 const EmptyJudgeProjectsState = ({ selectedType }) => {
   const getEmptyStateContent = () => {
     if (selectedType && selectedType !== "") {
       return {
         title: `No ${selectedType} assignments yet`,
-        subtitle: `You haven't been assigned any ${selectedType.toLowerCase()} submissions for this hackathon yet.`,
-        IconComponent: selectedType.toLowerCase() === 'ppt' ? FileText : Code2
+        subtitle: `You haven't been assigned any ${selectedType.toLowerCase()} submissions for this hackathon yet. Check back later or contact the organizer.`,
       };
     }
     return {
       title: "No assigned submissions yet",
-      subtitle: "You haven't been assigned any submissions to evaluate yet. Please wait for the organizer to assign projects to you.",
-      IconComponent: Gavel
+      subtitle: "You haven't been assigned any submissions to evaluate yet. Please wait for the organizer to assign projects to you, or check if there are any available hackathons.",
+      IconComponent: Gavel,
     };
   };
 
   const { title, subtitle, IconComponent } = getEmptyStateContent();
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4">
-      <div className="text-center max-w-lg mx-auto">
-        {/* Icon Container */}
-        <div className="relative mx-auto w-32 h-32 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-2xl flex items-center justify-center mb-8 shadow-lg border border-purple-100/50">
-          {/* Sparkle decoration */}
-          <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
-          <IconComponent className="w-16 h-16 text-purple-600" strokeWidth={1.5} />
-        </div>
-        
-        {/* Title */}
-        <h3 className="text-2xl font-bold text-gray-900 mb-4 tracking-tight">
+    <div className="flex flex-col items-center justify-center py-20 px-6">
+      <div className="text-center max-w-2xl mx-auto">
+      
+        {/* Enhanced Title */}
+        <h3 className="text-3xl font-bold text-gray-900 mb-6 tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
           {title}
         </h3>
         
-        {/* Subtitle */}
-        <p className="text-gray-600 text-base leading-relaxed mb-8 max-w-md mx-auto">
+        {/* Enhanced Subtitle */}
+        <p className="text-gray-600 text-lg leading-relaxed mb-10 max-w-xl mx-auto">
           {subtitle}
         </p>
-        
-        {/* Decorative Elements */}
-        <div className="flex justify-center items-center space-x-3 opacity-40">
-          <div className="w-3 h-3 bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full animate-pulse"></div>
-          <div className="w-2 h-2 bg-gradient-to-r from-indigo-400 to-blue-400 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-          <div className="w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-        </div>
+    
       </div>
     </div>
   );
 };
 
-export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectClick, selectedType }) {
+export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectClick, selectedType, searchQuery }) {
   const [assignedSubmissions, setAssignedSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -77,7 +64,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     return "My Assigned Submissions";
   };
 
-  // Fetch only assigned submissions for the judge
+  // Your existing useEffect for fetching submissions (keeping unchanged)
   useEffect(() => {
     const fetchAssignedSubmissions = async () => {
       setLoading(true);
@@ -85,7 +72,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
       try {
         const token = localStorage.getItem("token");
         
-        // Fetch judge's assigned submissions
         const response = await axios.get(`/api/judge-management/my-assignments`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -103,9 +89,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
           }))
         });
         
-        // Filter submissions for this specific hackathon
         const hackathonSubmissions = submissions.filter(sub => {
-          // Check both hackathonId and hackathonId._id (in case it's populated)
           const submissionHackathonId = sub.hackathonId?._id || sub.hackathonId;
           const submissionHackathonIdStr = submissionHackathonId?.toString();
           const expectedHackathonIdStr = hackathonId?.toString();
@@ -118,7 +102,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
             matches: submissionHackathonId === hackathonId || submissionHackathonIdStr === expectedHackathonIdStr
           });
           
-          // If no hackathonId is provided, show all submissions
           if (!hackathonId) {
             return true;
           }
@@ -129,9 +112,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         
         console.log('🔍 Frontend - Filtered submissions:', hackathonSubmissions.length);
 
-        // Transform submissions into project format
         const projects = await Promise.all(hackathonSubmissions.map(async (submission) => {
-          // Ensure submittedBy has proper structure
           const submittedBy = submission.submittedBy ? {
             _id: submission.submittedBy._id || submission.submittedBy,
             name: submission.submittedBy.name || submission.submittedBy.email || "Unknown",
@@ -147,7 +128,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
           };
 
           if (submission.pptFile) {
-            // PPT submission
             return {
               ...submission,
               type: "ppt",
@@ -163,25 +143,22 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
               __submission: submission,
             };
           } else {
-            // Project submission - fetch complete project data
             const projectId = submission.projectId?._id || submission.projectId;
             
             if (projectId) {
               try {
-                // Fetch complete project data from API
                 const projectResponse = await axios.get(`/api/projects/${projectId}`);
                 const fullProjectData = projectResponse.data;
                 
                 return {
-                  ...fullProjectData, // Use complete project data
+                  ...fullProjectData,
                   type: "project",
                   submittedBy: submittedBy,
                   submittedAt: submission.submittedAt,
-                  __submission: submission, // Keep submission reference
+                  __submission: submission,
                 };
               } catch (projectErr) {
                 console.error(`Failed to fetch project ${projectId}:`, projectErr);
-                // Fallback to submission data
                 const projectData = submission.projectId || submission.project || submission;
                 const projectLogo = projectData?.logo || 
                                    projectData?.images?.[0] || 
@@ -203,7 +180,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
                 };
               }
             } else {
-              // No project ID, use submission data
               const projectData = submission.project || submission;
               const projectLogo = projectData?.logo || 
                                  projectData?.images?.[0] || 
@@ -236,7 +212,6 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
           data: err.response?.data
         });
         
-        // Show user-friendly error message
         if (err.response?.status === 500) {
           console.error("Server error - check backend logs");
         }
@@ -250,7 +225,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     if (hackathonId) fetchAssignedSubmissions();
   }, [hackathonId]);
 
-  // Fetch current user + judge scores if applicable
+  // Your existing useEffect for user and scores (keeping unchanged)
   useEffect(() => {
     const fetchUserAndScores = async () => {
       const token = localStorage.getItem("token");
@@ -262,9 +237,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         setUser(currentUser);
 
         if (currentUser.role === "judge") {
-          // TODO: Implement judge scores endpoint
-  
-          setJudgeScores([]); // Empty array for now
+          setJudgeScores([]);
         }
       } catch (err) {
         console.error("Failed to fetch user or judge scores", err);
@@ -274,24 +247,40 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     fetchUserAndScores();
   }, []);
 
-  // Show skeletons while loading
+  // Enhanced Loading State
   if (loading) {
     return (
       <div className="space-y-8">
-        {/* Loading Header */}
-        <div className="flex flex-col space-y-2">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-96" />
+        {/* Enhanced Loading Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col space-y-3">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-8 w-64" />
+            </div>
+            <Skeleton className="h-4 w-96" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-24 rounded-lg" />
+            <Skeleton className="h-10 w-32 rounded-lg" />
+          </div>
         </div>
         
-        {/* Loading Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-              <Skeleton className="h-40 w-full" />
-              <CardContent className="space-y-3 p-4">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+        {/* Enhanced Loading Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="h-48 w-full" />
+              <CardContent className="space-y-4 p-6">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-6 w-6 rounded" />
+                  <Skeleton className="h-5 w-3/4" />
+                </div>
+                <Skeleton className="h-4 w-1/2" />
+                <div className="flex justify-between">
+                  <Skeleton className="h-6 w-16 rounded-full" />
+                  <Skeleton className="h-6 w-20 rounded" />
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -300,67 +289,101 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     );
   }
 
-  // Filter by selected type
-  const filteredProjects =
-    selectedType && selectedType !== ""
-      ? assignedSubmissions.filter((project) => {
-          if (project.type) {
-            return project.type.toLowerCase() === selectedType.toLowerCase();
-          }
-          return selectedType.toLowerCase() === "project";
-        })
-      : assignedSubmissions;
+  // Filter by selected type and search query
+  const filteredProjects = assignedSubmissions.filter(project => {
+    // Type filter
+    const typeMatch = !selectedType || selectedType === "" 
+      ? true 
+      : project.type 
+        ? project.type.toLowerCase() === selectedType.toLowerCase()
+        : selectedType.toLowerCase() === "project";
+    
+    // Search filter
+    const searchMatch = !searchQuery || searchQuery === ""
+      ? true
+      : project.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.technologies?.some(tech => tech.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    return typeMatch && searchMatch;
+  });
 
-  // Show attractive empty state when no projects
+  // Enhanced empty state when no projects
   if (filteredProjects.length === 0) {
     return (
       <div className="space-y-8">
-        {/* Page Header */}
-        <div className="flex flex-col space-y-2">
-          <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
-          <p className="text-gray-600">
-            {selectedType && selectedType !== ""
-              ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
-              : `${filteredProjects.length} submissions assigned to you`}
-          </p>
+        {/* Enhanced Page Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-indigo-600" />
+            </div>
+            <div className="flex flex-col space-y-1">
+              <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
+              <p className="text-gray-600">
+                {selectedType && selectedType !== ""
+                  ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
+                  : `${filteredProjects.length} submissions assigned to you`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-200">
+            <Award className="w-4 h-4 text-yellow-600" />
+            <span className="text-sm font-medium text-yellow-800">Awaiting Assignments</span>
+          </div>
         </div>
         
-        {/* Empty State */}
-        <Card>
-          <CardContent className="p-0">
+        {/* Enhanced Empty State */}
+        <div className="">
             <EmptyJudgeProjectsState selectedType={selectedType} />
-          </CardContent>
-        </Card>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
-        <p className="text-gray-600">
-          {selectedType && selectedType !== ""
-            ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
-            : `${filteredProjects.length} submissions assigned to you`}
-        </p>
+      {/* Enhanced Page Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 rounded-xl shadow-sm">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+          </div>
+          <div className="flex flex-col space-y-1">
+            <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
+            <p className="text-gray-600">
+              {selectedType && selectedType !== ""
+                ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
+                : `${filteredProjects.length} submissions assigned to you`}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-200">
+            <Target className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-medium text-green-800">Ready to Judge</span>
+          </div>
+          <div className="text-sm text-gray-500">
+            {searchQuery && `Filtered by "${searchQuery}"`}
+          </div>
+        </div>
       </div>
 
-      {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Enhanced Projects Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {filteredProjects.map((project, index) => (
-          <ProjectCard
-            key={project._id || index}
-            project={project}
-            submission={project.__submission}
-            onClick={() => onProjectClick({ project, submission: project.__submission })}
-            user={user}
-            judgeScores={judgeScores}
-            isJudgeView={true}
-          />
+          <div key={project._id || index} className="">
+            <ProjectCard
+              project={project}
+              submission={project.__submission}
+              onClick={() => onProjectClick({ project, submission: project.__submission })}
+              user={user}
+              judgeScores={judgeScores}
+              isJudgeView={true}
+            />
+          </div>
         ))}
       </div>
     </div>
   );
-} 
+}

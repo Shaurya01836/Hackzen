@@ -244,30 +244,9 @@ if (project.type && project.type.toLowerCase() === "ppt") {
   const teamName = project.submittedBy?.name || project.submittedBy?.email || "Unknown Team";
   return (
     <div className="min-h-screen">
-      {/* Enhanced Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-6 py-4 sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          {!hideBackButton && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBack}
-              className="flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-700 rounded-lg px-4 py-2 text-gray-700 font-medium transition-all duration-200"
-            >
-              <ArrowLeft className="w-4 h-4" /> 
-              {backButtonLabel || "Back"}
-            </Button>
-          )}
-          <div className="flex items-center gap-2 text-sm text-gray-500">
-            <FileText className="w-4 h-4" />
-            <span>PPT Submission</span>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <div className="px-6 py-8 max-w-7xl mx-auto">
-        <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg shadow-indigo-100/50">
+      <div className="py-2  mx-auto">
+        <Card className="shadow-none hover:shadow-none">
           {/* Project Header */}
           <CardHeader className="pb-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -448,7 +427,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
           <div className="mt-8">
             {/* Your Evaluation Display - Left column */}
             {!showJudgeForm && (
-              <Card className="bg-white/70 border-0 mb-6">
+              <Card className="shadow-none hover:shadow-none mb-6">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-yellow-100 rounded-lg">
