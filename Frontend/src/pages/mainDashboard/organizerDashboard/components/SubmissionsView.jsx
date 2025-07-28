@@ -177,10 +177,11 @@ export default function SubmissionsView({
                 onClick={() => {
                   // Export submissions functionality
                   const csvContent = [
-                    ['Project Title', 'Submitted By', 'Round', 'Problem Statement', 'Status', 'Submitted Date'],
+                    ['Project Title', 'Submitted By', 'Email', 'Round', 'Problem Statement', 'Status', 'Submitted Date'],
                     ...filteredSubmissions.map(s => [
                       s.projectTitle || 'Untitled Project',
                       s.submittedByName || s.submittedBy?.name || 'Unknown',
+                      s.submittedBy?.email || 'N/A',
                       s.roundLabel || `Round ${s.roundNumber}`,
                       s.problemStatement ? getProblemStatementText(s.problemStatement) : 'Not specified',
                       s.status === 'submitted' ? 'Submitted' : 'Draft',
@@ -293,6 +294,7 @@ export default function SubmissionsView({
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted By</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Round</th>
                       {selectedProblemStatement !== 'All' && (
                         <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Problem Statement</th>
@@ -322,6 +324,9 @@ export default function SubmissionsView({
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {submission.submittedByName || submission.submittedBy?.name || 'Unknown'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {submission.submittedBy?.email || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -379,4 +384,4 @@ export default function SubmissionsView({
       </div>
     </div>
   );
-} 
+}

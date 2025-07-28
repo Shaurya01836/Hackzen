@@ -194,13 +194,18 @@ export default function BulkEvaluatorAssignModal({
   const actualSubmissionCount = selectedProblemStatement ? 
     assignmentOverview?.unassignedSubmissions?.length || 0 : selectedCount;
 
+  // Use selected submissions count when available, otherwise use actualSubmissionCount
+  const effectiveSubmissionCount = selectedSubmissionIds.length > 0 ? selectedSubmissionIds.length : actualSubmissionCount;
+
   // Add debugging and ensure we have a valid count
   console.log('🔍 actualSubmissionCount calculation:', {
     selectedProblemStatement,
     assignmentOverview: !!assignmentOverview,
     unassignedSubmissionsLength: assignmentOverview?.unassignedSubmissions?.length,
     selectedCount,
-    actualSubmissionCount
+    actualSubmissionCount,
+    effectiveSubmissionCount,
+    selectedSubmissionIds: selectedSubmissionIds.length
   });
 
   // Ensure we have a valid count (fallback to selectedCount if actualSubmissionCount is 0 or undefined)
@@ -213,7 +218,10 @@ export default function BulkEvaluatorAssignModal({
   }, 0);
 
   // When filtering is active, show the actual submission count instead of the assigned count
-  const displayTotalAssigned = selectedProblemStatement ? actualSubmissionCount : totalAssigned;
+  const displayTotalAssigned = selectedProblemStatement ? effectiveSubmissionCount : totalAssigned;
+
+  // Calculate remaining to assign based on actual available submissions
+  const remainingToAssign = effectiveSubmissionCount - displayTotalAssigned;
 
   const handleEvaluatorToggle = (id) => {
     setSelectedEvaluators(prev =>
@@ -231,15 +239,17 @@ export default function BulkEvaluatorAssignModal({
       return;
     }
 
-    // Check if any evaluator has 0 assignments
-    const hasZeroAssignments = selectedEvaluators.some(id => (assignCounts[id] || 0) === 0);
-    if (hasZeroAssignments) {
-      toast({
-        title: 'Invalid assignment',
-        description: 'Cannot assign 0 submissions. Please assign at least 1 submission to each selected evaluator.',
-        variant: 'destructive',
-      });
-      return;
+    // Check if any evaluator has 0 assignments (only for multiple submissions)
+    if (effectiveSubmissionCount > 1) {
+      const hasZeroAssignments = selectedEvaluators.some(id => (assignCounts[id] || 0) === 0);
+      if (hasZeroAssignments) {
+        toast({
+          title: 'Invalid assignment',
+          description: 'Cannot assign 0 submissions. Please assign at least 1 submission to each selected evaluator.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     if (!assignmentOverview) {
@@ -274,10 +284,11 @@ export default function BulkEvaluatorAssignModal({
     // Use the computed actual submission count
 
     // Only validate if we're trying to assign more than available (skip validation for multiple judges mode)
-    if (!multipleJudgesMode && totalAssigned > actualSubmissionCount) {
+    // For multiple projects, each judge gets all projects, so total assigned can exceed available submissions
+    if (!multipleJudgesMode && effectiveSubmissionCount === 1 && totalAssigned > effectiveSubmissionCount) {
       toast({
         title: 'Too many assignments',
-        description: `You're trying to assign ${totalAssigned} submissions but only ${actualSubmissionCount} are available (${selectedProblemStatement ? 'filtered by problem statement' : 'total'}).`,
+        description: `You're trying to assign ${totalAssigned} submissions but only ${effectiveSubmissionCount} are available (${selectedProblemStatement ? 'filtered by problem statement' : 'total'}).`,
         variant: 'destructive',
       });
       return;
@@ -468,7 +479,7 @@ export default function BulkEvaluatorAssignModal({
     }, 0);
     
     // Only increment if we haven't reached the available submission count
-    if (totalAssigned < actualSubmissionCount) {
+    if (totalAssigned < effectiveSubmissionCount) {
       const newCount = currentCount + 1;
       console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
       setAssignCounts(prev => ({ ...prev, [id]: newCount }));
@@ -496,7 +507,7 @@ export default function BulkEvaluatorAssignModal({
     }, 0);
     
     // Cap the new value to prevent exceeding available submissions
-    const maxAllowed = actualSubmissionCount - totalAssignedExcludingCurrent;
+    const maxAllowed = effectiveSubmissionCount - totalAssignedExcludingCurrent;
     const cappedValue = Math.max(0, Math.min(numValue, maxAllowed));
     
     setAssignCounts(prev => ({ ...prev, [id]: cappedValue }));
@@ -505,23 +516,25 @@ export default function BulkEvaluatorAssignModal({
   const handleAssignEqually = () => {
     if (selectedEvaluators.length === 0) return;
     
-    // For single project assignment, assign 1 submission to 1 evaluator
-    if (actualSubmissionCount === 1 && selectedEvaluators.length >= 1) {
+    // Use the number of selected submissions when available, otherwise use actualSubmissionCount
+    const submissionCountToDistribute = selectedSubmissionIds.length > 0 ? selectedSubmissionIds.length : actualSubmissionCount;
+    
+    // For single project assignment, assign 1 submission to each evaluator
+    if (submissionCountToDistribute === 1 && selectedEvaluators.length >= 1) {
       const newCounts = {};
-      selectedEvaluators.forEach((id, index) => {
-        // Assign 1 to the first evaluator, 0 to the rest
-        newCounts[id] = index === 0 ? 1 : 0;
+      selectedEvaluators.forEach((id) => {
+        // Assign 1 to each evaluator for single project
+        newCounts[id] = 1;
       });
       setAssignCounts(newCounts);
       setAssignmentMode('equal');
       return;
     }
     
-    // For multiple submissions, distribute equally
-    const equalCount = Math.ceil(actualSubmissionCount / selectedEvaluators.length);
+    // For multiple submissions, assign all submissions to each evaluator
     const newCounts = {};
     selectedEvaluators.forEach(id => {
-      newCounts[id] = equalCount;
+      newCounts[id] = submissionCountToDistribute;
     });
     setAssignCounts(newCounts);
     setAssignmentMode('equal');
@@ -552,9 +565,6 @@ export default function BulkEvaluatorAssignModal({
         return status;
     }
   };
-
-  // Calculate remaining to assign based on actual available submissions
-  const remainingToAssign = actualSubmissionCount - displayTotalAssigned;
 
   if (!hackathonId) {
     return (
@@ -755,18 +765,17 @@ export default function BulkEvaluatorAssignModal({
                   const newValue = Math.max(0, displayTotalAssigned - 1);
                   if (selectedEvaluators.length > 0) {
                     // For single submission case
-                    if (actualSubmissionCount === 1) {
+                    if (effectiveSubmissionCount === 1) {
                       const newCounts = {};
-                      selectedEvaluators.forEach((id, index) => {
-                        newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                      selectedEvaluators.forEach((id) => {
+                        newCounts[id] = Math.min(1, newValue);
                       });
                       setAssignCounts(newCounts);
                     } else {
-                      // For multiple submissions
-                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      // For multiple submissions, assign all to each evaluator
                       const newCounts = {};
                       selectedEvaluators.forEach(id => {
-                        newCounts[id] = equalCount;
+                        newCounts[id] = newValue;
                       });
                       setAssignCounts(newCounts);
                     }
@@ -783,24 +792,23 @@ export default function BulkEvaluatorAssignModal({
                 value={displayTotalAssigned}
                 onChange={(e) => {
                   const newValue = parseInt(e.target.value) || 0;
-                  // Cap the value at the actual submission count
-                  const cappedValue = Math.min(newValue, actualSubmissionCount);
+                  // Cap the value at the effective submission count
+                  const cappedValue = Math.min(newValue, effectiveSubmissionCount);
                   
                   // Distribute the new value equally among selected evaluators
                   if (selectedEvaluators.length > 0) {
                     // For single submission case
-                    if (actualSubmissionCount === 1) {
+                    if (effectiveSubmissionCount === 1) {
                       const newCounts = {};
-                      selectedEvaluators.forEach((id, index) => {
-                        newCounts[id] = index === 0 ? Math.min(1, cappedValue) : 0;
+                      selectedEvaluators.forEach((id) => {
+                        newCounts[id] = Math.min(1, cappedValue);
                       });
                       setAssignCounts(newCounts);
                     } else {
-                      // For multiple submissions
-                      const equalCount = Math.ceil(cappedValue / selectedEvaluators.length);
+                      // For multiple submissions, assign all to each evaluator
                       const newCounts = {};
                       selectedEvaluators.forEach(id => {
-                        newCounts[id] = equalCount;
+                        newCounts[id] = cappedValue;
                       });
                       setAssignCounts(newCounts);
                     }
@@ -810,21 +818,20 @@ export default function BulkEvaluatorAssignModal({
                   // Handle arrow keys for increment/decrement
                   if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    const newValue = Math.min(displayTotalAssigned + 1, actualSubmissionCount);
+                    const newValue = Math.min(displayTotalAssigned + 1, effectiveSubmissionCount);
                     if (selectedEvaluators.length > 0) {
                       // For single submission case
-                      if (actualSubmissionCount === 1) {
+                      if (effectiveSubmissionCount === 1) {
                         const newCounts = {};
-                        selectedEvaluators.forEach((id, index) => {
-                          newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                        selectedEvaluators.forEach((id) => {
+                          newCounts[id] = Math.min(1, newValue);
                         });
                         setAssignCounts(newCounts);
                       } else {
-                        // For multiple submissions
-                        const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                        // For multiple submissions, assign all to each evaluator
                         const newCounts = {};
                         selectedEvaluators.forEach(id => {
-                          newCounts[id] = equalCount;
+                          newCounts[id] = newValue;
                         });
                         setAssignCounts(newCounts);
                       }
@@ -834,18 +841,17 @@ export default function BulkEvaluatorAssignModal({
                     const newValue = Math.max(0, displayTotalAssigned - 1);
                     if (selectedEvaluators.length > 0) {
                       // For single submission case
-                      if (actualSubmissionCount === 1) {
+                      if (effectiveSubmissionCount === 1) {
                         const newCounts = {};
-                        selectedEvaluators.forEach((id, index) => {
-                          newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                        selectedEvaluators.forEach((id) => {
+                          newCounts[id] = Math.min(1, newValue);
                         });
                         setAssignCounts(newCounts);
                       } else {
-                        // For multiple submissions
-                        const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                        // For multiple submissions, assign all to each evaluator
                         const newCounts = {};
                         selectedEvaluators.forEach(id => {
-                          newCounts[id] = equalCount;
+                          newCounts[id] = newValue;
                         });
                         setAssignCounts(newCounts);
                       }
@@ -857,21 +863,20 @@ export default function BulkEvaluatorAssignModal({
                 type="button"
                 className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-l border-gray-300"
                 onClick={() => {
-                  const newValue = Math.min(displayTotalAssigned + 1, actualSubmissionCount);
+                  const newValue = Math.min(displayTotalAssigned + 1, effectiveSubmissionCount);
                   if (selectedEvaluators.length > 0) {
                     // For single submission case
-                    if (actualSubmissionCount === 1) {
+                    if (effectiveSubmissionCount === 1) {
                       const newCounts = {};
-                      selectedEvaluators.forEach((id, index) => {
-                        newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                      selectedEvaluators.forEach((id) => {
+                        newCounts[id] = Math.min(1, newValue);
                       });
                       setAssignCounts(newCounts);
                     } else {
-                      // For multiple submissions
-                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      // For multiple submissions, assign all to each evaluator
                       const newCounts = {};
                       selectedEvaluators.forEach(id => {
-                        newCounts[id] = equalCount;
+                        newCounts[id] = newValue;
                       });
                       setAssignCounts(newCounts);
                     }

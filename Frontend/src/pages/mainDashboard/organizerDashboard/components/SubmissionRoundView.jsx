@@ -579,6 +579,7 @@ export default function JudgeManagementAssignments({
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROUND</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASSIGNED JUDGES</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SCORE</th>
@@ -597,6 +598,13 @@ export default function JudgeManagementAssignments({
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="text-sm text-gray-900">
                                   {submission.projectTitle || submission.title || 'Untitled Project'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-gray-900">
+                                  {submission.roundIndex !== null && submission.roundIndex !== undefined && !isNaN(submission.roundIndex) 
+                                    ? `Round ${submission.roundIndex + 1}` 
+                                    : 'Round 1'}
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -684,7 +692,6 @@ export default function JudgeManagementAssignments({
                                />
                              </th>
                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
-                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">STATUS</th>
                            </tr>
@@ -704,11 +711,6 @@ export default function JudgeManagementAssignments({
                                  <div>
                                    <div className="font-medium text-gray-900">{submission.teamName}</div>
                                    <div className="text-sm text-gray-500">{submission.teamId}</div>
-                                 </div>
-                               </td>
-                               <td className="px-6 py-4 whitespace-nowrap">
-                                 <div className="text-sm text-gray-900">
-                                   {submission.projectTitle || submission.title || 'Untitled Project'}
                                  </div>
                                </td>
                                <td className="px-6 py-4 whitespace-nowrap">
@@ -938,7 +940,6 @@ export default function JudgeManagementAssignments({
                           <thead className="bg-gray-50">
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TEAM</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PROJECT</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TYPE</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASSIGNED JUDGES</th>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SCORE</th>
@@ -952,11 +953,6 @@ export default function JudgeManagementAssignments({
                                   <div>
                                     <div className="font-medium text-gray-900">{submission.teamName}</div>
                                     <div className="text-sm text-gray-500">{submission.teamId}</div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">
-                                    {submission.projectTitle || submission.title || 'Untitled Project'}
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
