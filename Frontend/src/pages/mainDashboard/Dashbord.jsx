@@ -72,8 +72,9 @@ export default function HackZenDashboard() {
   // Extract the active section from the current URL path
   const getActiveSectionFromPath = () => {
     const path = location.pathname;
-    // Extract section from /dashboard/section pattern
     if (path.match(/^\/dashboard\/organizer\/submission\//)) return "organizer-submission";
+    // Generalize: any judge route
+    if (path.startsWith("/dashboard/judge")) return "judge-panel";
     const match = path.match(/^\/dashboard\/([^/]+)/);
     return match ? match[1] : "profile";
   };

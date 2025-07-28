@@ -639,6 +639,7 @@ const getJudgeStats = async (req, res) => {
 
     // 1️⃣ Find active judge assignments (instead of role invites)
     const JudgeAssignment = require('../model/JudgeAssignmentModel');
+    const Submission = require('../model/SubmissionModel');
     const activeAssignments = await JudgeAssignment.find({
       'judge.email': userEmail,
       status: 'active'
@@ -646,20 +647,23 @@ const getJudgeStats = async (req, res) => {
 
     const totalHackathons = activeAssignments.length;
 
-    // 2️⃣ Count total submitted projects in those hackathons
-    const hackathonIds = activeAssignments.map(assignment => assignment.hackathon._id);
-    const totalSubmissions = await Project.countDocuments({
-      hackathon: { $in: hackathonIds },
+    // 2️⃣ Count total submitted submissions in those hackathons
+    const hackathonIds = activeAssignments
+      .filter(assignment => assignment.hackathon && assignment.hackathon._id)
+      .map(assignment => assignment.hackathon._id);
+    const totalSubmissions = await Submission.countDocuments({
+      hackathonId: { $in: hackathonIds },
       status: 'submitted'
     });
 
-    // 3️⃣ Count how many projects this judge has scored
+    // 3️⃣ Count how many submissions this judge has scored
+    const Score = require('../model/ScoreModel');
     const completedJudgments = await Score.countDocuments({
       judge: userId,
       hackathon: { $in: hackathonIds }
     });
 
-    // 4️⃣ Calculate average score across all judged projects
+    // 4️⃣ Calculate average score across all judged submissions
     const allScores = await Score.find({
       judge: userId,
       hackathon: { $in: hackathonIds }
@@ -669,9 +673,9 @@ const getJudgeStats = async (req, res) => {
     let count = 0;
 
     for (const score of allScores) {
-      if (Array.isArray(score.scores)) {
-        total += score.scores.reduce((sum, s) => sum + s, 0);
-        count += score.scores.length;
+      if (score.totalScore !== undefined && score.totalScore !== null) {
+        total += score.totalScore;
+        count++;
       }
     }
 
@@ -681,7 +685,7 @@ const getJudgeStats = async (req, res) => {
       totalHackathons,
       totalSubmissions,
       completedJudgments,
-      averageRating: averageRating.toFixed(1)
+      averageRating: averageRating.toFixed(2)
     });
 
   } catch (err) {
