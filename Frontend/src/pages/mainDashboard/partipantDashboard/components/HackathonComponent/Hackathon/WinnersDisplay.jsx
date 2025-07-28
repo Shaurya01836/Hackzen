@@ -205,9 +205,9 @@ const WinnersDisplay = ({ hackathonId }) => {
                     <Target className="w-4 h-4 text-yellow-600" />
                     Winning Project
                   </h4>
-                  <p className="text-gray-700 bg-white rounded-lg p-3 border border-gray-200">
-                    {winner.projectTitle}
-                  </p>
+                  <p className="text-gray-700 bg-white rounded-lg p-3 border border-gray-200 truncate">
+  {winner.projectTitle}
+</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">

@@ -220,6 +220,33 @@ export function ExploreHackathons() {
 
   const hasActiveFilters = searchTerm || selectedCategory !== 'all' || selectedDifficulty !== 'all' || selectedLocation !== 'all';
 
+  // --- CONSTANTS FOR FILTERS ---
+  const categories = [
+    "All Categories",
+    "Artificial Intelligence",
+    "Blockchain",
+    "Cybersecurity",
+    "FinTech",
+    "Gaming",
+    "Healthcare",
+    "Sustainability",
+    "Mobile Development",
+    "Web Development",
+    "IoT",
+    "Data Science",
+    "DevOps",
+  ];
+
+  const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
+  const locations = [
+    "All Locations",
+    "Virtual",
+    "Online",
+    "Hybrid",
+    "New York",
+    "Delhi",
+  ];
+
   // --- RENDER FUNCTIONS ---
   
   const renderHackathonCard = (hackathon) => {
@@ -347,17 +374,127 @@ export function ExploreHackathons() {
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative">
-      {/* Filter Sidebar and other elements remain unchanged */}
-      <div className={cn("fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out", showFilterSidebar ? "translate-x-0" : "translate-x-full", !showFilterSidebar && "invisible")}>
-        {/* ... Sidebar content ... */}
+      {/* Filter Sidebar */}
+      <div className={cn(
+        "fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out",
+        showFilterSidebar ? "translate-x-0" : "translate-x-full",
+        !showFilterSidebar && "invisible"
+      )}>
+        <div className="h-full flex flex-col">
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900">Filters</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowFilterSidebar(false)}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          <div className="flex-1 p-6 space-y-6 overflow-y-auto">
+            {/* Category */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Category
+              </label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.slice(1).map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Difficulty Level
+              </label>
+              <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Levels</SelectItem>
+                  {difficulties.slice(1).map((difficulty) => (
+                    <SelectItem key={difficulty} value={difficulty}>
+                      {difficulty}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Location
+              </label>
+              <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select location" />
+                </SelectTrigger>
+                <SelectContent className="bg-white text-black shadow-lg rounded-md border">
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.slice(1).map((location) => (
+                    <SelectItem key={location} value={location.toLowerCase()}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-6 border-t bg-gray-50">
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+              >
+                Clear All
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => setShowFilterSidebar(false)}
+              >
+                Apply Filters
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Backdrop */}
       {showFilterSidebar && (
         <div
           className="fixed inset-0 bg-black/50 z-40 !mt-0"
           onClick={() => setShowFilterSidebar(false)}
         />
       )}
-    
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">
+            Explore Hackathons
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Discover and join exciting hackathons from around the world
+          </p>
+        </div>
+      </div>
 
       {/* ✅ MODIFIED: Carousel container now pauses on hover */}
       {bannerHackathons.length > 0 && (
@@ -381,11 +518,37 @@ export function ExploreHackathons() {
         </div>
       )}
 
-       <div className="flex flex-col sm:flex-row gap-4 items-center">
-         {/* ... Search and filter buttons ... */}
+      {/* Search and Filter Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center">
+        {/* Search Bar */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search hackathons..."
+            className="pl-10 h-12"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        {/* Filter Button */}
+        <Button
+          onClick={() => setShowFilterSidebar(true)}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 px-6"
+        >
+          <Filter className="w-4 h-4" />
+          Filters
+          {hasActiveFilters && (
+            <Badge className="bg-red-500 text-white ml-1 px-1.5 py-0.5 text-xs">
+              {[searchTerm, selectedCategory !== "all", selectedDifficulty !== "all", selectedLocation !== "all"]
+                .filter(Boolean).length}
+            </Badge>
+          )}
+        </Button>
       </div>
 
-     <div className="flex items-center justify-between">
+      {/* Results Summary */}
+      <div className="flex items-center justify-between">
         <p className="text-gray-600">
           Showing <span className="font-semibold">{totalFilteredCount}</span> of{" "}
           <span className="font-semibold">{hackathons.length}</span> hackathons

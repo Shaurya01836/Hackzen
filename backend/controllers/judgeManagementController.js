@@ -3892,6 +3892,7 @@ exports.getShortlistedSubmissionsPublic = async (req, res) => {
       status: 'shortlisted'
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
+      .populate('projectId', 'title')
       .lean();
     
     // Get scores for shortlisted submissions
@@ -3958,7 +3959,7 @@ exports.getShortlistedSubmissionsPublic = async (req, res) => {
 
       return {
         _id: submission._id,
-        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,
@@ -5391,7 +5392,7 @@ exports.getWinners = async (req, res) => {
       
       return {
         _id: submission._id,
-        projectTitle: submission.projectId?.title || submission.teamName || 'Untitled Project',
+        projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptScore: Math.round(pptScore * 10) / 10,
@@ -5440,6 +5441,7 @@ exports.getWinners = async (req, res) => {
       status: 'winner'
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
+      .populate('projectId', 'title')
       .lean();
 
     // Get scores for winning submissions
@@ -5521,7 +5523,7 @@ exports.getWinners = async (req, res) => {
         position,
         positionText,
         positionColor,
-        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+       projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,
