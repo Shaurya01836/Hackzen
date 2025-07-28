@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { Button } from "../../../../../../components/CommonUI/button";
 import { Input } from "../../../../../../components/CommonUI/input";
@@ -21,6 +21,41 @@ export default function JudgeScoreForm({ submissionId, onSubmitted }) {
   const [feedback, setFeedback] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [existingScore, setExistingScore] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch existing score for this submission
+  useEffect(() => {
+    const fetchExistingScore = async () => {
+      if (!submissionId) return;
+      
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`/api/scores/my-score/${submissionId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data.score) {
+          setExistingScore(response.data.score);
+          // Pre-fill the form with existing scores
+          setScores({
+            innovation: response.data.score.scores.innovation.toString(),
+            impact: response.data.score.scores.impact.toString(),
+            technicality: response.data.score.scores.technicality.toString(),
+            presentation: response.data.score.scores.presentation.toString(),
+          });
+          setFeedback(response.data.score.feedback || "");
+        }
+      } catch (err) {
+        // No existing score found or error - this is normal
+        console.log("No existing score found for this submission");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchExistingScore();
+  }, [submissionId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,23 +84,39 @@ export default function JudgeScoreForm({ submissionId, onSubmitted }) {
     setSubmitting(true);
     const token = localStorage.getItem("token");
     try {
-      await axios.post(
-        "http://localhost:3000/api/scores",
-        {
-          submission: submissionId,
-          scores: {
-            innovation: Number(scores.innovation),
-            impact: Number(scores.impact),
-            technicality: Number(scores.technicality),
-            presentation: Number(scores.presentation),
-          },
-          feedback,
+      const scoreData = {
+        submission: submissionId,
+        scores: {
+          innovation: Number(scores.innovation),
+          impact: Number(scores.impact),
+          technicality: Number(scores.technicality),
+          presentation: Number(scores.presentation),
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert("✅ Score submitted successfully!");
+        feedback,
+      };
+
+      if (existingScore) {
+        // Update existing score - use POST since backend handles both create and update
+        await axios.post(
+          "/api/scores",
+          scoreData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        alert("✅ Score updated successfully!");
+      } else {
+        // Create new score
+        await axios.post(
+          "/api/scores",
+          scoreData,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        alert("✅ Score submitted successfully!");
+      }
+      
       onSubmitted?.();
     } catch (err) {
       console.error("Error submitting score", err);
@@ -75,11 +126,21 @@ export default function JudgeScoreForm({ submissionId, onSubmitted }) {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="animate-pulse space-y-4">
+        <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-10 bg-gray-200 rounded"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="border p-4 rounded-lg space-y-4 bg-white/80">
-      <h2 className="font-bold text-lg flex items-center gap-2 mb-2">
-        <span role="img" aria-label="trophy">🏅</span> Judge Evaluation
-      </h2>
+    <div className="space-y-4">
       <p className="text-gray-600 text-sm mb-4">
         Score this submission based on the hackathon criteria. Each score must be between <b>0</b> and <b>10</b>.
       </p>
@@ -125,7 +186,7 @@ export default function JudgeScoreForm({ submissionId, onSubmitted }) {
           />
         </div>
         <Button type="submit" disabled={submitting} className="w-full mt-2">
-          {submitting ? "Submitting..." : "Submit Score"}
+          {submitting ? "Submitting..." : (existingScore ? "Update Score" : "Submit Score")}
         </Button>
       </form>
     </div>

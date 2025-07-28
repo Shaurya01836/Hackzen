@@ -255,7 +255,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     const fetchUserAndScores = async () => {
       const token = localStorage.getItem("token");
       try {
-        const userRes = await axios.get("http://localhost:3000/api/users/me", {
+        const userRes = await axios.get("/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const currentUser = userRes.data;

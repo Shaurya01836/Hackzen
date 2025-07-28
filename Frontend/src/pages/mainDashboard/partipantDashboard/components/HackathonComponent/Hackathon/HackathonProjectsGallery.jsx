@@ -81,7 +81,7 @@ export default function HackathonProjectsGallery({ hackathonId, onProjectClick, 
         setUser(currentUser);
 
         if (currentUser.role === "judge") {
-          const scoreRes = await axios.get("http://localhost:3000/api/scores/my-scored-projects", {
+          const scoreRes = await axios.get("http://localhost:3000/api/scores/my-scored-submissions", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setJudgeScores(scoreRes.data); // Array of submission IDs

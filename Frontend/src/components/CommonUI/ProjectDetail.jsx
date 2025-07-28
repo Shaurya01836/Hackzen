@@ -20,6 +20,7 @@ import {
   FileText,
   Download,
   ExternalLink,
+  User,
 } from "lucide-react";
 import { Button } from "./button";
 import { Badge } from "./badge";
@@ -27,7 +28,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "../DashboardUI/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./card";
 import { useToast } from "../../hooks/use-toast";
+import JudgeEvaluation from "./JudgeEvaluation";
 import JudgeScoreForm from "../../pages/mainDashboard/partipantDashboard/components/HackathonComponent/Scoring/JudgeScoreForm";
+
+
 import {
   Dialog,
   DialogContent,
@@ -76,6 +80,7 @@ export function ProjectDetail({
   );
   const [pptLoading, setPptLoading] = useState(true);
   const [viewCount, setViewCount] = useState(project.views || 0);
+  const [showJudgeForm, setShowJudgeForm] = useState(false);
 
   // On mount, check if this project is liked in localStorage
   useEffect(() => {
@@ -92,6 +97,8 @@ export function ProjectDetail({
     }
   }, [submission]);
 
+  
+
   // Like handler (public, no login required)
   const handleLike = async () => {
     if (!user || !user._id) {
@@ -107,7 +114,7 @@ export function ProjectDetail({
       let res;
       if (project.type && project.type.toLowerCase() === "ppt") {
         res = await fetch(
-          `http://localhost:3000/api/submission-form/${project._id}/like`,
+          `/api/submission-form/${project._id}/like`,
           {
             method: "PATCH",
             headers: {
@@ -118,7 +125,7 @@ export function ProjectDetail({
         );
       } else {
         res = await fetch(
-          `http://localhost:3000/api/projects/${project._id}/like`,
+          `/api/projects/${project._id}/like`,
           {
             method: "PATCH",
             headers: {
@@ -215,6 +222,8 @@ export function ProjectDetail({
     }
     window.open(url, "_blank");
   };
+
+
 
   console.log('[ProjectDetail] project prop:', project);
   console.log('[ProjectDetail] project details:', {
@@ -318,45 +327,47 @@ if (project.type && project.type.toLowerCase() === "ppt") {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            {/* Judge Evaluations Card (for organizer view) - always show */}
-            <Card className="mb-8 bg-white/90 border border-indigo-200 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-indigo-700">
-                  <Award className="w-5 h-5 text-yellow-500" />
-                  Judge Evaluations
-                </CardTitle>
-                {averages && evaluations.length > 0 && (
-                  <div className="mt-2 text-sm text-gray-700 flex flex-wrap gap-6">
-                    <div><span className="font-semibold">Innovation:</span> {averages.innovation}</div>
-                    <div><span className="font-semibold">Impact:</span> {averages.impact}</div>
-                    <div><span className="font-semibold">Technicality:</span> {averages.technicality}</div>
-                    <div><span className="font-semibold">Presentation:</span> {averages.presentation}</div>
-                    <div><span className="font-semibold">Overall:</span> {averages.overall}</div>
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {evaluations.length === 0 ? (
-                  <div className="text-gray-500 italic text-center py-6">No evaluations yet.</div>
-                ) : (
-                  evaluations.map((ev, idx) => (
-                    <div key={idx} className="p-4 rounded-lg border border-gray-100 bg-indigo-50">
-                      <div className="flex flex-wrap gap-6 items-center text-sm text-gray-800 mb-2">
-                        <div><span className="font-semibold">Judge:</span> {ev.judge?.name || ev.judge?.email || 'Unknown'}</div>
-                        <div><span className="font-semibold">Innovation:</span> {ev.scores.innovation}</div>
-                        <div><span className="font-semibold">Impact:</span> {ev.scores.impact}</div>
-                        <div><span className="font-semibold">Technicality:</span> {ev.scores.technicality}</div>
-                        <div><span className="font-semibold">Presentation:</span> {ev.scores.presentation}</div>
-                        <div><span className="font-semibold">Date:</span> {new Date(ev.createdAt).toLocaleString()}</div>
-                      </div>
-                      {ev.feedback && (
-                        <div className="mt-2 text-gray-700"><span className="font-semibold">Feedback:</span> {ev.feedback}</div>
-                      )}
+            {/* Judge Evaluations Card (for organizer view) - only show if user is organizer/admin */}
+            {user?.role === 'organizer' || user?.role === 'admin' ? (
+              <Card className="mb-8 bg-white/90 border border-indigo-200 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-indigo-700">
+                    <Award className="w-5 h-5 text-yellow-500" />
+                    Judge Evaluations
+                  </CardTitle>
+                  {averages && evaluations.length > 0 && (
+                    <div className="mt-2 text-sm text-gray-700 flex flex-wrap gap-6">
+                      <div><span className="font-semibold">Innovation:</span> {averages.innovation}</div>
+                      <div><span className="font-semibold">Impact:</span> {averages.impact}</div>
+                      <div><span className="font-semibold">Technicality:</span> {averages.technicality}</div>
+                      <div><span className="font-semibold">Presentation:</span> {averages.presentation}</div>
+                      <div><span className="font-semibold">Overall:</span> {averages.overall}</div>
                     </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {evaluations.length === 0 ? (
+                    <div className="text-gray-500 italic text-center py-6">No evaluations yet.</div>
+                  ) : (
+                    evaluations.map((ev, idx) => (
+                      <div key={idx} className="p-4 rounded-lg border border-gray-100 bg-indigo-50">
+                        <div className="flex flex-wrap gap-6 items-center text-sm text-gray-800 mb-2">
+                          <div><span className="font-semibold">Judge:</span> {ev.judge?.name || ev.judge?.email || 'Unknown'}</div>
+                          <div><span className="font-semibold">Innovation:</span> {ev.scores.innovation}</div>
+                          <div><span className="font-semibold">Impact:</span> {ev.scores.impact}</div>
+                          <div><span className="font-semibold">Technicality:</span> {ev.scores.technicality}</div>
+                          <div><span className="font-semibold">Presentation:</span> {ev.scores.presentation}</div>
+                          <div><span className="font-semibold">Date:</span> {new Date(ev.createdAt).toLocaleString()}</div>
+                        </div>
+                        {ev.feedback && (
+                          <div className="mt-2 text-gray-700"><span className="font-semibold">Feedback:</span> {ev.feedback}</div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
             {/* Download Actions */}
             <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
               <div className="p-2 bg-indigo-100 rounded-lg">
@@ -427,39 +438,85 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 />
               </div>
             </div>
+
+
           </CardContent>
         </Card>
 
         {/* Judge Evaluation Section */}
         {user?.role === "judge" && submission && (
-          <Card className="mt-8 bg-white/70 border-0">
-            <CardHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Award className="w-5 h-5 text-yellow-600" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-semibold text-gray-900">
-                    Judge Evaluation
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Score this submission based on the hackathon criteria. Your feedback helps determine the winners!
-                  </p>
-                </div>
+          <div className="mt-8">
+            {/* Your Evaluation Display - Left column */}
+            {!showJudgeForm && (
+              <Card className="bg-white/70 border-0 mb-6">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Award className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-gray-900">
+                        Your Evaluation
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Your current evaluation for this submission
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <JudgeEvaluation 
+                    submissionId={submission._id}
+                    onSubmitted={() => {
+                      toast({ title: "✅ Score Submitted", duration: 2000 });
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Judge Evaluation Form */}
+            {showJudgeForm && (
+              <Card className="bg-white/70 border-0">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-yellow-100 rounded-lg">
+                      <Award className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-semibold text-gray-900">
+                        Judge Evaluation
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Score this submission based on the hackathon criteria. Your feedback helps determine the winners!
+                      </p>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <JudgeScoreForm
+                    submissionId={submission._id}
+                                          onSubmitted={() => {
+                        toast({ title: "✅ Score Submitted", duration: 2000 });
+                        setShowJudgeForm(false);
+                      }}
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Edit Button - Show when form is not visible */}
+            {!showJudgeForm && (
+              <div className="flex justify-center">
+                <Button 
+                  onClick={() => setShowJudgeForm(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2"
+                >
+                  Edit Score
+                </Button>
               </div>
-              
-            
-            </CardHeader>
-            
-            <CardContent>
-              <JudgeScoreForm
-                submissionId={submission._id}
-                onSubmitted={() => {
-                  toast({ title: "✅ Score Submitted", duration: 2000 });
-                }}
-              />
-            </CardContent>
-          </Card>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -810,6 +867,24 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                     </div>
                   </div>
                 )}
+
+                {/* Judge Evaluation Display - Left column (read-only) */}
+                {user?.role === "judge" && submission && !showJudgeForm && (
+                  <div className="px-2 pb-6">
+                    <div className="border-t border-gray-200 my-6 w-full" />
+                    <h2 className="text-xl font-bold mb-4 text-gray-900 flex items-center gap-2">
+                      <span role="img" aria-label="trophy">🏅</span>
+                      Your Evaluation
+                    </h2>
+                    <JudgeEvaluation 
+                      submissionId={submission._id}
+                      onSubmitted={() => {
+                        toast({ title: "✅ Score Submitted", duration: 2000 });
+                      }}
+                    />
+                  </div>
+                )}
+
                
               
               </TabsContent>
@@ -1087,30 +1162,89 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 </Card>
               )}
 
-{user?.role === "judge" && submission && (
-  <Card>
-    <CardHeader>
-      <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
-        <Award className="w-4 h-4 text-yellow-500" /> Judge Evaluation
-      </CardTitle>
-      <p className="text-xs text-gray-500 mt-1">
-        Score this project based on the hackathon criteria. Your feedback helps determine the winners!
-      </p>
-    </CardHeader>
-    <CardContent>
-      <div className="w-full h-2 bg-gray-200 rounded-full mb-4 overflow-hidden">
-        <div className="h-full bg-gradient-to-r from-purple-400 to-blue-400 w-1/3 transition-all" />
-      </div>
-      <JudgeScoreForm
-        submissionId={submission._id}
-        onSubmitted={() => {
-          toast({ title: "✅ Score Submitted", duration: 2000 });
-        }}
-      />
-    </CardContent>
-  </Card>
-)}
+              {/* User Profile Card */}
+              {project.submittedBy && (
+                <Card className="bg-white/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                      <User className="w-4 h-4" /> Submitted By
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage
+                          src={project.submittedBy.profileImage || "/placeholder.svg"}
+                          alt={project.submittedBy.name || "User"}
+                        />
+                        <AvatarFallback>
+                          {project.submittedBy.name?.[0]?.toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {project.submittedBy.name || "Unknown"}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {project.submittedBy.email || ""}
+                        </p>
+                        {project.submittedBy.githubProfile && (
+                          <a
+                            href={project.submittedBy.githubProfile}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline truncate block"
+                          >
+                            {project.submittedBy.githubProfile}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
+              {/* Judge Evaluation Form - Right Sidebar */}
+              {user?.role === "judge" && submission && showJudgeForm && (
+                <Card className="bg-white/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                      <Award className="w-4 h-4 text-yellow-500" /> Judge Evaluation
+                    </CardTitle>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Score this project based on the hackathon criteria. Your feedback helps determine the winners!
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <JudgeScoreForm
+                      submissionId={submission._id}
+                      onSubmitted={() => {
+                        toast({ title: "✅ Score Submitted", duration: 2000 });
+                        setShowJudgeForm(false);
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Edit Button - Show when form is not visible */}
+              {user?.role === "judge" && submission && !showJudgeForm && (
+                <Card className="bg-white/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm text-gray-500 flex items-center gap-2">
+                      <Award className="w-4 h-4 text-yellow-500" /> Judge Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      onClick={() => setShowJudgeForm(true)}
+                      className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      Edit Score
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </Tabs>

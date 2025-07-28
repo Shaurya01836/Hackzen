@@ -83,6 +83,53 @@ exports.getMyScoredSubmissions = async (req, res) => {
   }
 };
 
+// Get current judge's score for a specific submission
+exports.getMyScoreForSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const judgeId = req.user._id;
+
+    if (!submissionId || !submissionId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ message: "Invalid submissionId" });
+    }
+
+    const score = await Score.findOne({ 
+      submission: submissionId, 
+      judge: judgeId 
+    });
+
+    if (!score) {
+      return res.json({ score: null });
+    }
+
+    // Convert Map to object for frontend compatibility
+    const scoresObject = {};
+    if (score.scores && score.scores instanceof Map) {
+      score.scores.forEach((value, key) => {
+        scoresObject[key] = value.score;
+      });
+    } else if (score.scores && typeof score.scores === 'object') {
+      Object.assign(scoresObject, score.scores);
+    }
+
+    res.json({
+      score: {
+        _id: score._id,
+        submission: score.submission,
+        judge: score.judge,
+        scores: scoresObject,
+        feedback: score.feedback,
+        totalScore: score.totalScore,
+        createdAt: score.createdAt,
+        updatedAt: score.updatedAt
+      }
+    });
+  } catch (err) {
+    console.error("Failed to get judge's score for submission", err);
+    res.status(500).json({ message: "Failed to fetch judge's score" });
+  }
+};
+
 exports.getScoresForSubmission = async (req, res) => {
   try {
     const submissionId = req.params.submissionId;
