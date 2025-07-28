@@ -230,6 +230,149 @@ const getHackathonParticipants = async (req, res) => {
   }
 };
 
+const getHackathonParticipantsWithSubmissions = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(hackathonId)) {
+      return res.status(400).json({ message: "Invalid hackathon ID." });
+    }
+
+    // Check if hackathon exists
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found." });
+    }
+
+    // Get all registrations for this hackathon with user details
+    const registrations = await Registration.find({ hackathonId })
+      .populate('userId', 'name email avatar location createdAt')
+      .sort({ createdAt: -1 });
+
+    // Get all submissions for this hackathon
+    const Submission = require("../model/SubmissionModel");
+    const submissions = await Submission.find({ hackathonId })
+      .populate('submittedBy', 'name email')
+      .populate('projectId', 'title description')
+      .sort({ submittedAt: -1 });
+
+    // Create a map of user submissions by userId
+    const userSubmissionsMap = {};
+    submissions.forEach(sub => {
+      const userId = sub.submittedBy._id.toString();
+      if (!userSubmissionsMap[userId]) {
+        userSubmissionsMap[userId] = [];
+      }
+      userSubmissionsMap[userId].push({
+        id: sub._id,
+        problemStatement: sub.problemStatement,
+        submissionType: sub.pptFile ? 'PPT' : 'Project',
+        submittedAt: sub.submittedAt,
+        status: sub.status,
+        projectTitle: sub.projectId?.title || 'PPT Submission',
+        teamName: sub.teamName
+      });
+    });
+
+    // Format the response with submission data
+    const participants = registrations.map(reg => {
+      const userId = reg.userId._id.toString();
+      const userSubmissions = userSubmissionsMap[userId] || [];
+      
+      return {
+        id: reg._id,
+        userId: reg.userId._id,
+        name: reg.formData.fullName || reg.userId.name,
+        email: reg.formData.email || reg.userId.email,
+        avatar: reg.userId.avatar,
+        location: reg.formData.collegeOrCompany || reg.userId.location || 'Not specified',
+        joinedDate: reg.createdAt,
+        phone: reg.formData.phone,
+        age: reg.formData.age,
+        gender: reg.formData.gender,
+        collegeOrCompany: reg.formData.collegeOrCompany,
+        degreeOrRole: reg.formData.degreeOrRole,
+        yearOfStudyOrExperience: reg.formData.yearOfStudyOrExperience,
+        teamName: reg.formData.teamName,
+        teamCode: reg.formData.teamCode,
+        projectIdea: reg.formData.projectIdea,
+        github: reg.formData.github,
+        linkedin: reg.formData.linkedin,
+        resumeURL: reg.formData.resumeURL,
+        heardFrom: reg.formData.heardFrom,
+        registrationDate: reg.createdAt,
+        // Add submission information
+        submissions: userSubmissions,
+        hasSubmitted: userSubmissions.length > 0,
+        submittedProblemStatements: userSubmissions.map(sub => sub.problemStatement).filter(Boolean)
+      };
+    });
+
+    // Calculate analytics with problem statement breakdown
+    const problemStatementStats = {};
+    participants.forEach(p => {
+      p.submittedProblemStatements.forEach(ps => {
+        if (!problemStatementStats[ps]) {
+          problemStatementStats[ps] = 0;
+        }
+        problemStatementStats[ps]++;
+      });
+    });
+
+    const analytics = {
+      totalParticipants: participants.length,
+      activeParticipants: participants.length,
+      newThisMonth: participants.filter(p => {
+        const registrationDate = new Date(p.registrationDate);
+        const now = new Date();
+        return registrationDate.getMonth() === now.getMonth() && 
+               registrationDate.getFullYear() === now.getFullYear();
+      }).length,
+      averageAge: participants.length > 0 ? 
+        Math.round(participants.reduce((sum, p) => sum + (parseInt(p.age) || 0), 0) / participants.length) : 0,
+      topCountries: participants.reduce((acc, p) => {
+        const location = p.location || 'Unknown';
+        acc[location] = (acc[location] || 0) + 1;
+        return acc;
+      }, {}),
+      problemStatementStats: Object.entries(problemStatementStats).map(([ps, count]) => ({
+        problemStatement: ps,
+        participantCount: count
+      })).sort((a, b) => b.participantCount - a.participantCount)
+    };
+
+    // Convert to array format for frontend
+    analytics.topCountries = Object.entries(analytics.topCountries)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    res.json({
+      participants,
+      analytics,
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        description: hackathon.description,
+        startDate: hackathon.startDate,
+        endDate: hackathon.endDate,
+        maxParticipants: hackathon.maxParticipants,
+        status: hackathon.status,
+        category: hackathon.category,
+        difficultyLevel: hackathon.difficultyLevel,
+        location: hackathon.location,
+        mode: hackathon.mode,
+        prizePool: hackathon.prizePool,
+        problemStatements: hackathon.problemStatements
+      }
+    });
+  } catch (err) {
+    console.error("Error getting hackathon participants with submissions:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // DELETE /api/registration/:hackathonId
 const unregisterFromHackathon = async (req, res) => {
   try {
@@ -379,8 +522,9 @@ const updateRegistration = async (req, res) => {
 module.exports = {
   registerForHackathon,
   getMyRegistrations,
-  getHackathonParticipants,
-  unregisterFromHackathon,
   getLastRegistrationData,
+  getHackathonParticipants,
+  getHackathonParticipantsWithSubmissions, // Add the new function
+  unregisterFromHackathon,
   updateRegistration,
 };

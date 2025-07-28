@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
-import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw, Github, Globe, ExternalLink, Video, Code, BookOpen, User, Phone, MapPin, Star, Tag, Link, Download, Play, ArrowLeft } from "lucide-react";
+import { Gavel, Loader2, Users, Award, FileText, Eye, Calendar, Mail, CheckCircle, RefreshCw, Github, Globe, ExternalLink, Video, Code, BookOpen, User, Phone, MapPin, Star, Tag, Link, Download, Play, ArrowLeft, Plus, Filter, TrendingUp } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../../../../components/DashboardUI/avatar";
 import { toast } from "../../../../hooks/use-toast";
 import {
@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 // Removed circular import - stage selection functionality is now included directly
 import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
 import ProjectDetail from "../../../../components/CommonUI/ProjectDetail";
+import AddEvaluatorModal from "./AddEvaluatorModal";
 
 // Mock stages data
 const stages = [
@@ -53,9 +54,10 @@ export default function JudgeManagementAssignments({
   const [submissionDetailsModalOpen, setSubmissionDetailsModalOpen] = useState(false);
   const [submissionDetails, setSubmissionDetails] = useState(null);
   const [loadingSubmissionDetails, setLoadingSubmissionDetails] = useState(false);
-
-
-
+  const [showAddEvaluatorModal, setShowAddEvaluatorModal] = useState(false);
+  const [selectedRegRound, setSelectedRegRound] = useState('All');
+  const [selectedRegProblemStatement, setSelectedRegProblemStatement] = useState('All');
+  const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
 
   // Fetch assignment overview when component mounts or hackathon changes
   useEffect(() => {
@@ -164,6 +166,40 @@ export default function JudgeManagementAssignments({
       .map(sub => sub.team?._id || sub.teamId || sub.teamName)
       .filter(Boolean);
     teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
+  } else if (selectedStage === 'reg') {
+    // For All Registrations, apply round and problem statement filters
+    teamsToShow = teams.filter(team => {
+      // Get team's submissions
+      const teamSubmissions = submissions.filter(sub => 
+        sub.teamId === team._id || sub.teamName === team.name
+      );
+      
+      // Apply round filter
+      const roundMatch = selectedRegRound === 'All' || 
+        (selectedRegRound === 'Round 1' && teamSubmissions.some(sub => sub.roundIndex === 0)) ||
+        (selectedRegRound === 'Round 2' && teamSubmissions.some(sub => sub.roundIndex === 1));
+      
+      // Apply problem statement filter - handle different data formats
+      const psMatch = selectedRegProblemStatement === 'All' || 
+        teamSubmissions.some(sub => {
+          // Handle different possible formats of problem statement data
+          const subPS = sub.problemStatement;
+          const selectedPS = selectedRegProblemStatement;
+          
+          // Direct string comparison (now that dropdown uses statement text)
+          if (subPS === selectedPS) return true;
+          
+          // Handle object format (if problemStatement is an object with statement)
+          if (subPS && typeof subPS === 'object' && subPS.statement === selectedPS) return true;
+          
+          // Handle object format (if problemStatement is an object with _id)
+          if (subPS && typeof subPS === 'object' && subPS._id === selectedPS) return true;
+          
+          return false;
+        });
+      
+      return roundMatch && psMatch;
+    });
   }
 
   const handleUnassignAll = async (assignmentId) => {
@@ -426,25 +462,35 @@ export default function JudgeManagementAssignments({
   const fetchAvailableJudges = async () => {
     const hackathonId = hackathon?._id || hackathon?.id;
     if (!hackathonId) return;
-    
+
     setLoadingAvailableJudges(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/available-judges`, {
+      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/judges`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
-        setAvailableJudges(data.evaluators || []);
-      } else {
-        console.error('Failed to fetch available judges');
+        setAvailableJudges(data.judges || []);
       }
     } catch (error) {
       console.error('Error fetching available judges:', error);
     } finally {
       setLoadingAvailableJudges(false);
     }
+  };
+
+  const handleEvaluatorAdded = (newEvaluator) => {
+    toast({
+      title: 'Evaluator Added Successfully',
+      description: `${newEvaluator.firstName} ${newEvaluator.lastName} has been invited as an evaluator.`,
+      variant: 'default',
+    });
+    setShowAddEvaluatorModal(false);
+    // Refresh the judge assignments and overview
+    fetchJudgeAssignments?.();
+    fetchAssignmentOverview();
   };
 
   // Fetch available judges when component mounts
@@ -464,6 +510,29 @@ export default function JudgeManagementAssignments({
   if (roundObj) {
     roundDescription += `\nStart: ${formatDate(roundObj.startDate)}\nEnd: ${formatDate(roundObj.endDate)}`;
   }
+
+  // Helper function to get team progress
+  const getTeamProgress = (team) => {
+    const teamSubmissions = submissions.filter(sub => 
+      sub.teamId === team._id || sub.teamName === team.name
+    );
+    
+    let progress = 'REG';
+    
+    // Check if team has submitted to Round 1 (PPT)
+    const hasRound1 = teamSubmissions.some(sub => sub.roundIndex === 0 || sub.pptFile);
+    if (hasRound1) {
+      progress += ' → R1';
+    }
+    
+    // Check if team has submitted to Round 2 (Project)
+    const hasRound2 = teamSubmissions.some(sub => sub.roundIndex === 1 || (!sub.pptFile && sub.projectTitle));
+    if (hasRound2) {
+      progress += ' → R2';
+    }
+    
+    return progress;
+  };
 
   return (
     <div className="space-y-6">
@@ -489,10 +558,21 @@ export default function JudgeManagementAssignments({
         <div className="space-y-6">
           {/* Round Header */}
           <div className="mb-4">
-            <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-              {getRoundName(selectedStage)}
-            </h2>
-            <p className="text-gray-500 text-base">{roundDescription}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+                  {getRoundName(selectedStage)}
+                </h2>
+                <p className="text-gray-500 text-base">{roundDescription}</p>
+              </div>
+              <Button 
+                onClick={() => setShowAddEvaluatorModal(true)}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Evaluator
+              </Button>
+            </div>
           </div>
           
           {/* Submission Round Content */}
@@ -837,7 +917,125 @@ export default function JudgeManagementAssignments({
             </h2>
             <p className="text-gray-500 text-base">{getRoundDetails(selectedStage)}</p>
           </div>
-          
+
+          {/* Filter Controls for All Registrations - always visible in All Registrations */}
+          {selectedStage === 'reg' && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-100 rounded-md">
+                    <Filter className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900">Filter Teams</h3>
+                    <p className="text-xs text-gray-600">Filter by round and problem statement</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedRegRound('All');
+                      setSelectedRegProblemStatement('All');
+                    }}
+                    className="text-gray-700 hover:text-gray-900 border-gray-400 hover:border-gray-500 bg-white hover:bg-gray-50 px-3 py-1.5 text-xs font-medium"
+                  >
+                    Clear Filter
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const csvContent = [
+                        ['#', 'Team', 'Leader', 'Status', 'Progress'],
+                        ...teamsToShow.map((team, idx) => [
+                          idx + 1,
+                          team.name,
+                          team.leader?.name || 'N/A',
+                          'Active',
+                          getTeamProgress(team)
+                        ])
+                      ].map(row => row.join(',')).join('\n');
+                      const blob = new Blob([csvContent], { type: 'text/csv' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `teams_${selectedRegRound}_${selectedRegProblemStatement}.csv`;
+                      a.click();
+                      window.URL.revokeObjectURL(url);
+                    }}
+                    className="text-gray-700 hover:text-gray-900 border-gray-400 hover:border-gray-500 bg-white hover:bg-gray-50 px-3 py-1.5 text-xs font-medium"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Round Filter */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                    Round
+                  </label>
+                  <select
+                    value={selectedRegRound}
+                    onChange={(e) => setSelectedRegRound(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900 relative z-50"
+                  >
+                    <option value="All" className="text-gray-900 bg-white">All Rounds</option>
+                    <option value="Round 1" className="text-gray-900 bg-white">Round 1</option>
+                    <option value="Round 2" className="text-gray-900 bg-white">Round 2</option>
+                  </select>
+                </div>
+                
+                {/* Problem Statement Filter */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    Problem Statement
+                  </label>
+                  <select
+                    value={selectedRegProblemStatement}
+                    onChange={(e) => setSelectedRegProblemStatement(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900 relative z-50"
+                  >
+                    <option value="All" className="text-gray-900 bg-white">All Problem Statements</option>
+                    {hackathon?.problemStatements?.map((ps, index) => (
+                      <option key={ps._id || index} value={ps.statement} className="text-gray-900 bg-white">
+                        {ps.statement?.slice(0, 30) + '...'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Filter Status */}
+              {(selectedRegRound !== 'All' || selectedRegProblemStatement !== 'All') && (
+                <div className="mt-3 p-2 bg-blue-100 rounded-md border border-blue-200">
+                  <div className="flex items-center gap-2 text-xs text-blue-800">
+                    <span className="font-medium">Active:</span>
+                    {selectedRegRound !== 'All' && (
+                      <span className="px-2 py-0.5 bg-blue-200 rounded text-xs font-medium">
+                        {selectedRegRound}
+                      </span>
+                    )}
+                    {selectedRegProblemStatement !== 'All' && (
+                      <span className="px-2 py-0.5 bg-green-200 rounded text-xs font-medium">
+                        PS
+                      </span>
+                    )}
+                    <span className="ml-auto font-semibold">
+                      {teamsToShow.length} teams
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Team Management Section */}
           <Card className=" shadow-none hover:shadow-none">
             <CardHeader>
@@ -869,7 +1067,13 @@ export default function JudgeManagementAssignments({
                       <tr key={team._id} className="border-b hover:bg-indigo-50 transition-all">
                         <td className="px-6 py-4 font-medium">{idx + 1}</td>
                         <td className="px-6 py-4">
-                          <button className="flex items-center gap-2 font-semibold text-indigo-700 hover:underline" onClick={() => setSelectedTeam(team)}>
+                          <button 
+                            className="flex items-center gap-2 font-semibold text-indigo-700 hover:underline" 
+                            onClick={() => {
+                              setSelectedTeam(team);
+                              setShowTeamDetailsModal(true);
+                            }}
+                          >
                             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-white" style={{ background: '#'+((1<<24)*Math.abs(Math.sin(team.name.length))).toString(16).slice(0,6) }}>{team.name.charAt(0).toUpperCase()}</div>
                             {team.name}
                           </button>
@@ -881,10 +1085,25 @@ export default function JudgeManagementAssignments({
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-2 text-xs font-medium text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 17l-4 4m0 0l-4-4m4 4V3" /></svg>
-                            REG <span className="text-green-500">→</span> R1
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 text-xs font-medium">
+                              {getTeamProgress(team).split(' → ').map((stage, index) => (
+                                <span key={index} className="flex items-center gap-1">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    stage === 'REG' ? 'bg-blue-100 text-blue-700' :
+                                    stage === 'R1' ? 'bg-green-100 text-green-700' :
+                                    stage === 'R2' ? 'bg-purple-100 text-purple-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {stage}
+                                  </span>
+                                  {index < getTeamProgress(team).split(' → ').length - 1 && (
+                                    <span className="text-gray-400">→</span>
+                                  )}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1874,20 +2093,91 @@ export default function JudgeManagementAssignments({
       </Dialog>
 
       {/* Team Details Modal */}
-      <Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
+      <Dialog open={showTeamDetailsModal} onOpenChange={setShowTeamDetailsModal}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Team Details</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-600" />
+              Team Details
+            </DialogTitle>
             <DialogDescription>
-              Detailed view of team information and submissions.
+              Detailed view of team information and members.
             </DialogDescription>
           </DialogHeader>
           {selectedTeam && (
-            <SubmissionRoundView
-              team={selectedTeam}
-              hackathonId={hackathon?._id || hackathon?.id}
-              onClose={() => setSelectedTeam(null)}
-            />
+            <div className="space-y-6">
+              {/* Team Header */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center text-2xl font-bold text-indigo-600">
+                    {selectedTeam.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">{selectedTeam.name}</h3>
+                    <p className="text-gray-600">Team Leader: {selectedTeam.leader?.name}</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Active
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {selectedTeam.members?.length || 0} members
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Team Members */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  Team Members
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedTeam.members?.map((member, idx) => (
+                    <div key={member._id || member.id || idx} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium">
+                        {member.name?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium text-gray-900">{member.name}</div>
+                        <div className="text-sm text-gray-500">{member.email}</div>
+                        {member._id === selectedTeam.leader?._id && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 mt-1">
+                            Team Leader
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Team Progress */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-purple-600" />
+                  Team Progress
+                </h4>
+                <div className="flex items-center gap-2">
+                  {getTeamProgress(selectedTeam).split(' → ').map((stage, index) => (
+                    <span key={index} className="flex items-center gap-1">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        stage === 'REG' ? 'bg-blue-100 text-blue-700' :
+                        stage === 'R1' ? 'bg-green-100 text-green-700' :
+                        stage === 'R2' ? 'bg-purple-100 text-purple-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {stage}
+                      </span>
+                      {index < getTeamProgress(selectedTeam).split(' → ').length - 1 && (
+                        <span className="text-gray-400">→</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
@@ -2090,6 +2380,17 @@ export default function JudgeManagementAssignments({
             fetchAssignmentOverview();
           }, 1000);
         }}
+      />
+
+      {/* Add Evaluator Modal */}
+      <AddEvaluatorModal
+        open={showAddEvaluatorModal}
+        onClose={() => setShowAddEvaluatorModal(false)}
+        hackathonId={hackathon?._id || hackathon?.id}
+        onEvaluatorAdded={handleEvaluatorAdded}
+        defaultJudgeType="platform"
+        hideJudgeTypeSelection={false}
+        editingJudge={null}
       />
     </div>
   );

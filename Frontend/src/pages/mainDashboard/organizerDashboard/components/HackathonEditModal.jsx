@@ -32,9 +32,6 @@ export default function HackathonEditModal({ hackathon, onClose, onUpdated }) {
     <Dialog open={true} onClose={onClose} className="fixed z-50 inset-0 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl p-6 relative">
-          <button className="absolute top-2 right-2" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
           <h2 className="text-xl font-bold mb-4">Edit Hackathon</h2>
           <CreateHackathon initialData={hackathon} onSubmit={handleUpdate} onBack={onClose} />
         </div>

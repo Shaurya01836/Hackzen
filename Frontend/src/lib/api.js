@@ -97,4 +97,34 @@ export async function fetchHackathonParticipants(hackathonId) {
   const response = await fetch(url, { headers });
   if (!response.ok) throw new Error('Failed to fetch participants');
   return response.json();
+}
+
+// Fetch participants with their submissions for organizer dashboard
+export async function fetchHackathonParticipantsWithSubmissions(hackathonId) {
+  const url = buildApiUrl(`/registration/hackathon/${hackathonId}/participants-with-submissions`);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Failed to fetch participants with submissions');
+  return response.json();
+}
+
+// Fetch teams with their submissions for organizer dashboard
+export async function fetchTeamsWithSubmissions(hackathonId) {
+  const url = buildApiUrl(`/teams/hackathon/${hackathonId}/teams-with-submissions`);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Failed to fetch teams with submissions');
+  return response.json();
+}
+
+// Fetch submissions with problem statements for organizer dashboard
+export async function fetchSubmissionsWithProblemStatements(hackathonId) {
+  const url = buildApiUrl(`/submission-form/admin/hackathon/${hackathonId}/with-problem-statements`);
+  const token = localStorage.getItem('token');
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error('Failed to fetch submissions with problem statements');
+  return response.json();
 } 

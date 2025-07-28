@@ -241,6 +241,7 @@ exports.getAllScoresForHackathon = async (req, res) => {
         project: sub.projectId || null,
         problemStatement: sub.problemStatement || null,
         pptFile: sub.pptFile || null,
+        roundIndex: sub.roundIndex || null,
         feedback: s.feedback,
         scores: scoresObject,
         submittedAt: sub.submittedAt

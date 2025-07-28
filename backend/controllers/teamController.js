@@ -593,6 +593,100 @@ const getAllTeamsByHackathon = async (req, res) => {
   }
 };
 
+// GET /api/teams/hackathon/:hackathonId/teams-with-submissions
+const getTeamsWithSubmissions = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    
+    // Get all teams for this hackathon
+    const teams = await Team.find({ hackathon: new mongoose.Types.ObjectId(hackathonId) })
+      .populate('members', 'name email profileImage')
+      .populate('leader', 'name email profileImage')
+      .sort({ createdAt: -1 });
+
+    // Get all submissions for this hackathon
+    const Submission = require('../model/SubmissionModel');
+    const submissions = await Submission.find({ hackathonId })
+      .populate('submittedBy', 'name email')
+      .populate('projectId', 'title description')
+      .sort({ submittedAt: -1 });
+
+    // Create a map of team submissions by teamId
+    const teamSubmissionsMap = {};
+    submissions.forEach(sub => {
+      // Find which team this submission belongs to
+      const team = teams.find(t => 
+        t.members.some(member => member._id.toString() === sub.submittedBy._id.toString())
+      );
+      
+      if (team) {
+        const teamId = team._id.toString();
+        if (!teamSubmissionsMap[teamId]) {
+          teamSubmissionsMap[teamId] = [];
+        }
+        teamSubmissionsMap[teamId].push({
+          id: sub._id,
+          problemStatement: sub.problemStatement,
+          submissionType: sub.pptFile ? 'PPT' : 'Project',
+          submittedAt: sub.submittedAt,
+          status: sub.status,
+          projectTitle: sub.projectId?.title || 'PPT Submission',
+          submittedBy: sub.submittedBy.name
+        });
+      }
+    });
+
+    // Format the response with submission data
+    const teamsWithSubmissions = teams.map(team => {
+      const teamId = team._id.toString();
+      const teamSubmissions = teamSubmissionsMap[teamId] || [];
+
+      return {
+        _id: team._id,
+        id: team._id, // Include both for compatibility
+        name: team.name,
+        leader: team.leader,
+        members: team.members,
+        hackathon: team.hackathon,
+        status: team.status,
+        createdAt: team.createdAt,
+        // Add submission information
+        submissions: teamSubmissions,
+        hasSubmitted: teamSubmissions.length > 0,
+        submittedProblemStatements: teamSubmissions.map(sub => sub.problemStatement).filter(Boolean)
+      };
+    });
+
+    // Calculate analytics with problem statement breakdown
+    const problemStatementStats = {};
+    teamsWithSubmissions.forEach(team => {
+      team.submittedProblemStatements.forEach(ps => {
+        if (!problemStatementStats[ps]) {
+          problemStatementStats[ps] = 0;
+        }
+        problemStatementStats[ps]++;
+      });
+    });
+
+    const analytics = {
+      totalTeams: teamsWithSubmissions.length,
+      teamsWithSubmissions: teamsWithSubmissions.filter(t => t.hasSubmitted).length,
+      problemStatementStats: Object.entries(problemStatementStats).map(([ps, count]) => ({
+        problemStatement: ps,
+        teamCount: count
+      })).sort((a, b) => b.teamCount - a.teamCount)
+    };
+
+    res.json({
+      teams: teamsWithSubmissions,
+      analytics
+    });
+  } catch (err) {
+    console.error('Error fetching teams with submissions:', err);
+    res.status(500).json({ error: 'Failed to fetch teams with submissions', details: err.message });
+  }
+};
+
 module.exports = {
   createTeam,
   addMember,
@@ -606,4 +700,5 @@ module.exports = {
   updateTeamDescription,
   updateTeamName,
   getAllTeamsByHackathon,
+  getTeamsWithSubmissions,
 };

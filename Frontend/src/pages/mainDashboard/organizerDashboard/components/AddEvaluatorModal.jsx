@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../../../components/DashboardUI/dialog';
 import { X, UserPlus, Mail, User, Building, CheckCircle } from 'lucide-react';
 import { useToast } from '../../../../hooks/use-toast';
@@ -7,7 +7,10 @@ export default function AddEvaluatorModal({
   open,
   onClose,
   hackathonId,
-  onEvaluatorAdded
+  onEvaluatorAdded,
+  defaultJudgeType = 'platform',
+  hideJudgeTypeSelection = false,
+  editingJudge = null
 }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -16,12 +19,34 @@ export default function AddEvaluatorModal({
     firstName: '',
     lastName: '',
     mobile: '',
-    judgeType: 'platform',
+    judgeType: defaultJudgeType,
     sponsorCompany: '',
     canJudgeSponsoredPS: false,
     maxSubmissionsPerJudge: 50,
     sendEmail: true
   });
+
+  // Update form data when defaultJudgeType changes or when editing
+  useEffect(() => {
+    if (editingJudge) {
+      setFormData({
+        judgeEmail: editingJudge.judge?.email || '',
+        firstName: editingJudge.judge?.name?.split(' ')[0] || '',
+        lastName: editingJudge.judge?.name?.split(' ').slice(1).join(' ') || '',
+        mobile: editingJudge.judge?.mobile || '',
+        judgeType: editingJudge.judge?.type || defaultJudgeType,
+        sponsorCompany: editingJudge.judge?.sponsorCompany || '',
+        canJudgeSponsoredPS: editingJudge.judge?.canJudgeSponsoredPS || false,
+        maxSubmissionsPerJudge: editingJudge.maxSubmissionsPerJudge || 50,
+        sendEmail: false // Don't send email when editing
+      });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        judgeType: defaultJudgeType
+      }));
+    }
+  }, [defaultJudgeType, editingJudge]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -88,7 +113,7 @@ export default function AddEvaluatorModal({
             firstName: '',
             lastName: '',
             mobile: '',
-            judgeType: 'platform',
+            judgeType: defaultJudgeType,
             sponsorCompany: '',
             canJudgeSponsoredPS: false,
             maxSubmissionsPerJudge: 50,
@@ -128,14 +153,11 @@ export default function AddEvaluatorModal({
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <UserPlus className="w-5 h-5 text-blue-600" />
-            Add Evaluator
+            {editingJudge ? 'Edit Evaluator' : 'Add Evaluator'}
           </DialogTitle>
           <p className="text-sm text-gray-600 mt-2">
-            Invite a new evaluator to judge submissions for this hackathon.
+            {editingJudge ? 'Update evaluator information for this hackathon.' : 'Invite a new evaluator to judge submissions for this hackathon.'}
           </p>
-          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,30 +228,32 @@ export default function AddEvaluatorModal({
           </div>
 
           {/* Judge Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Building className="w-4 h-4 inline mr-1" />
-              Judge Type
-            </label>
-            <div className="space-y-2">
-              {judgeTypes.map((type) => (
-                <label key={type.value} className="flex items-start gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="judgeType"
-                    value={type.value}
-                    checked={formData.judgeType === type.value}
-                    onChange={handleInputChange}
-                    className="mt-1 h-4 w-4 text-blue-600"
-                  />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900">{type.label}</div>
-                    <div className="text-xs text-gray-500">{type.description}</div>
-                  </div>
-                </label>
-              ))}
+          {!hideJudgeTypeSelection && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Building className="w-4 h-4 inline mr-1" />
+                Judge Type
+              </label>
+              <div className="space-y-2">
+                {judgeTypes.map((type) => (
+                  <label key={type.value} className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="judgeType"
+                      value={type.value}
+                      checked={formData.judgeType === type.value}
+                      onChange={handleInputChange}
+                      className="mt-1 h-4 w-4 text-blue-600"
+                    />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">{type.label}</div>
+                      <div className="text-xs text-gray-500">{type.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Sponsor Company (only for sponsor judges) */}
           {formData.judgeType === 'sponsor' && (
@@ -296,7 +320,7 @@ export default function AddEvaluatorModal({
               disabled={loading}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
             >
-              {loading ? 'Adding...' : 'Add Evaluator'}
+              {loading ? (editingJudge ? 'Updating...' : 'Adding...') : (editingJudge ? 'Update Evaluator' : 'Add Evaluator')}
             </button>
           </div>
         </form>

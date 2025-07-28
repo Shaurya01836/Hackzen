@@ -3,6 +3,7 @@ const {
   registerForHackathon,
   getMyRegistrations, // ✅ Make sure this exists
   getHackathonParticipants,
+  getHackathonParticipantsWithSubmissions, // Add the new function
   unregisterFromHackathon,
   getLastRegistrationData,
   updateRegistration
@@ -21,6 +22,9 @@ router.get("/last-registration", protect, getLastRegistrationData);
 
 // ✅ Add route to get participants for a specific hackathon
 router.get("/hackathon/:hackathonId/participants", protect, getHackathonParticipants);
+
+// ✅ Add route to get participants with their submissions for organizer dashboard
+router.get("/hackathon/:hackathonId/participants-with-submissions", protect, getHackathonParticipantsWithSubmissions);
 
 // Add unregister route
 router.delete('/:hackathonId', protect, unregisterFromHackathon);

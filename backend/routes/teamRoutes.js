@@ -1,42 +1,43 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const teamController = require('../controllers/teamController');
-const { protect } = require('../middleware/authMiddleware');
+const {
+  createTeam,
+  getTeamsByHackathon,
+  getAllTeamsByHackathon,
+  getTeamsWithSubmissions,
+  joinTeamByCode,
+  leaveTeam,
+  deleteTeam,
+  removeMember,
+  updateTeamName,
+} = require("../controllers/teamController");
+const { protect } = require("../middleware/authMiddleware");
 
 // Create a new team
-router.post('/', protect, teamController.createTeam);
+router.post("/", protect, createTeam);
 
-// Join a team
-router.put('/:id/add-member', protect, teamController.addMember);
+// Get teams for a specific hackathon
+router.get("/hackathon/:hackathonId", protect, getTeamsByHackathon);
 
-// Join team by code
-router.get('/join/:teamCode', protect, teamController.joinTeamByCode);
+// Get all teams for a hackathon (admin/organizer view)
+router.get("/hackathon/:hackathonId/all", protect, getAllTeamsByHackathon);
 
-// Get all teams in a hackathon
-router.get('/hackathon/:hackathonId', protect, teamController.getTeamsByHackathon);
+// Get teams with their submissions for organizer dashboard
+router.get("/hackathon/:hackathonId/teams-with-submissions", protect, getTeamsWithSubmissions);
 
-// Get all teams for a project
-router.get('/project/:projectId', protect, teamController.getTeamsByProject);
+// Join a team by code
+router.get("/join/:teamCode", protect, joinTeamByCode);
 
-// Get all teams in a hackathon (for organizers)
-router.get('/hackathon/:hackathonId/all', protect, teamController.getAllTeamsByHackathon);
+// Leave a team
+router.delete("/:teamId/leave", protect, leaveTeam);
 
-// Get one team by ID
-router.get('/:id', teamController.getTeamById);
+// Delete a team (only leader can do this)
+router.delete("/:id", protect, deleteTeam);
 
-// Update team description (leader only)
-router.put('/:teamId/description', protect, teamController.updateTeamDescription);
+// Remove a member from team (only leader can do this)
+router.delete("/:teamId/members/:memberId", protect, removeMember);
 
-// Add: Update team name (leader only)
-router.put('/:teamId/name', protect, teamController.updateTeamName);
-
-// Delete a team (leader only)
-router.delete('/:id', protect, teamController.deleteTeam);
-
-// Remove a member from a team (leader only)
-router.delete('/:teamId/members/:memberId', protect, teamController.removeMember);
-
-// Member leaves team (remove self)
-router.delete('/:teamId/leave', protect, teamController.leaveTeam);
+// Update team name (only leader can do this)
+router.put("/:teamId/name", protect, updateTeamName);
 
 module.exports = router;

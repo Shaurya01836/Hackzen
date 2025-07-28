@@ -11,6 +11,8 @@ const {
   getSubmissionByIdAdmin,
   getSubmissionsForJudge ,
   getJudgeEvaluationsForSubmission,
+  getSubmissionsByHackathonAdmin,
+  getSubmissionsWithProblemStatements,
 } = require("../controllers/submissionFormController");
 const Submission = require("../model/SubmissionModel");
 const Project = require("../model/ProjectModel");
@@ -163,5 +165,11 @@ router.get("/admin/:id", protect, getSubmissionByIdAdmin);
 router.delete("/submission/:id", protect, require("../controllers/submissionFormController").deleteSubmissionById);
 router.put("/submission/:id", protect, require("../controllers/submissionFormController").editSubmissionById);
 router.get('/judge/hackathon/:hackathonId', protect, isJudge, getSubmissionsForJudge);
+
+// Get all submissions for a hackathon (admin endpoint)
+router.get("/admin/hackathon/:hackathonId", protect, getSubmissionsByHackathonAdmin);
+
+// Get submissions with problem statements for organizer dashboard
+router.get("/admin/hackathon/:hackathonId/with-problem-statements", protect, getSubmissionsWithProblemStatements);
 
 module.exports = router;

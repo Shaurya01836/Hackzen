@@ -132,9 +132,6 @@ export default function ScoringModal({
       <DialogContent className="max-w-2xl w-full">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Score Submission</DialogTitle>
-          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
         <div className="space-y-6">
           {/* Submission Info */}

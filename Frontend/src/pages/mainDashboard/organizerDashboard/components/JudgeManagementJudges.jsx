@@ -1,11 +1,50 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
 import { Badge } from "../../../../components/CommonUI/badge";
 import { Globe, Building, Shield, Edit, Trash2, User, Mail, Star, UserCheck, Plus, AlertCircle } from "lucide-react";
+import AddEvaluatorModal from "./AddEvaluatorModal";
+import { useToast } from "../../../../hooks/use-toast";
 
-export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIcon, getJudgeTypeLabel, getStatusBadge, removeJudgeAssignment }) {
+export default function JudgeManagementJudges({ 
+  judgeAssignments, 
+  getJudgeTypeIcon, 
+  getJudgeTypeLabel, 
+  getStatusBadge, 
+  removeJudgeAssignment,
+  hackathonId 
+}) {
+  const { toast } = useToast();
+  const [showAddEvaluatorModal, setShowAddEvaluatorModal] = useState(false);
+  const [selectedJudgeType, setSelectedJudgeType] = useState('platform');
+  const [editingJudge, setEditingJudge] = useState(null);
   const totalJudges = judgeAssignments.platform.length + judgeAssignments.sponsor.length + judgeAssignments.hybrid.length;
+
+  const handleEvaluatorAdded = (newEvaluator) => {
+    const action = editingJudge ? 'Updated' : 'Added';
+    toast({
+      title: `Evaluator ${action} Successfully`,
+      description: `${newEvaluator.firstName} ${newEvaluator.lastName} has been ${editingJudge ? 'updated' : 'invited'} as an evaluator.`,
+      variant: 'default',
+    });
+    setShowAddEvaluatorModal(false);
+    setEditingJudge(null);
+    // Refresh the judge assignments
+    if (window.location.reload) {
+      window.location.reload();
+    }
+  };
+
+  const handleAddJudge = (judgeType) => {
+    setSelectedJudgeType(judgeType);
+    setShowAddEvaluatorModal(true);
+  };
+
+  const handleEditJudge = (assignment) => {
+    setEditingJudge(assignment);
+    setSelectedJudgeType(assignment.judge?.type || 'platform');
+    setShowAddEvaluatorModal(true);
+  };
 
   const JudgeCard = ({ assignment, type, bgColor, iconBg }) => (
     <div className={`group relative p-6 border-0 rounded-xl ${bgColor} hover:from-indigo-50 hover:to-indigo-100 transition-all duration-300`}>
@@ -67,6 +106,7 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
             size="sm" 
             variant="outline" 
             className="border-gray-300 hover:bg-white hover:border-indigo-300 hover:text-indigo-600"
+            onClick={() => handleEditJudge(assignment)}
           >
             <Edit className="w-4 h-4 mr-1" />
             Edit
@@ -106,7 +146,7 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
     </div>
   );
 
-  const EmptyState = ({ type, icon: Icon, description, actionText }) => (
+  const EmptyState = ({ type, icon: Icon, description, actionText, judgeType }) => (
     <div className="text-center py-16">
       <div className="p-4 bg-gray-100 rounded-full mb-4 w-20 h-20 flex items-center justify-center mx-auto">
         <Icon className="w-10 h-10 text-gray-400" />
@@ -117,7 +157,11 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
       <p className="text-gray-500 max-w-md mx-auto mb-6">
         {description}
       </p>
-      <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+      <Button 
+        variant="outline" 
+        className="border-gray-300 hover:bg-gray-50"
+        onClick={() => handleAddJudge(judgeType)}
+      >
         <Plus className="w-4 h-4 mr-2" />
         {actionText}
       </Button>
@@ -165,6 +209,7 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
               icon={Globe}
               description="Platform judges can evaluate general problem statements and have broad access to judge submissions across the platform."
               actionText="Add Platform Judge"
+              judgeType="platform"
             />
           ) : (
             <div className="space-y-6">
@@ -177,6 +222,17 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
                   iconBg="bg-gradient-to-br from-blue-500 to-blue-600"
                 />
               ))}
+              {/* Add More Platform Judges Button */}
+              <div className="flex justify-center pt-4">
+                <Button 
+                  variant="outline" 
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  onClick={() => handleAddJudge('platform')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add More Platform Judges
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -211,6 +267,7 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
               icon={Building}
               description="Sponsor judges represent companies and can only evaluate problem statements from their own organization."
               actionText="Add Sponsor Judge"
+              judgeType="sponsor"
             />
           ) : (
             <div className="space-y-6">
@@ -223,6 +280,17 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
                   iconBg="bg-gradient-to-br from-green-500 to-green-600"
                 />
               ))}
+              {/* Add More Sponsor Judges Button */}
+              <div className="flex justify-center pt-4">
+                <Button 
+                  variant="outline" 
+                  className="border-green-300 text-green-700 hover:bg-green-50"
+                  onClick={() => handleAddJudge('sponsor')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add More Sponsor Judges
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -257,6 +325,7 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
               icon={Shield}
               description="Hybrid judges have comprehensive access to evaluate all types of problem statements across the platform."
               actionText="Add Hybrid Judge"
+              judgeType="hybrid"
             />
           ) : (
             <div className="space-y-6">
@@ -269,6 +338,17 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
                   iconBg="bg-gradient-to-br from-purple-500 to-purple-600"
                 />
               ))}
+              {/* Add More Hybrid Judges Button */}
+              <div className="flex justify-center pt-4">
+                <Button 
+                  variant="outline" 
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                  onClick={() => handleAddJudge('hybrid')}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add More Hybrid Judges
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -295,6 +375,31 @@ export default function JudgeManagementJudges({ judgeAssignments, getJudgeTypeIc
           </CardContent>
         </Card>
       )}
+
+      {/* Add Evaluator Button */}
+      <div className="flex justify-center">
+        <Button 
+          onClick={() => setShowAddEvaluatorModal(true)}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg font-semibold"
+        >
+          <Plus className="w-5 h-5 mr-2" />
+          Add Evaluator
+        </Button>
+      </div>
+
+      {/* Add Evaluator Modal */}
+      <AddEvaluatorModal
+        open={showAddEvaluatorModal}
+        onClose={() => {
+          setShowAddEvaluatorModal(false);
+          setEditingJudge(null);
+        }}
+        hackathonId={hackathonId}
+        onEvaluatorAdded={handleEvaluatorAdded}
+        defaultJudgeType={selectedJudgeType}
+        hideJudgeTypeSelection={true}
+        editingJudge={editingJudge}
+      />
     </div>
   );
 }

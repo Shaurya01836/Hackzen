@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import CreatedHackathonOverview from "./CreatedHackathonOverview";
 import CreatedHackathonViews from "./CreatedHackathonViews";
+import SubmissionsView from "./SubmissionsView";
 import CreatedHackathonModals from "./CreatedHackathonModals";
 import { useNavigate } from "react-router-dom";
 import { useToast } from '../../../../hooks/use-toast';
-import { fetchHackathonParticipants } from "../../../../lib/api";
+import { fetchHackathonParticipants, fetchHackathonParticipantsWithSubmissions, fetchTeamsWithSubmissions, fetchSubmissionsWithProblemStatements } from "../../../../lib/api";
 import ChatModal from '../../components/ChatModal';
 import BaseModal from "../../partipantDashboard/components/HackathonComponent/Hackathon/TeamModals/BaseModal";
 import CustomSubmissionForm from "./CustomSubmissionForm";
@@ -45,11 +46,29 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
   const [showSubmissionsView, setShowSubmissionsView] = useState(false);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [selectedType, setSelectedType] = useState('All');
+  const [selectedProblemStatement, setSelectedProblemStatement] = useState('All'); // Add problem statement filter
+  const [selectedTeamProblemStatement, setSelectedTeamProblemStatement] = useState('All'); // Add teams filter state
+  const [selectedSubmissionProblemStatement, setSelectedSubmissionProblemStatement] = useState('All'); // Add submissions filter state
 
   // Define these before your return
   const totalParticipants = participants.length;
   const totalTeams = teams.length;
   const totalSubmissions = submissions.length;
+
+  // Calculate problem statement statistics
+  const problemStatementStats = participants.reduce((acc, p) => {
+    if (p.submittedProblemStatements) {
+      p.submittedProblemStatements.forEach(ps => {
+        const existing = acc.find(stat => stat.problemStatement === ps);
+        if (existing) {
+          existing.participantCount++;
+        } else {
+          acc.push({ problemStatement: ps, participantCount: 1 });
+        }
+      });
+    }
+    return acc;
+  }, []).sort((a, b) => b.participantCount - a.participantCount);
 
   useEffect(() => {
     async function fetchAll() {
@@ -64,14 +83,16 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
           if (!res.ok) throw new Error(await res.text());
           return await res.json();
         };
-        const [h, t, s, p] = await Promise.all([
+        const [h, s, p] = await Promise.all([
           fetchJson(`http://localhost:3000/api/hackathons/${id}`),
-          fetchJson(`http://localhost:3000/api/teams/hackathon/${id}/all`),
           fetchJson(`http://localhost:3000/api/projects/hackathon/${id}`),
-          fetchJson(`http://localhost:3000/api/registration/hackathon/${id}/participants`),
+          fetchHackathonParticipantsWithSubmissions(id), // Use the new API
         ]);
-        setTeams(t);
         setParticipants(p.participants || []);
+
+        // Fetch teams with submissions data
+        const teamsWithSubmissions = await fetchTeamsWithSubmissions(id);
+        setTeams(teamsWithSubmissions.teams || []);
 
         // Fetch all submissions for this hackathon (admin endpoint)
         const submissionsRes = await fetchJson(`http://localhost:3000/api/submission-form/admin/hackathon/${id}`);
@@ -87,6 +108,10 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
         const projectSubs = allSubs.filter((s) => s.projectId);
         setSubmissions([...projectSubs, ...pptSubs]);
         setHackathon(h);
+
+        // Fetch submissions with problem statements data
+        const submissionsWithPS = await fetchSubmissionsWithProblemStatements(id);
+        setSubmissions(submissionsWithPS.submissions || []);
       } catch (err) {
         setFetchError(err.message || 'Failed to fetch data');
       } finally {
@@ -96,50 +121,86 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
     if (hackathonProp?._id) fetchAll();
   }, [hackathonProp]);
 
-  // All handlers and logic for modals, delete, etc. (move from InnerCreatedCard.jsx)
-  // ...
-
-  // Quick Actions handlers
+  // All handlers and logic for modals, delete, etc.
   const handleExportParticipants = async () => {
-    if (!hackathon || !hackathon._id) return toast({ title: 'Error', description: 'No hackathon selected.' });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/api/registration/hackathon/${hackathon._id}/participants/export`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to export participants');
-      const blob = await res.blob();
+      const res = await fetch(
+        `http://localhost:3000/api/registration/hackathon/${hackathon._id}/participants`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch participants");
+      const data = await res.json();
+      
+      // Convert to CSV format
+      const csvContent = [
+        ['Name', 'Email', 'Team', 'Location', 'Registration Date'],
+        ...data.participants.map(p => [
+          p.name,
+          p.email,
+          p.teamName || 'Individual',
+          p.location,
+          new Date(p.registrationDate).toLocaleDateString()
+        ])
+      ].map(row => row.join(',')).join('\n');
+      
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'participants.csv';
+      a.download = `${hackathon.title}-participants.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast({ title: 'Exported', description: 'Participants CSV downloaded.' });
+      
+      toast({ title: 'Export successful', description: 'Participants data exported to CSV' });
     } catch (err) {
-      toast({ title: 'Export Failed', description: err.message });
+      toast({ title: 'Export failed', description: err.message });
     }
   };
+
   const handleExportSubmissions = async () => {
-    if (!hackathon || !hackathon._id) return toast({ title: 'Error', description: 'No hackathon selected.' });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/api/submission-form/admin/hackathon/${hackathon._id}/export`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error('Failed to export submissions');
-      const blob = await res.blob();
+      const res = await fetch(
+        `http://localhost:3000/api/submission-form/admin/hackathon/${hackathon._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      if (!res.ok) throw new Error("Failed to fetch submissions");
+      const data = await res.json();
+      
+      // Convert to CSV format
+      const csvContent = [
+        ['Project Title', 'Team', 'Submitted By', 'Problem Statement', 'Status', 'Submitted Date'],
+        ...data.submissions.map(s => [
+          s.projectId?.title || s.originalName || 'PPT Submission',
+          s.teamName || '-',
+          s.submittedByName || '-',
+          s.problemStatement || '-',
+          s.status || 'submitted',
+          new Date(s.submittedAt).toLocaleDateString()
+        ])
+      ].map(row => row.join(',')).join('\n');
+      
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'submissions.csv';
+      a.download = `${hackathon.title}-submissions.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast({ title: 'Exported', description: 'Submissions CSV downloaded.' });
+      
+      toast({ title: 'Export successful', description: 'Submissions data exported to CSV' });
     } catch (err) {
-      toast({ title: 'Export Failed', description: err.message });
+      toast({ title: 'Export failed', description: err.message });
     }
   };
+
   const handleSubmissionForm = () => setShowSubmissionForm(true);
   const handleSendCertificates = () => toast({ title: 'Send Certificates', description: 'Sending certificates is not implemented yet.' });
   const handleViewLeaderboard = () => toast({ title: 'View Leaderboard', description: 'Leaderboard is not implemented yet.' });
@@ -156,7 +217,6 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
   const cancelDelete = () => setShowDeleteDialog(false);
 
   const confirmDelete = async () => {
-    if (!hackathon) return;
     setDeletingId(hackathon._id);
     try {
       const token = localStorage.getItem("token");
@@ -199,6 +259,7 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
             onSendAnnouncements={handleSendAnnouncements}
             onDeleteHackathon={handleDeleteHackathon}
             onReviewSponsoredPS={handleReviewSponsoredPS}
+            problemStatementStats={problemStatementStats}
           />
           {showSubmissionForm && (
             <CustomSubmissionForm
@@ -209,24 +270,46 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
         </>
       )}
       {isDetailView && (
-        <CreatedHackathonViews
-          showSubmissionsView={showSubmissionsView}
-          showParticipantsView={showParticipantsView}
-          showTeamsView={showTeamsView}
-          submissions={submissions}
-          participants={participants}
-          teams={teams}
-          selectedSubmissionId={selectedSubmissionId}
-          setSelectedSubmissionId={setSelectedSubmissionId}
-          selectedTeamId={selectedTeamId}
-          setSelectedTeamId={setSelectedTeamId}
-          setShowSubmissionsView={setShowSubmissionsView}
-          setShowParticipantsView={setShowParticipantsView}
-          setShowTeamsView={setShowTeamsView}
-          user={user}
-          selectedType={selectedType}
-          setSelectedType={setSelectedType}
-        />
+        <>
+          {showSubmissionsView ? (
+            <SubmissionsView
+              submissions={submissions}
+              hackathon={hackathon}
+              selectedType={selectedType}
+              setSelectedType={setSelectedType}
+              selectedProblemStatement={selectedSubmissionProblemStatement}
+              setSelectedProblemStatement={setSelectedSubmissionProblemStatement}
+              setShowSubmissionsView={setShowSubmissionsView}
+              selectedSubmissionId={selectedSubmissionId}
+              setSelectedSubmissionId={setSelectedSubmissionId}
+              onExportSubmissions={handleExportSubmissions}
+            />
+          ) : (
+            <CreatedHackathonViews
+              showSubmissionsView={showSubmissionsView}
+              showParticipantsView={showParticipantsView}
+              showTeamsView={showTeamsView}
+              submissions={submissions}
+              participants={participants}
+              teams={teams}
+              selectedSubmissionId={selectedSubmissionId}
+              setSelectedSubmissionId={setSelectedSubmissionId}
+              selectedTeamId={selectedTeamId}
+              setSelectedTeamId={setSelectedTeamId}
+              setShowSubmissionsView={setShowSubmissionsView}
+              setShowParticipantsView={setShowParticipantsView}
+              setShowTeamsView={setShowTeamsView}
+              user={user}
+              selectedType={selectedType}
+              setSelectedType={setSelectedType}
+              hackathon={hackathon} // Pass hackathon for problem statements
+              selectedProblemStatement={selectedProblemStatement}
+              setSelectedProblemStatement={setSelectedProblemStatement}
+              selectedTeamProblemStatement={selectedTeamProblemStatement}
+              setSelectedTeamProblemStatement={setSelectedTeamProblemStatement}
+            />
+          )}
+        </>
       )}
       <CreatedHackathonModals
         showDeleteDialog={showDeleteDialog}

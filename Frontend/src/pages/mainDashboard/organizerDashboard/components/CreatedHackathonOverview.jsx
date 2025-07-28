@@ -53,6 +53,7 @@ export default function CreatedHackathonOverview({
   onReviewSponsoredPS,
   submissions = [],
   onRefresh,
+  problemStatementStats = [], // Add problem statement stats
 }) {
   const navigate = useNavigate();
   const [showJudgeManagement, setShowJudgeManagement] = useState(false);

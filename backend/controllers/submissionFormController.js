@@ -175,6 +175,37 @@ exports.submitProjectWithAnswers = async (req, res) => {
     let teamName = '-';
     const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
     if (team) teamName = team.name;
+
+    // Delete any existing submissions for this user and hackathon before creating new one
+    const existingSubmissions = await Submission.find({ 
+      hackathonId, 
+      submittedBy: userId,
+      projectId: { $exists: true, $ne: null } // Only delete project submissions, not PPT submissions
+    });
+    
+    if (existingSubmissions.length > 0) {
+      console.log(`🗑️ Deleting ${existingSubmissions.length} existing submissions for user ${userId} in hackathon ${hackathonId}`);
+      
+      // Delete existing submissions
+      await Submission.deleteMany({ 
+        hackathonId, 
+        submittedBy: userId,
+        projectId: { $exists: true, $ne: null }
+      });
+      
+      // Reset project statuses back to draft
+      const projectIds = existingSubmissions.map(sub => sub.projectId).filter(Boolean);
+      if (projectIds.length > 0) {
+        await Project.updateMany(
+          { _id: { $in: projectIds } },
+          {
+            status: 'draft',
+            $unset: { hackathon: '', submittedAt: '' }
+          }
+        );
+      }
+    }
+
     // Create new submission
     console.log('[DEBUG] Creating submission (project):', { hackathonId, projectId, userId, problemStatement });
     const submission = await Submission.create({
@@ -218,13 +249,15 @@ exports.submitPPTForRound = async (req, res) => {
     const Registration = require("../model/HackathonRegistrationModel");
     const isRegistered = await Registration.findOne({ hackathonId, userId });
     if (!isRegistered) {
-      return res.status(400).json({ success: false, error: 'You must be registered for this hackathon to submit a PPT.' });
+      return res.status(400).json({ 
+        error: "You must be registered for this hackathon to submit a PPT. Please register first and then try submitting again." 
+      });
     }
 
     // Get hackathon details for deadline checking
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
-      return res.status(404).json({ success: false, error: "Hackathon not found" });
+      return res.status(404).json({ error: "Hackathon not found" });
     }
 
     // Check deadline conditions
@@ -232,72 +265,59 @@ exports.submitPPTForRound = async (req, res) => {
     let deadlinePassed = false;
     let deadlineMessage = "";
 
-    if (roundIndex >= 0 && hackathon.rounds && hackathon.rounds[roundIndex]) {
-      // Check round-specific deadline
-      const round = hackathon.rounds[roundIndex];
-      if (round.endDate && now > new Date(round.endDate)) {
-        deadlinePassed = true;
-        deadlineMessage = new Date(round.endDate).toLocaleString("en-IN", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-          timeZone: "Asia/Kolkata"
-        });
-      }
-    } else if (hackathon.submissionDeadline && now > new Date(hackathon.submissionDeadline)) {
-      // Check general submission deadline
+    if (hackathon.submissionDeadline && now > new Date(hackathon.submissionDeadline)) {
       deadlinePassed = true;
-      deadlineMessage = new Date(hackathon.submissionDeadline).toLocaleString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: "Asia/Kolkata"
-      });
+      deadlineMessage = "Submission deadline has passed";
     }
 
     if (deadlinePassed) {
-      return res.status(400).json({ 
-        success: false,
-        error: `The hackathon submission window is closed. The deadline was ${deadlineMessage}.` 
-      });
+      return res.status(400).json({ error: deadlineMessage });
     }
 
-    // Check for existing submission for this user/round/hackathon
-    let submission = await Submission.findOne({ hackathonId, roundIndex, submittedBy: userId });
-    if (submission) {
-      // Replace the pptFile (edit)
-      submission.pptFile = pptFile;
-      submission.originalName = originalName;
-      submission.submittedAt = new Date();
-      if (problemStatement) submission.problemStatement = problemStatement;
-      await submission.save();
-      return res.status(200).json({ success: true, submission, replaced: true });
-    } else {
-      // Find the user's team for this hackathon
-      let teamName = '-';
-      const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
-      if (team) teamName = team.name;
-      // Create new submission
-      console.log('[DEBUG] Creating submission (ppt):', { hackathonId, roundIndex, userId, problemStatement });
-      submission = await Submission.create({
-        hackathonId,
-        roundIndex,
-        pptFile,
-        originalName,
-        submittedBy: userId,
-        status: 'submitted',
-        submittedAt: new Date(),
-        teamName,
-        problemStatement,
-      });
-      return res.status(200).json({ success: true, submission, replaced: false });
+    // Check if user has reached the max submissions for this hackathon
+    const userSubmissionCount = await Submission.countDocuments({
+      hackathonId,
+      submittedBy: userId,
+      pptFile: { $exists: true, $ne: null }
+    });
+    if (userSubmissionCount >= (hackathon.maxSubmissionsPerParticipant || 1)) {
+      return res.status(400).json({ error: `You have reached the maximum number of PPT submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
     }
+
+    // Find the user's team for this hackathon
+    let teamName = '-';
+    const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+    if (team) teamName = team.name;
+
+    // Check if there's already a PPT submission for this user, hackathon, and round
+    let submission = await Submission.findOne({ 
+      hackathonId, 
+      submittedBy: userId, 
+      roundIndex,
+      pptFile: { $exists: true, $ne: null }
+    });
+
+    // Delete any existing PPT submissions for this user, hackathon, and round
+    if (submission) {
+      console.log(`🗑️ Deleting existing PPT submission for user ${userId} in hackathon ${hackathonId} round ${roundIndex}`);
+      await Submission.findByIdAndDelete(submission._id);
+      submission = null; // Reset to null so we create a new one
+    }
+
+    // Create new submission
+    console.log('[DEBUG] Creating submission (ppt):', { hackathonId, roundIndex, userId, problemStatement });
+    submission = await Submission.create({
+      hackathonId,
+      roundIndex,
+      pptFile,
+      originalName,
+      submittedBy: userId,
+      status: 'submitted',
+      submittedAt: new Date(),
+      teamName,
+      problemStatement,
+    });
+    return res.status(200).json({ success: true, submission, replaced: false });
   } catch (err) {
     console.error('❌ Error in submitPPTForRound:', err, req.body);
     return res.status(500).json({ success: false, error: err.message });
@@ -371,16 +391,54 @@ exports.editSubmissionById = async (req, res) => {
       if (project.submittedBy.toString() !== userId.toString()) {
         return res.status(403).json({ error: 'You do not own this project' });
       }
-      // Check if this project is already submitted to this hackathon
+      
+      // Check if this project is already submitted to this hackathon by this user
       const alreadySubmitted = await Submission.findOne({
         hackathonId: submission.hackathonId._id,
         projectId,
+        submittedBy: userId,
         _id: { $ne: id },
       });
       if (alreadySubmitted) {
         return res.status(400).json({ error: 'This project is already submitted to this hackathon' });
       }
-      submission.projectId = projectId;
+      
+      // Delete the old submission and create a new one with the new project
+      console.log(`🔄 Changing project from ${submission.projectId} to ${projectId} for submission ${id}`);
+      
+      // Delete the old submission
+      await Submission.findByIdAndDelete(id);
+      
+      // Create a new submission with the new project
+      const newSubmission = await Submission.create({
+        hackathonId: submission.hackathonId._id,
+        projectId: projectId,
+        submittedBy: userId,
+        problemStatement: problemStatement || submission.problemStatement,
+        customAnswers: customAnswers || submission.customAnswers,
+        selectedMembers: selectedMembers || submission.selectedMembers,
+        status: 'submitted',
+        teamName: submission.teamName,
+        roundIndex: submission.roundIndex,
+        submittedAt: new Date()
+      });
+      
+      // Update the new project status
+      await Project.findByIdAndUpdate(projectId, {
+        status: 'submitted',
+        hackathon: submission.hackathonId._id,
+        submittedAt: new Date(),
+      });
+      
+      // Reset the old project status
+      await Project.findByIdAndUpdate(submission.projectId, {
+        status: 'draft',
+        $unset: { hackathon: '', submittedAt: '' }
+      });
+      
+      // Populate and return the new submission
+      await newSubmission.populate('projectId');
+      return res.json({ success: true, submission: newSubmission, message: 'Submission updated with new project' });
     }
     if (customAnswers !== undefined) submission.customAnswers = customAnswers;
     if (problemStatement !== undefined) submission.problemStatement = problemStatement;
@@ -672,3 +730,90 @@ exports.getJudgeEvaluationsForSubmission = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch judge evaluations', details: err.message });
   }
 };
+
+// GET /api/submission-form/admin/hackathon/:hackathonId/with-problem-statements
+const getSubmissionsWithProblemStatements = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    
+    // Get all submissions for this hackathon
+    const submissions = await Submission.find({ hackathonId })
+      .populate('submittedBy', 'name email')
+      .populate('projectId', 'title description')
+      .populate('hackathonId', 'title problemStatements')
+      .sort({ submittedAt: -1 });
+
+    // Process submissions to include problem statement and round information
+    const processedSubmissions = submissions.map(sub => {
+      const submissionType = sub.pptFile ? 'PPT' : 'Project';
+      const roundNumber = sub.roundIndex || (sub.pptFile ? 2 : 1); // PPT is usually round 2, Project is round 1
+      
+      return {
+        _id: sub._id,
+        id: sub._id,
+        hackathonId: sub.hackathonId,
+        projectId: sub.projectId,
+        submittedBy: sub.submittedBy,
+        problemStatement: sub.problemStatement,
+        customAnswers: sub.customAnswers,
+        status: sub.status,
+        submittedAt: sub.submittedAt,
+        selectedMembers: sub.selectedMembers,
+        pptFile: sub.pptFile,
+        originalName: sub.originalName,
+        roundIndex: sub.roundIndex,
+        teamName: sub.teamName,
+        // Add processed fields
+        submissionType,
+        roundNumber,
+        roundLabel: `Round ${roundNumber}`,
+        projectTitle: sub.projectId?.title || sub.originalName || 'PPT Submission',
+        submittedByName: sub.submittedBy?.name || 'Unknown',
+        submittedByEmail: sub.submittedBy?.email || 'Unknown'
+      };
+    });
+
+    // Calculate analytics with problem statement breakdown
+    const problemStatementStats = {};
+    const roundStats = { 1: 0, 2: 0 };
+    
+    processedSubmissions.forEach(sub => {
+      // Count by problem statement
+      if (sub.problemStatement) {
+        if (!problemStatementStats[sub.problemStatement]) {
+          problemStatementStats[sub.problemStatement] = { total: 0, round1: 0, round2: 0 };
+        }
+        problemStatementStats[sub.problemStatement].total++;
+        if (sub.roundNumber === 1) {
+          problemStatementStats[sub.problemStatement].round1++;
+        } else if (sub.roundNumber === 2) {
+          problemStatementStats[sub.problemStatement].round2++;
+        }
+      }
+      
+      // Count by round
+      roundStats[sub.roundNumber] = (roundStats[sub.roundNumber] || 0) + 1;
+    });
+
+    const analytics = {
+      totalSubmissions: processedSubmissions.length,
+      roundStats,
+      problemStatementStats: Object.entries(problemStatementStats).map(([ps, stats]) => ({
+        problemStatement: ps,
+        totalCount: stats.total,
+        round1Count: stats.round1,
+        round2Count: stats.round2
+      })).sort((a, b) => b.totalCount - a.totalCount)
+    };
+
+    res.json({
+      submissions: processedSubmissions,
+      analytics
+    });
+  } catch (err) {
+    console.error('Error fetching submissions with problem statements:', err);
+    res.status(500).json({ error: 'Failed to fetch submissions with problem statements', details: err.message });
+  }
+};
+
+exports.getSubmissionsWithProblemStatements = getSubmissionsWithProblemStatements;

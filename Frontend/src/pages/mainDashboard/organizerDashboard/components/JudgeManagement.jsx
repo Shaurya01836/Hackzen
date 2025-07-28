@@ -109,6 +109,10 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
   const [assignmentModeLoading, setAssignmentModeLoading] = useState(false);
   const [localSubmissions, setLocalSubmissions] = useState([]);
 
+  // Add filter state for judged submissions
+  const [selectedJudgedRound, setSelectedJudgedRound] = useState('All');
+  const [selectedJudgedProblemStatement, setSelectedJudgedProblemStatement] = useState('All');
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -681,6 +685,10 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                   hackathon={hackathon}
                   judgedSubmissions={judgedSubmissions}
                   fetchJudged={fetchJudged}
+                  selectedJudgedRound={selectedJudgedRound}
+                  setSelectedJudgedRound={setSelectedJudgedRound}
+                  selectedJudgedProblemStatement={selectedJudgedProblemStatement}
+                  setSelectedJudgedProblemStatement={setSelectedJudgedProblemStatement}
                 />
               </TabsContent>
 
@@ -701,6 +709,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                   getJudgeTypeLabel={getJudgeTypeLabel}
                   getStatusBadge={getStatusBadge}
                   removeJudgeAssignment={removeJudgeAssignment}
+                  hackathonId={selectedHackathonId}
                 />
               </TabsContent>
 

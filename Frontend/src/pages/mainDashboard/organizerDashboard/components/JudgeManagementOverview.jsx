@@ -1,18 +1,56 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
-import { Users, Globe, Building, Shield, Target, FileText, Gavel, Trophy, RefreshCw, TrendingUp } from "lucide-react";
+import { Users, Globe, Building, Shield, Target, FileText, Gavel, Trophy, RefreshCw, TrendingUp, Plus } from "lucide-react";
 import { Button } from "../../../../components/CommonUI/button";
 import { Badge } from "../../../../components/CommonUI/badge";
+import JudgedSubmissionsView from "./JudgedSubmissionsView";
+import AddEvaluatorModal from "./AddEvaluatorModal";
+import { useToast } from "../../../../hooks/use-toast";
 
-export default function JudgeManagementOverview({ summary, hackathon, judgedSubmissions, fetchJudged }) {
+export default function JudgeManagementOverview({ 
+  summary, 
+  hackathon, 
+  judgedSubmissions, 
+  fetchJudged,
+  selectedJudgedRound = 'All',
+  setSelectedJudgedRound = () => {},
+  selectedJudgedProblemStatement = 'All',
+  setSelectedJudgedProblemStatement = () => {},
+}) {
+  const { toast } = useToast();
+  const [showAddEvaluatorModal, setShowAddEvaluatorModal] = useState(false);
+
+  const handleEvaluatorAdded = (newEvaluator) => {
+    toast({
+      title: 'Evaluator Added Successfully',
+      description: `${newEvaluator.firstName} ${newEvaluator.lastName} has been invited as an evaluator.`,
+      variant: 'default',
+    });
+    setShowAddEvaluatorModal(false);
+    // Refresh the page to show updated data
+    if (window.location.reload) {
+      window.location.reload();
+    }
+  };
   return (
     <div className="space-y-8">
       {/* Header Section */}
       <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Judge Management Overview</h2>
         <p className="text-gray-600">
           Comprehensive view of judge assignments, problem statements, and evaluation progress
         </p>
+          </div>
+          <Button 
+            onClick={() => setShowAddEvaluatorModal(true)}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Evaluator
+          </Button>
+        </div>
       </div>
 
       {/* Enhanced Summary Cards */}
@@ -139,149 +177,32 @@ export default function JudgeManagementOverview({ summary, hackathon, judgedSubm
       <section>
         <Card className="shadow-none hover:shadow-none">
           <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Gavel className="w-6 h-6 text-purple-600" />
-                </div>
-                Judged Submissions
-                {judgedSubmissions.length > 0 && (
-                  <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                    {judgedSubmissions.length} evaluated
-                  </Badge>
-                )}
-              </CardTitle>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={fetchJudged}
-                className="border-gray-300 hover:bg-gray-50 flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </Button>
-            </div>
+            
           </CardHeader>
           <CardContent className="pt-0">
-            {judgedSubmissions.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="p-4 bg-gray-100 rounded-full mb-4 w-20 h-20 flex items-center justify-center mx-auto">
-                  <FileText className="w-10 h-10 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No Submissions Judged Yet
-                </h3>
-                <p className="text-gray-500 max-w-md mx-auto">
-                  Submissions will appear here once judges start evaluating projects. 
-                  Make sure judges are assigned to teams and problem statements.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-gray-200">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Team Name
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Problem Statement
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Judge
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Avg Score
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Detailed Scores
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Feedback
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {judgedSubmissions.map((score, index) => {
-                        let avgScore = "N/A";
-                        if (score.scores) {
-                          const vals = Object.values(score.scores);
-                          if (vals.length > 0) {
-                            avgScore = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
-                          }
-                        }
-                        return (
-                          <tr key={score._id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
-                                  {(score.team?.name || 'T')[0].toUpperCase()}
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {score.team?.name || (score.team?.members ? score.team.members.map(m => m.name || m.email).join(", ") : "Unknown Team")}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm text-gray-900 max-w-xs truncate">
-                                {typeof score.problemStatement === "object" 
-                                  ? score.problemStatement?.statement || "N/A" 
-                                  : score.problemStatement || "N/A"}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-semibold text-xs mr-2">
-                                  {(score.judge?.name || score.judge?.email || 'J')[0].toUpperCase()}
-                                </div>
-                                <div className="text-sm text-gray-900">
-                                  {score.judge?.name || score.judge?.email || "Unknown Judge"}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <TrendingUp className="w-4 h-4 text-green-500 mr-2" />
-                                <span className="text-sm font-semibold text-gray-900">
-                                  {avgScore}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="space-y-1">
-                                {score.scores && Object.entries(score.scores).map(([k, v]) => (
-                                  <div key={k} className="flex items-center justify-between bg-gray-50 px-2 py-1 rounded text-xs">
-                                    <span className="text-gray-600">{k}</span>
-                                    <span className="font-semibold text-gray-900">{v}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm text-gray-600 max-w-xs">
-                                {score.feedback ? (
-                                  <div className="bg-blue-50 p-2 rounded text-xs">
-                                    {score.feedback}
-                                  </div>
-                                ) : (
-                                  <span className="text-gray-400 italic">No feedback provided</span>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            <JudgedSubmissionsView
+              judgedSubmissions={judgedSubmissions}
+              hackathon={hackathon}
+              fetchJudged={fetchJudged}
+              selectedRound={selectedJudgedRound}
+              setSelectedRound={setSelectedJudgedRound}
+              selectedProblemStatement={selectedJudgedProblemStatement}
+              setSelectedProblemStatement={setSelectedJudgedProblemStatement}
+            />
           </CardContent>
         </Card>
       </section>
+
+      {/* Add Evaluator Modal */}
+      <AddEvaluatorModal
+        open={showAddEvaluatorModal}
+        onClose={() => setShowAddEvaluatorModal(false)}
+        hackathonId={hackathon?._id || hackathon?.id}
+        onEvaluatorAdded={handleEvaluatorAdded}
+        defaultJudgeType="platform"
+        hideJudgeTypeSelection={false}
+        editingJudge={null}
+      />
     </div>
   );
 }

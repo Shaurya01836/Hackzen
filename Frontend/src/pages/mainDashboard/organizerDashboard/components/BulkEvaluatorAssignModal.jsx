@@ -231,6 +231,17 @@ export default function BulkEvaluatorAssignModal({
       return;
     }
 
+    // Check if any evaluator has 0 assignments
+    const hasZeroAssignments = selectedEvaluators.some(id => (assignCounts[id] || 0) === 0);
+    if (hasZeroAssignments) {
+      toast({
+        title: 'Invalid assignment',
+        description: 'Cannot assign 0 submissions. Please assign at least 1 submission to each selected evaluator.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!assignmentOverview) {
       toast({
         title: 'Assignment data not loaded',
@@ -451,9 +462,17 @@ export default function BulkEvaluatorAssignModal({
   const handleIncrement = (id) => {
     console.log('🔍 handleIncrement called for id:', id);
     const currentCount = parseInt(assignCounts[id] || 0);
-    const newCount = currentCount + 1;
-    console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
-    setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+    const totalAssigned = selectedEvaluators.reduce((sum, evaluatorId) => {
+      const count = evaluatorId === id ? currentCount : parseInt(assignCounts[evaluatorId] || 0);
+      return sum + count;
+    }, 0);
+    
+    // Only increment if we haven't reached the available submission count
+    if (totalAssigned < actualSubmissionCount) {
+      const newCount = currentCount + 1;
+      console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
+      setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+    }
   };
 
   const handleDecrement = (id) => {
@@ -468,15 +487,38 @@ export default function BulkEvaluatorAssignModal({
   const handleCountChange = (id, value) => {
     const numValue = parseInt(value) || 0;
     console.log('🔍 handleCountChange - id:', id, 'value:', value, 'numValue:', numValue);
-    setAssignCounts(prev => ({ ...prev, [id]: numValue }));
+    
+    // Calculate total assigned excluding current evaluator
+    const totalAssignedExcludingCurrent = selectedEvaluators.reduce((sum, evaluatorId) => {
+      if (evaluatorId === id) return sum;
+      const count = parseInt(assignCounts[evaluatorId] || 0);
+      return sum + count;
+    }, 0);
+    
+    // Cap the new value to prevent exceeding available submissions
+    const maxAllowed = actualSubmissionCount - totalAssignedExcludingCurrent;
+    const cappedValue = Math.max(0, Math.min(numValue, maxAllowed));
+    
+    setAssignCounts(prev => ({ ...prev, [id]: cappedValue }));
   };
 
   const handleAssignEqually = () => {
     if (selectedEvaluators.length === 0) return;
     
-    // Use the computed actual submission count
+    // For single project assignment, assign 1 submission to 1 evaluator
+    if (actualSubmissionCount === 1 && selectedEvaluators.length >= 1) {
+      const newCounts = {};
+      selectedEvaluators.forEach((id, index) => {
+        // Assign 1 to the first evaluator, 0 to the rest
+        newCounts[id] = index === 0 ? 1 : 0;
+      });
+      setAssignCounts(newCounts);
+      setAssignmentMode('equal');
+      return;
+    }
     
-    const equalCount = Math.ceil(displayTotalAssigned / selectedEvaluators.length);
+    // For multiple submissions, distribute equally
+    const equalCount = Math.ceil(actualSubmissionCount / selectedEvaluators.length);
     const newCounts = {};
     selectedEvaluators.forEach(id => {
       newCounts[id] = equalCount;
@@ -643,9 +685,7 @@ export default function BulkEvaluatorAssignModal({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-600 mt-1">
-                Select a problem statement to show only submissions that were originally submitted for that specific problem. Only those submissions will be available for assignment to judges.
-              </p>
+              
             </div>
           )}
           
@@ -690,9 +730,6 @@ export default function BulkEvaluatorAssignModal({
             </div>
           )}
           
-          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" onClick={onClose}>
-            <X className="w-5 h-5" />
-          </button>
         </DialogHeader>
         
 
@@ -717,12 +754,22 @@ export default function BulkEvaluatorAssignModal({
                 onClick={() => {
                   const newValue = Math.max(0, displayTotalAssigned - 1);
                   if (selectedEvaluators.length > 0) {
-                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                    const newCounts = {};
-                    selectedEvaluators.forEach(id => {
-                      newCounts[id] = equalCount;
-                    });
-                    setAssignCounts(newCounts);
+                    // For single submission case
+                    if (actualSubmissionCount === 1) {
+                      const newCounts = {};
+                      selectedEvaluators.forEach((id, index) => {
+                        newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                      });
+                      setAssignCounts(newCounts);
+                    } else {
+                      // For multiple submissions
+                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
+                        newCounts[id] = equalCount;
+                      });
+                      setAssignCounts(newCounts);
+                    }
                   }
                 }}
               >
@@ -736,39 +783,72 @@ export default function BulkEvaluatorAssignModal({
                 value={displayTotalAssigned}
                 onChange={(e) => {
                   const newValue = parseInt(e.target.value) || 0;
+                  // Cap the value at the actual submission count
+                  const cappedValue = Math.min(newValue, actualSubmissionCount);
+                  
                   // Distribute the new value equally among selected evaluators
                   if (selectedEvaluators.length > 0) {
-                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                    const newCounts = {};
-                    selectedEvaluators.forEach(id => {
-                      newCounts[id] = equalCount;
-                    });
-                    setAssignCounts(newCounts);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  // Handle arrow keys for increment/decrement
-                  if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    const newValue = displayTotalAssigned + 1;
-                    if (selectedEvaluators.length > 0) {
-                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                    // For single submission case
+                    if (actualSubmissionCount === 1) {
+                      const newCounts = {};
+                      selectedEvaluators.forEach((id, index) => {
+                        newCounts[id] = index === 0 ? Math.min(1, cappedValue) : 0;
+                      });
+                      setAssignCounts(newCounts);
+                    } else {
+                      // For multiple submissions
+                      const equalCount = Math.ceil(cappedValue / selectedEvaluators.length);
                       const newCounts = {};
                       selectedEvaluators.forEach(id => {
                         newCounts[id] = equalCount;
                       });
                       setAssignCounts(newCounts);
                     }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Handle arrow keys for increment/decrement
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const newValue = Math.min(displayTotalAssigned + 1, actualSubmissionCount);
+                    if (selectedEvaluators.length > 0) {
+                      // For single submission case
+                      if (actualSubmissionCount === 1) {
+                        const newCounts = {};
+                        selectedEvaluators.forEach((id, index) => {
+                          newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                        });
+                        setAssignCounts(newCounts);
+                      } else {
+                        // For multiple submissions
+                        const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                        const newCounts = {};
+                        selectedEvaluators.forEach(id => {
+                          newCounts[id] = equalCount;
+                        });
+                        setAssignCounts(newCounts);
+                      }
+                    }
                   } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
                     const newValue = Math.max(0, displayTotalAssigned - 1);
                     if (selectedEvaluators.length > 0) {
-                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                      const newCounts = {};
-                      selectedEvaluators.forEach(id => {
-                        newCounts[id] = equalCount;
-                      });
-                      setAssignCounts(newCounts);
+                      // For single submission case
+                      if (actualSubmissionCount === 1) {
+                        const newCounts = {};
+                        selectedEvaluators.forEach((id, index) => {
+                          newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                        });
+                        setAssignCounts(newCounts);
+                      } else {
+                        // For multiple submissions
+                        const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                        const newCounts = {};
+                        selectedEvaluators.forEach(id => {
+                          newCounts[id] = equalCount;
+                        });
+                        setAssignCounts(newCounts);
+                      }
                     }
                   }
                 }}
@@ -777,14 +857,24 @@ export default function BulkEvaluatorAssignModal({
                 type="button"
                 className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-l border-gray-300"
                 onClick={() => {
-                  const newValue = displayTotalAssigned + 1;
+                  const newValue = Math.min(displayTotalAssigned + 1, actualSubmissionCount);
                   if (selectedEvaluators.length > 0) {
-                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                    const newCounts = {};
-                    selectedEvaluators.forEach(id => {
-                      newCounts[id] = equalCount;
-                    });
-                    setAssignCounts(newCounts);
+                    // For single submission case
+                    if (actualSubmissionCount === 1) {
+                      const newCounts = {};
+                      selectedEvaluators.forEach((id, index) => {
+                        newCounts[id] = index === 0 ? Math.min(1, newValue) : 0;
+                      });
+                      setAssignCounts(newCounts);
+                    } else {
+                      // For multiple submissions
+                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
+                        newCounts[id] = equalCount;
+                      });
+                      setAssignCounts(newCounts);
+                    }
                   }
                 }}
               >
