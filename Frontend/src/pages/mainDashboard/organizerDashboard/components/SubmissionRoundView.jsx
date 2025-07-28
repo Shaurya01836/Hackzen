@@ -348,14 +348,30 @@ export default function JudgeManagementAssignments({
     setAssignModalOpen(true);
   };
 
-  const fetchAvailableJudges = async () => {
+  const fetchAvailableJudges = async (problemStatementId = null, problemStatementType = null) => {
     const hackathonId = hackathon?._id || hackathon?.id;
     if (!hackathonId) return;
     
     setLoadingAvailableJudges(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/available-judges`, {
+      
+      // Build URL with query parameters for filtering
+      let url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/available-judges`;
+      const params = new URLSearchParams();
+      
+      if (problemStatementId) {
+        params.append('problemStatementId', problemStatementId);
+      }
+      if (problemStatementType) {
+        params.append('problemStatementType', problemStatementType);
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -1446,6 +1462,10 @@ export default function JudgeManagementAssignments({
           setTimeout(() => {
             fetchAssignmentOverview();
           }, 1000);
+            }}
+            onEvaluatorAdded={() => {
+              // Refresh available judges when a new evaluator is added
+              fetchAvailableJudges();
             }}
           />
 

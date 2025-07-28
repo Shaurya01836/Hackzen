@@ -5,6 +5,8 @@ const { protect, isOrganizerOrAdmin } = require('../middleware/authMiddleware');
 
 // 🎯 Problem Statement Management
 router.post('/hackathons/:hackathonId/problem-statements', protect, isOrganizerOrAdmin, judgeManagementController.addProblemStatements);
+router.put('/hackathons/:hackathonId/problem-statements', protect, isOrganizerOrAdmin, judgeManagementController.editProblemStatement);
+router.delete('/hackathons/:hackathonId/problem-statements', protect, isOrganizerOrAdmin, judgeManagementController.deleteProblemStatement);
 
 // 🎯 Judge Assignment Management
 router.post('/hackathons/:hackathonId/assign-judges', protect, isOrganizerOrAdmin, judgeManagementController.assignJudges);

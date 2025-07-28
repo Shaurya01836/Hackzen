@@ -133,33 +133,7 @@ export default function JudgeProjectGallery() {
                     />
                   </div>
 
-                  {/* Type Filter */}
-                  <div className="flex items-center gap-3">
-                  
-                    <Select value={selectedType} onValueChange={handleTypeChange}>
-                      <SelectTrigger className="w-60 bg-white border-gray-200">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-1 rounded ${currentTypeOption.bgColor}`}>
-                            <CurrentTypeIcon className={`w-4 h-4 ${currentTypeOption.color}`} />
-                          </div>
-                          <SelectValue placeholder="All Projects" />
-                        </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {typeOptions.map((option) => {
-                          const OptionIcon = option.icon;
-                          return (
-                            <SelectItem key={option.value} value={option.value}>
-                              <div className="flex items-center gap-3">
-                                
-                                {option.label}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
 
                 </div>
               </CardContent>
@@ -180,19 +154,7 @@ export default function JudgeProjectGallery() {
                 )}
               </div>
               
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedType("all");
-                    setSearchQuery("");
-                  }}
-                  className="text-gray-600 hover:text-gray-800"
-                >
-                  Clear Filters
-                </Button>
-              </div>
+
             </div>
 
             {/*Content Area */}

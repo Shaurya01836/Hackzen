@@ -696,8 +696,22 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
               <TabsContent value="problem-statements" className="space-y-6 p-6">
                 <JudgeManagementProblemStatements
                   hackathon={hackathon}
-                  onEdit={(ps, idx) => {/* TODO: implement edit logic */}}
-                  onDelete={(ps, idx) => {/* TODO: implement delete logic */}}
+                  onEdit={(updatedPS, idx) => {
+                    // Refresh hackathon data after edit
+                    console.log('Problem statement updated:', updatedPS);
+                    // Trigger a refresh of the hackathon data
+                    if (selectedHackathonId) {
+                      fetchHackathons();
+                    }
+                  }}
+                  onDelete={(deletedPS, idx) => {
+                    // Refresh hackathon data after delete
+                    console.log('Problem statement deleted:', deletedPS);
+                    // Trigger a refresh of the hackathon data
+                    if (selectedHackathonId) {
+                      fetchHackathons();
+                    }
+                  }}
                 />
               </TabsContent>
 

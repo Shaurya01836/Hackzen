@@ -284,10 +284,10 @@ exports.submitPPTForRound = async (req, res) => {
       return res.status(400).json({ error: `You have reached the maximum number of PPT submissions (${hackathon.maxSubmissionsPerParticipant || 1}) for this hackathon.` });
     }
 
-    // Find the user's team for this hackathon
-    let teamName = '-';
-    const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
-    if (team) teamName = team.name;
+      // Find the user's team for this hackathon
+      let teamName = '-';
+      const team = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
+      if (team) teamName = team.name;
 
     // Check if there's already a PPT submission for this user, hackathon, and round
     let submission = await Submission.findOne({ 
@@ -304,20 +304,20 @@ exports.submitPPTForRound = async (req, res) => {
       submission = null; // Reset to null so we create a new one
     }
 
-    // Create new submission
-    console.log('[DEBUG] Creating submission (ppt):', { hackathonId, roundIndex, userId, problemStatement });
-    submission = await Submission.create({
-      hackathonId,
-      roundIndex,
-      pptFile,
-      originalName,
-      submittedBy: userId,
-      status: 'submitted',
-      submittedAt: new Date(),
-      teamName,
-      problemStatement,
-    });
-    return res.status(200).json({ success: true, submission, replaced: false });
+      // Create new submission
+      console.log('[DEBUG] Creating submission (ppt):', { hackathonId, roundIndex, userId, problemStatement });
+      submission = await Submission.create({
+        hackathonId,
+        roundIndex,
+        pptFile,
+        originalName,
+        submittedBy: userId,
+        status: 'submitted',
+        submittedAt: new Date(),
+        teamName,
+        problemStatement,
+      });
+      return res.status(200).json({ success: true, submission, replaced: false });
   } catch (err) {
     console.error('❌ Error in submitPPTForRound:', err, req.body);
     return res.status(500).json({ success: false, error: err.message });

@@ -179,11 +179,71 @@ export default function BulkEvaluatorAssignModal({
     setShowAddEvaluatorModal(false);
   };
 
-  // Filter evaluators based on search
-  const filteredEvaluators = allEvaluators.filter(ev =>
-    ev.name.toLowerCase().includes(evaluatorSearch.toLowerCase()) ||
-    ev.email.toLowerCase().includes(evaluatorSearch.toLowerCase())
-  );
+  // Filter evaluators based on search and judge type restrictions
+  const filteredEvaluators = allEvaluators.filter(ev => {
+    // First filter by search
+    const matchesSearch = ev.name.toLowerCase().includes(evaluatorSearch.toLowerCase()) ||
+                         ev.email.toLowerCase().includes(evaluatorSearch.toLowerCase());
+    
+    if (!matchesSearch) return false;
+    
+    // Then filter by judge type restrictions
+    if (selectedProblemStatement && hackathonData?.problemStatements) {
+      const selectedPS = hackathonData.problemStatements.find(ps => 
+        ps._id === selectedProblemStatement || ps.statement === selectedProblemStatement
+      );
+      
+      if (selectedPS) {
+        const isSponsoredPS = selectedPS.type === 'sponsored';
+        
+        // Platform judges can only judge non-sponsored PS (unless they have special permission)
+        if (ev.type === 'platform') {
+          return !isSponsoredPS || ev.canJudgeSponsoredPS;
+        }
+        
+        // Sponsor judges can only judge sponsored PS
+        if (ev.type === 'sponsor') {
+          return isSponsoredPS;
+        }
+        
+        // Hybrid judges can judge both
+        if (ev.type === 'hybrid') {
+          return true;
+        }
+      }
+    }
+    
+    // If no problem statement is selected, show all evaluators
+    return true;
+  });
+
+  // Helper function to get problem statement type
+  const getProblemStatementType = () => {
+    if (!selectedProblemStatement || !hackathonData?.problemStatements) return null;
+    
+    const selectedPS = hackathonData.problemStatements.find(ps => 
+      ps._id === selectedProblemStatement || ps.statement === selectedProblemStatement
+    );
+    
+    return selectedPS?.type || null;
+  };
+
+  // Helper function to get available judge types for current PS
+  const getAvailableJudgeTypes = () => {
+    const psType = getProblemStatementType();
+    
+    if (!psType) return ['platform', 'sponsor', 'hybrid']; // Show all if no PS selected
+    
+    if (psType === 'sponsored') {
+      return ['sponsor', 'hybrid']; // Only sponsor and hybrid judges
+    } else {
+      return ['platform', 'hybrid']; // Only platform and hybrid judges
+    }
+  };
+
+  // Get current problem statement type
+  const currentPSType = getProblemStatementType();
+  const availableJudgeTypes = getAvailableJudgeTypes();
 
   // Separate evaluators by status
   const activeEvaluators = filteredEvaluators.filter(ev => ev.status === 'active');
@@ -480,9 +540,9 @@ export default function BulkEvaluatorAssignModal({
     
     // Only increment if we haven't reached the available submission count
     if (totalAssigned < effectiveSubmissionCount) {
-      const newCount = currentCount + 1;
-      console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
-      setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+    const newCount = currentCount + 1;
+    console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
+    setAssignCounts(prev => ({ ...prev, [id]: newCount }));
     }
   };
 
@@ -612,34 +672,80 @@ export default function BulkEvaluatorAssignModal({
             
             {/* Evaluators List */}
             <div className="max-h-60 overflow-y-auto space-y-2">
-              {allEvaluators
-                .filter(ev => 
-                  ev.name?.toLowerCase().includes(evaluatorSearch.toLowerCase()) ||
-                  ev.email?.toLowerCase().includes(evaluatorSearch.toLowerCase())
-                )
-                .map(ev => (
-                  <div key={ev.id} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg">
+              {filteredEvaluators.map(ev => {
+                // Check if this evaluator is compatible with current PS
+                const isCompatible = !selectedProblemStatement || availableJudgeTypes.includes(ev.type);
+                
+                return (
+                  <div key={ev.id} className={`flex items-center gap-3 p-3 rounded-lg ${
+                    isCompatible ? 'hover:bg-gray-50' : 'bg-gray-100 opacity-60'
+                  }`}>
                     <input
                       type="checkbox"
                       checked={selectedEvaluators.includes(ev.id)}
                       onChange={() => handleEvaluatorToggle(ev.id)}
                       className="h-4 w-4 text-blue-600 rounded"
+                      disabled={!isCompatible}
                     />
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-blue-700">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      ev.type === 'platform' ? 'bg-green-100' :
+                      ev.type === 'sponsor' ? 'bg-blue-100' :
+                      ev.type === 'hybrid' ? 'bg-yellow-100' : 'bg-gray-100'
+                    }`}>
+                      <span className={`text-sm font-semibold ${
+                        ev.type === 'platform' ? 'text-green-700' :
+                        ev.type === 'sponsor' ? 'text-blue-700' :
+                        ev.type === 'hybrid' ? 'text-yellow-700' : 'text-gray-700'
+                      }`}>
                         {ev.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-gray-900">{ev.name}</div>
                       <div className="text-sm text-gray-500">{ev.email}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          ev.type === 'platform' ? 'bg-green-100 text-green-800' :
+                          ev.type === 'sponsor' ? 'bg-blue-100 text-blue-800' :
+                          ev.type === 'hybrid' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {ev.type === 'platform' ? '🟢 Platform' :
+                           ev.type === 'sponsor' ? '🔵 Sponsor' :
+                           ev.type === 'hybrid' ? '🟡 Hybrid' : '⚪ Unknown'}
+                        </span>
+                        {ev.type === 'platform' && ev.canJudgeSponsoredPS && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            💰 Can Judge Sponsored
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1">
                       {getStatusIcon(ev.status)}
                       <span className="text-xs text-gray-500">{getStatusText(ev.status)}</span>
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            
+            {/* Judge Type Legend */}
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="text-xs font-medium text-gray-700 mb-2">Judge Types:</div>
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-green-100 rounded-full"></span>
+                  <span>🟢 Platform (General PS)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-blue-100 rounded-full"></span>
+                  <span>🔵 Sponsor (Sponsored PS)</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-3 h-3 bg-yellow-100 rounded-full"></span>
+                  <span>🟡 Hybrid (Both)</span>
+                </div>
+              </div>
             </div>
             
             {/* Action Buttons */}
@@ -682,6 +788,13 @@ export default function BulkEvaluatorAssignModal({
               <div className="flex items-center gap-2 mb-2">
                 <FileText className="w-4 h-4 text-blue-600" />
                 <span className="text-sm font-semibold text-blue-800">Filter by Problem Statement</span>
+                {currentPSType && (
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                    currentPSType === 'sponsored' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                  }`}>
+                    {currentPSType === 'sponsored' ? '🔵 Sponsored PS' : '🟢 General PS'}
+                  </span>
+                )}
               </div>
               <select
                 value={selectedProblemStatement}
@@ -691,11 +804,31 @@ export default function BulkEvaluatorAssignModal({
                 <option value="">All Problem Statements</option>
                 {hackathonData.problemStatements.map((ps, index) => (
                   <option key={ps._id || index} value={ps._id || index.toString()}>
-                    {ps.statement?.slice(0, 60)}...
+                    {ps.statement?.slice(0, 60)}... {ps.type && `(${ps.type})`}
                   </option>
                 ))}
               </select>
               
+              {currentPSType && (
+                <div className="mt-2 text-xs text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <span>Available Judge Types:</span>
+                    <div className="flex items-center gap-1">
+                      {availableJudgeTypes.map(type => (
+                        <span key={type} className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          type === 'platform' ? 'bg-green-100 text-green-800' :
+                          type === 'sponsor' ? 'bg-blue-100 text-blue-800' :
+                          type === 'hybrid' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {type === 'platform' ? '🟢 Platform' :
+                           type === 'sponsor' ? '🔵 Sponsor' :
+                           type === 'hybrid' ? '🟡 Hybrid' : '⚪ Unknown'}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           
@@ -773,11 +906,11 @@ export default function BulkEvaluatorAssignModal({
                       setAssignCounts(newCounts);
                     } else {
                       // For multiple submissions, assign all to each evaluator
-                      const newCounts = {};
-                      selectedEvaluators.forEach(id => {
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
                         newCounts[id] = newValue;
-                      });
-                      setAssignCounts(newCounts);
+                    });
+                    setAssignCounts(newCounts);
                     }
                   }
                 }}
@@ -806,11 +939,11 @@ export default function BulkEvaluatorAssignModal({
                       setAssignCounts(newCounts);
                     } else {
                       // For multiple submissions, assign all to each evaluator
-                      const newCounts = {};
-                      selectedEvaluators.forEach(id => {
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
                         newCounts[id] = cappedValue;
-                      });
-                      setAssignCounts(newCounts);
+                    });
+                    setAssignCounts(newCounts);
                     }
                   }
                 }}
@@ -829,11 +962,11 @@ export default function BulkEvaluatorAssignModal({
                         setAssignCounts(newCounts);
                       } else {
                         // For multiple submissions, assign all to each evaluator
-                        const newCounts = {};
-                        selectedEvaluators.forEach(id => {
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
                           newCounts[id] = newValue;
-                        });
-                        setAssignCounts(newCounts);
+                      });
+                      setAssignCounts(newCounts);
                       }
                     }
                   } else if (e.key === 'ArrowDown') {
@@ -849,11 +982,11 @@ export default function BulkEvaluatorAssignModal({
                         setAssignCounts(newCounts);
                       } else {
                         // For multiple submissions, assign all to each evaluator
-                        const newCounts = {};
-                        selectedEvaluators.forEach(id => {
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
                           newCounts[id] = newValue;
-                        });
-                        setAssignCounts(newCounts);
+                      });
+                      setAssignCounts(newCounts);
                       }
                     }
                   }
@@ -874,11 +1007,11 @@ export default function BulkEvaluatorAssignModal({
                       setAssignCounts(newCounts);
                     } else {
                       // For multiple submissions, assign all to each evaluator
-                      const newCounts = {};
-                      selectedEvaluators.forEach(id => {
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
                         newCounts[id] = newValue;
-                      });
-                      setAssignCounts(newCounts);
+                    });
+                    setAssignCounts(newCounts);
                     }
                   }
                 }}

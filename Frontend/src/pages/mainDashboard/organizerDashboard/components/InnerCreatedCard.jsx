@@ -285,29 +285,29 @@ export default function InnerCreatedCard({ hackathon: hackathonProp, onBack }) {
               onExportSubmissions={handleExportSubmissions}
             />
           ) : (
-            <CreatedHackathonViews
-              showSubmissionsView={showSubmissionsView}
-              showParticipantsView={showParticipantsView}
-              showTeamsView={showTeamsView}
-              submissions={submissions}
-              participants={participants}
-              teams={teams}
-              selectedSubmissionId={selectedSubmissionId}
-              setSelectedSubmissionId={setSelectedSubmissionId}
-              selectedTeamId={selectedTeamId}
-              setSelectedTeamId={setSelectedTeamId}
-              setShowSubmissionsView={setShowSubmissionsView}
-              setShowParticipantsView={setShowParticipantsView}
-              setShowTeamsView={setShowTeamsView}
-              user={user}
-              selectedType={selectedType}
-              setSelectedType={setSelectedType}
+        <CreatedHackathonViews
+          showSubmissionsView={showSubmissionsView}
+          showParticipantsView={showParticipantsView}
+          showTeamsView={showTeamsView}
+          submissions={submissions}
+          participants={participants}
+          teams={teams}
+          selectedSubmissionId={selectedSubmissionId}
+          setSelectedSubmissionId={setSelectedSubmissionId}
+          selectedTeamId={selectedTeamId}
+          setSelectedTeamId={setSelectedTeamId}
+          setShowSubmissionsView={setShowSubmissionsView}
+          setShowParticipantsView={setShowParticipantsView}
+          setShowTeamsView={setShowTeamsView}
+          user={user}
+          selectedType={selectedType}
+          setSelectedType={setSelectedType}
               hackathon={hackathon} // Pass hackathon for problem statements
               selectedProblemStatement={selectedProblemStatement}
               setSelectedProblemStatement={setSelectedProblemStatement}
               selectedTeamProblemStatement={selectedTeamProblemStatement}
               setSelectedTeamProblemStatement={setSelectedTeamProblemStatement}
-            />
+        />
           )}
         </>
       )}

@@ -459,20 +459,36 @@ export default function JudgeManagementAssignments({
     }
   };
 
-  const fetchAvailableJudges = async () => {
+  const fetchAvailableJudges = async (problemStatementId = null, problemStatementType = null) => {
     const hackathonId = hackathon?._id || hackathon?.id;
     if (!hackathonId) return;
-
+    
     setLoadingAvailableJudges(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/judge-management/hackathons/${hackathonId}/judges`, {
+      
+      // Build URL with query parameters for filtering
+      let url = `http://localhost:3000/api/judge-management/hackathons/${hackathonId}/judges`;
+      const params = new URLSearchParams();
+      
+      if (problemStatementId) {
+        params.append('problemStatementId', problemStatementId);
+      }
+      if (problemStatementType) {
+        params.append('problemStatementType', problemStatementType);
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
-        setAvailableJudges(data.judges || []);
+        setAvailableJudges(data.evaluators || []);
       }
     } catch (error) {
       console.error('Error fetching available judges:', error);
@@ -560,10 +576,10 @@ export default function JudgeManagementAssignments({
           <div className="mb-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
-                  {getRoundName(selectedStage)}
-                </h2>
-                <p className="text-gray-500 text-base">{roundDescription}</p>
+            <h2 className="text-xl font-bold text-indigo-900 flex items-center gap-2">
+              {getRoundName(selectedStage)}
+            </h2>
+            <p className="text-gray-500 text-base">{roundDescription}</p>
               </div>
               <Button 
                 onClick={() => setShowAddEvaluatorModal(true)}
@@ -1015,7 +1031,7 @@ export default function JudgeManagementAssignments({
               )}
             </div>
           )}
-
+          
           {/* Team Management Section */}
           <Card className=" shadow-none hover:shadow-none">
             <CardHeader>
@@ -1080,7 +1096,7 @@ export default function JudgeManagementAssignments({
                                     'bg-gray-100 text-gray-700'
                                   }`}>
                                     {stage}
-                                  </span>
+                          </span>
                                   {index < getTeamProgress(team).split(' → ').length - 1 && (
                                     <span className="text-gray-400">→</span>
                                   )}
@@ -2364,6 +2380,7 @@ export default function JudgeManagementAssignments({
             fetchAssignmentOverview();
           }, 1000);
         }}
+        onEvaluatorAdded={handleEvaluatorAdded}
       />
 
       {/* Add Evaluator Modal */}

@@ -22,12 +22,23 @@ export default function JudgeDashboard() {
   const [rounds, setRounds] = useState([]);
   const [allSubmissions, setAllSubmissions] = useState([]);
   const [hasSpecificAssignments, setHasSpecificAssignments] = useState(false);
+  
+  // Filter state
+  const [evaluationFilter, setEvaluationFilter] = useState('all');
+  const [problemStatementFilter, setProblemStatementFilter] = useState('all');
+  const [availableProblemStatements, setAvailableProblemStatements] = useState([]);
 
   useEffect(() => {
     if (user) {
       fetchAssignedSubmissions();
     }
   }, [user, currentRound]);
+
+  // Extract available problem statements from submissions
+  useEffect(() => {
+    const problemStatements = [...new Set(assignedSubmissions.map(sub => sub.problemStatement).filter(ps => ps))];
+    setAvailableProblemStatements(problemStatements);
+  }, [assignedSubmissions]);
 
   // Add periodic refresh
   useEffect(() => {
@@ -52,6 +63,10 @@ export default function JudgeDashboard() {
         setRounds(data.rounds || []);
         setHackathons(data.hackathons || []);
         setHasSpecificAssignments(data.hasSpecificAssignments || false);
+        
+        // For now, skip the failing API call and rely on backend evaluation status
+        setJudgeScores([]);
+        console.log('🔍 Skipping judge scores fetch due to API error');
         
         // Set current round to first available round if we have rounds
         if (data.rounds && data.rounds.length > 0) {
@@ -184,6 +199,103 @@ export default function JudgeDashboard() {
     return 'Submission';
   };
 
+  // Helper function to get evaluation status
+  const getEvaluationStatus = (submission) => {
+    if (!submission) return 'not-evaluated';
+    
+    // First, check if the backend already provided evaluation status
+    if (submission.evaluationStatus) {
+      console.log('🔍 Using backend evaluation status:', {
+        submissionId: submission._id,
+        submissionTitle: submission.projectTitle || submission.title,
+        evaluationStatus: submission.evaluationStatus
+      });
+      // Map 'pending' to 'not-evaluated' and 'evaluated' to 'evaluated'
+      return submission.evaluationStatus === 'evaluated' ? 'evaluated' : 'not-evaluated';
+    }
+    
+    // Fallback: Check if submission has been evaluated by looking at various score indicators
+    let isEvaluated = false;
+    
+    // Check if submission has scores array with content
+    if (submission.scores && Array.isArray(submission.scores) && submission.scores.length > 0) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has evaluations array with content
+    if (submission.evaluations && Array.isArray(submission.evaluations) && submission.evaluations.length > 0) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has any score data
+    if (submission.score || submission.totalScore || submission.averageScore) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has any scoring-related fields
+    if (submission.isEvaluated || submission.evaluated || submission.scored) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has judge scores (from judgeScores array)
+    if (judgeScores && judgeScores.length > 0) {
+      const hasJudgeScore = judgeScores.some(score => 
+        score.submissionId === submission._id || score.submissionId === submission.id
+      );
+      if (hasJudgeScore) {
+        isEvaluated = true;
+      }
+    }
+    
+    // Debug logging for evaluation status
+    console.log('🔍 JudgeDashboard Evaluation Status Debug:', {
+      submissionId: submission._id,
+      submissionTitle: submission.projectTitle || submission.title,
+      isEvaluated,
+      evaluationStatus: submission.evaluationStatus,
+      scores: submission.scores,
+      evaluations: submission.evaluations,
+      score: submission.score,
+      totalScore: submission.totalScore,
+      averageScore: submission.averageScore,
+      isEvaluated: submission.isEvaluated,
+      evaluated: submission.evaluated,
+      scored: submission.scored,
+      judgeScoresLength: judgeScores?.length || 0
+    });
+    
+    return isEvaluated ? 'evaluated' : 'not-evaluated';
+  };
+
+  // Filter submissions based on evaluation status and problem statement
+  const filteredSubmissions = assignedSubmissions.filter(submission => {
+    // Evaluation filter
+    if (evaluationFilter !== 'all') {
+      const evaluationStatus = getEvaluationStatus(submission);
+      if (evaluationStatus !== evaluationFilter) {
+        return false;
+      }
+    }
+    
+    // Problem Statement filter
+    if (problemStatementFilter !== 'all' && submission.problemStatement) {
+      const submissionPS = submission.problemStatement;
+      const filterPS = problemStatementFilter;
+      
+      // Check if problem statement matches (by ID or by text)
+      const psMatches = submissionPS._id === filterPS || 
+                       submissionPS.id === filterPS || 
+                       submissionPS === filterPS ||
+                       (typeof submissionPS === 'string' && submissionPS.includes(filterPS));
+      
+      if (!psMatches) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -264,18 +376,67 @@ export default function JudgeDashboard() {
           </CardTitle>
           <p className="text-sm text-gray-600">
             {hasSpecificAssignments 
-              ? `${rounds.find(r => r.index === currentRound)?.name || `Round ${currentRound + 1}`} - ${assignedSubmissions.length} submissions assigned to you`
+              ? `${rounds.find(r => r.index === currentRound)?.name || `Round ${currentRound + 1}`} - ${filteredSubmissions.length} submissions assigned to you`
               : 'No submissions assigned yet. The organizer will assign projects to you for evaluation.'
             }
           </p>
         </CardHeader>
         <CardContent>
+          {/* Evaluation and Problem Statement Filters */}
+          {assignedSubmissions.length > 0 && (
+            <div className="flex items-center gap-4 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Filters:</span>
+                
+                {/* Evaluation Filter */}
+                <select
+                  value={evaluationFilter}
+                  onChange={(e) => setEvaluationFilter(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Submissions</option>
+                  <option value="evaluated">Evaluated</option>
+                  <option value="not-evaluated">Not Evaluated</option>
+                </select>
+                
+                {/* Problem Statement Filter */}
+                <select
+                  value={problemStatementFilter}
+                  onChange={(e) => setProblemStatementFilter(e.target.value)}
+                  className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Problem Statements</option>
+                  {availableProblemStatements.map((ps, index) => (
+                    <option key={index} value={ps}>
+                      {typeof ps === 'string' ? ps.substring(0, 50) + '...' : ps.statement ? ps.statement.substring(0, 50) + '...' : `PS ${index + 1}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Clear Filters Button */}
+              {(evaluationFilter !== 'all' || problemStatementFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setEvaluationFilter('all');
+                    setProblemStatementFilter('all');
+                  }}
+                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+          )}
+          
+
+          
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-gray-500 mt-2">Loading your assigned submissions...</p>
             </div>
-          ) : assignedSubmissions.length === 0 ? (
+          ) : filteredSubmissions.length === 0 ? (
             <div className="text-center py-8">
               <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">
@@ -307,7 +468,7 @@ export default function JudgeDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {assignedSubmissions.map((submission, index) => (
+                  {filteredSubmissions.map((submission, index) => (
                     <tr key={submission._id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4 text-gray-900 font-medium">
                         {index + 1}

@@ -127,4 +127,49 @@ export async function fetchSubmissionsWithProblemStatements(hackathonId) {
   const response = await fetch(url, { headers });
   if (!response.ok) throw new Error('Failed to fetch submissions with problem statements');
   return response.json();
-} 
+}
+
+// Edit problem statement
+export async function editProblemStatement(hackathonId, problemStatementId, data) {
+  const url = buildApiUrl(`/judge-management/hackathons/${hackathonId}/problem-statements`);
+  const token = localStorage.getItem('token');
+  const headers = getAuthHeaders();
+  
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({
+      problemStatementId,
+      ...data
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to edit problem statement');
+  }
+  
+  return response.json();
+}
+
+// Delete problem statement
+export async function deleteProblemStatement(hackathonId, problemStatementId) {
+  const url = buildApiUrl(`/judge-management/hackathons/${hackathonId}/problem-statements`);
+  const token = localStorage.getItem('token');
+  const headers = getAuthHeaders();
+  
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers,
+    body: JSON.stringify({
+      problemStatementId
+    })
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'Failed to delete problem statement');
+  }
+  
+  return response.json();
+}

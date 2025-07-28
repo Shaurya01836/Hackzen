@@ -1,16 +1,174 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
 import { Badge } from "../../../../components/CommonUI/badge";
-import { Edit, Trash2, Target, FileText, Building, Globe, Plus, AlertCircle } from "lucide-react";
+import { Edit, Trash2, Target, FileText, Building, Globe, Plus, AlertCircle, X, Save } from "lucide-react";
+import { toast } from "../../../../hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "../../../../components/DashboardUI/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../../../../components/DashboardUI/alert-dialog";
+import { Label } from "../../../../components/CommonUI/label";
+import { Input } from "../../../../components/CommonUI/input";
+import { Textarea } from "../../../../components/CommonUI/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";
+import { editProblemStatement, deleteProblemStatement } from "../../../../lib/api";
 
 export default function JudgeManagementProblemStatements({ hackathon, onEdit, onDelete }) {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [editingPS, setEditingPS] = useState(null);
+  const [deletingPS, setDeletingPS] = useState(null);
+  const [editForm, setEditForm] = useState({
+    statement: '',
+    type: 'general',
+    sponsorCompany: ''
+  });
+  const [loading, setLoading] = useState(false);
+
   const problemStatements = hackathon?.problemStatements || [];
-  const sponsoredCount = problemStatements.filter(ps => ps.type === "sponsored").length;
-  const generalCount = problemStatements.filter(ps => ps.type === "general").length;
+  
+  // Count sponsored vs general problem statements
+  const sponsoredCount = problemStatements.filter(ps => {
+    if (typeof ps === 'object' && ps.type) {
+      const psType = ps.type.toLowerCase();
+      return psType === 'sponsored' || psType === 'sponsored challenge';
+    }
+    return false;
+  }).length;
+  
+  const generalCount = problemStatements.filter(ps => {
+    if (typeof ps === 'object' && ps.type) {
+      const psType = ps.type.toLowerCase();
+      return psType !== 'sponsored' && psType !== 'sponsored challenge';
+    }
+    return true; // Default to general if no type specified
+  }).length;
+  
+
+
+  const handleEdit = (ps, index) => {
+    // Handle both string and object problem statements
+    const isObject = typeof ps === 'object' && ps !== null;
+    const statement = isObject ? ps.statement : ps;
+    
+    // Map the existing type to our expected format
+    let type = 'general';
+    if (isObject && ps.type) {
+      const psType = ps.type.toLowerCase();
+      if (psType === 'sponsored' || psType === 'sponsored challenge') {
+        type = 'sponsored';
+      } else {
+        type = 'general';
+      }
+    }
+    
+    const sponsorCompany = isObject ? ps.sponsorCompany : '';
+    
+    setEditingPS({ ...ps, index });
+    setEditForm({
+      statement: statement || '',
+      type: type,
+      sponsorCompany: sponsorCompany || ''
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = (ps, index) => {
+    setDeletingPS({ ...ps, index });
+    setDeleteModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPS || !hackathon?._id) return;
+
+    setLoading(true);
+    try {
+      const hackathonId = hackathon._id || hackathon.id;
+      
+      const data = {
+        statement: editForm.statement,
+        type: editForm.type,
+        sponsorCompany: editForm.type === 'sponsored' ? editForm.sponsorCompany : null
+      };
+      
+      const result = await editProblemStatement(hackathonId, editingPS._id, data);
+      
+      toast({
+        title: "Success",
+        description: "Problem statement updated successfully",
+        variant: "default",
+      });
+      setEditModalOpen(false);
+      setEditingPS(null);
+      // Refresh the hackathon data
+      if (onEdit) {
+        onEdit(result.problemStatement, editingPS.index);
+      }
+    } catch (error) {
+      console.error('Error updating problem statement:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update problem statement",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingPS || !hackathon?._id) return;
+
+    setLoading(true);
+    try {
+      const hackathonId = hackathon._id || hackathon.id;
+      
+
+      
+      const result = await deleteProblemStatement(hackathonId, deletingPS._id);
+      
+      toast({
+        title: "Success",
+        description: "Problem statement deleted successfully",
+        variant: "default",
+      });
+      setDeleteModalOpen(false);
+      setDeletingPS(null);
+      // Refresh the hackathon data
+      if (onDelete) {
+        onDelete(deletingPS, deletingPS.index);
+      }
+    } catch (error) {
+      console.error('Error deleting problem statement:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete problem statement",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
+
+
       {/* Header Section */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Problem Statements Management</h2>
@@ -120,13 +278,13 @@ export default function JudgeManagementProblemStatements({ hackathon, onEdit, on
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-lg ${
-                        ps.type === "sponsored" 
+                        (typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") 
                           ? "bg-green-100" 
                           : "bg-blue-100"
                       }`}>
-                        {ps.type === "sponsored" ? (
+                        {(typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") ? (
                           <Building className={`w-5 h-5 ${
-                            ps.type === "sponsored" ? "text-green-600" : "text-blue-600"
+                            (typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") ? "text-green-600" : "text-blue-600"
                           }`} />
                         ) : (
                           <Globe className="w-5 h-5 text-blue-600" />
@@ -135,20 +293,20 @@ export default function JudgeManagementProblemStatements({ hackathon, onEdit, on
                       <div>
                         <div className="flex items-center gap-3 mb-1">
                           <Badge 
-                            variant={ps.type === "sponsored" ? "default" : "secondary"}
+                            variant={(typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") ? "default" : "secondary"}
                             className={
-                              ps.type === "sponsored" 
+                              (typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") 
                                 ? "bg-green-100 text-green-700 border-green-200" 
                                 : "bg-blue-100 text-blue-700 border-blue-200"
                             }
                           >
-                            {ps.type === "sponsored" ? "Sponsored Challenge" : "General Challenge"}
+                            {(typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored") ? "Sponsored Challenge" : "General Challenge"}
                           </Badge>
                           <Badge variant="outline" className="bg-white text-gray-600">
                             PS #{index + 1}
                           </Badge>
                         </div>
-                        {ps.type === "sponsored" && ps.sponsorCompany && (
+                        {(typeof ps === 'object' && ps.type && ps.type.toLowerCase() === "sponsored" && ps.sponsorCompany) && (
                           <div className="flex items-center gap-2">
                             <Building className="w-4 h-4 text-gray-500" />
                             <span className="text-sm font-medium text-gray-700 bg-white px-3 py-1 rounded-full">
@@ -164,7 +322,7 @@ export default function JudgeManagementProblemStatements({ hackathon, onEdit, on
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        onClick={() => onEdit && onEdit(ps, index)}
+                        onClick={() => handleEdit(ps, index)}
                         className="border-gray-300 hover:bg-white hover:border-indigo-300 hover:text-indigo-600"
                       >
                         <Edit className="w-4 h-4 mr-1" />
@@ -174,7 +332,7 @@ export default function JudgeManagementProblemStatements({ hackathon, onEdit, on
                         size="sm" 
                         variant="outline" 
                         className="border-gray-300 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-                        onClick={() => onDelete && onDelete(ps, index)}
+                        onClick={() => handleDelete(ps, index)}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
                         Delete
@@ -237,6 +395,137 @@ export default function JudgeManagementProblemStatements({ hackathon, onEdit, on
           </CardContent>
         </Card>
       )}
+
+      {/* Edit Problem Statement Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-indigo-600" />
+              Edit Problem Statement
+            </DialogTitle>
+            <DialogDescription>
+              Update the problem statement details. Changes will be reflected immediately.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="statement">Problem Statement</Label>
+              <Textarea
+                id="statement"
+                value={editForm.statement}
+                onChange={(e) => setEditForm({ ...editForm, statement: e.target.value })}
+                placeholder="Describe the problem participants need to solve..."
+                rows={4}
+                className="mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="type">Type</Label>
+              <Select
+                value={editForm.type}
+                onValueChange={(value) => setEditForm({ ...editForm, type: value })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select problem statement type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General</SelectItem>
+                  <SelectItem value="sponsored">Sponsored</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {editForm.type === 'sponsored' && (
+              <div>
+                <Label htmlFor="sponsorCompany">Sponsor Company</Label>
+                <Input
+                  id="sponsorCompany"
+                  value={editForm.sponsorCompany}
+                  onChange={(e) => setEditForm({ ...editForm, sponsorCompany: e.target.value })}
+                  placeholder="Enter sponsor company name"
+                  className="mt-1"
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditModalOpen(false)}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={loading || !editForm.statement.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-600" />
+              Delete Problem Statement
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div>
+                <p>Are you sure you want to delete this problem statement? This action cannot be undone.</p>
+                {deletingPS && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-medium text-red-800 mb-2">Problem Statement to Delete:</p>
+                    <p className="text-sm text-red-700">{deletingPS.statement}</p>
+                    {deletingPS.type === 'sponsored' && deletingPS.sponsorCompany && (
+                      <p className="text-sm text-red-600 mt-1">Sponsor: {deletingPS.sponsorCompany}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={loading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Problem Statement
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

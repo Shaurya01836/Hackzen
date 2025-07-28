@@ -50,6 +50,13 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
   const [user, setUser] = useState(null);
   const [judgeScores, setJudgeScores] = useState([]);
   
+  // Filter states
+  const [roundFilter, setRoundFilter] = useState('all');
+  const [evaluationFilter, setEvaluationFilter] = useState('all');
+  const [problemStatementFilter, setProblemStatementFilter] = useState('all');
+  const [availableRounds, setAvailableRounds] = useState([]);
+  const [availableProblemStatements, setAvailableProblemStatements] = useState([]);
+  
   console.log('🔍 Frontend - JudgeAssignedProjectsGallery props:', {
     hackathonId,
     selectedType
@@ -63,6 +70,120 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
     }
     return "My Assigned Submissions";
   };
+
+  // Helper function to get evaluation status
+  const getEvaluationStatus = (submission) => {
+    if (!submission) return 'not-evaluated';
+    
+    // First, check if the backend already provided evaluation status
+    if (submission.evaluationStatus) {
+      console.log('🔍 Using backend evaluation status:', {
+        submissionId: submission._id,
+        submissionTitle: submission.projectTitle || submission.title,
+        evaluationStatus: submission.evaluationStatus
+      });
+      // Map 'pending' to 'not-evaluated' and 'evaluated' to 'evaluated'
+      return submission.evaluationStatus === 'evaluated' ? 'evaluated' : 'not-evaluated';
+    }
+    
+    // Fallback: Check if submission has been evaluated by looking at various score indicators
+    let isEvaluated = false;
+    
+    // Check if submission has scores array with content
+    if (submission.scores && Array.isArray(submission.scores) && submission.scores.length > 0) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has evaluations array with content
+    if (submission.evaluations && Array.isArray(submission.evaluations) && submission.evaluations.length > 0) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has any score data
+    if (submission.score || submission.totalScore || submission.averageScore) {
+      isEvaluated = true;
+    }
+    
+    // Check if submission has judge scores (from judgeScores array)
+    if (judgeScores && judgeScores.length > 0) {
+      const hasJudgeScore = judgeScores.some(score => 
+        score.submissionId === submission._id || score.submissionId === submission.id
+      );
+      if (hasJudgeScore) {
+        isEvaluated = true;
+      }
+    }
+    
+    // Check if submission has any scoring-related fields
+    if (submission.isEvaluated || submission.evaluated || submission.scored) {
+      isEvaluated = true;
+    }
+    
+    // Debug logging for evaluation status
+    console.log('🔍 Evaluation Status Debug:', {
+      submissionId: submission._id,
+      submissionTitle: submission.projectTitle || submission.title,
+      isEvaluated,
+      evaluationStatus: submission.evaluationStatus,
+      scores: submission.scores,
+      evaluations: submission.evaluations,
+      score: submission.score,
+      totalScore: submission.totalScore,
+      averageScore: submission.averageScore,
+      isEvaluated: submission.isEvaluated,
+      evaluated: submission.evaluated,
+      scored: submission.scored,
+      judgeScoresLength: judgeScores?.length || 0
+    });
+    
+    return isEvaluated ? 'evaluated' : 'not-evaluated';
+  };
+
+  // Filter submissions based on filters
+  const filteredSubmissions = assignedSubmissions.filter(submission => {
+    // Round filter
+    if (roundFilter !== 'all' && submission.roundIndex !== undefined) {
+      if (submission.roundIndex.toString() !== roundFilter) {
+        return false;
+      }
+    }
+    
+    // Evaluation filter
+    if (evaluationFilter !== 'all') {
+      const evaluationStatus = getEvaluationStatus(submission);
+      if (evaluationStatus !== evaluationFilter) {
+        return false;
+      }
+    }
+    
+    // Problem Statement filter
+    if (problemStatementFilter !== 'all' && submission.problemStatement) {
+      const submissionPS = submission.problemStatement;
+      const filterPS = problemStatementFilter;
+      
+      // Check if problem statement matches (by ID or by text)
+      const psMatches = submissionPS._id === filterPS || 
+                       submissionPS.id === filterPS || 
+                       submissionPS === filterPS ||
+                       (typeof submissionPS === 'string' && submissionPS.includes(filterPS));
+      
+      if (!psMatches) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Extract available rounds and problem statements from submissions
+  useEffect(() => {
+    const rounds = [...new Set(assignedSubmissions.map(sub => sub.roundIndex).filter(r => r !== undefined))];
+    setAvailableRounds(rounds.sort((a, b) => a - b));
+    
+    // Extract available problem statements
+    const problemStatements = [...new Set(assignedSubmissions.map(sub => sub.problemStatement).filter(ps => ps))];
+    setAvailableProblemStatements(problemStatements);
+  }, [assignedSubmissions]);
 
   // Your existing useEffect for fetching submissions (keeping unchanged)
   useEffect(() => {
@@ -237,7 +358,9 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         setUser(currentUser);
 
         if (currentUser.role === "judge") {
+          // For now, skip the failing API call and rely on backend evaluation status
           setJudgeScores([]);
+          console.log('🔍 Skipping judge scores fetch due to API error');
         }
       } catch (err) {
         console.error("Failed to fetch user or judge scores", err);
@@ -309,7 +432,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
   });
 
   // Enhanced empty state when no projects
-  if (filteredProjects.length === 0) {
+  if (filteredSubmissions.length === 0) {
     return (
       <div className="space-y-8">
         {/* Enhanced Page Header */}
@@ -320,11 +443,11 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
             </div>
             <div className="flex flex-col space-y-1">
               <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
-              <p className="text-gray-600">
-                {selectedType && selectedType !== ""
-                  ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
-                  : `${filteredProjects.length} submissions assigned to you`}
-              </p>
+                          <p className="text-gray-600">
+              {selectedType && selectedType !== ""
+                ? `${filteredSubmissions.length} ${selectedType} submissions assigned to you`
+                : `${filteredSubmissions.length} submissions assigned to you`}
+            </p>
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 rounded-xl border border-yellow-200">
@@ -353,8 +476,8 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
             <h2 className="text-2xl font-bold text-gray-900">{getPageHeading()}</h2>
             <p className="text-gray-600">
               {selectedType && selectedType !== ""
-                ? `${filteredProjects.length} ${selectedType} submissions assigned to you`
-                : `${filteredProjects.length} submissions assigned to you`}
+                ? `${filteredSubmissions.length} ${selectedType} submissions assigned to you`
+                : `${filteredSubmissions.length} submissions assigned to you`}
             </p>
           </div>
         </div>
@@ -369,9 +492,82 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Filters:</span>
+        </div>
+        
+        {/* Round Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Round:</label>
+          <select
+            value={roundFilter}
+            onChange={(e) => setRoundFilter(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All Rounds</option>
+            {availableRounds.map(round => (
+              <option key={round} value={round.toString()}>
+                Round {round + 1}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Problem Statement Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Problem Statement:</label>
+          <select
+            value={problemStatementFilter}
+            onChange={(e) => setProblemStatementFilter(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All Problem Statements</option>
+            {availableProblemStatements.map((ps, index) => (
+              <option key={index} value={ps}>
+                {typeof ps === 'string' ? ps.substring(0, 50) + '...' : ps.statement ? ps.statement.substring(0, 50) + '...' : `PS ${index + 1}`}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Evaluation Filter */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm text-gray-600">Evaluation:</label>
+          <select
+            value={evaluationFilter}
+            onChange={(e) => setEvaluationFilter(e.target.value)}
+            className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">All</option>
+            <option value="evaluated">Evaluated</option>
+            <option value="not-evaluated">Not Evaluated</option>
+          </select>
+        </div>
+        
+        {/* Clear Filters Button */}
+        {(roundFilter !== 'all' || evaluationFilter !== 'all' || problemStatementFilter !== 'all') && (
+          <button
+            onClick={() => {
+              setRoundFilter('all');
+              setEvaluationFilter('all');
+              setProblemStatementFilter('all');
+            }}
+            className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+          >
+            Clear Filters
+          </button>
+        )}
+      </div>
+
+
+
+
+
       {/* Enhanced Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {filteredProjects.map((project, index) => (
+        {filteredSubmissions.map((project, index) => (
           <div key={project._id || index} className="">
             <ProjectCard
               project={project}

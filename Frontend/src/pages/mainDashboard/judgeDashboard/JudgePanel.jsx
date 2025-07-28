@@ -27,6 +27,12 @@ export default function JudgePanel() {
   const [hackathons, setHackathons] = useState([]);
   const [loadingHackathons, setLoadingHackathons] = useState(true);
   const [pendingInvites, setPendingInvites] = useState([]);
+  
+  // Filter states
+  const [hackathonStatusFilter, setHackathonStatusFilter] = useState('all');
+  const [roundFilter, setRoundFilter] = useState('all');
+  const [evaluationFilter, setEvaluationFilter] = useState('all');
+  
   const navigate = useNavigate();
   const { token } = useAuth();
 
@@ -87,6 +93,31 @@ export default function JudgePanel() {
       .then((res) => res.json())
       .then((data) => setPendingInvites(data || []));
   }, [token]);
+
+  // Helper function to get hackathon status
+  const getHackathonStatus = (hackathon) => {
+    const now = new Date();
+    const startDate = new Date(hackathon.startDate);
+    const endDate = new Date(hackathon.endDate);
+    
+    if (now < startDate) return 'upcoming';
+    if (now >= startDate && now <= endDate) return 'running';
+    if (now > endDate) return 'over';
+    return 'unknown';
+  };
+
+  // Filter hackathons based on status
+  const filteredHackathons = hackathons.filter(hackathon => {
+    if (!hackathon || !hackathon._id) return false;
+    
+    // Status filter
+    if (hackathonStatusFilter !== 'all') {
+      const status = getHackathonStatus(hackathon);
+      if (status !== hackathonStatusFilter) return false;
+    }
+    
+    return true;
+  });
 
   if (loading) {
     return (
@@ -286,15 +317,32 @@ export default function JudgePanel() {
 
         {/* Hackathons Section */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Hackathons You're Judging
-            </h2>
-            {hackathons && hackathons.filter(h => h && h._id).length > 0 && (
-              <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
-                {hackathons.filter(h => h && h._id).length}
-              </span>
-            )}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Hackathons You're Judging
+              </h2>
+              {filteredHackathons.length > 0 && (
+                <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
+                  {filteredHackathons.length}
+                </span>
+              )}
+            </div>
+            
+            {/* Filters */}
+            <div className="flex items-center gap-3">
+              {/* Hackathon Status Filter */}
+              <select
+                value={hackathonStatusFilter}
+                onChange={(e) => setHackathonStatusFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="all">All Status</option>
+                <option value="upcoming">Scheduled</option>
+                <option value="running">Active</option>
+                <option value="over">Completed</option>
+              </select>
+            </div>
           </div>
 
           {loadingHackathons ? (
@@ -303,9 +351,9 @@ export default function JudgePanel() {
                 <Card key={i} className="animate-pulse h-64 shadow-md" />
               ))}
             </div>
-          ) : hackathons && hackathons.filter(h => h && h._id).length > 0 ? (
+          ) : filteredHackathons.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {hackathons.filter(h => h && h._id).map((hackathon) => (
+              {filteredHackathons.map((hackathon) => (
                 <HackathonCard
                   key={hackathon._id || hackathon.title || Math.random()}
                   hackathon={hackathon}

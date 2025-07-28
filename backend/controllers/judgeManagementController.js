@@ -1253,6 +1253,47 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
       });
     }
 
+    // Validate judge type compatibility with problem statement type
+    if (problemStatementId) {
+      const selectedPS = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+      if (selectedPS) {
+        const psType = selectedPS.type || 'general';
+        const incompatibleEvaluators = evaluatorAssignments.filter(assignment => {
+          const evaluator = allEvaluators.find(e => 
+            e._id.toString() === assignment.evaluatorId || e.judge.email === assignment.evaluatorEmail
+          );
+          if (!evaluator) return false;
+          
+          const judgeType = evaluator.judge.type || 'platform';
+          
+          // Check compatibility based on judge type and problem statement type
+          if (psType === 'sponsored') {
+            // For sponsored PS, only sponsor and hybrid judges are allowed (and platform judges with permission)
+            return !(judgeType === 'sponsor' || 
+                    judgeType === 'hybrid' || 
+                    (judgeType === 'platform' && evaluator.judge.canJudgeSponsoredPS));
+          } else if (psType === 'general') {
+            // For general PS, only platform and hybrid judges are allowed
+            return !(judgeType === 'platform' || judgeType === 'hybrid');
+          }
+          
+          return false; // Default to compatible
+        });
+        
+        if (incompatibleEvaluators.length > 0) {
+          console.error('Incompatible judge assignments:', incompatibleEvaluators);
+          return res.status(400).json({ 
+            message: `Some judges are not compatible with ${psType} problem statements. Platform judges can only evaluate general problem statements, and sponsor judges can only evaluate sponsored problem statements.`,
+            incompatibleEvaluators: incompatibleEvaluators.map(e => ({
+              evaluatorId: e.evaluatorId,
+              evaluatorEmail: e.evaluatorEmail,
+              reason: `Judge type incompatible with ${psType} problem statement`
+            }))
+          });
+        }
+      }
+    }
+
     const results = [];
     const totalSubmissions = filteredSubmissionIds.length;
     let remainingSubmissions = [...filteredSubmissionIds];
@@ -1664,6 +1705,7 @@ async function updateJudgeAssignment(evaluatorAssignment, roundIndex, roundId, r
 exports.getAllEvaluators = async (req, res) => {
   try {
     const { hackathonId } = req.params;
+    const { problemStatementId, problemStatementType } = req.query; // Add query parameters for filtering
 
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -1679,13 +1721,47 @@ exports.getAllEvaluators = async (req, res) => {
       .populate('assignedBy', 'name email')
       .sort({ createdAt: -1 });
 
-    const evaluators = assignments.map(assignment => ({
+    // Filter evaluators based on problem statement type
+    let filteredAssignments = assignments;
+    
+    if (problemStatementId || problemStatementType) {
+      let targetPSType = problemStatementType;
+      
+      // If problemStatementId is provided, get the type from the hackathon
+      if (problemStatementId && !problemStatementType) {
+        const selectedPS = hackathon.problemStatements.find(ps => 
+          ps._id.toString() === problemStatementId
+        );
+        targetPSType = selectedPS?.type || 'general';
+      }
+      
+      // Filter evaluators based on judge type and problem statement type
+      if (targetPSType === 'sponsored') {
+        // For sponsored PS, only show sponsor and hybrid judges (and platform judges with permission)
+        filteredAssignments = assignments.filter(assignment => {
+          const judgeType = assignment.judge.type || 'platform';
+          return judgeType === 'sponsor' || 
+                 judgeType === 'hybrid' || 
+                 (judgeType === 'platform' && assignment.judge.canJudgeSponsoredPS);
+        });
+      } else if (targetPSType === 'general') {
+        // For general PS, only show platform and hybrid judges
+        filteredAssignments = assignments.filter(assignment => {
+          const judgeType = assignment.judge.type || 'platform';
+          return judgeType === 'platform' || judgeType === 'hybrid';
+        });
+      }
+      // If no specific type, show all evaluators
+    }
+
+    const evaluators = filteredAssignments.map(assignment => ({
       id: assignment._id,
       name: assignment.judge.name || assignment.judge.email.split('@')[0],
       email: assignment.judge.email,
-      type: assignment.judge.type,
+      type: assignment.judge.type || 'platform',
       status: assignment.status,
       sponsorCompany: assignment.judge.sponsorCompany,
+      canJudgeSponsoredPS: assignment.judge.canJudgeSponsoredPS || false,
       assignedSubmissions: assignment.assignedRounds.reduce((total, round) => 
         total + (round.assignedSubmissions?.length || 0), 0),
       maxSubmissions: assignment.permissions.maxSubmissionsPerJudge,
@@ -1694,12 +1770,25 @@ exports.getAllEvaluators = async (req, res) => {
       declinedAt: assignment.invitation.declinedAt
     }));
 
+    // Calculate judge type statistics
+    const judgeStats = {
+      platform: evaluators.filter(e => e.type === 'platform').length,
+      sponsor: evaluators.filter(e => e.type === 'sponsor').length,
+      hybrid: evaluators.filter(e => e.type === 'hybrid').length,
+      total: evaluators.length
+    };
+
     res.status(200).json({
       evaluators,
+      judgeStats,
       total: evaluators.length,
       pending: evaluators.filter(e => e.status === 'pending').length,
       active: evaluators.filter(e => e.status === 'active').length,
-      declined: evaluators.filter(e => e.status === 'declined').length
+      declined: evaluators.filter(e => e.status === 'declined').length,
+      filteredBy: problemStatementId || problemStatementType ? {
+        problemStatementId,
+        problemStatementType: targetPSType
+      } : null
     });
 
   } catch (error) {
@@ -1936,9 +2025,20 @@ exports.getMyAssignedSubmissions = async (req, res) => {
           try {
             console.log('🔍 Backend - Processing submission:', submission._id);
             
+            // First try to find the judge by email
+            const judge = await User.findOne({ email: judgeEmail });
+            console.log('🔍 Backend - Looking for judge:', { judgeEmail, judgeId: judge?._id });
+            
             const existingScore = await Score.findOne({
               submission: submission._id,
-              judgeEmail: judgeEmail
+              judge: judge?._id
+            });
+            
+            console.log('🔍 Backend - Score check result:', {
+              submissionId: submission._id,
+              judgeId: judge?._id,
+              existingScore: existingScore ? 'found' : 'not found',
+              evaluationStatus: existingScore ? 'evaluated' : 'pending'
             });
             
             // Find which round this submission is assigned to for this judge
@@ -2440,19 +2540,30 @@ exports.getAssignmentOverview = async (req, res) => {
       .populate('judge')
       .lean();
       
-
+    // Get problem statement type information
+    const getProblemStatementType = (problemStatementText) => {
+      if (!hackathon.problemStatements) return 'general';
+      
+      const matchingPS = hackathon.problemStatements.find(ps => 
+        ps.statement === problemStatementText
+      );
+      
+      return matchingPS?.type || 'general';
+    };
 
     // Get submissions for this hackathon with round filtering
     let submissionsQuery = { hackathonId: hackathonId, status: { $in: ['submitted', 'shortlisted'] } };
     
     // Filter by problem statement if specified
+    let selectedPS = null;
     if (problemStatementId) {
-      const selectedPS = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+      selectedPS = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
       if (selectedPS) {
         submissionsQuery.problemStatement = selectedPS.statement;
         console.log('🔍 Assignment Overview - Filtering by problem statement:', {
           problemStatementId,
-          problemStatementText: selectedPS.statement.slice(0, 50) + '...'
+          problemStatementText: selectedPS.statement.slice(0, 50) + '...',
+          problemStatementType: selectedPS.type
         });
       }
     }
@@ -2462,7 +2573,10 @@ exports.getAssignmentOverview = async (req, res) => {
       .select('_id projectTitle title teamId teamName pptFile submittedAt roundIndex problemStatement')
       .lean();
     
-
+    // Add problem statement type to each submission
+    allSubmissions.forEach(submission => {
+      submission.problemStatementType = getProblemStatementType(submission.problemStatement);
+    });
     
     // Filter submissions by round logic
     let submissions = allSubmissions;
@@ -2501,8 +2615,6 @@ exports.getAssignmentOverview = async (req, res) => {
       submissionAssignments[sub._id.toString()] = [];
     });
 
-
-
     // Map: judge email -> assigned submission IDs with round info
     const judgeToSubmissions = {};
     judgeAssignments.forEach(judgeAssignment => {
@@ -2510,6 +2622,7 @@ exports.getAssignmentOverview = async (req, res) => {
       judgeToSubmissions[judgeEmail] = [];
       
       console.log(`🔍 Processing judge ${judgeEmail}:`, {
+        judgeType: judgeAssignment.judge?.type || 'platform',
         assignedRounds: judgeAssignment.assignedRounds?.length || 0,
         rounds: judgeAssignment.assignedRounds?.map(r => ({
           roundIndex: r.roundIndex,
@@ -2581,22 +2694,25 @@ exports.getAssignmentOverview = async (req, res) => {
               }
               
               if (shouldIncludeSubmission) {
-                console.log(`🔍 Assigning submission ${subIdStr} to judge ${judgeEmail} (type: ${submission.pptFile ? 'PPT' : 'Project'})`);
+                console.log(`🔍 Assigning submission ${subIdStr} to judge ${judgeEmail} (type: ${submission.pptFile ? 'PPT' : 'Project'}, PS type: ${submission.problemStatementType})`);
                 
                 judgeToSubmissions[judgeEmail].push({
                   submissionId: subIdStr,
                   roundIndex: round.roundIndex,
                   roundName: round.roundName,
-                  roundType: round.roundType
+                  roundType: round.roundType,
+                  problemStatementType: submission.problemStatementType
                 });
                 
                 if (submissionAssignments[subIdStr]) {
                   submissionAssignments[subIdStr].push({
                     judgeEmail,
                     judgeName: judgeAssignment.judge?.name || judgeEmail,
+                    judgeType: judgeAssignment.judge?.type || 'platform',
                     roundIndex: round.roundIndex,
                     roundName: round.roundName,
-                    roundType: round.roundType
+                    roundType: round.roundType,
+                    problemStatementType: submission.problemStatementType
                   });
                 }
               } else {
@@ -2617,6 +2733,7 @@ exports.getAssignmentOverview = async (req, res) => {
         judgeEmail,
         judgeName: judgeAssignment.judge?.name || judgeEmail,
         judgeType: judgeAssignment.judge?.type || 'platform',
+        canJudgeSponsoredPS: judgeAssignment.judge?.canJudgeSponsoredPS || false,
         assignedSubmissions: (judgeToSubmissions[judgeEmail] || []).map(assignment => {
           const sub = submissions.find(s => s._id.toString() === assignment.submissionId);
           if (!sub) return null;
@@ -2636,6 +2753,8 @@ exports.getAssignmentOverview = async (req, res) => {
             roundIndex: assignment.roundIndex,
             roundName: assignment.roundName,
             roundType: assignment.roundType,
+            problemStatement: sub.problemStatement,
+            problemStatementType: sub.problemStatementType,
             evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
             scoreCount: submissionScoresList.length,
             averageScore: averageScore ? Math.round(averageScore * 10) / 10 : null,
@@ -2671,7 +2790,8 @@ exports.getAssignmentOverview = async (req, res) => {
         pptFile: sub.pptFile,
         submittedAt: sub.submittedAt,
         roundIndex: correctRoundIndex,
-        problemStatement: sub.problemStatement
+        problemStatement: sub.problemStatement,
+        problemStatementType: sub.problemStatementType
       };
     });
 
@@ -2703,6 +2823,7 @@ exports.getAssignmentOverview = async (req, res) => {
         submittedAt: sub.submittedAt,
         roundIndex: correctRoundIndex,
         problemStatement: sub.problemStatement,
+        problemStatementType: sub.problemStatementType,
         assignedJudges: submissionAssignments[sub._id.toString()] || [],
         evaluationStatus: submissionScoresList.length > 0 ? 'evaluated' : 'pending',
         scoreCount: submissionScoresList.length,
@@ -2715,12 +2836,33 @@ exports.getAssignmentOverview = async (req, res) => {
       };
     });
 
+    // Calculate judge type statistics
+    const judgeStats = {
+      platform: judges.filter(j => j.judgeType === 'platform').length,
+      sponsor: judges.filter(j => j.judgeType === 'sponsor').length,
+      hybrid: judges.filter(j => j.judgeType === 'hybrid').length,
+      total: judges.length
+    };
 
+    // Calculate problem statement type statistics
+    const psStats = {
+      general: submissions.filter(s => s.problemStatementType === 'general').length,
+      sponsored: submissions.filter(s => s.problemStatementType === 'sponsored').length,
+      total: submissions.length
+    };
 
     res.status(200).json({
       judges,
       unassignedSubmissions,
       assignedSubmissions,
+      judgeStats,
+      psStats,
+      selectedProblemStatement: selectedPS ? {
+        _id: selectedPS._id,
+        statement: selectedPS.statement,
+        type: selectedPS.type,
+        sponsorCompany: selectedPS.sponsorCompany
+      } : null,
       summary: {
         totalSubmissions: submissions.length,
         assignedSubmissions: assignedSubmissions.length,
@@ -3992,7 +4134,7 @@ exports.getShortlistedSubmissionsPublic = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching shortlisted submissions:', error);
-    res.status(500).json({ message: 'Failed to fetch shortlisted submissions' });
+    res.status(500).json({ message: 'Failed to fetch shortlisted submissions' });
 }
 };
 
@@ -4069,7 +4211,7 @@ async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, s
           </p>
           
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <h3 style="color: #f59e0b; margin: 0 0 15px 0;">📋 Assignment Summary</h3>
+            <h3 style="color: #f59e0b; margin: 0 0 15px 0;">�� Assignment Summary</h3>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Hackathon:</strong> ${hackathon.title}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Round:</strong> ${roundName}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Total Submissions:</strong> ${submissions.length}</p>
@@ -5555,8 +5697,136 @@ exports.getWinners = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching winners:', error);
-    res.status(500).json({ message: 'Failed to fetch winners' });
+    res.status(500).json({ message: 'Failed to fetch winners' });
   }
+};
+
+// 🎯 Edit Problem Statement
+exports.editProblemStatement = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { problemStatementId, statement, type, sponsorCompany } = req.body;
+
+
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can edit problem statements' });
+    }
+
+    // Validate required fields
+    if (!statement || !type) {
+      return res.status(400).json({ message: 'Statement and type are required' });
+    }
+
+    // Validate type
+    if (!['general', 'sponsored'].includes(type)) {
+      return res.status(400).json({ message: 'Type must be either "general" or "sponsored"' });
+    }
+
+    // Validate sponsor company for sponsored type
+    if (type === 'sponsored' && !sponsorCompany) {
+      return res.status(400).json({ message: 'Sponsor company is required for sponsored problem statements' });
+    }
+
+    // Find and update the specific problem statement by _id
+    const updatedHackathon = await Hackathon.findByIdAndUpdate(
+      hackathonId,
+      {
+        $set: {
+          'problemStatements.$[elem].statement': statement,
+          'problemStatements.$[elem].type': type,
+          'problemStatements.$[elem].sponsorCompany': type === 'sponsored' ? sponsorCompany : null,
+          'problemStatements.$[elem].isSponsored': type === 'sponsored'
+        }
+      },
+      {
+        arrayFilters: [{ 'elem._id': new mongoose.Types.ObjectId(problemStatementId) }],
+        new: true
+      }
+    );
+
+    if (!updatedHackathon) {
+      return res.status(404).json({ message: 'Problem statement not found' });
+    }
+
+    // Find the updated problem statement
+    const updatedPS = updatedHackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+
+    res.status(200).json({
+      message: 'Problem statement updated successfully',
+      problemStatement: updatedPS,
+      hackathon: updatedHackathon
+    });
+
+  } catch (error) {
+    console.error('Error editing problem statement:', error);
+    res.status(500).json({ message: 'Failed to edit problem statement' });
+  }
+};
+
+// 🎯 Delete Problem Statement
+exports.deleteProblemStatement = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const { problemStatementId } = req.body;
+
+
+
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Verify organizer permissions
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can delete problem statements' });
+    }
+
+    // Check if problem statement exists
+    const problemStatement = hackathon.problemStatements.find(ps => ps._id.toString() === problemStatementId);
+    if (!problemStatement) {
+      return res.status(404).json({ message: 'Problem statement not found' });
+    }
+
+    // Check if there are any submissions for this problem statement
+    const submissionsWithPS = await Submission.find({
+      hackathonId: hackathonId,
+      problemStatement: problemStatement.statement
+    });
+
+    if (submissionsWithPS.length > 0) {
+      return res.status(400).json({ 
+        message: 'Cannot delete problem statement. There are submissions associated with this problem statement.',
+        submissionCount: submissionsWithPS.length
+      });
+    }
+
+    // Remove the problem statement
+    const updatedHackathon = await Hackathon.findByIdAndUpdate(
+      hackathonId,
+      {
+        $pull: {
+          problemStatements: { _id: new mongoose.Types.ObjectId(problemStatementId) }
+        }
+      },
+      { new: true }
+    );
+
+    res.status(200).json({
+      message: 'Problem statement deleted successfully',
+      hackathon: updatedHackathon
+    });
+
+  } catch (error) {
+    console.error('Error deleting problem statement:', error);
+    res.status(500).json({ message: 'Failed to delete problem statement' });
+  }
 };
 
 
