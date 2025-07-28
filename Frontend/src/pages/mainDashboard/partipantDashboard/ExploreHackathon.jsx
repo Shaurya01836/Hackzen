@@ -257,9 +257,9 @@ export function ExploreHackathons() {
 
    return (
      <RCard key={hackathon._id} className={cn(
-       "w-full max-w-xs flex flex-col overflow-hidden cursor-pointer rounded-xl transition-transform duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg"
+       "w-full max-w-xs flex flex-col overflow-hidden group"
      )} onClick={() => handleHackathonClick(hackathon)}>
-       <div className="relative h-40 w-full">
+       <div className="relative h-40 w-full overflow-hidden">
          {hackathon.isFeatured && (
            <div className="absolute top-2 left-2 z-10">
              <Badge className="bg-indigo-600 text-white font-semibold shadow-md">
@@ -268,7 +268,7 @@ export function ExploreHackathons() {
              </Badge>
            </div>
          )}
-         <img src={hackathon.images?.logo?.url || hackathon.images?.banner?.url || "/assets/default-banner.png"} alt={hackathon.title} className="w-full h-full object-cover" />
+         <img src={hackathon.images?.logo?.url || hackathon.images?.banner?.url || "/assets/default-banner.png"} alt={hackathon.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
        </div>
        <div className="p-4 flex flex-col gap-2">
          <h3 className="text-md font-semibold text-indigo-700 leading-tight line-clamp-2 h-10">{hackathon.title}</h3>
