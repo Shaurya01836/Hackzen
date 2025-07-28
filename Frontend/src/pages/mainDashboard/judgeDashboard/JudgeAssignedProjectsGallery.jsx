@@ -130,7 +130,22 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
         console.log('🔍 Frontend - Filtered submissions:', hackathonSubmissions.length);
 
         // Transform submissions into project format
-        const projects = hackathonSubmissions.map(submission => {
+        const projects = await Promise.all(hackathonSubmissions.map(async (submission) => {
+          // Ensure submittedBy has proper structure
+          const submittedBy = submission.submittedBy ? {
+            _id: submission.submittedBy._id || submission.submittedBy,
+            name: submission.submittedBy.name || submission.submittedBy.email || "Unknown",
+            email: submission.submittedBy.email || "",
+            profileImage: submission.submittedBy.profileImage || "",
+            role: submission.submittedBy.role || "Contributor"
+          } : {
+            _id: "unknown",
+            name: "Unknown",
+            email: "",
+            profileImage: "",
+            role: "Contributor"
+          };
+
           if (submission.pptFile) {
             // PPT submission
             return {
@@ -139,7 +154,7 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
               title: submission.title || submission.originalName || "PPT Submission",
               name: submission.teamName || (submission.team && submission.team.name) || "-",
               status: submission.status || "Submitted",
-              submittedBy: submission.submittedBy,
+              submittedBy: submittedBy,
               submittedAt: submission.submittedAt,
               pptFile: submission.pptFile,
               logo: { url: "/assets/ppt.png" },
@@ -148,22 +163,69 @@ export default function JudgeAssignedProjectsGallery({ hackathonId, onProjectCli
               __submission: submission,
             };
           } else {
-            // Project submission
-            return {
-              ...submission,
-              type: "project",
-              title: submission.projectTitle || submission.title || "Project Submission",
-              name: submission.teamName || (submission.team && submission.team.name) || "-",
-              status: submission.status || "Submitted",
-              submittedBy: submission.submittedBy,
-              submittedAt: submission.submittedAt,
-              logo: submission.logo || { url: "/assets/default-banner.png" },
-              likes: submission.likes || 0,
-              views: submission.views || 0,
-              __submission: submission,
-            };
+            // Project submission - fetch complete project data
+            const projectId = submission.projectId?._id || submission.projectId;
+            
+            if (projectId) {
+              try {
+                // Fetch complete project data from API
+                const projectResponse = await axios.get(`/api/projects/${projectId}`);
+                const fullProjectData = projectResponse.data;
+                
+                return {
+                  ...fullProjectData, // Use complete project data
+                  type: "project",
+                  submittedBy: submittedBy,
+                  submittedAt: submission.submittedAt,
+                  __submission: submission, // Keep submission reference
+                };
+              } catch (projectErr) {
+                console.error(`Failed to fetch project ${projectId}:`, projectErr);
+                // Fallback to submission data
+                const projectData = submission.projectId || submission.project || submission;
+                const projectLogo = projectData?.logo || 
+                                   projectData?.images?.[0] || 
+                                   submission.logo || 
+                                   { url: "/assets/default-banner.png" };
+                
+                return {
+                  ...submission,
+                  type: "project",
+                  title: projectData?.projectTitle || projectData?.title || submission.projectTitle || submission.title || "Project Submission",
+                  name: submission.teamName || (submission.team && submission.team.name) || "-",
+                  status: submission.status || "Submitted",
+                  submittedBy: submittedBy,
+                  submittedAt: submission.submittedAt,
+                  logo: projectLogo,
+                  likes: submission.likes || 0,
+                  views: submission.views || 0,
+                  __submission: submission,
+                };
+              }
+            } else {
+              // No project ID, use submission data
+              const projectData = submission.project || submission;
+              const projectLogo = projectData?.logo || 
+                                 projectData?.images?.[0] || 
+                                 submission.logo || 
+                                 { url: "/assets/default-banner.png" };
+              
+              return {
+                ...submission,
+                type: "project",
+                title: projectData?.projectTitle || projectData?.title || submission.projectTitle || submission.title || "Project Submission",
+                name: submission.teamName || (submission.team && submission.team.name) || "-",
+                status: submission.status || "Submitted",
+                submittedBy: submittedBy,
+                submittedAt: submission.submittedAt,
+                logo: projectLogo,
+                likes: submission.likes || 0,
+                views: submission.views || 0,
+                __submission: submission,
+              };
+            }
           }
-        });
+        }));
 
         setAssignedSubmissions(projects);
       } catch (err) {

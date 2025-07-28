@@ -73,7 +73,8 @@ export function ProjectCard({ project, onClick, user, judgeScores = [] }) {
           setViewCount((prev) => prev + 1); // Optimistic update
         }
       } catch {}
-      onClick(project);
+      // Call onClick with the same parameters that were passed to the component
+      onClick();
     }
   };
 

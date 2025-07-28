@@ -217,6 +217,16 @@ export function ProjectDetail({
   };
 
   console.log('[ProjectDetail] project prop:', project);
+  console.log('[ProjectDetail] project details:', {
+    title: project.title,
+    description: project.description,
+    videoLink: project.videoLink,
+    repoLink: project.repoLink,
+    websiteLink: project.websiteLink,
+    skills: project.skills,
+    team: project.team,
+    hackathon: project.hackathon
+  });
 
   if (!project) return <p>Loading...</p>;
 

@@ -142,7 +142,7 @@ router.get('/me/judge-hackathons', protect, async (req, res) => {
     const activeAssignments = await JudgeAssignment.find({
       'judge.email': req.user.email,
       status: 'active'
-    }).populate('hackathon', 'name description startDate endDate');
+    }).populate('hackathon', 'title name description startDate endDate registrationDeadline location tags images isFeatured prizePool mode');
 
     // Get hackathons from active assignments
     const hackathons = activeAssignments.map(assignment => assignment.hackathon).filter(Boolean);

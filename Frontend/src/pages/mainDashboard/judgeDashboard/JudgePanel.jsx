@@ -42,6 +42,7 @@ export default function JudgePanel() {
         );
         const data = await res.json();
 
+        console.log('Judge hackathons data:', data);
         setHackathons(data);
       } catch (err) {
         console.error("Error fetching judge hackathons", err);
@@ -305,20 +306,16 @@ export default function JudgePanel() {
           ) : hackathons && hackathons.filter(h => h && h._id).length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {hackathons.filter(h => h && h._id).map((hackathon) => (
-                <div 
+                <HackathonCard
                   key={hackathon._id || hackathon.title || Math.random()}
-                  className="transform hover:scale-105 transition-transform duration-200"
-                >
-                  <HackathonCard
-                    hackathon={hackathon}
-                    onClick={() =>
-                      hackathon._id && navigate(
-                        `/dashboard/judge/hackathon/${hackathon._id}/gallery`,
-                        { state: { hackathon } }
-                      )
-                    }
-                  />
-                </div>
+                  hackathon={hackathon}
+                  onClick={() =>
+                    hackathon._id && navigate(
+                      `/dashboard/judge/hackathon/${hackathon._id}/gallery`,
+                      { state: { hackathon } }
+                    )
+                  }
+                />
               ))}
             </div>
           ) : (
@@ -342,16 +339,3 @@ export default function JudgePanel() {
   );
 }
 
-function StatCard({ icon, label, value }) {
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className="text-sm font-medium text-gray-600">{label}</span>
-        </div>
-        <p className="text-2xl font-bold">{value}</p>
-      </CardContent>
-    </Card>
-  );
-}

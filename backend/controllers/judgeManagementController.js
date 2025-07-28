@@ -1926,7 +1926,9 @@ exports.getMyAssignedSubmissions = async (req, res) => {
         const submissionsToFetch = await Submission.find({
           _id: { $in: validSubmissionIds }
         }).populate('teamId', 'name members')
-          .populate('hackathonId', 'name');
+          .populate('hackathonId', 'name')
+          .populate('submittedBy', 'name email profileImage role')
+          .populate('projectId', 'title description logo images links attachments category status');
           
         console.log('🔍 Backend - Found submissions:', submissionsToFetch.length);
         // Add evaluation status for each submission

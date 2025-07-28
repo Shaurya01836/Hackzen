@@ -344,10 +344,6 @@ export function ExploreHackathons() {
     );
   }
 
-  // --- MAIN COMPONENT RENDER ---
-  // const categories = ["All Categories", "Artificial Intelligence", "Blockchain", "Cybersecurity", "FinTech", "Gaming", "Healthcare", "Sustainability", "Mobile Development", "Web Development", "IoT", "Data Science", "DevOps"];
-  // const difficulties = ["All Levels", "Beginner", "Intermediate", "Advanced"];
-  // const locations = ["All Locations", "Virtual", "Online", "Hybrid", "New York", "Delhi"];
 
   return (
     <div className="flex-1 space-y-6 p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 relative">
@@ -361,9 +357,7 @@ export function ExploreHackathons() {
           onClick={() => setShowFilterSidebar(false)}
         />
       )}
-      <div className="flex items-center justify-between">
-         {/* ... Header content ... */}
-      </div>
+    
 
       {/* ✅ MODIFIED: Carousel container now pauses on hover */}
       {bannerHackathons.length > 0 && (
