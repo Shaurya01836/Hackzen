@@ -10,52 +10,52 @@ const mongoose = require('mongoose');
 
 // 🎯 Add Problem Statements to Hackathon
 exports.addProblemStatements = async (req, res) => {
-  try {
-    const { hackathonId } = req.params;
-    const { problemStatements } = req.body;
+ try {
+  const { hackathonId } = req.params;
+ const { problemStatements } = req.body;
 
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
+ const hackathon = await Hackathon.findById(hackathonId);
+  if (!hackathon) {
+ return res.status(404).json({ message: 'Hackathon not found' });
+ }
 
-    // Verify organizer permissions
-    if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can add problem statements' });
-    }
+ // Verify organizer permissions
+ if (hackathon.organizer.toString() !== req.user.id) {
+ return res.status(403).json({ message: 'Only the organizer can add problem statements' });
+ }
 
-    // Validate problem statements
-    if (!Array.isArray(problemStatements) || problemStatements.length === 0) {
-      return res.status(400).json({ message: 'At least one problem statement is required' });
-    }
+ // Validate problem statements
+ if (!Array.isArray(problemStatements) || problemStatements.length === 0) {
+ return res.status(400).json({ message: 'At least one problem statement is required' });
+ }
 
-    // Update hackathon with new problem statements
-    const updatedHackathon = await Hackathon.findByIdAndUpdate(
-      hackathonId,
-      {
-        $push: {
-          problemStatements: {
-            $each: problemStatements.map(ps => ({
-              statement: ps.statement,
-              type: ps.type,
-              sponsorCompany: ps.sponsorCompany || null,
-              isSponsored: ps.type === 'sponsored'
-            }))
-          }
-        }
-      },
-      { new: true }
-    );
+ // Update hackathon with new problem statements
+ const updatedHackathon = await Hackathon.findByIdAndUpdate(
+ hackathonId,
+ {
+ $push: {
+ problemStatements: {
+ $each: problemStatements.map(ps => ({
+ statement: ps.statement,
+ type: ps.type,
+ sponsorCompany: ps.sponsorCompany || null,
+ isSponsored: ps.type === 'sponsored'
+ }))
+ }
+ }
+ },
+ { new: true }
+ );
 
-    res.status(200).json({
-      message: 'Problem statements added successfully',
-      hackathon: updatedHackathon
-    });
+ res.status(200).json({
+ message: 'Problem statements added successfully',
+ hackathon: updatedHackathon
+ });
 
-  } catch (error) {
-    console.error('Error adding problem statements:', error);
-    res.status(500).json({ message: 'Failed to add problem statements' });
-  }
+ } catch (error) {
+ console.error('Error adding problem statements:', error);
+ res.status(500).json({ message: 'Failed to add problem statements' });
+ }
 };
 
 // 🎯 Assign Judges to Problem Statements
@@ -3876,6 +3876,126 @@ exports.getShortlistedSubmissions = async (req, res) => {
   }
 };
 
+// 🎯 Get Shortlisted Submissions (Public - for participants)
+exports.getShortlistedSubmissionsPublic = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 0 } = req.params;
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get shortlisted submissions - look for any shortlisted submissions regardless of roundIndex
+    const shortlistedSubmissions = await Submission.find({
+      hackathonId: hackathonId,
+      status: 'shortlisted'
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+    
+    // Get scores for shortlisted submissions
+    const Score = require('../model/ScoreModel');
+    const scores = await Score.find({ 
+      submission: { $in: shortlistedSubmissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submission.toString()]) {
+        submissionScores[score.submission.toString()] = [];
+      }
+      submissionScores[score.submission.toString()].push(score);
+    });
+
+
+
+    // Format shortlisted submissions with scores
+    const formattedSubmissions = shortlistedSubmissions.map(submission => {
+      const submissionScoresList = submissionScores[submission._id.toString()] || [];
+      
+      let averageScore = 0;
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+
+      
+      submissionScoresList.forEach((score, index) => {
+
+        
+        // Convert Map to object if needed
+        let scoresObject = {};
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            if (value && typeof value === 'object' && value.score !== undefined) {
+              scoresObject[key] = value.score;
+            }
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          console.log('🔍 Scores is an object:', score.scores);
+          // Handle both direct score values and nested score objects
+          Object.entries(score.scores).forEach(([key, value]) => {
+            if (value && typeof value === 'object' && value.score !== undefined) {
+              scoresObject[key] = value.score;
+
+            } else if (typeof value === 'number') {
+              scoresObject[key] = value;
+
+            }
+          });
+        }
+        
+        const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+        if (criteriaScores.length > 0) {
+          const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+          totalScore += submissionScore;
+          scoreCount++;
+        }
+      });
+      
+      averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+      return {
+        _id: submission._id,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptFile: submission.pptFile,
+        submittedAt: submission.submittedAt,
+        averageScore: Math.round(averageScore * 10) / 10,
+        scoreCount,
+        totalScore: Math.round(totalScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by average score (descending)
+    formattedSubmissions.sort((a, b) => b.averageScore - a.averageScore);
+
+    res.status(200).json({
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        roundIndex: parseInt(roundIndex)
+      },
+      shortlistedSubmissions: formattedSubmissions,
+      summary: {
+        totalShortlisted: formattedSubmissions.length,
+        averageScore: formattedSubmissions.length > 0 
+          ? Math.round(formattedSubmissions.reduce((sum, s) => sum + s.averageScore, 0) / formattedSubmissions.length * 10) / 10
+          : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching shortlisted submissions:', error);
+    res.status(500).json({ message: 'Failed to fetch shortlisted submissions' });
+}
+};
+
+
 // Helper function to send submission assignment notification email
 async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, submissions, roundName) {
   console.log('🔍 DEBUG: Starting sendSubmissionAssignmentEmail', {
@@ -5302,6 +5422,140 @@ exports.getWinners = async (req, res) => {
   }
 };
 
+// Get winners for a hackathon (public endpoint)
+exports.getWinners = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    
+    // Get hackathon details
+    const hackathon = await Hackathon.findById(hackathonId).lean();
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Get winning submissions
+    const Submission = require('../model/SubmissionModel');
+    const winningSubmissions = await Submission.find({
+      hackathonId: hackathonId,
+      status: 'winner'
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+
+    // Get scores for winning submissions
+    const Score = require('../model/ScoreModel');
+    const scores = await Score.find({ 
+      submission: { $in: winningSubmissions.map(s => s._id) } 
+    }).populate('judge', 'name email').lean();
+
+    // Create a map of submission scores
+    const submissionScores = {};
+    scores.forEach(score => {
+      if (!submissionScores[score.submission.toString()]) {
+        submissionScores[score.submission.toString()] = [];
+      }
+      submissionScores[score.submission.toString()].push(score);
+    });
+
+
+
+    // Format winning submissions with scores and positions
+    const formattedWinners = winningSubmissions.map((submission, index) => {
+      const submissionScoresList = submissionScores[submission._id.toString()] || [];
+      
+      let averageScore = 0;
+      let totalScore = 0;
+      let scoreCount = 0;
+      
+      submissionScoresList.forEach((score, index) => {
+        // Convert Map to object if needed
+        let scoresObject = {};
+        if (score.scores && score.scores instanceof Map) {
+          score.scores.forEach((value, key) => {
+            if (value && typeof value === 'object' && value.score !== undefined) {
+              scoresObject[key] = value.score;
+            }
+          });
+        } else if (score.scores && typeof score.scores === 'object') {
+          // Handle both direct score values and nested score objects
+          Object.entries(score.scores).forEach(([key, value]) => {
+            if (value && typeof value === 'object' && value.score !== undefined) {
+              scoresObject[key] = value.score;
+            } else if (typeof value === 'number') {
+              scoresObject[key] = value;
+            }
+          });
+        }
+        
+        const criteriaScores = Object.values(scoresObject).filter(s => typeof s === 'number');
+        if (criteriaScores.length > 0) {
+          const submissionScore = criteriaScores.reduce((sum, s) => sum + s, 0) / criteriaScores.length;
+          totalScore += submissionScore;
+          scoreCount++;
+        }
+      });
+      
+      averageScore = scoreCount > 0 ? totalScore / scoreCount : 0;
+
+      // Determine position based on average score
+      const position = index + 1;
+      let positionText = '';
+      let positionColor = '';
+      
+      if (position === 1) {
+        positionText = '🥇 1st Place';
+        positionColor = 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      } else if (position === 2) {
+        positionText = '🥈 2nd Place';
+        positionColor = 'bg-gray-100 text-gray-800 border-gray-300';
+      } else if (position === 3) {
+        positionText = '🥉 3rd Place';
+        positionColor = 'bg-orange-100 text-orange-800 border-orange-300';
+      } else {
+        positionText = ${position}th Place;
+        positionColor = 'bg-blue-100 text-blue-800 border-blue-300';
+      }
+
+      return {
+        _id: submission._id,
+        position,
+        positionText,
+        positionColor,
+        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        teamName: submission.teamName || submission.teamId?.name || 'No Team',
+        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+        pptFile: submission.pptFile,
+        submittedAt: submission.submittedAt,
+        averageScore: Math.round(averageScore * 10) / 10,
+        scoreCount,
+        totalScore: Math.round(totalScore * 10) / 10,
+        status: submission.status,
+        roundIndex: submission.roundIndex
+      };
+    });
+
+    // Sort by average score (descending)
+    formattedWinners.sort((a, b) => b.averageScore - a.averageScore);
+
+    res.status(200).json({
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title
+      },
+      winners: formattedWinners,
+      summary: {
+        totalWinners: formattedWinners.length,
+        averageScore: formattedWinners.length > 0 
+          ? Math.round(formattedWinners.reduce((sum, s) => sum + s.averageScore, 0) / formattedWinners.length * 10) / 10
+          : 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching winners:', error);
+    res.status(500).json({ message: 'Failed to fetch winners' });
+  }
+};
 
 
 
