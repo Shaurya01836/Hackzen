@@ -685,19 +685,8 @@ export default function HackathonTimeline({
                     // Condition 3: Not Selected for Next Round (only show if explicitly not shortlisted)
                     else if (isNotSelected && isProjectSubmission && round2Eligibility && round2Eligibility.shortlisted === false) {
                       projectSubmissionUI = (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-                              <span className="text-white text-sm">✗</span>
-                            </div>
-                            <h3 className="font-semibold text-red-800">Not Selected for Round 2</h3>
-                          </div>
-                          <p className="text-sm text-red-700 mb-2">
-                            Thank you for participating in Round 1. After careful evaluation, you are not shortlisted for Round 2.
-                          </p>
-                          <p className="text-xs text-red-600">
-                            Keep an eye on future hackathons and continue building amazing projects!
-                          </p>
+                        <div >
+                          
                         </div>
                       );
                     }

@@ -78,9 +78,19 @@ const EmailSenderModal = ({
           smtpConfigured: config.configured,
           testEmail: config.testEmail || ''
         });
+      } else {
+        console.error('Failed to check email configuration:', response.status);
+        setEmailConfig({
+          smtpConfigured: false,
+          testEmail: ''
+        });
       }
     } catch (error) {
       console.error('Error checking email configuration:', error);
+      setEmailConfig({
+        smtpConfigured: false,
+        testEmail: ''
+      });
     }
   };
 
@@ -168,13 +178,21 @@ const EmailSenderModal = ({
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Test email sent successfully! Check ${emailConfig.testEmail} for the test email.`);
+        alert(`✅ Test email sent successfully! Check ${emailConfig.testEmail} for the test email.`);
       } else {
-        throw new Error(data.message || 'Failed to send test email');
+        throw new Error(data.message || data.error || 'Failed to send test email');
       }
     } catch (error) {
       console.error('Error sending test email:', error);
-      alert(`Failed to send test email: ${error.message}`);
+      let errorMessage = error.message;
+      
+      if (error.message.includes('Unexpected token')) {
+        errorMessage = 'Server error: Invalid response format. Please check your backend configuration.';
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Network error: Cannot connect to the server. Please check if the backend is running.';
+      }
+      
+      alert(`❌ Failed to send test email: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -184,13 +202,16 @@ const EmailSenderModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="email-sender-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-blue-600" />
             Send Winner Emails
           </DialogTitle>
         </DialogHeader>
+        <div id="email-sender-description" className="sr-only">
+          Modal for sending winner emails to participants with options for winners and shortlisted participants
+        </div>
 
         <div className="space-y-6">
           {/* Email Configuration Status */}

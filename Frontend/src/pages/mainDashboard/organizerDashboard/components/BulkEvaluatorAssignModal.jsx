@@ -194,6 +194,18 @@ export default function BulkEvaluatorAssignModal({
   const actualSubmissionCount = selectedProblemStatement ? 
     assignmentOverview?.unassignedSubmissions?.length || 0 : selectedCount;
 
+  // Add debugging and ensure we have a valid count
+  console.log('🔍 actualSubmissionCount calculation:', {
+    selectedProblemStatement,
+    assignmentOverview: !!assignmentOverview,
+    unassignedSubmissionsLength: assignmentOverview?.unassignedSubmissions?.length,
+    selectedCount,
+    actualSubmissionCount
+  });
+
+  // Ensure we have a valid count (fallback to selectedCount if actualSubmissionCount is 0 or undefined)
+  const validSubmissionCount = actualSubmissionCount > 0 ? actualSubmissionCount : selectedCount;
+
   // Calculate total assigned, but cap it at the actual submission count when filtering is active
   const totalAssigned = selectedEvaluators.reduce((sum, id) => {
     const count = parseInt(assignCounts[id] || 0);
@@ -435,11 +447,28 @@ export default function BulkEvaluatorAssignModal({
     }
   };
 
+  // Enhanced increment/decrement handlers
+  const handleIncrement = (id) => {
+    console.log('🔍 handleIncrement called for id:', id);
+    const currentCount = parseInt(assignCounts[id] || 0);
+    const newCount = currentCount + 1;
+    console.log('🔍 Increment - currentCount:', currentCount, 'newCount:', newCount);
+    setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+  };
+
+  const handleDecrement = (id) => {
+    console.log('🔍 handleDecrement called for id:', id);
+    const currentCount = parseInt(assignCounts[id] || 0);
+    const newCount = Math.max(0, currentCount - 1);
+    console.log('🔍 Decrement - currentCount:', currentCount, 'newCount:', newCount);
+    setAssignCounts(prev => ({ ...prev, [id]: newCount }));
+  };
+
+  // Simplified count change handler
   const handleCountChange = (id, value) => {
     const numValue = parseInt(value) || 0;
-    const maxValue = actualSubmissionCount;
-    const clampedValue = Math.max(0, Math.min(maxValue, numValue));
-    setAssignCounts(prev => ({ ...prev, [id]: clampedValue }));
+    console.log('🔍 handleCountChange - id:', id, 'value:', value, 'numValue:', numValue);
+    setAssignCounts(prev => ({ ...prev, [id]: numValue }));
   };
 
   const handleAssignEqually = () => {
@@ -585,13 +614,13 @@ export default function BulkEvaluatorAssignModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto" aria-describedby="bulk-assign-description">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold flex items-center gap-2">
             <Users className="w-5 h-5 text-blue-600" />
             Assign Evaluators '{selectedCount} Candidates'
           </DialogTitle>
-          <p className="text-sm text-gray-600 mt-2">
+          <p className="text-sm text-gray-600 mt-2" id="bulk-assign-description">
             Select judges to evaluate the selected submissions. Judges will only see submissions assigned to them.
           </p>
           
@@ -681,40 +710,11 @@ export default function BulkEvaluatorAssignModal({
             Assign Equally <ChevronDown className="w-3 h-3" />
           </button>
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="0"
-              max={actualSubmissionCount}
-              step="1"
-              className="w-16 border border-gray-200 rounded px-2 py-1 text-sm text-center"
-              value={displayTotalAssigned}
-              onChange={(e) => {
-                const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
-                // Distribute the new value equally among selected evaluators
-                if (selectedEvaluators.length > 0) {
-                  const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                  const newCounts = {};
-                  selectedEvaluators.forEach(id => {
-                    newCounts[id] = equalCount;
-                  });
-                  setAssignCounts(newCounts);
-                }
-              }}
-              onKeyDown={(e) => {
-                // Handle arrow keys for increment/decrement
-                if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  const newValue = Math.min(actualSubmissionCount, displayTotalAssigned + 1);
-                  if (selectedEvaluators.length > 0) {
-                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                    const newCounts = {};
-                    selectedEvaluators.forEach(id => {
-                      newCounts[id] = equalCount;
-                    });
-                    setAssignCounts(newCounts);
-                  }
-                } else if (e.key === 'ArrowDown') {
-                  e.preventDefault();
+            <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+              <button
+                type="button"
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-r border-gray-300"
+                onClick={() => {
                   const newValue = Math.max(0, displayTotalAssigned - 1);
                   if (selectedEvaluators.length > 0) {
                     const equalCount = Math.ceil(newValue / selectedEvaluators.length);
@@ -724,21 +724,73 @@ export default function BulkEvaluatorAssignModal({
                     });
                     setAssignCounts(newCounts);
                   }
-                }
-              }}
-              onInput={(e) => {
-                // Handle browser's native increment/decrement arrows
-                const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
-                if (selectedEvaluators.length > 0) {
-                  const equalCount = Math.ceil(newValue / selectedEvaluators.length);
-                  const newCounts = {};
-                  selectedEvaluators.forEach(id => {
-                    newCounts[id] = equalCount;
-                  });
-                  setAssignCounts(newCounts);
-                }
-              }}
-            />
+                }}
+              >
+                <span className="text-xs font-bold">−</span>
+              </button>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                className="w-16 border-0 px-2 py-1 text-sm text-center focus:ring-0 focus:outline-none"
+                value={displayTotalAssigned}
+                onChange={(e) => {
+                  const newValue = parseInt(e.target.value) || 0;
+                  // Distribute the new value equally among selected evaluators
+                  if (selectedEvaluators.length > 0) {
+                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
+                      newCounts[id] = equalCount;
+                    });
+                    setAssignCounts(newCounts);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Handle arrow keys for increment/decrement
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const newValue = displayTotalAssigned + 1;
+                    if (selectedEvaluators.length > 0) {
+                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
+                        newCounts[id] = equalCount;
+                      });
+                      setAssignCounts(newCounts);
+                    }
+                  } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const newValue = Math.max(0, displayTotalAssigned - 1);
+                    if (selectedEvaluators.length > 0) {
+                      const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                      const newCounts = {};
+                      selectedEvaluators.forEach(id => {
+                        newCounts[id] = equalCount;
+                      });
+                      setAssignCounts(newCounts);
+                    }
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-l border-gray-300"
+                onClick={() => {
+                  const newValue = displayTotalAssigned + 1;
+                  if (selectedEvaluators.length > 0) {
+                    const equalCount = Math.ceil(newValue / selectedEvaluators.length);
+                    const newCounts = {};
+                    selectedEvaluators.forEach(id => {
+                      newCounts[id] = equalCount;
+                    });
+                    setAssignCounts(newCounts);
+                  }
+                }}
+              >
+                <span className="text-xs font-bold">+</span>
+              </button>
+            </div>
             {selectedProblemStatement && (
               <span className="text-xs text-gray-500">
                 (filtered: {actualSubmissionCount})
@@ -777,14 +829,12 @@ export default function BulkEvaluatorAssignModal({
                   <UserPlus className="w-3 h-3 text-gray-600" />
                 </button>
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-xs text-blue-600">Assign Equally</span>
-                  <input
-                    type="number"
-                    min="0"
-                    className="w-12 border border-gray-200 rounded px-1 py-1 text-xs text-center"
-                    value={Math.ceil(actualSubmissionCount / selectedEvaluators.length) || 0}
-                    readOnly
-                  />
+                 
+                  <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                    
+                   
+                    
+                  </div>
                 </div>
               </div>
             </div>
@@ -836,13 +886,39 @@ export default function BulkEvaluatorAssignModal({
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-700">Judges per project:</span>
                       <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          min="1"
-                          className="w-20 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center"
-                          value={judgesPerProject}
-                          onChange={(e) => setJudgesPerProject(parseInt(e.target.value) || 1)}
-                        />
+                        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                          <button
+                            type="button"
+                            className="px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
+                            onClick={() => setJudgesPerProject(Math.max(1, judgesPerProject - 1))}
+                            disabled={judgesPerProject <= 1}
+                          >
+                            <span className="text-xs font-bold">−</span>
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            className="w-20 border-0 px-2 py-1 text-sm text-center focus:ring-0 focus:outline-none"
+                            value={judgesPerProject}
+                            onChange={(e) => setJudgesPerProject(parseInt(e.target.value) || 1)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                setJudgesPerProject(prev => prev + 1);
+                              } else if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                setJudgesPerProject(prev => Math.max(1, prev - 1));
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-800 transition-colors"
+                            onClick={() => setJudgesPerProject(judgesPerProject + 1)}
+                          >
+                            <span className="text-xs font-bold">+</span>
+                          </button>
+                        </div>
                         <div className="flex items-center gap-1 ml-2">
                           {[...Array(Math.min(judgesPerProject, 5))].map((_, i) => (
                             <Users key={i} className="w-4 h-4 text-blue-600" />
@@ -912,35 +988,48 @@ export default function BulkEvaluatorAssignModal({
                       >
                         <UserPlus className="w-4 h-4" />
                       </button>
-                      <input
-                        type="number"
-                        min="0"
-                        max={actualSubmissionCount}
-                        step="1"
-                        className="w-16 border border-gray-200 rounded-lg px-2 py-1 text-sm text-center"
-                        value={assignCounts[id] || "0"}
-                        onChange={e => handleCountChange(id, e.target.value)}
-                        onKeyDown={(e) => {
-                          // Handle arrow keys for increment/decrement
-                          if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            const currentCount = parseInt(assignCounts[id] || 0);
-                            const newCount = Math.min(actualSubmissionCount, currentCount + 1);
-                            setAssignCounts(prev => ({ ...prev, [id]: newCount }));
-                          } else if (e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            const currentCount = parseInt(assignCounts[id] || 0);
-                            const newCount = Math.max(0, currentCount - 1);
-                            setAssignCounts(prev => ({ ...prev, [id]: newCount }));
-                          }
-                        }}
-                        onInput={(e) => {
-                          // Handle browser's native increment/decrement arrows
-                          const newValue = Math.max(0, Math.min(actualSubmissionCount, parseInt(e.target.value) || 0));
-                          setAssignCounts(prev => ({ ...prev, [id]: newValue }));
-                        }}
-                        placeholder="0"
-                      />
+
+                      <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                          type="button"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-r border-gray-300"
+                          onClick={() => {
+                            console.log('🔍 Decrement button clicked for id:', id);
+                            handleDecrement(id);
+                          }}
+                        >
+                          <span className="text-xs font-bold">−</span>
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          className="w-16 border-0 px-2 py-1 text-sm text-center focus:ring-0 focus:outline-none"
+                          value={assignCounts[id] || "0"}
+                          onChange={e => handleCountChange(id, e.target.value)}
+                          onKeyDown={(e) => {
+                            // Handle arrow keys for increment/decrement
+                            if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              handleIncrement(id);
+                            } else if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              handleDecrement(id);
+                            }
+                          }}
+                          placeholder="0"
+                        />
+                        <button
+                          type="button"
+                          className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-l border-gray-300"
+                          onClick={() => {
+                            console.log('🔍 Increment button clicked for id:', id);
+                            handleIncrement(id);
+                          }}
+                        >
+                          <span className="text-xs font-bold">+</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
