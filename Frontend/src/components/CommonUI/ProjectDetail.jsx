@@ -762,7 +762,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div className="lg:col-span-3">
               <TabsContent value="overview" className="space-y-8">
-                <Card>
+                <Card className="shadow-none hover:shadow-none">
                   {project.videoLink ? (
                     (() => {
                       // Check if the link is a direct video file (mp4, webm, ogg)

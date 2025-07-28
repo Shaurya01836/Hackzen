@@ -215,9 +215,6 @@ export default function MyHackathons() {
 
     setProjects((prev) => [newProject, ...(Array.isArray(prev) ? prev : [])]);
 
-    // Show success message (you might want to add a toast notification here)
-    alert("Project saved successfully!");
-
     // Optionally go back to dashboard
     setCurrentView("dashboard");
   };

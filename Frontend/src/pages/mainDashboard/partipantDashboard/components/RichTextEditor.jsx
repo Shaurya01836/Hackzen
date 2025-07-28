@@ -315,7 +315,7 @@ export default function RichTextEditor({
   };
 
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm">
+    <div className="">
       {/* Main Toolbar */}
       <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b">
         {TOOLBAR_BUTTONS.map((btn) => (

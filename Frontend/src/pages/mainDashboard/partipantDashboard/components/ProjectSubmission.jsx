@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import {
   ArrowLeft,
   Save,
@@ -13,6 +14,9 @@ import {
   Users,
   Calendar,
   Tag,
+  Loader2,
+  AlertTriangle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "../../../../components/CommonUI/button";
 import { Input } from "../../../../components/CommonUI/input";
@@ -93,10 +97,132 @@ export default function ProjectSubmission({
     status: initialData.status || "draft",
   });
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Add this delete handler function
+  const handleDelete = async () => {
+    setIsDeleting(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(
+        `http://localhost:3000/api/projects/${projectId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.message || "Failed to delete");
+
+      toast.success("🗑️ Project deleted successfully", {
+        duration: 4000,
+        icon: "✅",
+      });
+
+      setShowDeleteModal(false); // Close modal
+      onBack?.(); // Redirect user after deletion
+    } catch (err) {
+      toast.error("❌ Delete failed: " + err.message, {
+        duration: 5000,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Delete Confirmation Modal Component
+  const DeleteConfirmationModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    projectTitle,
+    isDeleting,
+  }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete Project
+              </h3>
+              <p className="text-sm text-gray-500">
+                This action cannot be undone
+              </p>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="mb-6">
+            <p className="text-gray-700 mb-2">
+              Are you sure you want to delete this project?
+            </p>
+            {projectTitle && (
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <p className="text-sm text-gray-600">Project:</p>
+                <p className="font-semibold text-gray-900 truncate">
+                  {projectTitle}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-red-600 mt-3">
+              This will permanently delete all project data, including images,
+              videos, and associated information.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isDeleting}
+              className="px-6"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={onConfirm}
+              disabled={isDeleting}
+              className="px-6 flex items-center gap-2"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4" />
+                  Delete Project
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const [logoPreview, setLogoPreview] = useState(
     initialData?.logo?.url || null
   );
   const [currentSkill, setCurrentSkill] = useState("");
+  const [isSaving, setIsSaving] = useState(false); // Add loading state
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -106,7 +232,7 @@ export default function ProjectSubmission({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > FIELD_LIMITS.logoFile) {
-        alert("Logo file size must be less than 2MB");
+        toast.error("Logo file size must be less than 2MB");
         return;
       }
       setFormData((prev) => ({ ...prev, logo: file }));
@@ -187,15 +313,24 @@ export default function ProjectSubmission({
   };
 
   const handleSave = async () => {
+    if (isSaving) return; // Prevent multiple clicks
+
+    setIsSaving(true); // Start loading
+
     try {
       const token = localStorage.getItem("token");
-      if (!token) return alert("You must be logged in.");
+      if (!token) {
+        toast.error("You must be logged in.");
+        return;
+      }
 
       let logoData = initialData?.logo || null; // fallback to original if no new upload
       let videoLink = "";
 
       // Upload Logo if it's a File
       if (formData.logo instanceof File) {
+        toast.loading("Uploading logo...", { id: "logo-upload" }); // Show loading toast
+
         const formLogo = new FormData();
         formLogo.append("file", formData.logo);
         formLogo.append("upload_preset", "hackzen_uploads");
@@ -209,11 +344,16 @@ export default function ProjectSubmission({
           }
         );
         const data = await res.json();
+
+        toast.dismiss("logo-upload"); // Dismiss loading toast
+
         if (!data.secure_url) throw new Error("Logo upload failed");
         logoData = {
           url: data.secure_url,
           publicId: data.public_id,
         };
+
+        toast.success("Logo uploaded successfully!"); // Show success toast
       }
 
       // Upload Demo Video if "upload" mode is selected
@@ -221,6 +361,8 @@ export default function ProjectSubmission({
         formData.demoVideoType === "upload" &&
         formData.demoVideoFile instanceof File
       ) {
+        toast.loading("Uploading video...", { id: "video-upload" }); // Show loading toast
+
         const formVideo = new FormData();
         formVideo.append("file", formData.demoVideoFile);
         formVideo.append("upload_preset", "hackzen_uploads");
@@ -235,13 +377,21 @@ export default function ProjectSubmission({
           }
         );
         const data = await res.json();
+
+        toast.dismiss("video-upload"); // Dismiss loading toast
+
         if (!data.secure_url) throw new Error("Video upload failed");
         videoLink = data.secure_url;
+
+        toast.success("Video uploaded successfully!"); // Show success toast
       }
 
       if (formData.demoVideoType === "link") {
         videoLink = formData.demoVideoLink;
       }
+
+      // Show saving toast
+      toast.loading("Saving project...", { id: "project-save" });
 
       // Prepare backend payload
       const payload = {
@@ -259,6 +409,7 @@ export default function ProjectSubmission({
         customCategory: formData.customCategory,
         status: "draft",
       };
+
       const url =
         mode === "edit"
           ? `http://localhost:3000/api/projects/${projectId}`
@@ -276,11 +427,20 @@ export default function ProjectSubmission({
       });
 
       const created = await response.json();
+
+      toast.dismiss("project-save"); // Dismiss saving toast
+
       if (!response.ok)
         throw new Error(created.message || "Failed to save project");
 
-      alert("✅ Project saved successfully!");
+      // Show success toast
+      toast.success("✅ Project saved successfully!", {
+        duration: 4000,
+        icon: "🎉",
+      });
+
       onSave?.(created);
+
       // Redirect back to returnUrl if present
       const params = new URLSearchParams(location.search);
       const returnUrl = params.get("returnUrl");
@@ -292,7 +452,12 @@ export default function ProjectSubmission({
         window.location.href = "/dashboard/my-hackathons";
       }
     } catch (error) {
-      alert("❌ Error: " + error.message);
+      toast.dismiss(); // Dismiss any loading toasts
+      toast.error("❌ Error: " + error.message, {
+        duration: 5000,
+      });
+    } finally {
+      setIsSaving(false); // Stop loading
     }
   };
 
@@ -301,7 +466,7 @@ export default function ProjectSubmission({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-10">
-          <Card className="border-gray-200 shadow-lg rounded-2xl">
+        <Card className="shadow-none hover:shadow-none">
             <CardContent className="pt-8 pb-6">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4 md:gap-0">
                 <Button
@@ -327,7 +492,10 @@ export default function ProjectSubmission({
                     htmlFor="title"
                     className="text-sm font-medium text-gray-700"
                   >
-                    Project Title * <span className="text-xs text-gray-400">({formData.title.length}/{FIELD_LIMITS.title})</span>
+                    Project Title *{" "}
+                    <span className="text-xs text-gray-400">
+                      ({formData.title.length}/{FIELD_LIMITS.title})
+                    </span>
                   </Label>
                   <Input
                     id="title"
@@ -341,14 +509,20 @@ export default function ProjectSubmission({
                     className="mt-1"
                     maxLength={FIELD_LIMITS.title}
                   />
-                  <p className="text-xs text-gray-400 mt-1">A concise, descriptive project name.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    A concise, descriptive project name.
+                  </p>
                 </div>
                 <div>
                   <Label
                     htmlFor="oneLineIntro"
                     className="text-sm font-medium text-gray-700"
                   >
-                    One-Line Intro * <span className="text-xs text-gray-400">({formData.oneLineIntro.length}/{FIELD_LIMITS.oneLineIntro})</span>
+                    One-Line Intro *{" "}
+                    <span className="text-xs text-gray-400">
+                      ({formData.oneLineIntro.length}/
+                      {FIELD_LIMITS.oneLineIntro})
+                    </span>
                   </Label>
                   <Input
                     id="oneLineIntro"
@@ -362,24 +536,30 @@ export default function ProjectSubmission({
                     className="mt-1"
                     maxLength={FIELD_LIMITS.oneLineIntro}
                   />
-                  <p className="text-xs text-gray-400 mt-1">Summarize your project in a single sentence.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Summarize your project in a single sentence.
+                  </p>
                 </div>
                 <div>
                   <Label
                     htmlFor="description"
                     className="text-sm font-medium text-gray-700"
                   >
-                    Project Description (Vision) *
+                    Project Description *
                   </Label>
                   <div className="mt-1">
                     <RichTextEditor
                       value={formData.description}
-                      onChange={(value) => handleInputChange("description", value)}
+                      onChange={(value) =>
+                        handleInputChange("description", value)
+                      }
                       placeholder="Describe your project vision and what problem it solves..."
                       maxLength={FIELD_LIMITS.description}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Explain the purpose, goals, and impact of your project.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Explain the purpose, goals, and impact of your project.
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -391,7 +571,7 @@ export default function ProjectSubmission({
           {/* Left Column */}
           <div className="space-y-8">
             {/* Skills */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+            <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Tag className="w-5 h-5" />
@@ -437,13 +617,15 @@ export default function ProjectSubmission({
                       ))}
                     </div>
                   )}
-                  <p className="text-xs text-gray-400">Press Enter or click + to add skills</p>
+                  <p className="text-xs text-gray-400">
+                    Press Enter or click + to add skills
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Project Logo */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+            <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Project Logo
@@ -498,7 +680,7 @@ export default function ProjectSubmission({
             </Card>
 
             {/* Category */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+            <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Category *
@@ -543,7 +725,7 @@ export default function ProjectSubmission({
           {/* Right Column */}
           <div className="space-y-8">
             {/* Links */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+            <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Project Links
@@ -572,7 +754,9 @@ export default function ProjectSubmission({
                       maxLength={FIELD_LIMITS.githubLink}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Link to your public code repository.</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Link to your public code repository.
+                  </p>
                 </div>
                 <div>
                   <Label
@@ -596,13 +780,15 @@ export default function ProjectSubmission({
                       maxLength={FIELD_LIMITS.websiteLink}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Project website or live demo (if available).</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Project website or live demo (if available).
+                  </p>
                 </div>
               </CardContent>
             </Card>
 
             {/* Demo Video */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+            <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Demo Video
@@ -637,7 +823,9 @@ export default function ProjectSubmission({
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file && file.size > FIELD_LIMITS.videoFile) {
-                            alert("Video file size must be less than 100MB");
+                            toast.error(
+                              "Video file size must be less than 100MB"
+                            );
                             return;
                           }
                           handleInputChange("demoVideoFile", file);
@@ -669,7 +857,7 @@ export default function ProjectSubmission({
             </Card>
 
             {/* Social Links */}
-            <Card className="border-gray-200 shadow-sm rounded-xl">
+           <Card className="shadow-none hover:shadow-none">
               <CardHeader>
                 <CardTitle className="text-lg font-semibold">
                   Social Links
@@ -713,7 +901,7 @@ export default function ProjectSubmission({
           </div>
         </div>
 
-        {/* Bottom Save Button */}
+        {/* Bottom Save Button - Updated with loading state */}
         <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 border-t border-gray-200 pt-6">
           <div className="flex items-center gap-3">
             {getStatusBadge()}
@@ -725,49 +913,42 @@ export default function ProjectSubmission({
             {mode === "edit" && (
               <Button
                 variant="destructive"
-                onClick={async () => {
-                  const confirmed = confirm(
-                    "Are you sure you want to delete this project?"
-                  );
-                  if (!confirmed) return;
-
-                  try {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch(
-                      `http://localhost:3000/api/projects/${projectId}`,
-                      {
-                        method: "DELETE",
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
-                      }
-                    );
-
-                    const result = await res.json();
-                    if (!res.ok)
-                      throw new Error(result.message || "Failed to delete");
-
-                    alert("Project deleted successfully");
-                    onBack?.(); // Redirect user after deletion
-                  } catch (err) {
-                    alert("Delete failed: " + err.message);
-                  }
-                }}
+                onClick={() => setShowDeleteModal(true)}
+                className="flex items-center gap-2"
+                disabled={isDeleting}
               >
+                <Trash2 className="w-4 h-4" />
                 Delete Project
               </Button>
             )}
             <Button
               onClick={handleSave}
+              disabled={isSaving} // Disable button when saving
               size="lg"
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg shadow-lg font-bold text-base transition-all duration-200"
+              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg shadow-lg font-bold text-base transition-all duration-200"
             >
-              <Save className="w-5 h-5 mr-2" />
-              Save Project
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Save Project
+                </>
+              )}
             </Button>
           </div>
         </div>
       </div>
+      <DeleteConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDelete}
+        projectTitle={formData.title}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
