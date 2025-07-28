@@ -5512,7 +5512,7 @@ exports.getWinners = async (req, res) => {
         positionText = '🥉 3rd Place';
         positionColor = 'bg-orange-100 text-orange-800 border-orange-300';
       } else {
-        positionText = ${position}th Place;
+        positionText = `${position}th Place`;
         positionColor = 'bg-blue-100 text-blue-800 border-blue-300';
       }
 
