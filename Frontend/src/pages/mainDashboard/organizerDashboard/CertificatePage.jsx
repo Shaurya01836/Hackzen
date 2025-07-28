@@ -22,18 +22,18 @@ export default function CertificatesPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
- useEffect(() => {
-  const token = localStorage.getItem("token"); // or from your Auth context
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-  fetch("http://localhost:3000/api/certificate-pages", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => setTemplates(data))
-    .catch((err) => console.error("Failed to load templates:", err));
-}, []);
+    fetch("http://localhost:3000/api/certificate-pages", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setTemplates(data))
+      .catch((err) => console.error("Failed to load templates:", err));
+  }, []);
 
   const handleEdit = (template) => {
     setEditTemplate(template);
@@ -54,7 +54,7 @@ export default function CertificatesPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTemplates((prev) => prev.filter((t) => t._id !== id));
-    } catch  {
+    } catch {
       alert("Failed to delete certificate.");
     }
   };
@@ -67,6 +67,7 @@ export default function CertificatesPage() {
           setEditTemplate(null);
         }}
         template={editTemplate}
+        onDelete={handleDelete} // Pass delete function to editor
       />
     );
   }
@@ -93,68 +94,7 @@ export default function CertificatesPage() {
 
       {/* Certificate Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {templates.map((template) => (
-          <Card
-            key={template._id}
-            className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer h-64"
-          >
-            <CardContent className="p-0 h-full relative">
-              {/* Certificate Preview - Full Card Background */}
-              <div className="absolute inset-0 h-full w-full">
-                <img
-                  src={template.preview || "/placeholder.svg"}
-                  alt={template.title}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300" />
-              </div>
-
-              <Badge
-                variant="secondary"
-                className="absolute top-3 right-3 z-10"
-              >
-                Template
-              </Badge>
-
-              <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-10">
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-white text-lg drop-shadow-lg">
-                      {template.title}
-                    </h3>
-                    <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
-                      {template.description}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      className="bg-white/90 text-indigo-700 hover:bg-indigo-100"
-                      size="sm"
-                      onClick={() => handlePreview(template)}
-                    >
-                      <Eye className="h-4 w-4 mr-1" /> Preview
-                    </Button>
-                    <Button
-                      className="bg-white/90 text-green-700 hover:bg-green-100"
-                      size="sm"
-                      onClick={() => handleEdit(template)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" /> Edit
-                    </Button>
-                    <Button
-                      className="bg-white/90 text-red-700 hover:bg-red-100"
-                      size="sm"
-                      onClick={() => handleDelete(template._id)}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
+        
         {/* Upload New Template Card */}
         <Card className="group relative overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50/50 transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/50 hover:shadow-xl hover:scale-[1.02] cursor-pointer h-64"
            onClick={() => setShowEditor(true)}>
@@ -182,6 +122,40 @@ export default function CertificatesPage() {
             </div>
           </CardContent>
         </Card>
+        
+        {templates.map((template) => (
+          <Card
+            key={template._id}
+            className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer h-64"
+            onClick={() => handleEdit(template)} // Make entire card clickable for edit
+          >
+            <CardContent className="p-0 h-full relative">
+              {/* Certificate Preview - Full Card Background */}
+              <div className="absolute inset-0 h-full w-full">
+                <img
+                  src={template.preview || "/placeholder.svg"}
+                  alt={template.title}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300" />
+              </div>
+
+              <div className="absolute inset-0 flex flex-col justify-end p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 z-10">
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-white text-lg drop-shadow-lg">
+                      {template.title}
+                    </h3>
+                    <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
+                      {template.description}
+                    </p>
+                  </div>
+                
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Preview Modal */}

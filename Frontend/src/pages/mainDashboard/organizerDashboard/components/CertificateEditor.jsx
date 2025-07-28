@@ -282,7 +282,7 @@ const handleMouseMove = useCallback(
   )
 }
 
-export default function CertificateEditor({ onBack, template }) {
+export default function CertificateEditor({ onBack, template, onDelete }) {
   const [fields, setFields] = useState([])
   const [selectedImage, setSelectedImage] = useState(null)
   const [selectedField, setSelectedField] = useState(null)
@@ -293,6 +293,13 @@ export default function CertificateEditor({ onBack, template }) {
   const [newFieldName, setNewFieldName] = useState("")
   const imgRef = useRef(null)
   const canvasRef = useRef(null)
+
+   const handleDelete = async () => {
+    if (template && template._id) {
+      await onDelete(template._id);
+      onBack(); // Go back to main page after deletion
+    }
+  };
 
   // Initialize state from template if editing
   useEffect(() => {
@@ -506,7 +513,7 @@ export default function CertificateEditor({ onBack, template }) {
 
    return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-indigo-50 p-4">
-      {/* Enhanced Header */}
+      {/*Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {onBack && (
@@ -536,7 +543,16 @@ export default function CertificateEditor({ onBack, template }) {
             <Eye className="h-5 w-5" />
             {isPreview ? "Edit" : "Preview"}
           </button>
-
+          {template && (
+              <button
+                variant="destructive"
+                onClick={handleDelete}
+              className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-500 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Template
+              </button>
+            )}
           <button
             onClick={handleSave}
             disabled={isSaving || !selectedImage || !certificateTitle.trim()}
