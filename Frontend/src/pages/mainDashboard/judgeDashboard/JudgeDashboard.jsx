@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../../components/Co
 import { Button } from "../../../components/CommonUI/button";
 import { Eye, CheckCircle, Clock, XCircle, Users, Award, FileText, RefreshCw } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/DashboardUI/dialog";
-import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../components/CommonUI/ProjectDetail";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { toast } from "../../../hooks/use-toast";

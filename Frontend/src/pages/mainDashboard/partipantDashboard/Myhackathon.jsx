@@ -33,7 +33,7 @@ import { Skeleton } from "../../../components/DashboardUI/skeleton";
 
 // Import the ProjectSubmission component
 import ProjectSubmission from "./components/ProjectSubmission";
-import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../components/CommonUI/ProjectDetail";
 import { HackathonCard } from "../../../components/DashboardUI/HackathonCard";
 import ParticipantSubmissionForm from "./components/ParticipantSubmitForm";
 import { HackathonDetails } from "./components/HackathonDetails";

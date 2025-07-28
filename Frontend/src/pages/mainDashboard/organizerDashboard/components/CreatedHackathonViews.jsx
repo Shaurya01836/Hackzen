@@ -1,6 +1,6 @@
 import React from "react";
 import { ProjectCard } from '../../../../components/CommonUI/ProjectCard';
-import { ProjectDetail } from '../../../../components/CommonUI/ProjectDetail';
+import ProjectDetail from '../../../../components/CommonUI/ProjectDetail';
 import { Button } from "../../../../components/CommonUI/button";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../../components/CommonUI/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/CommonUI/select";

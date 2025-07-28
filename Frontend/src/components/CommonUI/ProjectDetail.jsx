@@ -1252,3 +1252,5 @@ if (project.type && project.type.toLowerCase() === "ppt") {
     </div>
   );
 }
+
+export default ProjectDetail;

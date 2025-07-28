@@ -11,7 +11,7 @@ import {
   TabsTrigger,
 } from "../../../components/CommonUI/tabs";
 import { ProjectCard } from "../../../components/CommonUI/ProjectCard";
-import { ProjectDetail } from "../../../components/CommonUI/ProjectDetail";
+import ProjectDetail from "../../../components/CommonUI/ProjectDetail";
 import {
   Select,
   SelectTrigger,
