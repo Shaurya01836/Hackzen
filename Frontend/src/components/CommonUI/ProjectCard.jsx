@@ -74,7 +74,7 @@ export function ProjectCard({ project, onClick, user, judgeScores = [] }) {
         }
       } catch {}
       // Call onClick with the same parameters that were passed to the component
-      onClick();
+      onClick(project);
     }
   };
 

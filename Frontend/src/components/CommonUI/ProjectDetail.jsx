@@ -790,6 +790,10 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                       const isDirectVideo =
                         typeof project.videoLink === 'string' &&
                         /\.(mp4|webm|ogg)(\?.*)?$/i.test(project.videoLink);
+                      // Check if the link is a YouTube URL
+                      const isYouTube =
+                        typeof project.videoLink === 'string' &&
+                        /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//.test(project.videoLink);
                       if (isDirectVideo) {
                         return (
                           <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
@@ -800,6 +804,46 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                             />
                           </div>
                         );
+                      } else if (isYouTube) {
+                        // Extract YouTube video ID
+                        let videoId = null;
+                        const ytMatch = project.videoLink.match(
+                          /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/
+                        );
+                        if (ytMatch && ytMatch[1]) {
+                          videoId = ytMatch[1];
+                        }
+                        if (videoId) {
+                          return (
+                            <div className="aspect-video w-full rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${videoId}`}
+                                title="YouTube video player"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+                            </div>
+                          );
+                        } else {
+                          // fallback to link if ID extraction fails
+                          return (
+                            <div className="py-6 px-4 flex flex-col items-start">
+                              <h2 className="text-xl font-bold mb-2 text-gray-900 flex items-center gap-2">
+                                <Play className="w-5 h-5" /> Demo Video
+                              </h2>
+                              <a
+                                href={project.videoLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline text-base font-medium break-all"
+                              >
+                                {project.videoLink}
+                              </a>
+                            </div>
+                          );
+                        }
                       } else {
                         return (
                           <div className="py-6 px-4 flex flex-col items-start">
