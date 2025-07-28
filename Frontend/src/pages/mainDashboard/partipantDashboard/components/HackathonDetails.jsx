@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import axios from "axios";
 import { useToast } from "../../../../hooks/use-toast";
 import { useAuth } from "../../../../context/AuthContext";
@@ -16,6 +16,8 @@ import { HackathonRegistration } from "./RegistrationHackathon";
 import HorizontalTabNav from "./HackathonComponent/Hackathon/HorizontalTabNav";
 import HackathonProjectsGallery from "./HackathonComponent/Hackathon/HackathonProjectsGallery";
 import TeamManagementSection from "./HackathonComponent/Hackathon/TeamManagementSection";
+import ShortlistedParticipants from "./HackathonComponent/Hackathon/ShortlistedParticipants";
+import WinnersDisplay from "./HackathonComponent/Hackathon/WinnersDisplay";
 import BaseModal from "./HackathonComponent/Hackathon/TeamModals/BaseModal";
 import { fetchHackathonParticipants } from "../../../../lib/api";
 import {
@@ -53,14 +55,28 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
 
   const [activeTab, setActiveTab] = useState("overview");
 
-  const sections = [
-    { id: "overview", label: "Overview & Requirements" },
-    { id: "timeline", label: "Timeline" },
-    { id: "problems", label: "Problem Statements" },
-    { id: "team", label: "Team Management" },
-    { id: "community", label: "Community" },
-    { id: "projects", label: "Project Gallery" },
-  ];
+  // Define basic sections array first (before useEffects that use it)
+  const [hasShortlisted, setHasShortlisted] = useState(false);
+  const [shortlistedCount, setShortlistedCount] = useState(0);
+  const [shortlistedRoundIndex, setShortlistedRoundIndex] = useState(0);
+  const [hasWinners, setHasWinners] = useState(false);
+  const [winnersCount, setWinnersCount] = useState(0);
+
+  const sections = useMemo(() => {
+    console.log('🔍 Sections useMemo - hasShortlisted:', hasShortlisted, 'shortlistedCount:', shortlistedCount, 'hasWinners:', hasWinners, 'winnersCount:', winnersCount);
+    const sectionsArray = [
+      { id: "overview", label: "Overview & Requirements" },
+      { id: "timeline", label: "Timeline" },
+      { id: "problems", label: "Problem Statements" },
+      { id: "team", label: "Team Management" },
+      { id: "community", label: "Community" },
+      { id: "projects", label: "Project Gallery" },
+      ...(hasShortlisted ? [{ id: "shortlisted", label: `Shortlisted Participants (${shortlistedCount})` }] : []),
+      ...(hasWinners ? [{ id: "winners", label: `🏆 Winners (${winnersCount})` }] : []),
+    ];
+    console.log('🔍 Final sections array:', sectionsArray);
+    return sectionsArray;
+  }, [hasShortlisted, shortlistedCount, hasWinners, winnersCount]);
 
   const sectionRefs = {
     overview: useRef(null),
@@ -69,6 +85,8 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
     team: useRef(null),
     community: useRef(null),
     projects: useRef(null),
+    shortlisted: useRef(null),
+    winners: useRef(null),
   };
 
   const handleSectionClick = (id) => {
@@ -215,6 +233,8 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
   useEffect(() => {
     if (!hackathon || !hackathon._id) return;
     refreshRegistrationStatus();
+    checkShortlistingStatus();
+    checkWinnersStatus();
   }, [hackathon && hackathon._id]);
 
   const fetchRegistrationData = async () => {
@@ -263,6 +283,95 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
       setParticipants([]);
     } finally {
       setParticipantsLoading(false);
+    }
+  };
+
+
+
+  const checkShortlistingStatus = async () => {
+    if (!hackathon || !hackathon._id) return;
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Checking shortlisting status for hackathon:', hackathon._id);
+      
+      // Check for shortlisted participants - try Round 1 first, then Round 0
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id}/rounds/1/shortlisted-public`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('🔍 Round 1 response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Round 1 shortlisted data:', data);
+        const hasShortlistedData = data.shortlistedSubmissions && data.shortlistedSubmissions.length > 0;
+        setHasShortlisted(hasShortlistedData);
+        setShortlistedCount(data.shortlistedSubmissions?.length || 0);
+        setShortlistedRoundIndex(1);
+        console.log('🔍 Set hasShortlisted to:', hasShortlistedData);
+        
+        // If we found shortlisted data, we're done
+        if (hasShortlistedData) {
+          return;
+        }
+      }
+      
+      // If Round 1 doesn't have shortlisted or failed, check Round 0
+      console.log('🔍 Round 1 failed or no data, checking Round 0...');
+      const responseRound0 = await fetch(`/api/judge-management/hackathons/${hackathon._id}/rounds/0/shortlisted-public`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('🔍 Round 0 response status:', responseRound0.status);
+      
+      if (responseRound0.ok) {
+        const dataRound0 = await responseRound0.json();
+        console.log('🔍 Round 0 shortlisted data:', dataRound0);
+        const hasShortlistedData = dataRound0.shortlistedSubmissions && dataRound0.shortlistedSubmissions.length > 0;
+        setHasShortlisted(hasShortlistedData);
+        setShortlistedCount(dataRound0.shortlistedSubmissions?.length || 0);
+        setShortlistedRoundIndex(0);
+        console.log('🔍 Set hasShortlisted to:', hasShortlistedData);
+      } else {
+        console.log('🔍 No shortlisted participants found in either round');
+        setHasShortlisted(false);
+        setShortlistedCount(0);
+        setShortlistedRoundIndex(0);
+      }
+    } catch (error) {
+      console.error('🔍 Error checking shortlisting status:', error);
+      setHasShortlisted(false);
+      setShortlistedCount(0);
+      setShortlistedRoundIndex(0);
+    }
+  };
+
+  const checkWinnersStatus = async () => {
+    if (!hackathon || !hackathon._id) return;
+    try {
+      const token = localStorage.getItem('token');
+      console.log('🔍 Checking winners status for hackathon:', hackathon._id);
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id}/winners`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('🔍 Winners response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 Winners data:', data);
+        const hasWinnersData = data.winners && data.winners.length > 0;
+        setHasWinners(hasWinnersData);
+        setWinnersCount(data.winners?.length || 0);
+        console.log('🔍 Set hasWinners to:', hasWinnersData);
+      }
+    } catch (error) {
+      console.error('🔍 Error checking winners status:', error);
     }
   };
 
@@ -398,6 +507,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
                     user={user}
                     onShowParticipants={handleShowParticipants}
                   />
+
               </div>
               <div ref={sectionRefs.timeline} id="timeline" className="py-8 border-b">
                 <HackathonTimeline hackathon={hackathon} isRegistered={isRegistered} />
@@ -422,6 +532,16 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
               <div ref={sectionRefs.projects} id="projects" className="py-8">
                 <HackathonProjectsGallery hackathonId={hackathon._id} />
               </div>
+              {hasShortlisted && (
+                <div ref={sectionRefs.shortlisted} id="shortlisted" className="py-8 border-b">
+                  <ShortlistedParticipants hackathonId={hackathon._id} roundIndex={shortlistedRoundIndex} />
+                </div>
+              )}
+              {hasWinners && (
+                <div ref={sectionRefs.winners} id="winners" className="py-8 border-b">
+                  <WinnersDisplay hackathonId={hackathon._id} />
+                </div>
+              )}
                <div className="py-8 mt-10 text-center border-t border-gray-200/75">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <p className="text-sm text-slate-600">Powered by</p>

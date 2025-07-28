@@ -95,4 +95,8 @@ router.post('/hackathons/:hackathonId/send-winner-emails', protect, isOrganizerO
 // 🏆 Get Winners for Round 2
 router.get('/hackathons/:hackathonId/rounds/:roundIndex/winners', protect, isOrganizerOrAdmin, judgeManagementController.getWinners);
 
+// 📋 Public endpoint to get shortlisted participants (for participants to view)
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/shortlisted-public', protect, judgeManagementController.getShortlistedSubmissionsPublic);
+router.get('/hackathons/:hackathonId/winners', protect, judgeManagementController.getWinners);
+
 module.exports = router; 
