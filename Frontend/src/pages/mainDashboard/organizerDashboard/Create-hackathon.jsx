@@ -957,7 +957,7 @@ export default function CreateHackathon({
           </div>
         )}
         {/* Step Content wrapped in Card */}
-        <Card className="space-y-6">
+        <Card className="space-y-6 shadow-none hover:shadow-none">
           {step === 0 && (
             <>
               {/* Basic Information */}
