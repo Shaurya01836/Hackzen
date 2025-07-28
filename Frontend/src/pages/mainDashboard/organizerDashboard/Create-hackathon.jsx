@@ -43,6 +43,7 @@ import {
   TooltipTrigger,
 } from "../../../components/CommonUI/tooltip";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast"; 
 
 // Helper to convert ISO string to 'yyyy-MM-ddThh:mm' for datetime-local
 function toDatetimeLocal(iso) {
@@ -513,12 +514,17 @@ export default function CreateHackathon({
 
       const data = await response.json();
       if (isDraft) {
-        alert("✅ Hackathon saved as draft!");
+         toast.success( "✅ Hackathon saved as draft!", {
+          duration: 4000,
+          icon: "✅",
+        }
+      )
       } else {
-        alert(
-          "✅ Hackathon created successfully! It will be reviewed by admin before appearing in the explore section."
-        );
-      }
+         toast.success( "Hackathon created successfully! It will be reviewed by admin before appearing in the explore section.", {
+          duration: 4000,
+           icon: "✅",
+        }
+      )}
       navigate("/dashboard/created-hackathons"); // Always redirect to Created Hackathons
     } catch (error) {
       console.error("❌ Submission failed:", error);
