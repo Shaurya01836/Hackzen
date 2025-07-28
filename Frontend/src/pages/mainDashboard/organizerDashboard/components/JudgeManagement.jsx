@@ -3,9 +3,6 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "../../../../components/CommonUI/card";
 import { Button } from "../../../../components/CommonUI/button";
 import { Badge } from "../../../../components/CommonUI/badge";
@@ -494,55 +491,14 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
     const assignment = allJudgeAssignments.find(a => a._id === assignmentId);
     if (!assignment) return;
     const newTeams = assignment.assignedTeams.filter(id => id !== teamId);
-    // This function is no longer used for unassigning teams, but keeping it for now
-    // as it might be re-introduced or refactored later.
-    // For now, it will just re-fetch assignments, which might not be the desired behavior
-    // if the intent was to remove the team from the assignment itself.
-    // However, the original code had this logic, so keeping it.
-    // The actual unassignment logic is handled by the backend when removing the assignment.
-    // This function is primarily for the UI to reflect the current state.
-    // If the backend unassignment is successful, this will re-fetch and update the UI.
-    // If the backend unassignment fails, this will re-fetch and the UI will show the old state.
-    // The current implementation of assignTeamsToJudge and autoDistributeTeams does not
-    // directly modify the assignment object in the state, so this function's logic
-    // for unassigning a single team is effectively removed by the new_code.
-    // The original code had `assignTeamsToJudge(assignmentId, newTeams);` here,
-    // but `assignTeamsToJudge` is removed.
-    // The original code also had `onUnassignSingleTeam(assignment._id, teamId);`
-    // which called `onUnassignSingleTeam` from the parent component.
-    // Since `onUnassignSingleTeam` is not passed as a prop, this will cause an error.
-    // The original code also had `onUnassignTeams` and `onAutoDistribute` which
-    // were passed as props to `JudgeAssignmentCard`.
-    // Since these props are removed, the `JudgeAssignmentCard` will not call them.
-    // The `JudgeAssignmentCard` component itself will handle the unassignment
-    // and auto-distribution logic.
-    // So, the `handleUnassignSingleTeam` function is effectively removed by the new_code.
-    // The original code had `console.log('allJudgeAssignments:', allJudgeAssignments);`
-    // and `console.log('hackathon.rounds:', hackathon?.rounds);`
-    // and `console.log('hackathon.problemStatements:', hackathon?.problemStatements);`
-    // before rendering the assignment cards.
-    // Since `hackathon` and `allJudgeAssignments` are no longer available,
-    // these logs will be removed.
-    // The original code also had `console.log('DEBUG: JudgeManagement render hackathon', hackathon);`
-    // before rendering the assignment cards.
-    // Since `hackathon` is no longer available, this log will be removed.
-    // The `JudgeManagementAssignments` component will now render a loading message
-    // if `hackathon` is null.
   };
 
-  // Add debug logs before rendering assignment cards
-  // console.log('allJudgeAssignments:', allJudgeAssignments);
-  // console.log('hackathon.rounds:', hackathon?.rounds);
-  // console.log('hackathon.problemStatements:', hackathon?.problemStatements);
-
-  // Before rendering JudgeManagementAssignments
-  // console.log('DEBUG: JudgeManagement render hackathon', hackathon);
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Header */}
-        <Card className="mb-6">
+       <div className="sticky top-0 z-20 backdrop-blur-sm bg-white/80 rounded-xl shadow-sm mb-6">
           <CardContent className="pt-6 flex flex-col gap-4">
             {/* First row: Back button, title, actions */}
             <div className="flex items-center gap-4">
@@ -704,7 +660,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
             
             </div>
           </CardContent>
-        </Card>
+        </div>
 
         {/* Tabs */}
         <div>

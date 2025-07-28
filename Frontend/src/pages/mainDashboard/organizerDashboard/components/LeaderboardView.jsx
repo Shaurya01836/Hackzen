@@ -529,23 +529,27 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       return true; // 'all' filter
     });
 
-  if (loading) {
+if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Round {selectedRound + 1} Leaderboard</h2>
-            <p className="text-gray-600">Loading leaderboard data...</p>
+      <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
+        <div className="w-full max-w-none mx-auto p-6">
+          <div className="animate-pulse space-y-6">
+            <Card className="shadow-none hover:shadow-none border-0 bg-white/80 backdrop-blur-sm">
+              <CardContent className="p-8">
+                <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3 mb-6"></div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-500 mt-2">Loading leaderboard...</p>
         </div>
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
