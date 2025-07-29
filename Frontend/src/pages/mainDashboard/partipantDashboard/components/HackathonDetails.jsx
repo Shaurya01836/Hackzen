@@ -309,6 +309,7 @@ export function HackathonDetails({ hackathon: propHackathon, onBack, backButtonL
         const hasShortlistedData = data.shortlistedSubmissions && data.shortlistedSubmissions.length > 0;
         setHasShortlisted(hasShortlistedData);
         setShortlistedCount(data.shortlistedSubmissions?.length || 0);
+        // Set to the round that has shortlisted data
         setShortlistedRoundIndex(1);
         console.log('🔍 Set hasShortlisted to:', hasShortlistedData);
         

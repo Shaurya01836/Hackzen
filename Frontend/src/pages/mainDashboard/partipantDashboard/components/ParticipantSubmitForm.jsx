@@ -313,7 +313,7 @@ export default function ProjectSubmissionForm({
       problemStatement: selectedProblem,
       customAnswers: answersArray,
       selectedMembers,
-      roundIndex: 1, // Project submissions go to Round 2 (index 1)
+      roundIndex: currentRound ? currentRound.roundIndex : 0, // Use current round index
     };
     console.log('handleSubmit: payload =', payload);
 
@@ -415,7 +415,7 @@ export default function ProjectSubmissionForm({
         body: JSON.stringify({
           hackathonId: hackathon._id || hackathon.id,
           pptFile: uploadData.url,
-          roundIndex: 0, // PPT submissions go to Round 1 (index 0)
+          roundIndex: currentRound ? currentRound.roundIndex : 0, // Use current round index
         }),
       });
       const submissionData = await submissionRes.json();
@@ -456,7 +456,7 @@ export default function ProjectSubmissionForm({
           hackathonId: hackathon._id || hackathon.id,
           pptFile: pptLink.trim(),
           problemStatement: pptProblem,
-          roundIndex: 0, // PPT submissions go to Round 1 (index 0)
+          roundIndex: currentRound ? currentRound.roundIndex : 0, // Use current round index
         }),
       });
       const submissionData = await submissionRes.json();
@@ -507,8 +507,15 @@ export default function ProjectSubmissionForm({
     if (!hackathon || !Array.isArray(hackathon.rounds)) return;
     
     // Check Round 2 eligibility if Round 2 exists
+    // Only check next round eligibility for multi-round hackathons
     if (hackathon.rounds.length >= 2) {
-      checkRound2Eligibility();
+      checkNextRoundEligibility();
+    }
+    
+    // For single round hackathons, everyone is eligible for the first round
+    if (hackathon.rounds.length === 1) {
+      setCurrentRound({ ...hackathon.rounds[0], roundIndex: 0 });
+      return;
     }
     
     // If no roundProgress, everyone is eligible for round 0
@@ -516,7 +523,8 @@ export default function ProjectSubmissionForm({
       setCurrentRound({ ...hackathon.rounds[0], roundIndex: 0 });
       return;
     }
-    // Find the highest roundIndex the user is in advancedParticipantIds for
+    
+    // For multi-round hackathons, find the highest roundIndex the user is in advancedParticipantIds for
     let eligibleRound = null;
     for (let i = 0; i < hackathon.roundProgress.length; i++) {
       const progress = hackathon.roundProgress[i];
@@ -534,11 +542,19 @@ export default function ProjectSubmissionForm({
     setCurrentRound(eligibleRound);
   }, [hackathon, userId]);
 
-  const checkRound2Eligibility = async () => {
+  const checkNextRoundEligibility = async () => {
     setCheckingEligibility(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id || hackathon.id}/round2-eligibility`, {
+      // For single round hackathons, don't check eligibility
+      if (hackathon.rounds && hackathon.rounds.length === 1) {
+        setRound2Eligibility({ eligible: true, shortlisted: true });
+        return;
+      }
+      
+      // For multi-round hackathons, check eligibility for the next round
+      const nextRoundIndex = currentRound ? currentRound.roundIndex + 1 : 1;
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id || hackathon.id}/rounds/${nextRoundIndex}/eligibility`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -546,10 +562,10 @@ export default function ProjectSubmissionForm({
         const data = await response.json();
         setRound2Eligibility(data);
       } else {
-        console.error('Failed to check Round 2 eligibility');
+        console.error('Failed to check next round eligibility');
       }
     } catch (error) {
-      console.error('Error checking Round 2 eligibility:', error);
+      console.error('Error checking next round eligibility:', error);
     } finally {
       setCheckingEligibility(false);
     }
@@ -564,17 +580,17 @@ export default function ProjectSubmissionForm({
     );
   }
 
-  // Check if this is Round 2 and show eligibility status
-  const isRound2 = currentRound.roundIndex === 1; // Round 2 (index 1)
-  const showRound2Eligibility = isRound2 && round2Eligibility;
+  // Check if this is a final round and show eligibility status (only for multi-round hackathons)
+  const isFinalRound = currentRound && hackathon.rounds && currentRound.roundIndex === hackathon.rounds.length - 1;
+  const showFinalRoundEligibility = isFinalRound && round2Eligibility && hackathon.rounds.length > 1;
 
   // Render the correct form for the current round's type
-  // For now, show a placeholder for each type
+  // Dynamic rendering based on round type
   if (currentRound.type === 'ppt') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-50 via-purple-50 to-slate-100 py-8 px-4">
-        {/* Round 2 Eligibility Check */}
-        {showRound2Eligibility && (
+        {/* Final Round Eligibility Check */}
+        {showFinalRoundEligibility && (
           <div className="max-w-4xl mx-auto mb-6">
             {checkingEligibility ? (
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -680,10 +696,29 @@ export default function ProjectSubmissionForm({
           </form>
         ) : currentRound.type === 'quiz' ? (
           <div className="flex items-center justify-center text-lg min-h-[300px]">Quiz Form (Coming Soon)</div>
+        ) : currentRound.type === 'both' ? (
+          <div className="flex items-center justify-center text-lg min-h-[300px]">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Round {currentRound.roundIndex + 1} - PPT & Project Submission</h2>
+              <p className="text-gray-600 mb-4">This round accepts both PPT and Project submissions.</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-semibold text-blue-800 mb-2">PPT Submission</h3>
+                  <p className="text-sm text-blue-700 mb-3">Upload your presentation slides for this round.</p>
+                  {/* PPT submission form would go here */}
+                </div>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h3 className="font-semibold text-green-800 mb-2">Project Submission</h3>
+                  <p className="text-sm text-green-700 mb-3">Submit your project for this round.</p>
+                  {/* Project submission form would go here */}
+                </div>
+              </div>
+            </div>
+          </div>
         ) : currentRound.type === 'project' ? (
           <div>
-            {/* Round 2 Eligibility Check for Project Submissions */}
-            {showRound2Eligibility && (
+            {/* Final Round Eligibility Check for Project Submissions */}
+            {showFinalRoundEligibility && (
               <div className="max-w-4xl mx-auto mb-6">
                 {checkingEligibility ? (
                   <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1079,7 +1114,7 @@ export default function ProjectSubmissionForm({
                                   submittedProjectIds.some(id => id.toString() === selectedProjectId.toString()) ||
                                   isSubmitting ||
                                   maxReached ||
-                                  (isRound2 && round2Eligibility && !round2Eligibility.eligible)
+                                  (isFinalRound && round2Eligibility && !round2Eligibility.eligible)
                                 }
                               >
                               {isSubmitting ? (
@@ -1087,7 +1122,7 @@ export default function ProjectSubmissionForm({
                                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
                                   Submitting...
                                 </>
-                              ) : isRound2 && round2Eligibility && !round2Eligibility.eligible ? (
+                              ) : isFinalRound && round2Eligibility && !round2Eligibility.eligible ? (
                                 "Not Eligible for Round 2"
                               ) : (
                                 "Submit Project →"

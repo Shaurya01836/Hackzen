@@ -21,7 +21,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [shortlistMode, setShortlistMode] = useState('topN'); // 'topN', 'threshold', or 'date'
   const [summary, setSummary] = useState(null);
   const [selectedRound, setSelectedRound] = useState(roundIndex);
-  const [showOnlyEvaluated, setShowOnlyEvaluated] = useState(selectedRound === 1); // Auto-enable for Round 2
+  const [showOnlyEvaluated, setShowOnlyEvaluated] = useState(false); // Will be set based on round type
   const [viewSubmissionModalOpen, setViewSubmissionModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [submissionDetails, setSubmissionDetails] = useState(null);
@@ -55,6 +55,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   
   // Email Sender States
   const [emailSenderModalOpen, setEmailSenderModalOpen] = useState(false);
+  const [availableRounds, setAvailableRounds] = useState([0]); // Default to 1 round, will be updated dynamically
 
   useEffect(() => {
     if (hackathonId) {
@@ -63,11 +64,10 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     }
   }, [hackathonId, selectedRound]);
 
-  // Auto-enable "Show only evaluated" filter for Round 2
+  // Auto-enable "Show only evaluated" filter for final rounds (winner assignment rounds)
   useEffect(() => {
-    if (selectedRound === 1) {
-      setShowOnlyEvaluated(true);
-    }
+    // This will be determined by the backend response indicating if it's a final round
+    // For now, we'll let the user decide
   }, [selectedRound]);
 
   // Check if shortlisting has been done
@@ -121,7 +121,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const checkAutoProgress = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/auto-progress-round2`, {
+      const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/auto-progress-round2`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -180,6 +180,16 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
         
         setLeaderboard(filteredLeaderboard);
         setSummary(data.summary);
+        
+        // Update available rounds based on hackathon data
+        if (data.hackathon && data.hackathon.rounds && data.hackathon.rounds.length > 0) {
+          const totalRounds = data.hackathon.rounds.length;
+          const rounds = Array.from({ length: totalRounds }, (_, i) => i);
+          setAvailableRounds(rounds);
+        } else {
+          // Fallback: if no rounds data, assume single round
+          setAvailableRounds([0]);
+        }
       } else {
         const errorData = await response.json();
         console.error('🔍 Frontend - Error response:', errorData);
@@ -367,7 +377,17 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
           variant: 'default',
         });
         setEditShortlistModalOpen(false);
-        fetchLeaderboard(); // Refresh the leaderboard
+        setIndividualEditModalOpen(false);
+        
+        // Refresh the leaderboard multiple times to ensure updates are reflected
+        fetchLeaderboard();
+        setTimeout(() => {
+          fetchLeaderboard();
+        }, 500);
+        setTimeout(() => {
+          fetchLeaderboard();
+        }, 1500);
+        
         if (onShortlistingComplete) {
           onShortlistingComplete();
         }
@@ -570,16 +590,25 @@ if (loading) {
                 Round {selectedRound + 1} Leaderboard
               </h2>
               <p className="text-gray-600 text-base">
-                {selectedRound === 0 
-                  ? 'Track evaluation progress and shortlist top performers' 
-                  : 'Final rankings and winner selection for Round 2'
-                }
+                {(() => {
+                  const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+                  if (selectedRound === 0) {
+                    return 'Track evaluation progress and shortlist top performers';
+                  } else if (isFinalRound) {
+                    return 'Final rankings and winner selection';
+                  } else {
+                    return 'Track evaluation progress and shortlist top performers';
+                  }
+                })()}
               </p>
             </div>
           </div>
 
-          {/* Round 1 Specific Content */}
-          {selectedRound === 0 && (
+          {/* Round Specific Content */}
+          {(() => {
+            const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+            return !isFinalRound;
+          })() && (
             <div className="">
               <div className="flex items-start gap-4">
                 <div className="flex-1">
@@ -606,8 +635,11 @@ if (loading) {
             </div>
           )}
           
-          {/* Round 2 Specific Content */}
-          {selectedRound === 1 && (
+          {/* Final Round Specific Content */}
+          {(() => {
+            const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+            return isFinalRound;
+          })() && (
             <div className="">
               <div className="flex items-start gap-4">
                 <div className="flex-1">
@@ -725,8 +757,13 @@ if (loading) {
                 </div>
               )}
               
-              {/* Round 2 Actions */}
-              {selectedRound === 1 && (
+              {/* Final Round Actions (Winner Assignment) */}
+              {(() => {
+                // Check if this is a final round by looking at the leaderboard data
+                // The backend will indicate if this is a final round through the response
+                const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+                return isFinalRound;
+              })() && (
                 <div className="flex flex-col gap-2">
                   {!hasWinners ? (
                     <>
@@ -824,18 +861,16 @@ if (loading) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  Round 1
-                </div>
-              </SelectItem>
-              <SelectItem value="1">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  Round 2
-                </div>
-              </SelectItem>
+              {availableRounds.map((roundIndex) => (
+                <SelectItem key={roundIndex} value={roundIndex.toString()}>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      roundIndex === availableRounds.length - 1 ? 'bg-purple-500' : 'bg-blue-500'
+                    }`}></div>
+                    {roundIndex === availableRounds.length - 1 ? `Winner Assignment Round ${roundIndex + 1}` : `Round ${roundIndex + 1}`}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -852,8 +887,11 @@ if (loading) {
             />
             <Label htmlFor="show-evaluated" className="text-sm text-gray-700 cursor-pointer">
               Show only evaluated
-              {selectedRound === 1 && (
-                <span className="text-blue-600 ml-1 text-xs">(Auto-enabled for Round 2)</span>
+              {(() => {
+                const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+                return isFinalRound;
+              })() && (
+                <span className="text-blue-600 ml-1 text-xs">(Auto-enabled for final round)</span>
               )}
             </Label>
           </div>
@@ -902,7 +940,10 @@ if (loading) {
                 </span>
               </div>
             )}
-            {selectedRound === 1 && showOnlyEvaluated && (
+            {(() => {
+              const isFinalRound = leaderboard.length > 0 && leaderboard.some(entry => entry.isFinalRound);
+              return isFinalRound && showOnlyEvaluated;
+            })() && (
               <div className="text-xs text-blue-600 mt-2 p-2 bg-blue-50 rounded border border-blue-200">
                 <Info className="w-3 h-3 inline mr-1" />
                 Only judged evaluations shown for Round 2
@@ -1183,7 +1224,7 @@ if (loading) {
                               <span className="text-sm text-green-600 font-medium">Will be shortlisted</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-400">-</span>
+                            <span className="text-sm text-gray-400">Not Shortlisted</span>
                           )}
                         </td>
                       ) : (

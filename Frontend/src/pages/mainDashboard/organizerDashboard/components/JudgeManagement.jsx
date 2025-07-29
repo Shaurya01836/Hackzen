@@ -748,7 +748,7 @@ export default function JudgeManagement({ hackathonId, hideHackathonSelector = f
                 {(hackathon && (hackathon._id || hackathon.id)) ? (
                   <LeaderboardView
                     hackathonId={hackathon._id || hackathon.id}
-                    roundIndex={0} // Round 1 (index 0) for shortlisting to Round 2
+                    roundIndex={0} // Default to first round, but LeaderboardView will handle dynamic rounds
                     onShortlistingComplete={() => {
                       // Refresh data after shortlisting
                       fetchJudgeAssignments();
