@@ -64,6 +64,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "../../components/DashboardUI/alert-dialog";
+import { toast } from "../../hooks/use-toast";
 
 // Add this utility function at the top
 function getCurrentViewFromPath(pathname) {
@@ -221,7 +222,7 @@ export function ProfileSection({ viewUserId }) {
       setTwoFactorEnabled(response.data.enabled);
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        alert("Session expired. Please log in again.");
+        toast({ title: "Session expired", description: "Please log in again." });
         localStorage.clear();
         window.location.href = "/?modal=login";
       } else {
@@ -322,7 +323,7 @@ export function ProfileSection({ viewUserId }) {
       });
     } catch (err) {
       if (err.response && err.response.status === 401) {
-        alert("Session expired. Please log in again.");
+        toast({ title: "Session expired", description: "Please log in again." });
         localStorage.clear();
         window.location.href = "/?modal=login";
       } else {
@@ -2236,7 +2237,7 @@ export function ProfileSection({ viewUserId }) {
 
   const handleSaveChanges = async () => {
     if (!user?._id || !token) {
-      alert("User not logged in. Please log in again.");
+      toast({ title: "Not logged in", description: "User not logged in. Please log in again." });
       return;
     }
 
@@ -2307,7 +2308,7 @@ export function ProfileSection({ viewUserId }) {
       setCurrentView("overview");
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Failed to update profile");
+      toast({ title: "Failed to update profile", description: "Could not update your profile. Please try again." });
     }
   };
 
@@ -2356,7 +2357,7 @@ export function ProfileSection({ viewUserId }) {
       setTimeout(() => setUploadSuccess(false), 3000); // Auto-hide after 3s
     } catch (err) {
       console.error("Image upload failed:", err);
-      alert("Failed to upload image");
+      toast({ title: "Failed to upload image", description: "Could not upload your profile image. Please try again." });
     } finally {
       setIsUploading(false); // ✅ Stop loading
     }
@@ -2404,7 +2405,7 @@ export function ProfileSection({ viewUserId }) {
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err) {
       console.error("Banner upload failed:", err);
-      alert("Failed to upload banner");
+      toast({ title: "Failed to upload banner", description: "Could not upload your banner image. Please try again." });
     } finally {
       setIsUploading(false);
     }
@@ -2478,7 +2479,7 @@ export function ProfileSection({ viewUserId }) {
 
   const handleRemoveBanner = async () => {
     if (!user?._id || !token) {
-      alert("User not logged in. Please log in again.");
+      toast({ title: "Not logged in", description: "User not logged in. Please log in again." });
       return;
     }
 
@@ -2512,13 +2513,13 @@ export function ProfileSection({ viewUserId }) {
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error) {
       console.error("Error removing banner:", error);
-      alert("Failed to remove banner");
+      toast({ title: "Failed to remove banner", description: "Could not remove your banner. Please try again." });
     }
   };
 
   const handleRemoveProfileImage = async () => {
     if (!user?._id || !token) {
-      alert("User not logged in. Please log in again.");
+      toast({ title: "Not logged in", description: "User not logged in. Please log in again." });
       return;
     }
 
@@ -2546,7 +2547,7 @@ export function ProfileSection({ viewUserId }) {
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error) {
       console.error("Error removing profile image:", error);
-      alert("Failed to remove profile image");
+      toast({ title: "Failed to remove profile image", description: "Could not remove your profile image. Please try again." });
     }
   };
 
