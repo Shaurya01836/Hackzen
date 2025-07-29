@@ -39,6 +39,10 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [previousShortlistThreshold, setPreviousShortlistThreshold] = useState(null);
   const [shortlistFilter, setShortlistFilter] = useState('all'); // 'all', 'shortlisted', 'not-shortlisted'
   
+  // Problem Statement Filter State
+  const [selectedProblemStatement, setSelectedProblemStatement] = useState('All');
+  const [availableProblemStatements, setAvailableProblemStatements] = useState([]);
+  
   // Round 2 Winner Assignment States
   const [winnerAssignmentModalOpen, setWinnerAssignmentModalOpen] = useState(false);
   const [assigningWinners, setAssigningWinners] = useState(false);
@@ -535,6 +539,25 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     return new Date(date).toLocaleDateString();
   };
 
+  // Helper function to extract problem statement text
+  const getProblemStatementText = (ps) => {
+    if (typeof ps === 'string') return ps;
+    if (typeof ps === 'object' && ps.statement) return ps.statement;
+    return String(ps);
+  };
+
+  // Helper function to check if a submission matches the selected problem statement
+  const hasSubmittedToProblemStatement = (entry, problemStatement) => {
+    if (!entry.problemStatement) return false;
+    return getProblemStatementText(entry.problemStatement) === getProblemStatementText(problemStatement);
+  };
+
+  // Extract available problem statements from leaderboard entries
+  useEffect(() => {
+    const problemStatements = [...new Set(leaderboard.map(entry => entry.problemStatement).filter(ps => ps))];
+    setAvailableProblemStatements(problemStatements);
+  }, [leaderboard]);
+
   const filteredLeaderboard = leaderboard
     .filter(entry => {
       // First filter by evaluation status
@@ -547,6 +570,11 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
         return entry.status === 'shortlisted';
       } else if (shortlistFilter === 'not-shortlisted') {
         return entry.status !== 'shortlisted';
+      }
+      
+      // Then filter by problem statement
+      if (selectedProblemStatement !== 'All') {
+        return hasSubmittedToProblemStatement(entry, selectedProblemStatement);
       }
       
       return true; // 'all' filter
@@ -852,7 +880,7 @@ if (loading) {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Round Filter */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Round Selection</Label>
@@ -919,6 +947,26 @@ if (loading) {
                     Not Shortlisted
                   </div>
                 </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Problem Statement Filter */}
+        {availableProblemStatements.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Problem Statement</Label>
+            <Select value={selectedProblemStatement} onValueChange={setSelectedProblemStatement}>
+              <SelectTrigger className="bg-white border-gray-200">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Problem Statements</SelectItem>
+                {availableProblemStatements.map((ps, index) => (
+                  <SelectItem key={index} value={ps}>
+                    {ps.length > 40 ? ps.substring(0, 40) + '...' : ps}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

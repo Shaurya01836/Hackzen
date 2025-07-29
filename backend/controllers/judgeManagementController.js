@@ -3394,6 +3394,7 @@ exports.getLeaderboard = async (req, res) => {
         totalScore: Math.round(totalScore * 10) / 10,
         status: finalStatus, // Use the corrected status
         roundIndex: submission.roundIndex,
+        problemStatement: submission.problemStatement, // Add problem statement field
         // Final round specific fields
         previousRoundScore: isFinalRound && hasPreviousRounds ? Math.round(previousRoundScore * 10) / 10 : null,
         currentRoundScore: isFinalRound && hasPreviousRounds ? Math.round(currentRoundScore * 10) / 10 : null,
@@ -4749,7 +4750,7 @@ async function sendSubmissionAssignmentEmail(judgeEmail, judgeName, hackathon, s
           </p>
           
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-            <h3 style="color: #f59e0b; margin: 0 0 15px 0;">�� Assignment Summary</h3>
+            <h3 style="color: #f59e0b; margin: 0 0 15px 0;">📝 Assignment Summary</h3>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Hackathon:</strong> ${hackathon.title}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Round:</strong> ${roundName}</p>
             <p style="color: #666; margin: 0 0 5px 0;"><strong>Total Submissions:</strong> ${submissions.length}</p>
@@ -6171,7 +6172,7 @@ exports.getWinners = async (req, res) => {
         position,
         positionText,
         positionColor,
-       projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
+       projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,

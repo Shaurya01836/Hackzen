@@ -85,6 +85,10 @@ export default function JudgeManagementAssignments({
   const [selectedRegRound, setSelectedRegRound] = useState('All');
   const [selectedRegProblemStatement, setSelectedRegProblemStatement] = useState('All');
   const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
+  
+  // Add problem statement filter states for assigned and unassigned submissions
+  const [selectedAssignedPS, setSelectedAssignedPS] = useState('All');
+  const [selectedUnassignedPS, setSelectedUnassignedPS] = useState('All');
 
   // Update selectedStage when stages change (e.g., when hackathon changes)
   useEffect(() => {
@@ -602,6 +606,33 @@ export default function JudgeManagementAssignments({
     return progress;
   };
 
+  // Helper function to extract problem statement text
+  const getProblemStatementText = (ps) => {
+    if (typeof ps === 'string') return ps;
+    if (typeof ps === 'object' && ps.statement) return ps.statement;
+    return String(ps);
+  };
+
+  // Helper function to check if a submission matches the selected problem statement
+  const hasSubmittedToProblemStatement = (submission, problemStatement) => {
+    if (!submission.problemStatement) return false;
+    return getProblemStatementText(submission.problemStatement) === getProblemStatementText(problemStatement);
+  };
+
+  // Helper function to filter submissions by problem statement
+  const filterSubmissionsByPS = (submissions, selectedPS) => {
+    if (selectedPS === 'All') return submissions;
+    return submissions.filter(sub => hasSubmittedToProblemStatement(sub, selectedPS));
+  };
+
+  // Get all problem statements from hackathon
+  const allProblemStatements = hackathon?.problemStatements || [];
+  const uniqueProblemStatements = [...new Set(
+    allProblemStatements
+      .map(ps => getProblemStatementText(ps))
+      .filter(ps => ps && ps.trim())
+  )];
+
   return (
     <div className="space-y-6">
       {/* Stage Selection */}
@@ -737,12 +768,50 @@ export default function JudgeManagementAssignments({
                             return submission.roundIndex === stage.roundIndex;
                           }
                           return true;
+                        }).filter(submission => {
+                          // Apply problem statement filter for count
+                          return filterSubmissionsByPS([submission], selectedAssignedPS).length > 0;
                         }).length || 0}
                       </div>
                       <div className="text-sm text-gray-500">Assigned to Judges</div>
                     </div>
                   </div>
                 </CardHeader>
+                
+                {/* Problem Statement Filter for Assigned Submissions */}
+                {uniqueProblemStatements.length > 0 && (
+                  <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700">Filter by Problem Statement:</span>
+                      </div>
+                      <select
+                        value={selectedAssignedPS}
+                        onChange={(e) => setSelectedAssignedPS(e.target.value)}
+                        className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
+                      >
+                        <option value="All">All Problem Statements</option>
+                        {uniqueProblemStatements.map((ps, index) => (
+                          <option key={index} value={ps}>
+                            {ps.length > 40 ? ps.substring(0, 40) + '...' : ps}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedAssignedPS !== 'All' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedAssignedPS('All')}
+                          className="text-gray-700 hover:text-gray-900 border-gray-400 hover:border-gray-500 bg-white hover:bg-gray-50 px-3 py-1.5 text-xs font-medium"
+                        >
+                          Clear Filter
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 <CardContent className="pt-0">
                   {assignmentOverview?.assignedSubmissions?.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -769,6 +838,10 @@ export default function JudgeManagementAssignments({
                               }
                               // For other stages, show all
                               return true;
+                            })
+                            .filter(submission => {
+                              // Apply problem statement filter
+                              return filterSubmissionsByPS([submission], selectedAssignedPS).length > 0;
                             })
                             .map((submission) => (
                             <tr key={submission._id} className="hover:bg-gray-50">
@@ -845,13 +918,56 @@ export default function JudgeManagementAssignments({
                     <p className="text-sm text-gray-600">Submissions that need to be assigned to judges</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-yellow-600">{assignmentOverview?.unassignedSubmissions?.length || 0}</div>
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {assignmentOverview?.unassignedSubmissions?.filter(submission => {
+                        // Apply problem statement filter for count
+                        return filterSubmissionsByPS([submission], selectedUnassignedPS).length > 0;
+                      }).length || 0}
+                    </div>
                     <div className="text-sm text-gray-500">Pending Assignment</div>
                   </div>
                 </div>
               </div>
+              
+              {/* Problem Statement Filter for Unassigned Submissions */}
+              {uniqueProblemStatements.length > 0 && (
+                <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Filter className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-700">Filter by Problem Statement:</span>
+                    </div>
+                    <select
+                      value={selectedUnassignedPS}
+                      onChange={(e) => setSelectedUnassignedPS(e.target.value)}
+                      className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
+                    >
+                      <option value="All">All Problem Statements</option>
+                      {uniqueProblemStatements.map((ps, index) => (
+                        <option key={index} value={ps}>
+                          {ps.length > 40 ? ps.substring(0, 40) + '...' : ps}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedUnassignedPS !== 'All' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedUnassignedPS('All')}
+                        className="text-gray-700 hover:text-gray-900 border-gray-400 hover:border-gray-500 bg-white hover:bg-gray-50 px-3 py-1.5 text-xs font-medium"
+                      >
+                        Clear Filter
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <div className="p-6">
-                {assignmentOverview?.unassignedSubmissions?.length > 0 ? (
+                {assignmentOverview?.unassignedSubmissions?.filter(submission => {
+                  // Apply problem statement filter for condition check
+                  return filterSubmissionsByPS([submission], selectedUnassignedPS).length > 0;
+                }).length > 0 ? (
                   <>
                     <div className="overflow-x-auto">
                       <table className="min-w-full divide-y divide-gray-200">
@@ -860,10 +976,16 @@ export default function JudgeManagementAssignments({
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               <input
                                 type="checkbox"
-                                checked={selectedSubmissions.size === assignmentOverview.unassignedSubmissions.length}
+                                checked={selectedSubmissions.size === assignmentOverview.unassignedSubmissions.filter(submission => {
+                                  // Apply problem statement filter for checkbox logic
+                                  return filterSubmissionsByPS([submission], selectedUnassignedPS).length > 0;
+                                }).length}
                                 onChange={(e) => {
+                                  const filteredSubmissions = assignmentOverview.unassignedSubmissions.filter(submission => {
+                                    return filterSubmissionsByPS([submission], selectedUnassignedPS).length > 0;
+                                  });
                                   if (e.target.checked) {
-                                    setSelectedSubmissions(new Set(assignmentOverview.unassignedSubmissions.map(s => s._id)));
+                                    setSelectedSubmissions(new Set(filteredSubmissions.map(s => s._id)));
                                   } else {
                                     setSelectedSubmissions(new Set());
                                   }
@@ -878,6 +1000,10 @@ export default function JudgeManagementAssignments({
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {assignmentOverview.unassignedSubmissions
+                            .filter(submission => {
+                              // Apply problem statement filter
+                              return filterSubmissionsByPS([submission], selectedUnassignedPS).length > 0;
+                            })
                             .map((submission) => (
                             <tr key={submission._id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -935,12 +1061,20 @@ export default function JudgeManagementAssignments({
                     <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                       <CheckCircle className="w-8 h-8 text-green-600" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Unassigned Submissions</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      {selectedUnassignedPS !== 'All' ? 'No Unassigned Submissions for Selected Problem Statement' : 'No Unassigned Submissions'}
+                    </h3>
                     <p className="text-sm text-gray-500 mb-4">
-                      All submissions have been assigned to judges for evaluation.
+                      {selectedUnassignedPS !== 'All' 
+                        ? 'No unassigned submissions found for the selected problem statement.'
+                        : 'All submissions have been assigned to judges for evaluation.'
+                      }
                     </p>
                     <div className="text-xs text-gray-400">
-                      Great job! All submissions are now being reviewed by the judges.
+                      {selectedUnassignedPS !== 'All' 
+                        ? 'Try selecting a different problem statement or clear the filter.'
+                        : 'Great job! All submissions are now being reviewed by the judges.'
+                      }
                     </div>
                   </div>
                 )}
@@ -1043,9 +1177,9 @@ export default function JudgeManagementAssignments({
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900 relative z-50"
                   >
                     <option value="All" className="text-gray-900 bg-white">All Problem Statements</option>
-                    {hackathon?.problemStatements?.map((ps, index) => (
-                      <option key={ps._id || index} value={ps.statement} className="text-gray-900 bg-white">
-                        {ps.statement?.slice(0, 30) + '...'}
+                    {uniqueProblemStatements.map((ps, index) => (
+                      <option key={index} value={ps} className="text-gray-900 bg-white">
+                        {ps.slice(0, 30) + '...'}
                       </option>
                     ))}
                   </select>
