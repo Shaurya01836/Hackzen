@@ -557,6 +557,7 @@ export default function HackZenDashboard() {
                         onClick={() => {
                           logout();
                           setShowProfileDropdown(false);
+                          navigate('/');
                         }}
                       >
                         Sign Out

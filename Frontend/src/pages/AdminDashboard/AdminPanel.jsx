@@ -473,6 +473,7 @@ export default function AdminPanel() {
                         onClick={() => {
                           logout();
                           setShowProfileDropdown(false);
+                          navigate('/');
                         }}
                       >
                         Sign Out
