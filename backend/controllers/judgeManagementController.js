@@ -1,6 +1,7 @@
 const JudgeAssignment = require('../model/JudgeAssignmentModel');
 const Hackathon = require('../model/HackathonModel');
 const User = require('../model/UserModel');
+const Team = require('../model/TeamModel');
 const RoleInvite = require('../model/RoleInviteModel');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
@@ -2578,21 +2579,88 @@ exports.getAssignmentOverview = async (req, res) => {
       submission.problemStatementType = getProblemStatementType(submission.problemStatement);
     });
     
-    // Filter submissions by round logic
+    // Dynamic round filtering based on hackathon configuration
     let submissions = allSubmissions;
     if (roundIndex !== undefined && roundIndex !== null && roundIndex !== '') {
       const roundIndexNum = parseInt(roundIndex);
       
-      if (roundIndexNum === 0) {
-        // Round 1: Show only PPT submissions (regardless of roundIndex in DB)
+      // Get round configuration from hackathon
+      const roundConfig = hackathon.rounds && hackathon.rounds[roundIndexNum];
+      const roundType = roundConfig?.type || 'project'; // Default to project if no type specified
+      
+      console.log('🔍 Assignment Overview - Dynamic Round filtering:', {
+        roundIndex,
+        roundIndexNum,
+        roundType,
+        totalSubmissions: allSubmissions.length,
+        submissionsWithPPT: allSubmissions.filter(sub => sub.pptFile).length,
+        submissionsWithProject: allSubmissions.filter(sub => sub.projectId).length,
+        submissionsByRoundIndex: allSubmissions.reduce((acc, sub) => {
+          acc[sub.roundIndex || 0] = (acc[sub.roundIndex || 0] || 0) + 1;
+          return acc;
+        }, {}),
+        roundConfig: roundConfig ? {
+          name: roundConfig.name,
+          type: roundConfig.type,
+          startDate: roundConfig.startDate,
+          endDate: roundConfig.endDate
+        } : null,
+        sampleSubmissions: allSubmissions.slice(0, 3).map(sub => ({
+          _id: sub._id,
+          pptFile: sub.pptFile,
+          projectId: sub.projectId,
+          roundIndex: sub.roundIndex,
+          projectTitle: sub.projectTitle
+        }))
+      });
+      
+      // Dynamic filtering based on round type
+      if (roundType === 'ppt') {
+        // PPT round: Show submissions with PPT files
         submissions = allSubmissions.filter(sub => sub.pptFile);
-      } else if (roundIndexNum === 1) {
-        // Round 2: Show only Project submissions (regardless of roundIndex in DB)
-        submissions = allSubmissions.filter(sub => !sub.pptFile);
-      } else {
-        // Other rounds: Use roundIndex from DB
+        console.log(`🔍 Round ${roundIndexNum} (PPT) filtering: ${submissions.length} PPT submissions found`);
+      } else if (roundType === 'project') {
+        // Project round: Show submissions with project IDs (no PPT files)
+        submissions = allSubmissions.filter(sub => sub.projectId && !sub.pptFile);
+        console.log(`🔍 Round ${roundIndexNum} (Project) filtering: ${submissions.length} Project submissions found`);
+      } else if (roundType === 'both') {
+        // Both round: Show all submissions for this round (PPT and Project)
         submissions = allSubmissions.filter(sub => sub.roundIndex === roundIndexNum);
+        console.log(`🔍 Round ${roundIndexNum} (Both) filtering: ${submissions.length} submissions found`);
+      } else {
+        // Default: Use roundIndex from DB
+        submissions = allSubmissions.filter(sub => sub.roundIndex === roundIndexNum);
+        console.log(`🔍 Round ${roundIndexNum} (Default) filtering: ${submissions.length} submissions found`);
       }
+      
+      // Fallback logic if no submissions found
+      if (submissions.length === 0) {
+        console.log(`🔍 No submissions found with round type filtering, trying fallback for round ${roundIndexNum}`);
+        
+        // Try different fallback strategies
+        if (roundType === 'ppt') {
+          // For PPT rounds, try to find any submissions with PPT files
+          submissions = allSubmissions.filter(sub => sub.pptFile);
+          console.log(`🔍 PPT fallback: ${submissions.length} submissions found`);
+        } else if (roundType === 'project') {
+          // For Project rounds, try to find any submissions with project IDs
+          submissions = allSubmissions.filter(sub => sub.projectId);
+          console.log(`🔍 Project fallback: ${submissions.length} submissions found`);
+        } else {
+          // For other types, try roundIndex matching
+          submissions = allSubmissions.filter(sub => sub.roundIndex === roundIndexNum);
+          console.log(`🔍 RoundIndex fallback: ${submissions.length} submissions found`);
+        }
+        
+        // If still no submissions, show all submissions for this round
+        if (submissions.length === 0) {
+          console.log(`🔍 Final fallback: showing all submissions for round ${roundIndexNum}`);
+          submissions = allSubmissions.filter(sub => sub.roundIndex === roundIndexNum || !sub.roundIndex);
+          console.log(`🔍 Final fallback: ${submissions.length} submissions found`);
+        }
+      }
+    } else {
+      console.log('🔍 No round filtering applied, showing all submissions:', submissions.length);
     }
 
     // Get all scores for these submissions
@@ -2647,16 +2715,19 @@ exports.getAssignmentOverview = async (req, res) => {
               const submission = allSubmissions.find(s => s._id.toString() === subId.toString());
               if (!submission) return false;
               
-              // For Round 1 (index 0): Show only PPT submissions
-              if (roundIndexNum === 0) {
+              // Get round configuration for dynamic filtering
+              const roundConfig = hackathon.rounds && hackathon.rounds[roundIndexNum];
+              const roundType = roundConfig?.type || 'project';
+              
+              // Dynamic filtering based on round type
+              if (roundType === 'ppt') {
                 return submission.pptFile;
-              }
-              // For Round 2 (index 1): Show only Project submissions
-              else if (roundIndexNum === 1) {
-                return !submission.pptFile;
-              }
-              // For other rounds: Use roundIndex from DB
-              else {
+              } else if (roundType === 'project') {
+                return submission.projectId && !submission.pptFile;
+              } else if (roundType === 'both') {
+                return submission.roundIndex === roundIndexNum;
+              } else {
+                // Default: Use roundIndex from DB
                 return submission.roundIndex === roundIndexNum;
               }
             }) || [];
@@ -2681,14 +2752,19 @@ exports.getAssignmentOverview = async (req, res) => {
               // Check if this submission should be included in the current round
               let shouldIncludeSubmission = true;
               if (roundIndexNum !== null) {
-                if (roundIndexNum === 0) {
-                  // Round 1: Show only PPT submissions
+                // Get round configuration for dynamic filtering
+                const roundConfig = hackathon.rounds && hackathon.rounds[roundIndexNum];
+                const roundType = roundConfig?.type || 'project';
+                
+                // Dynamic filtering based on round type
+                if (roundType === 'ppt') {
                   shouldIncludeSubmission = submission.pptFile;
-                } else if (roundIndexNum === 1) {
-                  // Round 2: Show only Project submissions
-                  shouldIncludeSubmission = !submission.pptFile;
+                } else if (roundType === 'project') {
+                  shouldIncludeSubmission = submission.projectId && !submission.pptFile;
+                } else if (roundType === 'both') {
+                  shouldIncludeSubmission = submission.roundIndex === roundIndexNum;
                 } else {
-                  // Other rounds: Use roundIndex from DB
+                  // Default: Use roundIndex from DB
                   shouldIncludeSubmission = submission.roundIndex === roundIndexNum;
                 }
               }
@@ -2769,6 +2845,12 @@ exports.getAssignmentOverview = async (req, res) => {
     });
 
     // Find unassigned submissions
+    console.log('🔍 Assignment Overview - Checking unassigned submissions:', {
+      totalSubmissions: submissions.length,
+      submissionAssignments: Object.keys(submissionAssignments).length,
+      assignedSubmissions: Object.values(submissionAssignments).filter(assignments => assignments.length > 0).length
+    });
+    
     const unassignedSubmissions = submissions.filter(sub =>
       (submissionAssignments[sub._id.toString()] || []).length === 0
     ).map(sub => {
@@ -2778,8 +2860,8 @@ exports.getAssignmentOverview = async (req, res) => {
         const roundIndexNum = parseInt(roundIndex);
         correctRoundIndex = roundIndexNum; // Use the filtered round index
       } else {
-        // If no round filtering, determine based on submission type
-        correctRoundIndex = sub.pptFile ? 0 : 1; // PPT = Round 1, Project = Round 2
+        // If no round filtering, use the submission's actual roundIndex
+        correctRoundIndex = sub.roundIndex || 0;
       }
       
       return {
@@ -2795,6 +2877,11 @@ exports.getAssignmentOverview = async (req, res) => {
       };
     });
 
+    console.log('🔍 Assignment Overview - Final counts:', {
+      unassignedSubmissions: unassignedSubmissions.length,
+      assignedSubmissions: submissions.filter(sub => (submissionAssignments[sub._id.toString()] || []).length > 0).length
+    });
+    
     // Build assigned submissions with judge information
     const assignedSubmissions = submissions.filter(sub =>
       (submissionAssignments[sub._id.toString()] || []).length > 0
@@ -2810,8 +2897,8 @@ exports.getAssignmentOverview = async (req, res) => {
         const roundIndexNum = parseInt(roundIndex);
         correctRoundIndex = roundIndexNum; // Use the filtered round index
       } else {
-        // If no round filtering, determine based on submission type
-        correctRoundIndex = sub.pptFile ? 0 : 1; // PPT = Round 1, Project = Round 2
+        // If no round filtering, use the submission's actual roundIndex
+        correctRoundIndex = sub.roundIndex || 0;
       }
       
       return {
@@ -3013,7 +3100,7 @@ exports.getSubmissionsWithAssignmentStatus = async (req, res) => {
 // 🎯 Get Leaderboard for Round 2 Shortlisting
 exports.getLeaderboard = async (req, res) => {
   try {
-    const { hackathonId, roundIndex = 0 } = req.params; // Default to Round 1 (index 0)
+    const { hackathonId, roundIndex } = req.params; // No default - must be specified
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -3025,30 +3112,25 @@ exports.getLeaderboard = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can view leaderboard' });
     }
 
-    // For Round 2, we need to get both Round 1 and Round 2 submissions to calculate combined scores
-    let submissions = [];
+    // Validate roundIndex against actual hackathon rounds
+    const roundIndexNum = parseInt(roundIndex);
+    const totalRounds = hackathon.rounds ? hackathon.rounds.length : 0;
     
-    if (parseInt(roundIndex) === 1) {
-      // Round 2: Get only Round 2 submissions but also fetch Round 1 data for combined scoring
-      submissions = await Submission.find({ 
-        hackathonId: hackathonId, 
-        roundIndex: 1 // Only Round 2 submissions
-      }).populate('teamId', 'name leader')
-        .populate('submittedBy', 'name email')
-        .lean();
-        
-      console.log('🔍 Backend - Round 2: Found Round 2 submissions:', submissions.length);
-    } else {
-      // Round 1: Get only Round 1 submissions
-      submissions = await Submission.find({ 
-        hackathonId: hackathonId, 
-        roundIndex: 0 // Only Round 1 submissions
-      }).populate('teamId', 'name leader')
-        .populate('submittedBy', 'name email')
-        .lean();
-        
-      console.log('🔍 Backend - Round 1: Found Round 1 submissions:', submissions.length);
+    if (roundIndexNum >= totalRounds) {
+      return res.status(400).json({ 
+        message: `Invalid round index. Hackathon has ${totalRounds} rounds (0-${totalRounds - 1})` 
+      });
     }
+
+    // Get submissions for the specified round
+    let submissions = await Submission.find({ 
+      hackathonId: hackathonId, 
+      roundIndex: roundIndexNum
+    }).populate('teamId', 'name leader')
+      .populate('submittedBy', 'name email')
+      .lean();
+        
+    console.log(`🔍 Backend - Round ${roundIndexNum}: Found submissions:`, submissions.length);
 
     console.log('🔍 Backend - Found submissions:', submissions.length);
     console.log('🔍 Backend - Submissions:', submissions.map(s => ({ 
@@ -3063,45 +3145,49 @@ exports.getLeaderboard = async (req, res) => {
     // Get all scores for these submissions
     const Score = require('../model/ScoreModel');
     let scores = [];
-    let round1Scores = {};
+    let previousRoundScores = {};
     
-    if (parseInt(roundIndex) === 1) {
-      // Round 2: Get scores for Round 2 submissions AND Round 1 submissions for combined scoring
-      const round2SubmissionIds = submissions.map(s => s._id);
+    // For final round (winner assignment round), we need to get previous round data for combined scoring
+    const isFinalRound = roundIndexNum === totalRounds - 1;
+    const hasPreviousRounds = roundIndexNum > 0;
+    
+    if (isFinalRound && hasPreviousRounds) {
+      // Final round: Get scores for current round submissions AND previous round submissions for combined scoring
+      const currentRoundSubmissionIds = submissions.map(s => s._id);
       
-      // Get Round 1 submissions for the same teams
-      const round1Submissions = await Submission.find({
+      // Get previous round submissions for the same teams
+      const previousRoundSubmissions = await Submission.find({
         hackathonId: hackathonId,
-        roundIndex: 0
+        roundIndex: roundIndexNum - 1
       }).populate('teamId', 'name leader').lean();
       
-      const round1SubmissionIds = round1Submissions.map(s => s._id);
+      const previousRoundSubmissionIds = previousRoundSubmissions.map(s => s._id);
       
       // Get all scores for both rounds
       scores = await Score.find({ 
-        submission: { $in: [...round2SubmissionIds, ...round1SubmissionIds] } 
+        submission: { $in: [...currentRoundSubmissionIds, ...previousRoundSubmissionIds] } 
       }).populate('judge', 'name email').lean();
       
-      // Create map of Round 1 scores by team
-      round1Submissions.forEach(submission => {
+      // Create map of previous round scores by team
+      previousRoundSubmissions.forEach(submission => {
         const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
         if (teamId) {
           const submissionScores = scores.filter(s => s.submission.toString() === submission._id.toString());
           if (submissionScores.length > 0) {
-            round1Scores[teamId] = submissionScores;
+            previousRoundScores[teamId] = submissionScores;
           }
         }
       });
       
-      console.log('🔍 Backend - Round 2: Found Round 2 scores:', scores.filter(s => round2SubmissionIds.includes(s.submission)).length);
-      console.log('🔍 Backend - Round 2: Found Round 1 scores for combined scoring:', Object.keys(round1Scores).length);
+      console.log(`🔍 Backend - Final Round ${roundIndexNum}: Found current round scores:`, scores.filter(s => currentRoundSubmissionIds.includes(s.submission)).length);
+      console.log(`🔍 Backend - Final Round ${roundIndexNum}: Found previous round scores for combined scoring:`, Object.keys(previousRoundScores).length);
     } else {
-      // Round 1: Get scores for Round 1 submissions only
+      // Non-final round or first round: Get scores for current round submissions only
       scores = await Score.find({ 
         submission: { $in: submissions.map(s => s._id) } 
       }).populate('judge', 'name email').lean();
       
-      console.log('🔍 Backend - Round 1: Found scores:', scores.length);
+      console.log(`🔍 Backend - Round ${roundIndexNum}: Found scores:`, scores.length);
     }
 
     console.log('🔍 Backend - Found scores:', scores.length);
@@ -3116,6 +3202,40 @@ exports.getLeaderboard = async (req, res) => {
     });
 
     console.log('🔍 Backend - Submission scores map:', submissionScores);
+
+    // Check if there's round progress for shortlisting
+    // For multi-round hackathons, shortlisting from previous round affects current round
+    let roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndexNum);
+    let shortlistedSubmissionIds = roundProgress?.shortlistedSubmissions || [];
+    let shortlistedTeamIds = roundProgress?.shortlistedTeams || [];
+    
+    // If this is not the first round, also check previous round's shortlisting
+    if (roundIndexNum > 0) {
+      const previousRoundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndexNum - 1);
+      if (previousRoundProgress) {
+        // Combine shortlisting data from both current and previous rounds
+        shortlistedSubmissionIds = [...shortlistedSubmissionIds, ...(previousRoundProgress.shortlistedSubmissions || [])];
+        shortlistedTeamIds = [...shortlistedTeamIds, ...(previousRoundProgress.shortlistedTeams || [])];
+        
+        console.log('🔍 Backend - Combined shortlisting data:', {
+          currentRound: roundIndexNum,
+          previousRound: roundIndexNum - 1,
+          currentShortlistedSubmissions: roundProgress?.shortlistedSubmissions?.length || 0,
+          previousShortlistedSubmissions: previousRoundProgress.shortlistedSubmissions?.length || 0,
+          currentShortlistedTeams: roundProgress?.shortlistedTeams?.length || 0,
+          previousShortlistedTeams: previousRoundProgress.shortlistedTeams?.length || 0,
+          totalShortlistedSubmissions: shortlistedSubmissionIds.length,
+          totalShortlistedTeams: shortlistedTeamIds.length
+        });
+      }
+    }
+    
+    console.log('🔍 Backend - Round progress for shortlisting:', {
+      roundIndex: roundIndexNum,
+      shortlistedSubmissionIds: shortlistedSubmissionIds.length,
+      shortlistedTeamIds: shortlistedTeamIds.length,
+      roundProgress: roundProgress ? 'Found' : 'Not found'
+    });
 
     // Calculate leaderboard entries
     const leaderboard = submissions.map(submission => {
@@ -3173,23 +3293,23 @@ exports.getLeaderboard = async (req, res) => {
       
       roundScore = roundScoreCount > 0 ? roundTotalScore / roundScoreCount : 0;
       
-      // For Round 2, calculate combined score with Round 1
+      // For final round, calculate combined score with previous round
       let combinedScore = roundScore;
-      let pptScore = 0;
-      let projectScore = roundScore;
+      let previousRoundScore = 0;
+      let currentRoundScore = roundScore;
       let totalScore = roundTotalScore;
       let scoreCount = roundScoreCount;
       
-      if (parseInt(roundIndex) === 1) {
-        // Round 2: Calculate combined score with Round 1 PPT score
+      if (isFinalRound && hasPreviousRounds) {
+        // Final round: Calculate combined score with previous round score
         const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
-        const round1TeamScores = round1Scores[teamId] || [];
+        const previousRoundTeamScores = previousRoundScores[teamId] || [];
         
-        if (round1TeamScores.length > 0) {
-          let round1TotalScore = 0;
-          let round1ScoreCount = 0;
+        if (previousRoundTeamScores.length > 0) {
+          let previousRoundTotalScore = 0;
+          let previousRoundScoreCount = 0;
           
-          round1TeamScores.forEach(score => {
+          previousRoundTeamScores.forEach(score => {
             let totalCriteriaScore = 0;
             let criteriaCount = 0;
             
@@ -3214,30 +3334,52 @@ exports.getLeaderboard = async (req, res) => {
             
             if (criteriaCount > 0) {
               const submissionScore = totalCriteriaScore / criteriaCount;
-              round1TotalScore += submissionScore;
-              round1ScoreCount++;
+              previousRoundTotalScore += submissionScore;
+              previousRoundScoreCount++;
             } else if (score.totalScore && typeof score.totalScore === 'number') {
-              round1TotalScore += score.totalScore;
-              round1ScoreCount++;
+              previousRoundTotalScore += score.totalScore;
+              previousRoundScoreCount++;
             }
           });
           
-          pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+          previousRoundScore = previousRoundScoreCount > 0 ? previousRoundTotalScore / previousRoundScoreCount : 0;
           
-          // Calculate combined score: (PPT Score + Project Score) / 2
-          combinedScore = (pptScore + projectScore) / 2;
-          totalScore = round1TotalScore + roundTotalScore;
-          scoreCount = round1ScoreCount + roundScoreCount;
+          // Calculate combined score: (Previous Round Score + Current Round Score) / 2
+          combinedScore = (previousRoundScore + currentRoundScore) / 2;
+          totalScore = previousRoundTotalScore + roundTotalScore;
+          scoreCount = previousRoundScoreCount + roundScoreCount;
           
-          console.log('🔍 Backend - Round 2 combined scoring:', {
+          console.log(`🔍 Backend - Final Round ${roundIndexNum} combined scoring:`, {
             teamId,
-            pptScore,
-            projectScore,
+            previousRoundScore,
+            currentRoundScore,
             combinedScore,
-            round1ScoreCount,
+            previousRoundScoreCount,
             roundScoreCount
           });
         }
+      }
+
+      // Determine the correct status for this submission
+      let finalStatus = submission.status;
+      
+      // Check if this submission is shortlisted based on round progress
+      if (shortlistedSubmissionIds.includes(submission._id.toString())) {
+        finalStatus = 'shortlisted';
+        console.log(`🔍 Backend - Submission ${submission._id} marked as shortlisted via round progress`);
+      } else if (submission.teamId && shortlistedTeamIds.includes(submission.teamId._id.toString())) {
+        finalStatus = 'shortlisted';
+        console.log(`🔍 Backend - Submission ${submission._id} marked as shortlisted via team shortlisting`);
+      } else if (submission.submittedBy && shortlistedTeamIds.includes(submission.submittedBy._id.toString())) {
+        finalStatus = 'shortlisted';
+        console.log(`🔍 Backend - Submission ${submission._id} marked as shortlisted via individual shortlisting`);
+      } else if (submission.status === 'shortlisted') {
+        // Keep existing shortlisted status
+        console.log(`🔍 Backend - Submission ${submission._id} already has shortlisted status`);
+      } else {
+        // Ensure it's not marked as shortlisted if not in shortlist
+        finalStatus = submission.status === 'shortlisted' ? 'submitted' : submission.status;
+        console.log(`🔍 Backend - Submission ${submission._id} status: ${finalStatus}`);
       }
 
       return {
@@ -3250,12 +3392,12 @@ exports.getLeaderboard = async (req, res) => {
         averageScore: Math.round(combinedScore * 10) / 10,
         scoreCount,
         totalScore: Math.round(totalScore * 10) / 10,
-        status: submission.status,
+        status: finalStatus, // Use the corrected status
         roundIndex: submission.roundIndex,
-        // Round 2 specific fields
-        pptScore: parseInt(roundIndex) === 1 ? Math.round(pptScore * 10) / 10 : null,
-        projectScore: parseInt(roundIndex) === 1 ? Math.round(projectScore * 10) / 10 : null,
-        isRound2: parseInt(roundIndex) === 1
+        // Final round specific fields
+        previousRoundScore: isFinalRound && hasPreviousRounds ? Math.round(previousRoundScore * 10) / 10 : null,
+        currentRoundScore: isFinalRound && hasPreviousRounds ? Math.round(currentRoundScore * 10) / 10 : null,
+        isFinalRound: isFinalRound
       };
     });
 
@@ -3291,7 +3433,8 @@ exports.getLeaderboard = async (req, res) => {
       hackathon: {
         id: hackathon._id,
         title: hackathon.title,
-        roundIndex: parseInt(roundIndex)
+        roundIndex: parseInt(roundIndex),
+        rounds: hackathon.rounds || []
       },
       leaderboard,
       summary: {
@@ -3337,16 +3480,12 @@ exports.performShortlisting = async (req, res) => {
       // Use provided submission IDs
       submissionsToShortlist = submissionIds;
     } else {
-      // Get leaderboard data - handle both roundIndex 0 and 1 for Round 1 shortlisting
+      // Get leaderboard data for the specified round
       // Include both submitted and shortlisted submissions to handle cases where submissions are already shortlisted
       const submissions = await Submission.find({ 
         hackathonId: hackathonId, 
         status: { $in: ['submitted', 'shortlisted'] },
-        $or: [
-          { roundIndex: parseInt(roundIndex) },
-          { roundIndex: 0 }, // Many submissions are in round 0
-          { roundIndex: { $exists: false } } // Some submissions have no roundIndex
-        ]
+        roundIndex: parseInt(roundIndex)
       }).populate('teamId', 'name leader')
         .populate('submittedBy', 'name email')
         .lean();
@@ -3477,7 +3616,7 @@ exports.performShortlisting = async (req, res) => {
           const updateResult = await Submission.findByIdAndUpdate(submissionId, { 
             status: 'shortlisted',
             shortlistedAt: new Date(),
-            shortlistedForRound: 2 // Round 2 (since we're shortlisting from Round 1)
+            shortlistedForRound: parseInt(roundIndex) + 1 // Shortlist for the next round
           });
           
           console.log(`🔍 Backend - Successfully updated submission ${submissionId}:`, updateResult ? 'Updated' : 'Not found');
@@ -3497,7 +3636,7 @@ exports.performShortlisting = async (req, res) => {
     console.log('🔍 Backend - All submission updates completed');
     console.log('🔍 Backend - Shortlisted teams:', Array.from(shortlistedTeams));
 
-    // Update hackathon round progress with shortlisted teams
+    // Update hackathon round progress with enhanced eligibility tracking
     const roundProgressIndex = hackathon.roundProgress.findIndex(rp => rp.roundIndex === parseInt(roundIndex));
     
     if (roundProgressIndex >= 0) {
@@ -3505,13 +3644,43 @@ exports.performShortlisting = async (req, res) => {
       hackathon.roundProgress[roundProgressIndex].shortlistedSubmissions = submissionsToShortlist;
       hackathon.roundProgress[roundProgressIndex].shortlistedTeams = Array.from(shortlistedTeams);
       hackathon.roundProgress[roundProgressIndex].shortlistedAt = new Date();
+      
+      // Enhanced eligibility tracking
+      hackathon.roundProgress[roundProgressIndex].eligibleTeams = Array.from(shortlistedTeams);
+      hackathon.roundProgress[roundProgressIndex].eligibleSubmissions = submissionsToShortlist;
+      hackathon.roundProgress[roundProgressIndex].roundCompleted = true;
+      hackathon.roundProgress[roundProgressIndex].nextRoundEligibility = true;
+      
+      // Add eligible participants (both team members and individual participants)
+      const eligibleParticipants = new Set();
+      for (const teamId of shortlistedTeams) {
+        const team = await Team.findById(teamId);
+        if (team && team.members) {
+          team.members.forEach(memberId => eligibleParticipants.add(memberId.toString()));
+        }
+      }
+      hackathon.roundProgress[roundProgressIndex].eligibleParticipants = Array.from(eligibleParticipants);
+      
     } else {
       // Add new round progress
+      const eligibleParticipants = new Set();
+      for (const teamId of shortlistedTeams) {
+        const team = await Team.findById(teamId);
+        if (team && team.members) {
+          team.members.forEach(memberId => eligibleParticipants.add(memberId.toString()));
+        }
+      }
+      
       hackathon.roundProgress.push({
         roundIndex: parseInt(roundIndex),
         shortlistedSubmissions: submissionsToShortlist,
         shortlistedTeams: Array.from(shortlistedTeams),
-        shortlistedAt: new Date()
+        shortlistedAt: new Date(),
+        eligibleTeams: Array.from(shortlistedTeams),
+        eligibleParticipants: Array.from(eligibleParticipants),
+        eligibleSubmissions: submissionsToShortlist,
+        roundCompleted: true,
+        nextRoundEligibility: true
       });
     }
 
@@ -3547,7 +3716,7 @@ exports.performShortlisting = async (req, res) => {
     // Create timeline notifications for participants
     try {
       console.log('🔍 Backend - Creating timeline notifications...');
-      await exports.createShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode);
+      await exports.createShortlistingNotifications(hackathon, Array.from(shortlistedTeams), submissionsToShortlist, mode, parseInt(roundIndex));
       console.log('🔍 Backend - Timeline notifications created successfully');
     } catch (notificationError) {
       console.error('🔍 Backend - Error creating timeline notifications:', notificationError);
@@ -3606,7 +3775,7 @@ exports.toggleSubmissionShortlist = async (req, res) => {
     const updateData = {
       status: shortlist ? 'shortlisted' : 'submitted',
       shortlistedAt: shortlist ? new Date() : null,
-      shortlistedForRound: shortlist ? 2 : null
+      shortlistedForRound: shortlist ? parseInt(roundIndex) + 1 : null
     };
 
     await Submission.findByIdAndUpdate(submissionId, updateData);
@@ -3678,8 +3847,8 @@ exports.toggleSubmissionShortlist = async (req, res) => {
             await Notification.create({
               recipient: memberId,
               message: shortlist 
-                ? `🎉 Congratulations! Your team "${submission.teamId.name}" has been selected for Round 2 of ${hackathon.title}. You can now submit a new project for Round 2.`
-                : `📋 Round 2 Selection Update: Your team "${submission.teamId.name}" is no longer shortlisted for Round 2 of ${hackathon.title}.`,
+                ? `🎉 Congratulations! Your team "${submission.teamId.name}" has been selected for Round ${parseInt(roundIndex) + 2} of ${hackathon.title}. You can now submit a new project for Round ${parseInt(roundIndex) + 2}.`
+                : `📋 Round ${parseInt(roundIndex) + 2} Selection Update: Your team "${submission.teamId.name}" is no longer shortlisted for Round ${parseInt(roundIndex) + 2} of ${hackathon.title}.`,
               type: shortlist ? 'success' : 'info',
               hackathon: hackathon._id,
               createdAt: new Date()
@@ -3690,8 +3859,8 @@ exports.toggleSubmissionShortlist = async (req, res) => {
           await Notification.create({
             recipient: submission.submittedBy._id,
             message: shortlist 
-              ? `🎉 Congratulations! You have been selected for Round 2 of ${hackathon.title}. You can now submit a new project for Round 2.`
-              : `📋 Round 2 Selection Update: You are no longer shortlisted for Round 2 of ${hackathon.title}.`,
+              ? `🎉 Congratulations! You have been selected for Round ${parseInt(roundIndex) + 2} of ${hackathon.title}. You can now submit a new project for Round ${parseInt(roundIndex) + 2}.`
+              : `📋 Round ${parseInt(roundIndex) + 2} Selection Update: You are no longer shortlisted for Round ${parseInt(roundIndex) + 2} of ${hackathon.title}.`,
             type: shortlist ? 'success' : 'info',
             hackathon: hackathon._id,
             createdAt: new Date()
@@ -3718,13 +3887,13 @@ exports.toggleSubmissionShortlist = async (req, res) => {
   }
 };
 
-// 🎯 Check if user/team is shortlisted for Round 2
-exports.checkRound2Eligibility = async (req, res) => {
+// 🎯 Get comprehensive shortlisting status for all rounds
+exports.getShortlistingStatus = async (req, res) => {
   try {
     const { hackathonId } = req.params;
     const userId = req.user._id;
     
-    console.log('🔍 Backend - checkRound2Eligibility called for:', { hackathonId, userId });
+    console.log('🔍 Backend - getShortlistingStatus called for:', { hackathonId, userId });
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -3737,24 +3906,284 @@ exports.checkRound2Eligibility = async (req, res) => {
     if (!isRegistered) {
       return res.status(403).json({ 
         eligible: false, 
-        message: 'You must be registered for this hackathon to participate in Round 2' 
+        message: `You must be registered for this hackathon to participate` 
       });
     }
 
-    // Check if Round 2 exists
-    if (!hackathon.rounds || hackathon.rounds.length < 2) {
+    const Team = require("../model/TeamModel");
+    const Submission = require("../model/SubmissionModel");
+    
+    const userTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId, 
+      status: 'active' 
+    });
+
+    // Get shortlisting status for each round
+    const shortlistingStatus = {};
+    
+    for (let roundIndex = 0; roundIndex < hackathon.rounds.length - 1; roundIndex++) {
+      const nextRoundIndex = roundIndex + 1;
+      let isShortlisted = false;
+      let shortlistingSource = null;
+      let shortlistingDetails = null;
+      let roundProgress = null;
+
+      // Find the round progress for this round
+      if (hackathon.roundProgress) {
+        roundProgress = hackathon.roundProgress.find(rp => rp.roundIndex === roundIndex);
+      }
+
+      // Method 1: Check enhanced round progress for team-based eligibility
+      if (userTeam && roundProgress) {
+        if (roundProgress.eligibleTeams && roundProgress.eligibleTeams.includes(userTeam._id.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'enhanced_round_progress_team';
+          shortlistingDetails = {
+            teamId: userTeam._id,
+            teamName: userTeam.name,
+            roundIndex: roundIndex,
+            nextRoundIndex: nextRoundIndex
+          };
+        }
+      }
+
+      // Method 2: Check enhanced round progress for individual eligibility
+      if (!isShortlisted && roundProgress) {
+        if (roundProgress.eligibleParticipants && roundProgress.eligibleParticipants.includes(userId.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'enhanced_round_progress_user';
+          shortlistingDetails = {
+            userId: userId,
+            roundIndex: roundIndex,
+            nextRoundIndex: nextRoundIndex
+          };
+        }
+      }
+
+      // Method 3: Check legacy shortlisted teams
+      if (!isShortlisted && roundProgress) {
+        if (roundProgress.shortlistedTeams && roundProgress.shortlistedTeams.includes(userTeam?._id?.toString() || userId.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'legacy_shortlisted_teams';
+        }
+      }
+
+      // Method 4: Check submission status (individual submissions)
+      if (!isShortlisted) {
+        const shortlistedSubmission = await Submission.findOne({
+          hackathonId: hackathonId,
+          $or: [
+            { teamId: userTeam?._id },
+            { submittedBy: userId }
+          ],
+          shortlistedForRound: nextRoundIndex + 1,
+          status: 'shortlisted'
+        });
+        
+        if (shortlistedSubmission) {
+          isShortlisted = true;
+          shortlistingSource = 'submission_status';
+          shortlistingDetails = {
+            submissionId: shortlistedSubmission._id,
+            projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
+            shortlistedAt: shortlistedSubmission.shortlistedAt
+          };
+        }
+      }
+
+      // Method 5: Check advanced participants (legacy support)
+      if (!isShortlisted && roundProgress) {
+        if (roundProgress.advancedParticipantIds && roundProgress.advancedParticipantIds.includes(userId.toString())) {
+          isShortlisted = true;
+          shortlistingSource = 'advanced_participants';
+        }
+      }
+
+      shortlistingStatus[`round${roundIndex + 1}ToRound${nextRoundIndex + 1}`] = {
+        isShortlisted,
+        shortlistingSource,
+        shortlistingDetails,
+        roundIndex,
+        nextRoundIndex,
+        roundProgress: roundProgress ? {
+          roundCompleted: roundProgress.roundCompleted,
+          nextRoundEligibility: roundProgress.nextRoundEligibility,
+          shortlistedAt: roundProgress.shortlistedAt
+        } : null
+      };
+    }
+
+    console.log('🔍 Backend - Enhanced shortlisting status for user:', shortlistingStatus);
+
+    return res.status(200).json({
+      shortlistingStatus,
+      totalRounds: hackathon.rounds.length,
+      userTeam: userTeam ? userTeam._id : null,
+      currentRound: hackathon.rounds?.length || 0
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error in getShortlistingStatus:', error);
+    return res.status(500).json({ 
+      message: 'Failed to get shortlisting status', 
+      error: error.message
+    });
+  }
+};
+
+// 🎯 Check if user/team is eligible for a specific round
+exports.checkRoundEligibility = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params;
+    const userId = req.user._id;
+    
+    console.log('🔍 Backend - checkRoundEligibility called for:', { hackathonId, roundIndex, userId });
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Check if user is registered for this hackathon
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(403).json({ 
+        eligible: false, 
+        message: `You must be registered for this hackathon to participate in Round ${roundIndex + 1}` 
+      });
+    }
+
+    // Check if the specified round exists
+    if (!hackathon.rounds || hackathon.rounds.length <= roundIndex) {
       return res.status(400).json({ 
         eligible: false, 
-        message: 'This hackathon does not have a Round 2' 
+        message: `This hackathon does not have a Round ${roundIndex + 1}` 
       });
     }
 
-    // Check if Round 2 has started
-    const round2StartDate = hackathon.rounds[1]?.startDate;
+    // Check if the specified round has started
+    const roundStartDate = hackathon.rounds[roundIndex]?.startDate;
     const now = new Date();
-    const round2Started = round2StartDate && now >= new Date(round2StartDate);
+    const roundStarted = roundStartDate && now >= new Date(roundStartDate);
 
-    console.log('🔍 Backend - Round 2 status:', { round2StartDate, now, round2Started });
+    console.log('🔍 Backend - Round status:', { roundStartDate, now, roundStarted, roundIndex });
+
+    // Check if user's team was shortlisted
+    const Team = require("../model/TeamModel");
+    const userTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId, 
+      status: 'active' 
+    });
+
+    let isEligible = false;
+    let eligibilitySource = null;
+    let eligibilityDetails = null;
+
+    // For Round 1 (index 0), everyone is eligible
+    if (roundIndex === 0) {
+      isEligible = true;
+      eligibilitySource = 'first_round';
+    } else {
+      // For subsequent rounds, check eligibility from previous round
+      const previousRoundIndex = roundIndex - 1;
+      const previousRoundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === previousRoundIndex);
+      
+      if (previousRoundProgress) {
+        // Check enhanced eligibility tracking
+        if (userTeam && previousRoundProgress.eligibleTeams && previousRoundProgress.eligibleTeams.includes(userTeam._id.toString())) {
+          isEligible = true;
+          eligibilitySource = 'enhanced_eligible_teams';
+          eligibilityDetails = {
+            teamId: userTeam._id,
+            teamName: userTeam.name,
+            previousRound: previousRoundIndex,
+            currentRound: roundIndex
+          };
+        } else if (previousRoundProgress.eligibleParticipants && previousRoundProgress.eligibleParticipants.includes(userId.toString())) {
+          isEligible = true;
+          eligibilitySource = 'enhanced_eligible_participants';
+          eligibilityDetails = {
+            userId: userId,
+            previousRound: previousRoundIndex,
+            currentRound: roundIndex
+          };
+        } else if (previousRoundProgress.shortlistedTeams && previousRoundProgress.shortlistedTeams.includes(userTeam?._id?.toString() || userId.toString())) {
+          isEligible = true;
+          eligibilitySource = 'legacy_shortlisted_teams';
+        }
+      }
+    }
+
+    console.log('🔍 Backend - Final eligibility result:', { 
+      isEligible, 
+      eligibilitySource, 
+      roundStarted,
+      eligible: isEligible && roundStarted 
+    });
+
+    return res.status(200).json({
+      eligible: isEligible && roundStarted,
+      shortlisted: isEligible,
+      message: isEligible 
+        ? (roundStarted ? `You are eligible to submit to Round ${roundIndex + 1}` : `You are eligible for Round ${roundIndex + 1}, but Round ${roundIndex + 1} has not started yet`)
+        : `You are not eligible for Round ${roundIndex + 1}. You must qualify from the previous round.`,
+      roundStarted: roundStarted,
+      roundStartDate: roundStartDate,
+      roundIndex: roundIndex,
+      eligibilityDetails,
+      eligibilitySource,
+      isFirstRound: roundIndex === 0
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error in checkRoundEligibility:', error);
+    return res.status(500).json({ 
+      message: 'Failed to check eligibility', 
+      error: error.message
+    });
+  }
+};
+
+// 🎯 Check if user/team is shortlisted for the next round (backward compatibility)
+exports.checkNextRoundEligibility = async (req, res) => {
+  try {
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1) for backward compatibility
+    const userId = req.user._id;
+    
+    console.log('🔍 Backend - checkNextRoundEligibility called for:', { hackathonId, roundIndex, userId });
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Check if user is registered for this hackathon
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(403).json({ 
+        eligible: false, 
+        message: `You must be registered for this hackathon to participate in Round ${roundIndex + 1}` 
+      });
+    }
+
+    // Check if the specified round exists
+    if (!hackathon.rounds || hackathon.rounds.length <= roundIndex) {
+      return res.status(400).json({ 
+        eligible: false, 
+        message: `This hackathon does not have a Round ${roundIndex + 1}` 
+      });
+    }
+
+    // Check if the specified round has started
+    const roundStartDate = hackathon.rounds[roundIndex]?.startDate;
+    const now = new Date();
+    const roundStarted = roundStartDate && now >= new Date(roundStartDate);
+
+    console.log('🔍 Backend - Round status:', { roundStartDate, now, roundStarted, roundIndex });
 
     // Check if user's team was shortlisted
     const Team = require("../model/TeamModel");
@@ -3777,7 +4206,16 @@ exports.checkRound2Eligibility = async (req, res) => {
 
     // Method 1: Check hackathon round progress for team-based shortlisting
     if (userTeam && hackathon.roundProgress) {
+      console.log('🔍 Backend - Checking team-based shortlisting for user:', userId);
+      console.log('🔍 Backend - User team ID:', userTeam._id.toString());
+      
       for (const progress of hackathon.roundProgress) {
+        console.log('🔍 Backend - Checking round progress:', {
+          roundIndex: progress.roundIndex,
+          shortlistedTeams: progress.shortlistedTeams?.length || 0,
+          shortlistedTeamsArray: progress.shortlistedTeams
+        });
+        
         if (progress.shortlistedTeams && progress.shortlistedTeams.includes(userTeam._id.toString())) {
           isShortlisted = true;
           shortlistingSource = 'hackathon_round_progress_team';
@@ -3785,11 +4223,46 @@ exports.checkRound2Eligibility = async (req, res) => {
           break;
         }
       }
+      
+      // Also check for team submissions from previous round that were shortlisted
+      if (!isShortlisted && roundIndex > 0) {
+        const previousRoundSubmissions = await Submission.find({
+          hackathonId: hackathonId,
+          teamId: userTeam._id,
+          roundIndex: roundIndex - 1
+        });
+        
+        if (previousRoundSubmissions.length > 0) {
+          // Check if any of the team's previous round submissions are in the shortlisted submissions
+          const previousRoundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndex - 1);
+          if (previousRoundProgress && previousRoundProgress.shortlistedSubmissions) {
+            const teamSubmissionIds = previousRoundSubmissions.map(s => s._id.toString());
+            const hasShortlistedSubmission = teamSubmissionIds.some(id => 
+              previousRoundProgress.shortlistedSubmissions.includes(id)
+            );
+            
+            if (hasShortlistedSubmission) {
+              isShortlisted = true;
+              shortlistingSource = 'previous_round_team_submission';
+              console.log('🔍 Backend - User shortlisted via team previous round submission');
+            }
+          }
+        }
+      }
     }
 
     // Method 2: Check hackathon round progress for individual user shortlisting
     if (!isShortlisted && hackathon.roundProgress) {
+      console.log('🔍 Backend - Checking individual user shortlisting for user:', userId);
+      
       for (const progress of hackathon.roundProgress) {
+        console.log('🔍 Backend - Checking individual round progress:', {
+          roundIndex: progress.roundIndex,
+          shortlistedTeams: progress.shortlistedTeams?.length || 0,
+          shortlistedTeamsArray: progress.shortlistedTeams,
+          userId: userId.toString()
+        });
+        
         if (progress.shortlistedTeams && progress.shortlistedTeams.includes(userId.toString())) {
           isShortlisted = true;
           shortlistingSource = 'hackathon_round_progress_user';
@@ -3802,10 +4275,13 @@ exports.checkRound2Eligibility = async (req, res) => {
     // Method 3: Check submission status (individual submissions)
     if (!isShortlisted) {
       const Submission = require("../model/SubmissionModel");
+      
+      // Check for submissions shortlisted for this specific round
       const shortlistedSubmission = await Submission.findOne({
         hackathonId: hackathonId,
         submittedBy: userId,
-        status: 'shortlisted'
+        status: 'shortlisted',
+        shortlistedForRound: roundIndex + 1 // Check for the specific round
       });
       
       if (shortlistedSubmission) {
@@ -3817,6 +4293,32 @@ exports.checkRound2Eligibility = async (req, res) => {
           shortlistedAt: shortlistedSubmission.shortlistedAt
         };
         console.log('🔍 Backend - User has shortlisted submission:', shortlistedSubmission._id);
+      }
+      
+      // Also check for submissions from previous round that were shortlisted
+      if (!isShortlisted && roundIndex > 0) {
+        const previousRoundSubmissions = await Submission.find({
+          hackathonId: hackathonId,
+          submittedBy: userId,
+          roundIndex: roundIndex - 1
+        });
+        
+        if (previousRoundSubmissions.length > 0) {
+          // Check if any of the user's previous round submissions are in the shortlisted submissions
+          const previousRoundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndex - 1);
+          if (previousRoundProgress && previousRoundProgress.shortlistedSubmissions) {
+            const userSubmissionIds = previousRoundSubmissions.map(s => s._id.toString());
+            const hasShortlistedSubmission = userSubmissionIds.some(id => 
+              previousRoundProgress.shortlistedSubmissions.includes(id)
+            );
+            
+            if (hasShortlistedSubmission) {
+              isShortlisted = true;
+              shortlistingSource = 'previous_round_submission';
+              console.log('🔍 Backend - User shortlisted via previous round submission');
+            }
+          }
+        }
       }
     }
 
@@ -3832,27 +4334,36 @@ exports.checkRound2Eligibility = async (req, res) => {
       }
     }
 
+    // Check if this is the first round (everyone is eligible)
+    const isFirstRound = roundIndex === 0;
+    if (isFirstRound) {
+      isShortlisted = true;
+      shortlistingSource = 'first_round';
+    }
+
     console.log('🔍 Backend - Final eligibility result:', { 
       isShortlisted, 
       shortlistingSource, 
-      round2Started,
-      eligible: isShortlisted && round2Started 
+      roundStarted,
+      eligible: isShortlisted && roundStarted 
     });
 
     return res.status(200).json({
-      eligible: isShortlisted && round2Started, // Only eligible if shortlisted AND Round 2 has started
-      shortlisted: isShortlisted, // Always return shortlisting status regardless of Round 2 start
+      eligible: isShortlisted && roundStarted, // Only eligible if shortlisted AND the round has started
+      shortlisted: isShortlisted, // Always return shortlisting status regardless of round start
       message: isShortlisted 
-        ? (round2Started ? 'You are eligible to submit to Round 2' : 'You are shortlisted for Round 2, but Round 2 has not started yet')
-        : 'Your team was not shortlisted for Round 2',
-      round2Started: round2Started,
-      round2StartDate: round2StartDate,
+        ? (roundStarted ? `You are eligible to submit to Round ${roundIndex + 1}` : `You are shortlisted for Round ${roundIndex + 1}, but Round ${roundIndex + 1} has not started yet`)
+        : `Your team was not shortlisted for Round ${roundIndex + 1}`,
+      roundStarted: roundStarted,
+      roundStartDate: roundStartDate,
+      roundIndex: roundIndex,
       shortlistingDetails,
-      shortlistingSource
+      shortlistingSource,
+      isFirstRound: isFirstRound
     });
 
   } catch (error) {
-    console.error('🔍 Backend - Error in checkRound2Eligibility:', error);
+    console.error('🔍 Backend - Error in checkNextRoundEligibility:', error);
     return res.status(500).json({ 
       message: 'Failed to check eligibility', 
       error: error.message
@@ -3860,10 +4371,10 @@ exports.checkRound2Eligibility = async (req, res) => {
   }
 };
 
-// 🎯 Check and Auto-Progress Round 2
-exports.checkAndAutoProgressRound2 = async (req, res) => {
+// 🎯 Check and Auto-Progress to Next Round
+exports.checkAndAutoProgressToNextRound = async (req, res) => {
   try {
-    const { hackathonId } = req.params;
+    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1) for backward compatibility
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -3871,33 +4382,33 @@ exports.checkAndAutoProgressRound2 = async (req, res) => {
     }
 
     const now = new Date();
-    const round2StartDate = hackathon.rounds?.[1]?.startDate; // Round 2 start date
+    const roundStartDate = hackathon.rounds?.[roundIndex]?.startDate; // Round start date
 
-    if (round2StartDate && now >= new Date(round2StartDate)) {
-      // Round 2 has started, move shortlisted submissions to round 2
+    if (roundStartDate && now >= new Date(roundStartDate)) {
+      // Round has started, move shortlisted submissions to this round
       const shortlistedSubmissions = await Submission.find({
         hackathonId: hackathonId,
         status: 'shortlisted',
-        shortlistedForRound: 2
+        shortlistedForRound: roundIndex + 1
       });
 
       if (shortlistedSubmissions.length > 0) {
-        // Update submissions to round 2
+        // Update submissions to the specified round
         await Submission.updateMany(
           { _id: { $in: shortlistedSubmissions.map(s => s._id) } },
           { 
-            roundIndex: 1, // Round 2 (index 1 in the rounds array)
+            roundIndex: roundIndex, // Move to the specified round
             status: 'submitted',
             shortlistedForRound: null // Clear shortlisting flag
           }
         );
 
-        console.log(`🔍 Auto-progressed ${shortlistedSubmissions.length} submissions to Round 2`);
+        console.log(`🔍 Auto-progressed ${shortlistedSubmissions.length} submissions to Round ${roundIndex + 1}`);
         
         return res.status(200).json({
           progressed: true,
           count: shortlistedSubmissions.length,
-          message: `Successfully progressed ${shortlistedSubmissions.length} submissions to Round 2`
+          message: `Successfully progressed ${shortlistedSubmissions.length} submissions to Round ${roundIndex + 1}`
         });
       }
     }
@@ -3905,10 +4416,10 @@ exports.checkAndAutoProgressRound2 = async (req, res) => {
     return res.status(200).json({
       progressed: false,
       count: 0,
-      message: 'No submissions to progress or Round 2 has not started yet'
+      message: `No submissions to progress or Round ${roundIndex + 1} has not started yet`
     });
   } catch (error) {
-    console.error('🔍 Error in auto-progress round 2:', error);
+    console.error('🔍 Error in auto-progress to next round:', error);
     return res.status(500).json({ 
       message: 'Failed to check auto-progress', 
       error: error.message 
@@ -3938,16 +4449,16 @@ exports.getShortlistedSubmissions = async (req, res) => {
     // Get scores for shortlisted submissions
     const Score = require('../model/ScoreModel');
     const scores = await Score.find({ 
-      submissionId: { $in: shortlistedSubmissions.map(s => s._id) } 
+      submission: { $in: shortlistedSubmissions.map(s => s._id) } 
     }).populate('judge', 'name email').lean();
 
     // Create a map of submission scores
     const submissionScores = {};
     scores.forEach(score => {
-      if (!submissionScores[score.submissionId.toString()]) {
-        submissionScores[score.submissionId.toString()] = [];
+      if (!submissionScores[score.submission.toString()]) {
+        submissionScores[score.submission.toString()] = [];
       }
-      submissionScores[score.submissionId.toString()].push(score);
+      submissionScores[score.submission.toString()].push(score);
     });
 
     // Format shortlisted submissions with scores
@@ -4586,7 +5097,7 @@ function getSelectionMethodText(mode) {
 }
 
 // 🎯 Create timeline notifications for shortlisting
-exports.createShortlistingNotifications = async function(hackathon, shortlistedTeams, shortlistedSubmissions, mode) {
+exports.createShortlistingNotifications = async function(hackathon, shortlistedTeams, shortlistedSubmissions, mode, roundIndex = 0) {
   try {
     const User = require('../model/UserModel');
     const Team = require('../model/TeamModel');
@@ -4689,7 +5200,7 @@ exports.createShortlistingNotifications = async function(hackathon, shortlistedT
       if (participantDetail) {
         shortlistedNotifications.push({
           recipient: participantId,
-          message: `🎉 Congratulations! You have been selected for Round 2 of ${hackathon.title}. Your project "${participantDetail.submissionTitle}" has been shortlisted. You can now submit a new project for Round 2.`,
+          message: `🎉 Congratulations! You have been selected for Round ${roundIndex + 2} of ${hackathon.title}. Your project "${participantDetail.submissionTitle}" has been shortlisted. You can now submit a new project for Round ${roundIndex + 2}.`,
           type: 'success',
           hackathon: hackathon._id,
           createdAt: new Date()
@@ -4704,7 +5215,7 @@ exports.createShortlistingNotifications = async function(hackathon, shortlistedT
       if (participantDetail) {
         nonShortlistedNotifications.push({
           recipient: participantId,
-          message: `📋 Round 2 Selection Update: Thank you for participating in Round 1 of ${hackathon.title}. After careful evaluation, you are not shortlisted for Round 2. Keep an eye on future hackathons!`,
+          message: `📋 Round ${roundIndex + 2} Selection Update: Thank you for participating in Round ${roundIndex + 1} of ${hackathon.title}. After careful evaluation, you are not shortlisted for Round ${roundIndex + 2}. Keep an eye on future hackathons!`,
           type: 'info',
           hackathon: hackathon._id,
           createdAt: new Date()
@@ -4747,9 +5258,9 @@ exports.getShortlistingNotifications = async (req, res) => {
       recipient: userId,
       hackathon: hackathonId,
       $or: [
-        { message: { $regex: /selected for Round 2/i } },
-        { message: { $regex: /not shortlisted for Round 2/i } },
-        { message: { $regex: /Round 2 Selection Update/i } }
+        { message: { $regex: /selected for Round/i } },
+        { message: { $regex: /not shortlisted for Round/i } },
+        { message: { $regex: /Round.*Selection Update/i } }
       ]
     })
     .sort({ createdAt: -1 })
@@ -4774,126 +5285,68 @@ exports.getShortlistingNotifications = async (req, res) => {
 exports.debugShortlistingData = async (req, res) => {
   try {
     const { hackathonId } = req.params;
-    const userId = req.user._id;
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
       return res.status(404).json({ message: 'Hackathon not found' });
     }
 
-    // Get user's team
+    // Get all submissions for this hackathon
+    const Submission = require("../model/SubmissionModel");
+    const allSubmissions = await Submission.find({ hackathonId }).populate('submittedBy', 'name email').populate('teamId', 'name members');
+
+    // Get all teams for this hackathon
     const Team = require("../model/TeamModel");
-    const userTeam = await Team.findOne({ 
-      hackathon: hackathonId, 
-      members: userId, 
-      status: 'active' 
-    });
+    const allTeams = await Team.find({ hackathon: hackathonId, status: 'active' });
 
-    // Get all submissions for this user/team
-    const userSubmissions = await Submission.find({
-      hackathonId: hackathonId,
-      $or: [
-        { submittedBy: userId },
-        { teamId: userTeam?._id }
-      ]
-    }).populate('teamId', 'name members').populate('submittedBy', 'name email');
+    // Check shortlisted submissions
+    const shortlistedSubmissions = allSubmissions.filter(sub => sub.status === 'shortlisted');
+    const nonShortlistedSubmissions = allSubmissions.filter(sub => sub.status !== 'shortlisted');
 
-    // Get hackathon round progress data
+    // Check round progress data
     const roundProgress = hackathon.roundProgress || [];
 
-    // Check eligibility using the same logic as checkRound2Eligibility
-    let isShortlisted = false;
-    let shortlistingSource = null;
-    let shortlistingDetails = null;
-
-    // Method 1: Check hackathon round progress data
-    if (roundProgress.length > 0) {
-      const round1Progress = roundProgress.find(rp => rp.roundIndex === 0);
-      if (round1Progress && round1Progress.shortlistedTeams) {
-        if (userTeam) {
-          if (round1Progress.shortlistedTeams.includes(userTeam._id.toString())) {
-            isShortlisted = true;
-            shortlistingSource = 'hackathon_round_progress';
-          }
-        } else {
-          if (round1Progress.shortlistedTeams.includes(userId.toString())) {
-            isShortlisted = true;
-            shortlistingSource = 'hackathon_round_progress';
-          }
-        }
-      }
-    }
-
-    // Method 2: Check submission status
-    if (!isShortlisted) {
-      const shortlistedSubmission = await Submission.findOne({
-        hackathonId: hackathonId,
-        $or: [
-          { teamId: userTeam?._id },
-          { submittedBy: userId }
-        ],
-        shortlistedForRound: 2,
-        status: 'shortlisted'
-      });
-      
-      if (shortlistedSubmission) {
-        isShortlisted = true;
-        shortlistingSource = 'submission_status';
-        shortlistingDetails = {
-          submissionId: shortlistedSubmission._id,
-          projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
-          shortlistedAt: shortlistedSubmission.shortlistedAt
-        };
-      }
-    }
-
-    // Method 3: Check advanced participants
-    if (!isShortlisted) {
-      for (const progress of roundProgress) {
-        if (progress.advancedParticipantIds && progress.advancedParticipantIds.includes(userId.toString())) {
-          isShortlisted = true;
-          shortlistingSource = 'advanced_participants';
-          break;
-        }
-      }
-    }
-
-    return res.status(200).json({
-      debug: {
-        userId: userId.toString(),
-        userTeam: userTeam ? {
-          _id: userTeam._id.toString(),
-          name: userTeam.name,
-          members: userTeam.members.map(m => m.toString())
-        } : null,
-        submissions: userSubmissions.map(s => ({
-          _id: s._id.toString(),
-          status: s.status,
-          shortlistedForRound: s.shortlistedForRound,
-          teamId: s.teamId?._id?.toString(),
-          submittedBy: s.submittedBy?._id?.toString(),
-          title: s.projectTitle || s.title
+    res.status(200).json({
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        rounds: hackathon.rounds,
+        roundProgress: roundProgress
+      },
+      submissions: {
+        total: allSubmissions.length,
+        shortlisted: shortlistedSubmissions.length,
+        nonShortlisted: nonShortlistedSubmissions.length,
+        shortlistedDetails: shortlistedSubmissions.map(sub => ({
+          id: sub._id,
+          status: sub.status,
+          shortlistedForRound: sub.shortlistedForRound,
+          submittedBy: sub.submittedBy?.name || sub.submittedBy?.email,
+          teamName: sub.teamId?.name,
+          projectTitle: sub.projectTitle || sub.title
         })),
-        hackathonRoundProgress: roundProgress.map(rp => ({
-          roundIndex: rp.roundIndex,
-          shortlistedTeams: rp.shortlistedTeams || [],
-          shortlistedSubmissions: rp.shortlistedSubmissions || [],
-          advancedParticipantIds: rp.advancedParticipantIds || []
-        })),
-        eligibilityResult: {
-          isShortlisted,
-          shortlistingSource,
-          shortlistingDetails
-        }
+        nonShortlistedDetails: nonShortlistedSubmissions.map(sub => ({
+          id: sub._id,
+          status: sub.status,
+          submittedBy: sub.submittedBy?.name || sub.submittedBy?.email,
+          teamName: sub.teamId?.name,
+          projectTitle: sub.projectTitle || sub.title
+        }))
+      },
+      teams: {
+        total: allTeams.length,
+        details: allTeams.map(team => ({
+          id: team._id,
+          name: team.name,
+          members: team.members,
+          status: team.status
+        }))
       }
     });
 
   } catch (error) {
-    console.error('🔍 Error in debug shortlisting data:', error);
-    return res.status(500).json({ 
-      message: 'Failed to debug shortlisting data', 
-      error: error.message 
-    });
+    console.error('Error in debugShortlistingData:', error);
+    res.status(500).json({ message: 'Failed to fetch debug data', error: error.message });
   }
 };
 
@@ -4906,7 +5359,7 @@ exports.assignWinners = async (req, res) => {
       userId: req.user.id 
     });
     
-    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    const { hackathonId, roundIndex } = req.params; // No default - must be specified
     const { winnerCount = 3, mode = 'topN', threshold, winnerIds } = req.body; // topN, threshold, or manual
     
     console.log('🔍 Backend - Parsed parameters:', { hackathonId, roundIndex, winnerCount, mode, threshold, winnerIds });
@@ -4930,15 +5383,21 @@ exports.assignWinners = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can assign winners' });
     }
 
-    // Verify this is Round 2
-    if (parseInt(roundIndex) !== 1) {
-      return res.status(400).json({ message: 'Winner assignment is only available for Round 2' });
+    // Verify this is the final round (winner assignment round)
+    const roundIndexNum = parseInt(roundIndex);
+    const totalRounds = hackathon.rounds ? hackathon.rounds.length : 0;
+    const isFinalRound = roundIndexNum === totalRounds - 1;
+    
+    if (!isFinalRound) {
+      return res.status(400).json({ 
+        message: `Winner assignment is only available for the final round (Round ${totalRounds}). Current round: ${roundIndexNum + 1}` 
+      });
     }
 
     // Check if winners have already been assigned
     const existingWinners = await Submission.find({ 
       hackathonId: hackathonId, 
-      roundIndex: 1,
+      roundIndex: roundIndexNum,
       status: 'winner' 
     });
     
@@ -4946,73 +5405,80 @@ exports.assignWinners = async (req, res) => {
     console.log('🔍 Backend - Winner assignment type:', isReassignment ? 'Reassignment' : 'Initial assignment');
     console.log('🔍 Backend - Existing winners found:', existingWinners.length);
 
-    // Get Round 2 submissions with combined scores
+    // Get final round submissions with combined scores
     const submissions = await Submission.find({ 
       hackathonId: hackathonId, 
-      roundIndex: 1 // Only Round 2 submissions
+      roundIndex: roundIndexNum // Only final round submissions
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
       .populate('projectId', 'title')
       .lean();
 
     if (submissions.length === 0) {
-      console.log('🔍 Backend - No Round 2 submissions found');
-      return res.status(400).json({ message: 'No Round 2 submissions found for winner assignment' });
-    }
+          console.log(`🔍 Backend - No final round (${roundIndexNum}) submissions found`);
+    return res.status(400).json({ message: `No final round submissions found for winner assignment` });
+  }
 
-    console.log('🔍 Backend - Found Round 2 submissions:', submissions.length);
-    console.log('🔍 Backend - Submission IDs:', submissions.map(s => s._id));
-    console.log('🔍 Backend - Sample submission:', submissions[0] ? {
-      id: submissions[0]._id,
-      projectId: submissions[0].projectId,
-      teamId: submissions[0].teamId,
-      submittedBy: submissions[0].submittedBy,
-      status: submissions[0].status
-    } : 'No submissions');
+  console.log(`🔍 Backend - Found final round (${roundIndexNum}) submissions:`, submissions.length);
+  console.log('🔍 Backend - Submission IDs:', submissions.map(s => s._id));
+  console.log('🔍 Backend - Sample submission:', submissions[0] ? {
+    id: submissions[0]._id,
+    projectId: submissions[0].projectId,
+    teamId: submissions[0].teamId,
+    submittedBy: submissions[0].submittedBy,
+    status: submissions[0].status
+  } : 'No submissions');
 
-    // Get all scores for Round 2 submissions
-    const Score = require('../model/ScoreModel');
-    const round2Scores = await Score.find({ 
-      submission: { $in: submissions.map(s => s._id) } 
-    }).populate('judge', 'name email').lean();
+  // Get all scores for final round submissions
+  const Score = require('../model/ScoreModel');
+  const finalRoundScores = await Score.find({ 
+    submission: { $in: submissions.map(s => s._id) } 
+  }).populate('judge', 'name email').lean();
 
-    // Get Round 1 submissions for combined scoring
-    const round1Submissions = await Submission.find({
+  // Get previous round submissions for combined scoring (if not first round)
+  let previousRoundSubmissions = [];
+  let previousRoundScores = [];
+  
+  if (roundIndexNum > 0) {
+    previousRoundSubmissions = await Submission.find({
       hackathonId: hackathonId,
-      roundIndex: 0
+      roundIndex: roundIndexNum - 1
     }).populate('teamId', 'name leader').lean();
 
-    const round1Scores = await Score.find({ 
-      submission: { $in: round1Submissions.map(s => s._id) } 
+    previousRoundScores = await Score.find({ 
+      submission: { $in: previousRoundSubmissions.map(s => s._id) } 
     }).populate('judge', 'name email').lean();
+  }
 
     // Create maps for scoring
-    const round2SubmissionScores = {};
-    round2Scores.forEach(score => {
-      if (!round2SubmissionScores[score.submission.toString()]) {
-        round2SubmissionScores[score.submission.toString()] = [];
+    const finalRoundSubmissionScores = {};
+    finalRoundScores.forEach(score => {
+      if (!finalRoundSubmissionScores[score.submission.toString()]) {
+        finalRoundSubmissionScores[score.submission.toString()] = [];
       }
-      round2SubmissionScores[score.submission.toString()].push(score);
+      finalRoundSubmissionScores[score.submission.toString()].push(score);
     });
 
-    const round1TeamScores = {};
-    round1Submissions.forEach(submission => {
-      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
-      if (teamId) {
-        const submissionScores = round1Scores.filter(s => s.submission.toString() === submission._id.toString());
-        if (submissionScores.length > 0) {
-          round1TeamScores[teamId] = submissionScores;
+    const previousRoundTeamScores = {};
+    if (roundIndexNum > 0) {
+      previousRoundSubmissions.forEach(submission => {
+        const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+        if (teamId) {
+          const submissionScores = previousRoundScores.filter(s => s.submission.toString() === submission._id.toString());
+          if (submissionScores.length > 0) {
+            previousRoundTeamScores[teamId] = submissionScores;
+          }
         }
-      }
-    });
+      });
+    }
 
-    // Calculate combined scores for Round 2
+    // Calculate combined scores for final round
     const leaderboard = submissions.map(submission => {
-      const submissionScoresList = round2SubmissionScores[submission._id.toString()] || [];
+      const submissionScoresList = finalRoundSubmissionScores[submission._id.toString()] || [];
       
-      // Calculate Round 2 project score
-      let projectScore = 0;
-      let projectScoreCount = 0;
+      // Calculate final round score
+      let finalRoundScore = 0;
+      let finalRoundScoreCount = 0;
       
       submissionScoresList.forEach(score => {
         let totalCriteriaScore = 0;
@@ -5039,26 +5505,26 @@ exports.assignWinners = async (req, res) => {
         
         if (criteriaCount > 0) {
           const submissionScore = totalCriteriaScore / criteriaCount;
-          projectScore += submissionScore;
-          projectScoreCount++;
+          finalRoundScore += submissionScore;
+          finalRoundScoreCount++;
         } else if (score.totalScore && typeof score.totalScore === 'number') {
-          projectScore += score.totalScore;
-          projectScoreCount++;
+          finalRoundScore += score.totalScore;
+          finalRoundScoreCount++;
         }
       });
       
-      projectScore = projectScoreCount > 0 ? projectScore / projectScoreCount : 0;
+      finalRoundScore = finalRoundScoreCount > 0 ? finalRoundScore / finalRoundScoreCount : 0;
       
-      // Calculate Round 1 PPT score
-      let pptScore = 0;
+      // Calculate previous round score (if exists)
+      let previousRoundScore = 0;
       const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
-      const round1TeamScoresList = round1TeamScores[teamId] || [];
+      const previousRoundTeamScoresList = previousRoundTeamScores[teamId] || [];
       
-      if (round1TeamScoresList.length > 0) {
-        let round1TotalScore = 0;
-        let round1ScoreCount = 0;
+      if (previousRoundTeamScoresList.length > 0) {
+        let previousRoundTotalScore = 0;
+        let previousRoundScoreCount = 0;
         
-        round1TeamScoresList.forEach(score => {
+        previousRoundTeamScoresList.forEach(score => {
           let totalCriteriaScore = 0;
           let criteriaCount = 0;
           
@@ -5083,31 +5549,31 @@ exports.assignWinners = async (req, res) => {
           
           if (criteriaCount > 0) {
             const submissionScore = totalCriteriaScore / criteriaCount;
-            round1TotalScore += submissionScore;
-            round1ScoreCount++;
+            previousRoundTotalScore += submissionScore;
+            previousRoundScoreCount++;
           } else if (score.totalScore && typeof score.totalScore === 'number') {
-            round1TotalScore += score.totalScore;
-            round1ScoreCount++;
+            previousRoundTotalScore += score.totalScore;
+            previousRoundScoreCount++;
           }
         });
         
-        pptScore = round1ScoreCount > 0 ? round1TotalScore / round1ScoreCount : 0;
+        previousRoundScore = previousRoundScoreCount > 0 ? previousRoundTotalScore / previousRoundScoreCount : 0;
       }
       
-      // Calculate combined score: (PPT Score + Project Score) / 2
-      const combinedScore = (pptScore + projectScore) / 2;
+      // Calculate combined score: (Previous Round Score + Final Round Score) / 2
+      const combinedScore = roundIndexNum > 0 ? (previousRoundScore + finalRoundScore) / 2 : finalRoundScore;
       
-      return {
-        _id: submission._id,
-        projectTitle: submission.projectId?.title || submission.teamName || 'Untitled Project',
-        teamName: submission.teamName || submission.teamId?.name || 'No Team',
-        leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
-        pptScore: Math.round(pptScore * 10) / 10,
-        projectScore: Math.round(projectScore * 10) / 10,
-        combinedScore: Math.round(combinedScore * 10) / 10,
-        status: submission.status,
-        roundIndex: submission.roundIndex
-      };
+              return {
+          _id: submission._id,
+          projectTitle: submission.projectId?.title || submission.teamName || 'Untitled Project',
+          teamName: submission.teamName || submission.teamId?.name || 'No Team',
+          leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
+          previousRoundScore: roundIndexNum > 0 ? Math.round(previousRoundScore * 10) / 10 : null,
+          finalRoundScore: Math.round(finalRoundScore * 10) / 10,
+          combinedScore: Math.round(combinedScore * 10) / 10,
+          status: submission.status,
+          roundIndex: submission.roundIndex
+        };
     });
 
     // Sort by combined score (descending)
@@ -5397,7 +5863,7 @@ exports.sendWinnerEmails = async (req, res) => {
 // 🏆 Get Winners for Round 2
 exports.getWinners = async (req, res) => {
   try {
-    const { hackathonId, roundIndex = 1 } = req.params; // Default to Round 2 (index 1)
+    const { hackathonId, roundIndex } = req.params; // No default - must be specified
     
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
@@ -5409,15 +5875,21 @@ exports.getWinners = async (req, res) => {
       return res.status(403).json({ message: 'Only the organizer can view winners' });
     }
 
-    // Verify this is Round 2
-    if (parseInt(roundIndex) !== 1) {
-      return res.status(400).json({ message: 'Winner details are only available for Round 2' });
+    // Verify this is the final round (winner assignment round)
+    const roundIndexNum = parseInt(roundIndex);
+    const totalRounds = hackathon.rounds ? hackathon.rounds.length : 0;
+    const isFinalRound = roundIndexNum === totalRounds - 1;
+    
+    if (!isFinalRound) {
+      return res.status(400).json({ 
+        message: `Winner details are only available for the final round (Round ${totalRounds}). Current round: ${roundIndexNum + 1}` 
+      });
     }
 
-    // Get Round 2 submissions with winner status
+    // Get final round submissions with winner status
     const submissions = await Submission.find({ 
       hackathonId: hackathonId, 
-      roundIndex: 1, // Only Round 2 submissions
+      roundIndex: roundIndexNum, // Only final round submissions
       status: 'winner' // Only winners
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
@@ -5431,49 +5903,56 @@ exports.getWinners = async (req, res) => {
       });
     }
 
-    // Get all scores for Round 2 submissions
+    // Get all scores for final round submissions
     const Score = require('../model/ScoreModel');
-    const round2Scores = await Score.find({ 
+    const finalRoundScores = await Score.find({ 
       submission: { $in: submissions.map(s => s._id) } 
     }).populate('judge', 'name email').lean();
 
-    // Get Round 1 submissions for combined scoring
-    const round1Submissions = await Submission.find({
-      hackathonId: hackathonId,
-      roundIndex: 0
-    }).populate('teamId', 'name leader').lean();
+    // Get previous round submissions for combined scoring (if not first round)
+    let previousRoundSubmissions = [];
+    let previousRoundScores = [];
+    
+    if (roundIndexNum > 0) {
+      previousRoundSubmissions = await Submission.find({
+        hackathonId: hackathonId,
+        roundIndex: roundIndexNum - 1
+      }).populate('teamId', 'name leader').lean();
 
-    const round1Scores = await Score.find({ 
-      submission: { $in: round1Submissions.map(s => s._id) } 
-    }).populate('judge', 'name email').lean();
+      previousRoundScores = await Score.find({ 
+        submission: { $in: previousRoundSubmissions.map(s => s._id) } 
+      }).populate('judge', 'name email').lean();
+    }
 
     // Create maps for scoring
-    const round2SubmissionScores = {};
-    round2Scores.forEach(score => {
-      if (!round2SubmissionScores[score.submission.toString()]) {
-        round2SubmissionScores[score.submission.toString()] = [];
+    const finalRoundSubmissionScores = {};
+    finalRoundScores.forEach(score => {
+      if (!finalRoundSubmissionScores[score.submission.toString()]) {
+        finalRoundSubmissionScores[score.submission.toString()] = [];
       }
-      round2SubmissionScores[score.submission.toString()].push(score);
+      finalRoundSubmissionScores[score.submission.toString()].push(score);
     });
 
-    const round1TeamScores = {};
-    round1Submissions.forEach(submission => {
-      const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
-      if (teamId) {
-        const submissionScores = round1Scores.filter(s => s.submission.toString() === submission._id.toString());
-        if (submissionScores.length > 0) {
-          round1TeamScores[teamId] = submissionScores;
+    const previousRoundTeamScores = {};
+    if (roundIndexNum > 0) {
+      previousRoundSubmissions.forEach(submission => {
+        const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
+        if (teamId) {
+          const submissionScores = previousRoundScores.filter(s => s.submission.toString() === submission._id.toString());
+          if (submissionScores.length > 0) {
+            previousRoundTeamScores[teamId] = submissionScores;
+          }
         }
-      }
-    });
+      });
+    }
 
     // Calculate combined scores for winners
     const winners = submissions.map(submission => {
-      const submissionScoresList = round2SubmissionScores[submission._id.toString()] || [];
+      const submissionScoresList = finalRoundSubmissionScores[submission._id.toString()] || [];
       
-      // Calculate Round 2 project score
-      let projectScore = 0;
-      let projectScoreCount = 0;
+      // Calculate final round score
+      let finalRoundScore = 0;
+      let finalRoundScoreCount = 0;
       
       submissionScoresList.forEach(score => {
         let totalCriteriaScore = 0;
@@ -5500,45 +5979,45 @@ exports.getWinners = async (req, res) => {
         
         if (criteriaCount > 0) {
           const submissionScore = totalCriteriaScore / criteriaCount;
-          projectScore += submissionScore;
-          projectScoreCount++;
+          finalRoundScore += submissionScore;
+          finalRoundScoreCount++;
         } else if (score.totalScore && typeof score.totalScore === 'number') {
-          projectScore += score.totalScore;
-          projectScoreCount++;
+          finalRoundScore += score.totalScore;
+          finalRoundScoreCount++;
         }
       });
       
-      projectScore = projectScoreCount > 0 ? projectScore / projectScoreCount : 0;
+      finalRoundScore = finalRoundScoreCount > 0 ? finalRoundScore / finalRoundScoreCount : 0;
       
-      // Calculate Round 1 PPT score
-      let pptScore = 0;
+      // Calculate previous round score (if applicable)
+      let previousRoundScore = 0;
       const teamId = submission.teamId?._id?.toString() || submission.submittedBy?._id?.toString();
-      const round1TeamScoresList = round1TeamScores[teamId] || [];
+      const previousRoundTeamScoresList = previousRoundTeamScores[teamId] || [];
       
-      if (round1TeamScoresList.length > 0) {
-        let totalPptScore = 0;
-        let pptScoreCount = 0;
+      if (previousRoundTeamScoresList.length > 0) {
+        let totalPreviousRoundScore = 0;
+        let previousRoundScoreCount = 0;
         
-        round1TeamScoresList.forEach(score => {
+        previousRoundTeamScoresList.forEach(score => {
           if (score.totalScore && typeof score.totalScore === 'number') {
-            totalPptScore += score.totalScore;
-            pptScoreCount++;
+            totalPreviousRoundScore += score.totalScore;
+            previousRoundScoreCount++;
           }
         });
         
-        pptScore = pptScoreCount > 0 ? totalPptScore / pptScoreCount : 0;
+        previousRoundScore = previousRoundScoreCount > 0 ? totalPreviousRoundScore / previousRoundScoreCount : 0;
       }
       
       // Calculate combined score
-      const combinedScore = (pptScore + projectScore) / 2;
+      const combinedScore = roundIndexNum > 0 ? (previousRoundScore + finalRoundScore) / 2 : finalRoundScore;
       
       return {
         _id: submission._id,
         projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
-        pptScore: Math.round(pptScore * 10) / 10,
-        projectScore: Math.round(projectScore * 10) / 10,
+        previousRoundScore: Math.round(previousRoundScore * 10) / 10,
+        finalRoundScore: Math.round(finalRoundScore * 10) / 10,
         combinedScore: Math.round(combinedScore * 10) / 10,
         status: submission.status,
         roundIndex: submission.roundIndex,
@@ -5698,7 +6177,7 @@ exports.getWinners = async (req, res) => {
   } catch (error) {
     console.error('Error fetching winners:', error);
     res.status(500).json({ message: 'Failed to fetch winners' });
-  }
+  }
 };
 
 // 🎯 Edit Problem Statement
@@ -5826,6 +6305,166 @@ exports.deleteProblemStatement = async (req, res) => {
   } catch (error) {
     console.error('Error deleting problem statement:', error);
     res.status(500).json({ message: 'Failed to delete problem statement' });
+  }
+};
+
+// 🎯 Get current user's shortlisting status for any round
+exports.getUserShortlistingStatus = async (req, res) => {
+  try {
+    const { hackathonId } = req.params;
+    const userId = req.user._id;
+    
+    console.log('🔍 Backend - getUserShortlistingStatus called for:', { hackathonId, userId });
+    
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+
+    // Check if user is registered for this hackathon
+    const Registration = require("../model/HackathonRegistrationModel");
+    const isRegistered = await Registration.findOne({ hackathonId, userId });
+    if (!isRegistered) {
+      return res.status(403).json({ 
+        eligible: false, 
+        message: `You must be registered for this hackathon to participate` 
+      });
+    }
+
+    // Get user's team
+    const Team = require("../model/TeamModel");
+    const userTeam = await Team.findOne({ 
+      hackathon: hackathonId, 
+      members: userId, 
+      status: 'active' 
+    });
+
+    // Get all user's submissions for this hackathon
+    const Submission = require("../model/SubmissionModel");
+    const userSubmissions = await Submission.find({
+      hackathonId: hackathonId,
+      $or: [
+        { submittedBy: userId },
+        { teamId: userTeam?._id }
+      ]
+    }).populate('teamId', 'name members').populate('submittedBy', 'name email');
+
+    // Check shortlisting status for each round
+    const shortlistingStatus = {};
+    
+    for (let roundIndex = 0; roundIndex < hackathon.rounds.length - 1; roundIndex++) {
+      const nextRoundIndex = roundIndex + 1;
+      let isShortlisted = false;
+      let shortlistingSource = null;
+      let shortlistingDetails = null;
+
+      // Method 1: Check hackathon round progress for team-based shortlisting
+      if (userTeam && hackathon.roundProgress) {
+        for (const progress of hackathon.roundProgress) {
+          if (progress.roundIndex === roundIndex && progress.shortlistedTeams && progress.shortlistedTeams.includes(userTeam._id.toString())) {
+            isShortlisted = true;
+            shortlistingSource = 'hackathon_round_progress_team';
+            console.log(`🔍 Backend - User shortlisted via team in round ${roundIndex} progress`);
+            break;
+          }
+        }
+      }
+
+      // Method 2: Check hackathon round progress for individual user shortlisting
+      if (!isShortlisted && hackathon.roundProgress) {
+        for (const progress of hackathon.roundProgress) {
+          if (progress.roundIndex === roundIndex && progress.shortlistedTeams && progress.shortlistedTeams.includes(userId.toString())) {
+            isShortlisted = true;
+            shortlistingSource = 'hackathon_round_progress_user';
+            console.log(`🔍 Backend - User directly shortlisted in round ${roundIndex} progress`);
+            break;
+          }
+        }
+      }
+
+      // Method 3: Check submission status (individual submissions)
+      if (!isShortlisted) {
+        const shortlistedSubmission = await Submission.findOne({
+          hackathonId: hackathonId,
+          $or: [
+            { teamId: userTeam?._id },
+            { submittedBy: userId }
+          ],
+          shortlistedForRound: nextRoundIndex + 1, // Check for the specific next round
+          status: 'shortlisted'
+        });
+        
+        if (shortlistedSubmission) {
+          isShortlisted = true;
+          shortlistingSource = 'submission_status';
+          shortlistingDetails = {
+            submissionId: shortlistedSubmission._id,
+            projectTitle: shortlistedSubmission.projectTitle || shortlistedSubmission.title,
+            shortlistedAt: shortlistedSubmission.shortlistedAt
+          };
+          console.log(`🔍 Backend - User has shortlisted submission for round ${nextRoundIndex}:`, shortlistedSubmission._id);
+        }
+      }
+
+      // Method 4: Check advanced participants
+      if (!isShortlisted && hackathon.roundProgress) {
+        for (const progress of hackathon.roundProgress) {
+          if (progress.roundIndex === roundIndex && progress.advancedParticipantIds && progress.advancedParticipantIds.includes(userId.toString())) {
+            isShortlisted = true;
+            shortlistingSource = 'advanced_participants';
+            console.log(`🔍 Backend - User advanced via advanced participants in round ${roundIndex}`);
+            break;
+          }
+        }
+      }
+
+      shortlistingStatus[`round${roundIndex + 1}ToRound${nextRoundIndex + 1}`] = {
+        isShortlisted,
+        shortlistingSource,
+        shortlistingDetails,
+        roundIndex,
+        nextRoundIndex
+      };
+    }
+
+    console.log('🔍 Backend - Shortlisting status for user:', shortlistingStatus);
+
+    return res.status(200).json({
+      userId: userId.toString(),
+      userTeam: userTeam ? {
+        _id: userTeam._id.toString(),
+        name: userTeam.name,
+        members: userTeam.members.map(m => m.toString())
+      } : null,
+      submissions: userSubmissions.map(s => ({
+        _id: s._id.toString(),
+        status: s.status,
+        shortlistedForRound: s.shortlistedForRound,
+        teamId: s.teamId?._id?.toString(),
+        submittedBy: s.submittedBy?._id?.toString(),
+        title: s.projectTitle || s.title,
+        roundIndex: s.roundIndex
+      })),
+      hackathonRoundProgress: hackathon.roundProgress?.map(rp => ({
+        roundIndex: rp.roundIndex,
+        shortlistedTeams: rp.shortlistedTeams || [],
+        shortlistedSubmissions: rp.shortlistedSubmissions || [],
+        advancedParticipantIds: rp.advancedParticipantIds || []
+      })) || [],
+      shortlistingStatus,
+      hackathon: {
+        id: hackathon._id,
+        title: hackathon.title,
+        rounds: hackathon.rounds
+      }
+    });
+
+  } catch (error) {
+    console.error('🔍 Backend - Error in getUserShortlistingStatus:', error);
+    return res.status(500).json({ 
+      message: 'Failed to get shortlisting status', 
+      error: error.message 
+    });
   }
 };
 

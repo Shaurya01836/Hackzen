@@ -88,6 +88,12 @@ const HackathonSchema = new Schema({
       shortlistedSubmissions: [{ type: Schema.Types.ObjectId, ref: 'Submission' }], // Shortlisted submission IDs
       shortlistedTeams: [{ type: Schema.Types.ObjectId }], // Shortlisted team/user IDs
       shortlistedAt: { type: Date }, // When shortlisting was performed
+      // Enhanced tracking for round-wise eligibility
+      eligibleParticipants: [{ type: Schema.Types.ObjectId, ref: 'User' }], // Participants eligible for next round
+      eligibleTeams: [{ type: Schema.Types.ObjectId, ref: 'Team' }], // Teams eligible for next round
+      eligibleSubmissions: [{ type: Schema.Types.ObjectId, ref: 'Submission' }], // Submissions that qualify for next round
+      roundCompleted: { type: Boolean, default: false }, // Whether this round is completed and shortlisting done
+      nextRoundEligibility: { type: Boolean, default: false }, // Whether participants can proceed to next round
     }
   ],
 

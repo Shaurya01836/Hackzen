@@ -22,12 +22,36 @@ import BulkEvaluatorAssignModal from "./BulkEvaluatorAssignModal";
 import ProjectDetail from "../../../../components/CommonUI/ProjectDetail";
 import AddEvaluatorModal from "./AddEvaluatorModal";
 
-// Mock stages data
-const stages = [
-  { id: 'reg', label: 'All Registrations', icon: 'REG', status: 'active' },
-  { id: 'r1', label: 'Submission Round 1', icon: 'R1', status: 'in-progress' },
-  { id: 'r2', label: 'Submission Round 2', icon: 'R2', status: 'pending' },
-];
+// Mock stages data - will be dynamically generated based on hackathon rounds
+const getStages = (hackathon) => {
+  const stages = [
+    { id: 'reg', label: 'All Registrations', icon: 'REG', status: 'active' }
+  ];
+  
+  if (hackathon?.rounds && Array.isArray(hackathon.rounds)) {
+    hackathon.rounds.forEach((round, index) => {
+      const roundNumber = index + 1;
+      let label = `Submission Round ${roundNumber}`;
+      
+      // Determine if this is the final round (winner assignment round)
+      const isFinalRound = index === hackathon.rounds.length - 1;
+      if (isFinalRound) {
+        label = `Winner Assignment Round ${roundNumber}`;
+      }
+      
+      stages.push({
+        id: `r${roundNumber}`,
+        label: label,
+        icon: `R${roundNumber}`,
+        status: 'pending',
+        roundIndex: index,
+        isFinalRound: isFinalRound
+      });
+    });
+  }
+  
+  return stages;
+};
 
 export default function JudgeManagementAssignments({
   allJudgeAssignments = [],
@@ -36,6 +60,9 @@ export default function JudgeManagementAssignments({
   fetchJudgeAssignments,
   submissions = [],
 }) {
+  // Generate stages dynamically based on hackathon rounds
+  const stages = getStages(hackathon);
+  
   const [unassigning, setUnassigning] = useState({});
   const [selectedStage, setSelectedStage] = useState(stages[0].id);
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -58,6 +85,13 @@ export default function JudgeManagementAssignments({
   const [selectedRegRound, setSelectedRegRound] = useState('All');
   const [selectedRegProblemStatement, setSelectedRegProblemStatement] = useState('All');
   const [showTeamDetailsModal, setShowTeamDetailsModal] = useState(false);
+
+  // Update selectedStage when stages change (e.g., when hackathon changes)
+  useEffect(() => {
+    if (stages.length > 0 && !stages.find(s => s.id === selectedStage)) {
+      setSelectedStage(stages[0].id);
+    }
+  }, [stages, selectedStage]);
 
   // Fetch assignment overview when component mounts or hackathon changes
   useEffect(() => {
@@ -101,10 +135,11 @@ export default function JudgeManagementAssignments({
       const params = new URLSearchParams();
       
       // Add roundIndex filter based on selected stage
-      if (selectedStage === 'r1') {
-        params.append('roundIndex', '0');
-      } else if (selectedStage === 'r2') {
-        params.append('roundIndex', '1');
+      if (selectedStage !== 'reg') {
+        const stage = stages.find(s => s.id === selectedStage);
+        if (stage && stage.roundIndex !== undefined) {
+          params.append('roundIndex', stage.roundIndex.toString());
+        }
       }
       // Note: We could add problem statement filtering here too if needed
       
@@ -143,29 +178,46 @@ export default function JudgeManagementAssignments({
   // Helper: get round name from stage id
   const getRoundName = (stageId) => {
     if (stageId === 'reg') return 'All Registrations';
-    if (stageId === 'r1') return 'Submission Round 1';
-    if (stageId === 'r2') return 'Submission Round 2';
+    
+    // Find the stage to get the proper label
+    const stage = stages.find(s => s.id === stageId);
+    if (stage) {
+      return stage.label;
+    }
+    
     return stageId;
   };
 
-  // Helper: get round details (mock for now)
+  // Helper: get round details based on dynamic stages
   const getRoundDetails = (stageId) => {
     if (stageId === 'reg') return 'All teams that have registered.';
-    if (stageId === 'r1') return 'Teams that have submitted in Submission Round 1.';
-    if (stageId === 'r2') return 'Teams that have submitted in Submission Round 2.';
+    
+    // Find the stage to get the proper details
+    const stage = stages.find(s => s.id === stageId);
+    if (stage) {
+      if (stage.isFinalRound) {
+        return `Teams that have submitted in ${stage.label}. This is the final round for winner assignment.`;
+      } else {
+        return `Teams that have submitted in ${stage.label}. This round is for shortlisting to the next round.`;
+      }
+    }
+    
     return '';
   };
 
   // Filter teams by selected stage (round)
   let teamsToShow = teams;
-  if (selectedStage === 'r1' || selectedStage === 'r2') {
-    // Find all team IDs that have a submission in this round
-    const roundIndex = selectedStage === 'r1' ? 0 : 1; // Round 1 = index 0, Round 2 = index 1
-    const submittedTeamIds = submissions
-      .filter(sub => sub.roundIndex === roundIndex)
-      .map(sub => sub.team?._id || sub.teamId || sub.teamName)
-      .filter(Boolean);
-    teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
+  if (selectedStage !== 'reg') {
+    // Find the stage to get the round index
+    const stage = stages.find(s => s.id === selectedStage);
+    if (stage && stage.roundIndex !== undefined) {
+      const roundIndex = stage.roundIndex;
+      const submittedTeamIds = submissions
+        .filter(sub => sub.roundIndex === roundIndex)
+        .map(sub => sub.team?._id || sub.teamId || sub.teamName)
+        .filter(Boolean);
+      teamsToShow = teams.filter(team => submittedTeamIds.includes(team._id) || submittedTeamIds.includes(team.name));
+    }
   } else if (selectedStage === 'reg') {
     // For All Registrations, apply round and problem statement filters
     teamsToShow = teams.filter(team => {
@@ -516,9 +568,11 @@ export default function JudgeManagementAssignments({
 
   // Find the round object for the selected stage
   let roundObj = null;
-  if ((selectedStage === 'r1' || selectedStage === 'r2') && hackathon?.rounds) {
-    const roundName = getRoundName(selectedStage);
-    roundObj = hackathon.rounds.find(r => r.name === roundName);
+  if (selectedStage !== 'reg' && hackathon?.rounds) {
+    const stage = stages.find(s => s.id === selectedStage);
+    if (stage && stage.roundIndex !== undefined) {
+      roundObj = hackathon.rounds[stage.roundIndex];
+    }
   }
 
   // Format round dates for description
@@ -535,16 +589,14 @@ export default function JudgeManagementAssignments({
     
     let progress = 'REG';
     
-    // Check if team has submitted to Round 1 (PPT)
-    const hasRound1 = teamSubmissions.some(sub => sub.roundIndex === 0 || sub.pptFile);
-    if (hasRound1) {
-      progress += ' → R1';
-    }
-    
-    // Check if team has submitted to Round 2 (Project)
-    const hasRound2 = teamSubmissions.some(sub => sub.roundIndex === 1 || (!sub.pptFile && sub.projectTitle));
-    if (hasRound2) {
-      progress += ' → R2';
+    // Check submissions for each round dynamically
+    if (hackathon?.rounds) {
+      hackathon.rounds.forEach((round, index) => {
+        const hasRoundSubmission = teamSubmissions.some(sub => sub.roundIndex === index);
+        if (hasRoundSubmission) {
+          progress += ` → R${index + 1}`;
+        }
+      });
     }
     
     return progress;
@@ -569,8 +621,8 @@ export default function JudgeManagementAssignments({
         ))}
       </div>
 
-      {/* Show Submission Round 1 or 2 view if selected */}
-      {(selectedStage === 'r1' || selectedStage === 'r2') ? (
+      {/* Show round-specific view if selected */}
+      {selectedStage !== 'reg' ? (
         <div className="space-y-6">
           {/* Round Header */}
           <div className="mb-4">
@@ -624,8 +676,10 @@ export default function JudgeManagementAssignments({
           <div>
             <p className="text-3xl font-bold text-orange-900">
               {assignmentOverview?.unassignedSubmissions?.filter(submission => {
-                if (selectedStage === 'r1') return submission.pptFile;
-                if (selectedStage === 'r2') return !submission.pptFile;
+                const stage = stages.find(s => s.id === selectedStage);
+                if (stage && stage.roundIndex !== undefined) {
+                  return submission.roundIndex === stage.roundIndex;
+                }
                 return true;
               }).length || 0}
             </p>
@@ -678,8 +732,10 @@ export default function JudgeManagementAssignments({
                     <div className="text-right">
                       <div className="text-2xl font-bold text-blue-600">
                         {assignmentOverview?.assignedSubmissions?.filter(submission => {
-                          if (selectedStage === 'r1') return submission.pptFile;
-                          if (selectedStage === 'r2') return !submission.pptFile;
+                          const stage = stages.find(s => s.id === selectedStage);
+                          if (stage && stage.roundIndex !== undefined) {
+                            return submission.roundIndex === stage.roundIndex;
+                          }
                           return true;
                         }).length || 0}
                       </div>
@@ -822,18 +878,6 @@ export default function JudgeManagementAssignments({
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {assignmentOverview.unassignedSubmissions
-                            .filter(submission => {
-                              // Filter submissions based on current round
-                              if (selectedStage === 'r1') {
-                                // Round 1: Show only PPT submissions
-                                return submission.pptFile;
-                              } else if (selectedStage === 'r2') {
-                                // Round 2: Show only Project submissions
-                                return !submission.pptFile;
-                              }
-                              // For other stages, show all
-                              return true;
-                            })
                             .map((submission) => (
                             <tr key={submission._id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -854,7 +898,7 @@ export default function JudgeManagementAssignments({
                                 <div className="flex items-center gap-2">
                                   <FileText className="w-4 h-4 text-gray-400" />
                                   <span className="text-sm text-gray-900">
-                                    {selectedStage === 'r1' ? 'PPT' : 'Project'}
+                                    {submission.pptFile ? 'PPT' : (submission.projectId ? 'Project' : 'Submission')}
                                   </span>
                                 </div>
                               </td>
@@ -2356,7 +2400,10 @@ export default function JudgeManagementAssignments({
         }}
         selectedCount={selectedSubmissions.size}
         hackathonId={hackathon?._id || hackathon?.id}
-        roundIndex={selectedStage === 'r1' ? 0 : 1}
+        roundIndex={(() => {
+          const stage = stages.find(s => s.id === selectedStage);
+          return stage && stage.roundIndex !== undefined ? stage.roundIndex : 0;
+        })()}
         selectedSubmissionIds={Array.from(selectedSubmissions)}
         onAssign={(selectedEvaluators) => {
           setSelectedSubmissions(new Set());

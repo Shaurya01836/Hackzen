@@ -83,10 +83,16 @@ router.post('/hackathons/:hackathonId/rounds/:roundIndex/shortlist', protect, is
 router.post('/hackathons/:hackathonId/rounds/:roundIndex/toggle-shortlist', protect, isOrganizerOrAdmin, judgeManagementController.toggleSubmissionShortlist);
 router.get('/hackathons/:hackathonId/rounds/:roundIndex/shortlisted', protect, isOrganizerOrAdmin, judgeManagementController.getShortlistedSubmissions);
 
-// 🎯 Round 2 Eligibility and Notifications
-router.get('/hackathons/:hackathonId/round2-eligibility', protect, judgeManagementController.checkRound2Eligibility);
+// 🎯 Round Eligibility and Notifications
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/eligibility', protect, judgeManagementController.checkRoundEligibility);
+router.get('/hackathons/:hackathonId/rounds/:roundIndex/next-round-eligibility', protect, judgeManagementController.checkNextRoundEligibility); // Backward compatibility
+router.get('/hackathons/:hackathonId/round2-eligibility', protect, judgeManagementController.checkNextRoundEligibility); // Backward compatibility
+router.get('/hackathons/:hackathonId/shortlisting-status', protect, judgeManagementController.getShortlistingStatus);
+router.get('/hackathons/:hackathonId/debug-shortlisting', protect, judgeManagementController.debugShortlistingData);
+router.get('/hackathons/:hackathonId/user-shortlisting-status', protect, judgeManagementController.getUserShortlistingStatus);
 router.get('/hackathons/:hackathonId/shortlisting-notifications', protect, judgeManagementController.getShortlistingNotifications);
-router.post('/hackathons/:hackathonId/rounds/:roundIndex/auto-progress-round2', protect, isOrganizerOrAdmin, judgeManagementController.checkAndAutoProgressRound2);
+router.post('/hackathons/:hackathonId/rounds/:roundIndex/auto-progress', protect, isOrganizerOrAdmin, judgeManagementController.checkAndAutoProgressToNextRound);
+router.post('/hackathons/:hackathonId/rounds/:roundIndex/auto-progress-round2', protect, isOrganizerOrAdmin, judgeManagementController.checkAndAutoProgressToNextRound); // Backward compatibility
 
 // 🏆 Assign Winners for Round 2
 router.post('/hackathons/:hackathonId/rounds/:roundIndex/assign-winners', protect, isOrganizerOrAdmin, judgeManagementController.assignWinners);

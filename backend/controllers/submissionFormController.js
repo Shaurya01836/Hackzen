@@ -90,30 +90,59 @@ exports.submitProjectWithAnswers = async (req, res) => {
       });
     }
 
-    // Check if this is Round 2 submission and validate shortlisting
-    if (roundIndex === 1) { // Round 2 (index 1 in rounds array)
+    // Check if this is not the first round and validate shortlisting
+    // For 2-round hackathons, Round 1 (index 1) is the final round, so no shortlisting needed
+    const isFinalRound = hackathon.rounds && hackathon.rounds.length === 2 && roundIndex === 1;
+    if (roundIndex > 0 && !isFinalRound) { // Any round after the first round, except final round in 2-round hackathons
       // Check if the user or their team was shortlisted for Round 2
       let isShortlisted = false;
       
       // First check if user is part of a team
       const userTeam = await Team.findOne({ hackathon: hackathonId, members: userId, status: 'active' });
       
+      console.log('🔍 Submission validation - User team:', userTeam ? userTeam._id : 'No team');
+      console.log('🔍 Submission validation - Round index:', roundIndex);
+      console.log('🔍 Submission validation - Hackathon round progress:', hackathon.roundProgress?.length || 0);
+      console.log('🔍 Submission validation - User ID:', userId);
+      
       if (userTeam) {
-        // Check if team is in hackathon's shortlisted teams for Round 2
-        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === 0); // Round 1 progress
-        if (roundProgress && roundProgress.shortlistedTeams) {
-          isShortlisted = roundProgress.shortlistedTeams.includes(userTeam._id.toString());
-        }
+        // Check if team is in hackathon's shortlisted teams for the previous round
+        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndex - 1); // Previous round progress
+        console.log('🔍 Submission validation - Round progress for previous round:', roundProgress ? 'Found' : 'Not found');
         
-        // Check for team shortlisted submissions
-        if (!isShortlisted) {
-          const shortlistedSubmission = await Submission.findOne({
-            hackathonId,
-            teamName: userTeam.name,
-            shortlistedForRound: 2,
-            status: 'shortlisted'
-          });
-          isShortlisted = !!shortlistedSubmission;
+        if (roundProgress) {
+          console.log('🔍 Submission validation - Shortlisted teams:', roundProgress.shortlistedTeams?.length || 0);
+          console.log('🔍 Submission validation - Shortlisted submissions:', roundProgress.shortlistedSubmissions?.length || 0);
+          console.log('🔍 Submission validation - User team ID:', userTeam._id.toString());
+          console.log('🔍 Submission validation - Shortlisted teams array:', roundProgress.shortlistedTeams);
+          
+          // Check team-based shortlisting
+          if (roundProgress.shortlistedTeams && roundProgress.shortlistedTeams.includes(userTeam._id.toString())) {
+            isShortlisted = true;
+            console.log('🔍 Submission validation - User shortlisted via team');
+          }
+          
+          // Check submission-based shortlisting
+          if (!isShortlisted && roundProgress.shortlistedSubmissions) {
+            const userSubmissions = await Submission.find({
+              hackathonId,
+              $or: [
+                { teamId: userTeam._id },
+                { submittedBy: userId }
+              ],
+              roundIndex: roundIndex - 1
+            });
+            
+            const userSubmissionIds = userSubmissions.map(s => s._id.toString());
+            const hasShortlistedSubmission = userSubmissionIds.some(id => 
+              roundProgress.shortlistedSubmissions.includes(id)
+            );
+            
+            if (hasShortlistedSubmission) {
+              isShortlisted = true;
+              console.log('🔍 Submission validation - User shortlisted via submission');
+            }
+          }
         }
         
         // Also check for individual submissions by team members
@@ -121,16 +150,47 @@ exports.submitProjectWithAnswers = async (req, res) => {
           const shortlistedSubmission = await Submission.findOne({
             hackathonId,
             submittedBy: userId,
-            shortlistedForRound: 2,
+            shortlistedForRound: roundIndex + 1,
             status: 'shortlisted'
           });
-          isShortlisted = !!shortlistedSubmission;
+          if (shortlistedSubmission) {
+            isShortlisted = true;
+            console.log('🔍 Submission validation - User shortlisted via individual submission');
+          }
         }
       } else {
         // Check if user is individually shortlisted
-        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === 0); // Round 1 progress
-        if (roundProgress && roundProgress.shortlistedTeams) {
-          isShortlisted = roundProgress.shortlistedTeams.includes(userId.toString());
+        const roundProgress = hackathon.roundProgress?.find(rp => rp.roundIndex === roundIndex - 1); // Previous round progress
+        if (roundProgress) {
+          console.log('🔍 Submission validation - Individual user shortlisting check');
+          console.log('🔍 Submission validation - Shortlisted teams:', roundProgress.shortlistedTeams?.length || 0);
+          console.log('🔍 Submission validation - User ID for individual check:', userId.toString());
+          console.log('🔍 Submission validation - Shortlisted teams array:', roundProgress.shortlistedTeams);
+          
+          // Check if user is directly in shortlisted teams
+          if (roundProgress.shortlistedTeams && roundProgress.shortlistedTeams.includes(userId.toString())) {
+            isShortlisted = true;
+            console.log('🔍 Submission validation - User directly shortlisted');
+          }
+          
+          // Check for individual shortlisted submissions
+          if (!isShortlisted && roundProgress.shortlistedSubmissions) {
+            const userSubmissions = await Submission.find({
+              hackathonId,
+              submittedBy: userId,
+              roundIndex: roundIndex - 1
+            });
+            
+            const userSubmissionIds = userSubmissions.map(s => s._id.toString());
+            const hasShortlistedSubmission = userSubmissionIds.some(id => 
+              roundProgress.shortlistedSubmissions.includes(id)
+            );
+            
+            if (hasShortlistedSubmission) {
+              isShortlisted = true;
+              console.log('🔍 Submission validation - Individual user shortlisted via submission');
+            }
+          }
         }
         
         // Check for individual shortlisted submissions
@@ -138,16 +198,21 @@ exports.submitProjectWithAnswers = async (req, res) => {
           const shortlistedSubmission = await Submission.findOne({
             hackathonId,
             submittedBy: userId,
-            shortlistedForRound: 2,
+            shortlistedForRound: roundIndex + 1,
             status: 'shortlisted'
           });
-          isShortlisted = !!shortlistedSubmission;
+          if (shortlistedSubmission) {
+            isShortlisted = true;
+            console.log('🔍 Submission validation - Individual user shortlisted via submission status');
+          }
         }
       }
       
+      console.log('🔍 Submission validation - Final shortlisting result:', isShortlisted);
+      
       if (!isShortlisted) {
         return res.status(403).json({ 
-          error: "Your team was not shortlisted for Round 2. Only shortlisted teams can submit to Round 2." 
+          error: `Your team was not shortlisted for Round ${roundIndex + 1}. Only shortlisted teams can submit to Round ${roundIndex + 1}.` 
         });
       }
     }

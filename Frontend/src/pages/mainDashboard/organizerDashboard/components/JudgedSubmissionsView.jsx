@@ -44,7 +44,23 @@ export default function JudgedSubmissionsView({
       return submission.roundIndex + 1; // Convert 0-based index to 1-based round number
     }
     
-    // Fallback: Determine round based on submission data
+    // Fallback: Determine round based on submission data and hackathon configuration
+    if (hackathon?.rounds && hackathon.rounds.length > 0) {
+      // Try to find which round this submission belongs to based on round types
+      for (let i = 0; i < hackathon.rounds.length; i++) {
+        const roundType = hackathon.rounds[i].type || 'project';
+        
+        if (roundType === 'ppt' && submission.pptFile) {
+          return i + 1;
+        } else if (roundType === 'project' && submission.projectId && !submission.pptFile) {
+          return i + 1;
+        } else if (roundType === 'both' && submission.roundIndex === i) {
+          return i + 1;
+        }
+      }
+    }
+    
+    // Final fallback: Use submission data
     if (submission.pptFile) return 1; // PPT submissions are usually Round 1
     return 2; // Project submissions are usually Round 2
   };

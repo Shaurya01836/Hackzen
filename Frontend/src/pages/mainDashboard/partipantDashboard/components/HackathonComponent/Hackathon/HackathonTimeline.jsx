@@ -60,8 +60,8 @@ export default function HackathonTimeline({
     submission: null,
   });
   
-  // Add state for round2 eligibility
-  const [round2Eligibility, setRound2Eligibility] = useState(null);
+  // Add state for next round eligibility
+  const [nextRoundEligibility, setNextRoundEligibility] = useState(null);
   const [loadingEligibility, setLoadingEligibility] = useState(false);
   
 
@@ -96,37 +96,54 @@ export default function HackathonTimeline({
     fetchProjectSubmissions();
   }, [hackathon._id, user?._id, refreshKey]);
 
-  // Fetch Round 2 eligibility function
-  const fetchRound2Eligibility = async () => {
+  // Fetch shortlisting status for the current user
+  const fetchShortlistingStatus = async () => {
     if (!hackathon._id || !user?._id) {
+      console.log('🔍 fetchShortlistingStatus: Missing hackathon._id or user._id');
       return;
     }
     
-    // Only check for Round 2 (index 1)
-    const round2Exists = hackathon.rounds && hackathon.rounds.length > 1;
-    if (!round2Exists) {
+    // Check for multi-round hackathons (2 or more rounds)
+    const hasMultipleRounds = hackathon.rounds && hackathon.rounds.length >= 2;
+    console.log('🔍 fetchShortlistingStatus: hasMultipleRounds =', hasMultipleRounds, 'rounds =', hackathon.rounds?.length);
+    if (!hasMultipleRounds) {
+      console.log('🔍 fetchShortlistingStatus: Not a multi-round hackathon, skipping');
       return;
     }
     
     setLoadingEligibility(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `http://localhost:3000/api/judge-management/hackathons/${hackathon._id}/round2-eligibility`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setRound2Eligibility(res.data);
+      console.log('🔍 fetchShortlistingStatus: Fetching shortlisting status');
+      
+      // Use the new comprehensive shortlisting status endpoint
+      const response = await fetch(`/api/judge-management/hackathons/${hackathon._id}/shortlisting-status`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🔍 fetchShortlistingStatus: Shortlisting status data =', data);
+        
+        // Store the detailed shortlisting status data
+        setNextRoundEligibility(data);
+      } else {
+        console.error('🔍 fetchShortlistingStatus: Failed to fetch shortlisting status');
+        setNextRoundEligibility(null);
+      }
     } catch (error) {
-      console.error("Error fetching Round 2 eligibility:", error);
-      setRound2Eligibility(null);
+      console.error("Error fetching shortlisting status:", error);
+      setNextRoundEligibility(null);
     } finally {
       setLoadingEligibility(false);
     }
   };
 
-  // Fetch Round 2 eligibility
+  // Fetch shortlisting status
   useEffect(() => {
-    fetchRound2Eligibility();
+    fetchShortlistingStatus();
   }, [hackathon._id, user?._id, isRegistered, refreshKey]);
 
   // Helper function to check if deadline has passed
@@ -157,16 +174,41 @@ export default function HackathonTimeline({
     return previousRoundSubmissions.length > 0;
   };
 
-  // Helper function to check if user is shortlisted for next round
-  const isShortlistedForNextRound = (currentRoundIdx) => {
+  // Helper function to check if user is eligible for next round
+  const isEligibleForNextRound = (currentRoundIdx) => {
+    console.log('🔍 isEligibleForNextRound:', { currentRoundIdx, roundsLength: hackathon.rounds?.length, nextRoundEligibility });
+    
     if (currentRoundIdx === 0) {
+      console.log('🔍 isEligibleForNextRound: First round, everyone eligible');
       return true; // First round, everyone is eligible
     }
-    if (currentRoundIdx === 1 && round2Eligibility) {
-      // Use shortlisted field if available, otherwise fall back to eligible
-      return round2Eligibility.shortlisted === true || round2Eligibility.eligible === true;
+    
+    // For any round that's not the final round, check if user has qualified from previous round
+    if (currentRoundIdx < hackathon.rounds.length - 1 && nextRoundEligibility && nextRoundEligibility.shortlistingStatus) {
+      // Check specific round transition - use the correct key format
+      const roundKey = `round${currentRoundIdx + 1}ToRound${currentRoundIdx + 2}`;
+      const roundStatus = nextRoundEligibility.shortlistingStatus[roundKey];
+      
+      if (roundStatus) {
+        const isEligible = roundStatus.isShortlisted || false;
+        console.log('🔍 isEligibleForNextRound: Round-specific eligibility =', { roundKey, isEligible, roundStatus });
+        return isEligible;
+      }
+      
+      // Fallback: check if user is eligible for any round
+      const eligibilityEntries = Object.values(nextRoundEligibility.shortlistingStatus);
+      const isEligible = eligibilityEntries.some(entry => entry.isShortlisted);
+      console.log('🔍 isEligibleForNextRound: Fallback eligibility =', isEligible);
+      return isEligible;
     }
+    
+    console.log('🔍 isEligibleForNextRound: No eligibility data, returning false');
     return false; // For other rounds, implement as needed
+  };
+
+  // Helper function to check if user is shortlisted for next round (backward compatibility)
+  const isShortlistedForNextRound = (currentRoundIdx) => {
+    return isEligibleForNextRound(currentRoundIdx);
   };
 
   // Helper function to check if user is not selected for next round
@@ -174,10 +216,25 @@ export default function HackathonTimeline({
     if (currentRoundIdx === 0) {
       return false; // First round, no selection needed
     }
-    if (currentRoundIdx === 1 && round2Eligibility) {
-      // Only show "not selected" if user is explicitly not shortlisted
-      // Use shortlisted field if available, otherwise fall back to eligible
-      const isShortlisted = round2Eligibility.shortlisted === true || round2Eligibility.eligible === true;
+    // For 2-round hackathons, Round 1 (index 1) is the final round, so no selection needed
+    if (hackathon.rounds && hackathon.rounds.length === 2 && currentRoundIdx === 1) {
+      return false; // Final round, no selection needed
+    }
+    // For any round that's not the final round, check if user has shortlisted submissions
+    if (currentRoundIdx < hackathon.rounds.length - 1 && nextRoundEligibility && nextRoundEligibility.shortlistingStatus) {
+      // Check specific round transition
+      const roundKey = `round${currentRoundIdx + 1}ToRound${currentRoundIdx + 2}`;
+      const roundStatus = nextRoundEligibility.shortlistingStatus[roundKey];
+      
+      if (roundStatus) {
+        const isShortlisted = roundStatus.isShortlisted || false;
+        // Only show "not selected" if user is explicitly not shortlisted
+        return isShortlisted === false;
+      }
+      
+      // Fallback: check if user is shortlisted for any round
+      const shortlistingEntries = Object.values(nextRoundEligibility.shortlistingStatus);
+      const isShortlisted = shortlistingEntries.some(entry => entry.isShortlisted);
       return isShortlisted === false;
     }
     return false;
@@ -203,7 +260,7 @@ export default function HackathonTimeline({
       const result = await uploadPPTFile(file);
       await savePPTSubmission({
         hackathonId: hackathon._id,
-        roundIndex: 0, // PPT submissions always go to Round 1 (index 0)
+        roundIndex: roundIdx, // Use the actual round index
         pptFile: result.url,
       });
       toast({
@@ -234,7 +291,7 @@ export default function HackathonTimeline({
     try {
       await deletePPTSubmission({
         hackathonId: hackathon._id,
-        roundIndex: 0, // PPT submissions always go to Round 1 (index 0)
+        roundIndex: roundIdx, // Use the actual round index
       });
       toast({
         title: "PPT Deleted",
@@ -360,15 +417,26 @@ export default function HackathonTimeline({
   const getProjectSubmissionsForRound = (roundIdx) => {
     const submissions = projectSubmissions.filter(
       (s) => {
-        // For Round 1 (idx 0): Show both PPT and Project submissions
-        if (roundIdx === 0) {
-          return String(s.roundIndex) === String(roundIdx);
+        // Dynamic filtering based on round configuration
+        if (hackathon?.rounds && hackathon.rounds[roundIdx]) {
+          const roundType = hackathon.rounds[roundIdx].type || 'project';
+          
+          if (roundType === 'ppt') {
+            // PPT round: Show only submissions with PPT files
+            return String(s.roundIndex) === String(roundIdx) && s.pptFile;
+          } else if (roundType === 'project') {
+            // Project round: Show only submissions with project IDs
+            return String(s.roundIndex) === String(roundIdx) && s.projectId && !s.pptFile;
+          } else if (roundType === 'both') {
+            // Both round: Show all submissions for this round
+            return String(s.roundIndex) === String(roundIdx);
+          } else {
+            // Default: Show all submissions for this round
+            return String(s.roundIndex) === String(roundIdx);
+          }
         }
-        // For Round 2 (idx 1): Only show Project submissions (not PPT)
-        if (roundIdx === 1) {
-          return String(s.roundIndex) === String(roundIdx) && s.projectId;
-        }
-        // For other rounds: Show all submissions for that round
+        
+        // Fallback: Use roundIndex matching
         return String(s.roundIndex) === String(roundIdx);
       }
     );
@@ -445,13 +513,16 @@ export default function HackathonTimeline({
                     const end = round.endDate ? new Date(round.endDate) : null;
                     const isLive = start && end && now >= start && now <= end;
                     const isSubmission =
-                      round.type && round.type.toLowerCase().includes("ppt");
+                      round.type && (round.type.toLowerCase().includes("ppt") || round.type.toLowerCase() === "both");
                     const isProjectSubmission =
-                      round.type && round.type.toLowerCase().includes("project");
+                      round.type && (round.type.toLowerCase().includes("project") || round.type.toLowerCase() === "both");
+                    const isBothSubmission = round.type && round.type.toLowerCase() === "both";
                     
                     console.log(`🔍 Round ${idx} Debug:`, {
                       roundType: round.type,
                       isProjectSubmission,
+                      isSubmission,
+                      isBothSubmission,
                       isLive,
                       canEdit: canEdit(end)
                     });
@@ -507,9 +578,9 @@ export default function HackathonTimeline({
                     let projectSubmissionUI = null;
                     let pptSubmissionUI = null;
                     
-                    // Check if this is Round 2 and user needs to be shortlisted
-                    const isRound2 = idx === 1;
-                    const needsShortlisting = isRound2 && isProjectSubmission;
+                    // Check if this is a final round and user needs to be shortlisted (only for multi-round hackathons)
+                    const isFinalRound = idx === hackathon.rounds.length - 1;
+                    const needsShortlisting = isFinalRound && isProjectSubmission && hackathon.rounds.length > 1;
                     
                     // Check if user submitted in Round 1 (for eligibility message)
                     const round1Submissions = getProjectSubmissionsForRound(0);
@@ -518,29 +589,29 @@ export default function HackathonTimeline({
                     // Check deadline conditions
                     const deadlinePassed = hasDeadlinePassed(end);
                     const hasSubmittedInPrevious = hasSubmittedInPreviousRound(idx);
-                    const isShortlisted = isShortlistedForNextRound(idx);
+                    const isEligible = isEligibleForNextRound(idx);
+                    const isShortlisted = isShortlistedForNextRound(idx); // Backward compatibility
                     const isNotSelected = isNotSelectedForNextRound(idx);
                     
                     // Debug logging
                     // Enhanced debug logging
                     console.log(`🔍 Round ${idx} Enhanced Debug:`, {
-                      isRound2: idx === 1,
+                      isFinalRound: idx === hackathon.rounds.length - 1,
                       isProjectSubmission,
                       isShortlisted,
                       isNotSelected,
-                      round2Eligibility: round2Eligibility ? {
-                        eligible: round2Eligibility.eligible,
-                        shortlisted: round2Eligibility.shortlisted,
-                        round2Started: round2Eligibility.round2Started,
-                        message: round2Eligibility.message,
-                        shortlistingSource: round2Eligibility.shortlistingSource
+                      nextRoundEligibility: nextRoundEligibility ? {
+                        hasShortlistedSubmissions: nextRoundEligibility.hasShortlistedSubmissions,
+                        shortlistedSubmissions: nextRoundEligibility.shortlistedSubmissions?.length || 0,
+                        totalSubmissions: nextRoundEligibility.totalSubmissions || 0
                       } : null,
-                      condition1: isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true),
-                      condition2: isNotSelected && isProjectSubmission && round2Eligibility && round2Eligibility.shortlisted === false
+                      condition1: isShortlisted && isProjectSubmission && projectSubmissionsForRound.length === 0,
+                      condition2: isNotSelected && isProjectSubmission && hackathon.rounds.length > 1
                     });
                     
-                    // Show loading state for Round 2 eligibility check
-                    if (isRound2 && isProjectSubmission && loadingEligibility) {
+                                        // Show loading state for next round eligibility check
+                    if (!isFinalRound && isProjectSubmission && loadingEligibility) {
+                      console.log(`🔍 Round ${idx} - Showing loading state`);
                       projectSubmissionUI = (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -555,8 +626,8 @@ export default function HackathonTimeline({
                         </div>
                       );
                     }
-                    // Show pending status when eligibility check is complete but no data
-                    else if (isRound2 && isProjectSubmission && !round2Eligibility && !loadingEligibility) {
+                    // Show loading state when checking eligibility
+                    else if (!isFinalRound && isProjectSubmission && loadingEligibility) {
                       projectSubmissionUI = (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -566,7 +637,7 @@ export default function HackathonTimeline({
                             <h3 className="font-semibold text-blue-800">Checking Shortlisting Status</h3>
                           </div>
                           <p className="text-sm text-blue-700">
-                            Please wait while we check your Round 2 eligibility...
+                            Please wait while we check your next round eligibility...
                           </p>
                         </div>
                       );
@@ -590,9 +661,17 @@ export default function HackathonTimeline({
                         );
                       }
                     }
-                    // Condition 2: Round Selection - User is shortlisted for next round (but check if already submitted)
-                    else if (isShortlisted && isProjectSubmission && round2Eligibility && (round2Eligibility.shortlisted === true || round2Eligibility.eligible === true) && projectSubmissionsForRound.length === 0) {
-                      console.log(`🔍 Round ${idx} - Showing shortlisted message (no submissions yet)`);
+                    // Condition 2: Show shortlisted message and submit button for shortlisted teams
+                    else if (!isFinalRound && isShortlisted && isProjectSubmission && projectSubmissionsForRound.length === 0) {
+                      console.log(`🔍 Round ${idx} - Showing shortlisted message and submit button`, {
+                        isFinalRound,
+                        isShortlisted,
+                        isProjectSubmission,
+                        roundsLength: hackathon.rounds.length,
+                        nextRoundEligibility: nextRoundEligibility ? 'exists' : 'null',
+                        projectSubmissionsForRound: projectSubmissionsForRound.length,
+                        hasShortlistedSubmissions: nextRoundEligibility?.hasShortlistedSubmissions
+                      });
                       if (isLive && canEdit(end)) {
                         projectSubmissionUI = (
                           <div className="space-y-3">
@@ -601,10 +680,10 @@ export default function HackathonTimeline({
                                 <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                   <span className="text-white text-sm">✓</span>
                                 </div>
-                                <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                                <h3 className="font-semibold text-green-800">🎉 Congratulations! You're Shortlisted for Round {idx + 2}</h3>
                               </div>
                               <p className="text-sm text-green-700 mb-3">
-                                Your Round 1 submission has been shortlisted. You can now submit a new project for Round 2.
+                                Your Round {idx + 1} submission has been shortlisted. You can now submit a new project for Round {idx + 2}.
                               </p>
                               <button
                                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed font-medium"
@@ -614,11 +693,11 @@ export default function HackathonTimeline({
                                 disabled={!isRegistered}
                                 title={
                                   isRegistered
-                                    ? "Submit your project for Round 2"
+                                    ? `Submit your project for Round ${idx + 2}`
                                     : "Register for the hackathon to submit"
                                 }
                               >
-                                Submit Project for Round 2
+                                Submit Project for Round {idx + 2}
                               </button>
                             </div>
                           </div>
@@ -630,14 +709,14 @@ export default function HackathonTimeline({
                               <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                 <span className="text-white text-sm">✓</span>
                               </div>
-                              <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                              <h3 className="font-semibold text-green-800">🎉 Congratulations! You're Shortlisted for Round {idx + 2}</h3>
                             </div>
                             <p className="text-sm text-green-700">
-                              Your Round 1 submission has been shortlisted. You can submit your project when Round 2 starts.
+                              Your Round {idx + 1} submission has been shortlisted. You can submit your project when Round {idx + 2} starts.
                             </p>
-                            {round2Eligibility && round2Eligibility.round2StartDate && (
+                            {nextRoundEligibility && nextRoundEligibility.roundStartDate && (
                               <p className="text-xs text-green-600 mt-2">
-                                Round 2 starts: {new Date(round2Eligibility.round2StartDate).toLocaleDateString()}
+                                Round {idx + 2} starts: {new Date(nextRoundEligibility.roundStartDate).toLocaleDateString()}
                               </p>
                             )}
                           </div>
@@ -649,17 +728,24 @@ export default function HackathonTimeline({
                               <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                                 <span className="text-white text-sm">✓</span>
                               </div>
-                              <h3 className="font-semibold text-green-800">Congratulations! You're Selected for Round 2</h3>
+                              <h3 className="font-semibold text-green-800">🎉 Congratulations! You're Shortlisted for Round {idx + 2}</h3>
                             </div>
                             <p className="text-sm text-green-700">
-                              Your Round 1 submission has been shortlisted. Round 2 has ended.
+                              Your Round {idx + 1} submission has been shortlisted. Round {idx + 2} has ended.
                             </p>
                           </div>
                         );
                       }
                     }
-                    // Fallback: Show shortlisting message if Round 2 exists but no eligibility data
-                    else if (isRound2 && isProjectSubmission && !round2Eligibility && !loadingEligibility) {
+                    // Fallback: Show pending message when shortlisting status is not determined yet
+                    else if (!isFinalRound && isProjectSubmission && !nextRoundEligibility && !loadingEligibility && hackathon.rounds.length > 1) {
+                      console.log(`🔍 Round ${idx} - Showing pending message`, {
+                        isFinalRound,
+                        isProjectSubmission,
+                        nextRoundEligibility: nextRoundEligibility ? 'exists' : 'null',
+                        loadingEligibility,
+                        roundsLength: hackathon.rounds.length
+                      });
                       projectSubmissionUI = (
                         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -669,12 +755,12 @@ export default function HackathonTimeline({
                             <h3 className="font-semibold text-yellow-800">Shortlisting Status Pending</h3>
                           </div>
                           <p className="text-sm text-yellow-700 mb-3">
-                            Round 1 evaluations are in progress. Your shortlisting status will be determined soon.
+                            Round {idx + 1} evaluations are in progress. Your shortlisting status will be determined soon.
                           </p>
                           <button 
                             className="px-3 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition"
                             onClick={() => {
-                              fetchRound2Eligibility();
+                              fetchShortlistingStatus();
                             }}
                           >
                             Check Status
@@ -682,11 +768,27 @@ export default function HackathonTimeline({
                         </div>
                       );
                     }
-                    // Condition 3: Not Selected for Next Round (only show if explicitly not shortlisted)
-                    else if (isNotSelected && isProjectSubmission && round2Eligibility && round2Eligibility.shortlisted === false) {
+                    // Condition 3: Show "not shortlisted" message for non-shortlisted teams
+                    else if (!isFinalRound && isNotSelected && isProjectSubmission && hackathon.rounds.length > 1) {
+                      console.log(`🔍 Round ${idx} - Showing not shortlisted message`, {
+                        isFinalRound,
+                        isNotSelected,
+                        isProjectSubmission,
+                        nextRoundEligibility: nextRoundEligibility ? 'exists' : 'null',
+                        roundsLength: hackathon.rounds.length,
+                        hasShortlistedSubmissions: nextRoundEligibility?.hasShortlistedSubmissions
+                      });
                       projectSubmissionUI = (
-                        <div >
-                          
+                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm">✗</span>
+                            </div>
+                            <h3 className="font-semibold text-red-800">Not Shortlisted for Round {idx + 2}</h3>
+                          </div>
+                          <p className="text-sm text-red-700">
+                            Your Round {idx + 1} submission was not shortlisted for Round {idx + 2}. Thank you for participating in this round.
+                          </p>
                         </div>
                       );
                     }
@@ -719,20 +821,23 @@ export default function HackathonTimeline({
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                onClick={() =>
-                                  isRegistered && handleOpenNewSubmission(idx)
-                                }
-                                disabled={!isRegistered}
-                                title={
-                                  isRegistered
-                                    ? "Submit your project"
-                                    : "Register for the hackathon to submit"
-                                }
-                              >
-                                Submit Project
-                              </button>
+                              // Only show submit button to eligible teams for non-final rounds
+                              (!isFinalRound && isEligible) || (isFinalRound && isEligible) ? (
+                                <button
+                                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                  onClick={() =>
+                                    isRegistered && handleOpenNewSubmission(idx)
+                                  }
+                                  disabled={!isRegistered}
+                                  title={
+                                    isRegistered
+                                      ? "Submit your project"
+                                      : "Register for the hackathon to submit"
+                                  }
+                                >
+                                  Submit Project
+                                </button>
+                              ) : null
                             );
                         } else if (
                           submissionType === "single-project" &&
@@ -760,20 +865,23 @@ export default function HackathonTimeline({
                                 )}
                               </div>
                             ) : (
-                              <button
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                onClick={() =>
-                                  isRegistered && handleOpenNewSubmission(idx)
-                                }
-                                disabled={!isRegistered}
-                                title={
-                                  isRegistered
-                                    ? "Submit your project"
-                                    : "Register for the hackathon to submit"
-                                }
-                              >
-                                Submit Project
-                              </button>
+                              // Only show submit button to eligible teams for non-final rounds
+                              (!isFinalRound && isEligible) || (isFinalRound && isEligible) ? (
+                                <button
+                                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                  onClick={() =>
+                                    isRegistered && handleOpenNewSubmission(idx)
+                                  }
+                                  disabled={!isRegistered}
+                                  title={
+                                    isRegistered
+                                      ? "Submit your project"
+                                      : "Register for the hackathon to submit"
+                                  }
+                                >
+                                  Submit Project
+                                </button>
+                              ) : null
                             );
                         } else if (
                           submissionType === "multi-project" &&
@@ -792,20 +900,23 @@ export default function HackathonTimeline({
                               )}
                               <div className="flex gap-2 items-center">
                                 {canSubmitMore ? (
-                                  <button
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                    onClick={() =>
-                                      isRegistered && handleOpenNewSubmission(idx)
-                                    }
-                                    disabled={!isRegistered}
-                                    title={
-                                      isRegistered
-                                        ? "Submit another project"
-                                        : "Register for the hackathon to submit"
-                                    }
-                                  >
-                                    Submit Project
-                                  </button>
+                                  // Only show submit button to shortlisted teams for non-final rounds
+                                  (!isFinalRound && isShortlisted) || (isFinalRound && isShortlisted) ? (
+                                    <button
+                                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                      onClick={() =>
+                                        isRegistered && handleOpenNewSubmission(idx)
+                                      }
+                                      disabled={!isRegistered}
+                                      title={
+                                        isRegistered
+                                          ? "Submit another project"
+                                          : "Register for the hackathon to submit"
+                                      }
+                                    >
+                                      Submit Project
+                                    </button>
+                                  ) : null
                                 ) : (
                                   <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
                                     Max Submissions Reached
@@ -831,20 +942,23 @@ export default function HackathonTimeline({
                               )}
                               <div className="flex gap-2 items-center">
                                 {canSubmitMore ? (
-                                  <button
-                                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                                    onClick={() =>
-                                      isRegistered && handleOpenNewSubmission(idx)
-                                    }
-                                    disabled={!isRegistered}
-                                    title={
-                                      isRegistered
-                                        ? "Submit another project"
-                                        : "Register for the hackathon to submit"
-                                    }
-                                  >
-                                    Submit Project
-                                  </button>
+                                  // Only show submit button to eligible teams for non-final rounds
+                                  (!isFinalRound && isEligible) || (isFinalRound && isEligible) ? (
+                                    <button
+                                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                                      onClick={() =>
+                                        isRegistered && handleOpenNewSubmission(idx)
+                                      }
+                                      disabled={!isRegistered}
+                                      title={
+                                        isRegistered
+                                          ? "Submit another project"
+                                          : "Register for the hackathon to submit"
+                                      }
+                                    >
+                                      Submit Project
+                                    </button>
+                                  ) : null
                                 ) : (
                                   <div className="px-4 py-2 bg-gray-400 text-white rounded text-center cursor-default select-none opacity-80">
                                     Max Submissions Reached
