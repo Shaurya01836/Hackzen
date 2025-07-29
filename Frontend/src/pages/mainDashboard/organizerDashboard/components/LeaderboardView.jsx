@@ -61,6 +61,9 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   // Hackathon data state
   const [hackathonData, setHackathonData] = useState(null);
   
+  // Add new state for per-winner problem statement selection
+  const [winnerProblemStatementMap, setWinnerProblemStatementMap] = useState({});
+  
   // Reset winner problem statement when modal opens
   useEffect(() => {
     if (winnerAssignmentModalOpen) {
@@ -68,6 +71,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       console.log('🔍 Frontend - Winner modal opened, reset problem statement to All');
       console.log('🔍 Frontend - Winner modal opened - availableProblemStatements:', availableProblemStatements);
       console.log('🔍 Frontend - Winner modal opened - hackathonData:', hackathonData);
+      setWinnerProblemStatementMap({});
     }
   }, [winnerAssignmentModalOpen, availableProblemStatements, hackathonData]);
   
@@ -1243,6 +1247,9 @@ if (loading) {
                       </th>
                     )}
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Winning Problem Statement
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -1299,14 +1306,10 @@ if (loading) {
                       {selectedRound === 1 ? (
                         <>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {entry.pptScore ? `${entry.pptScore}/10` : 'N/A'}
-                            </div>
+                            {typeof entry.pptScore === 'number' ? `${entry.pptScore}/10` : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">
-                              {entry.projectScore ? `${entry.projectScore}/10` : 'N/A'}
-                            </div>
+                            {typeof entry.projectScore === 'number' ? `${entry.projectScore}/10` : 'N/A'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-bold text-yellow-600">
@@ -1389,6 +1392,13 @@ if (loading) {
                           )}
                         </td>
                       )}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {entry.status === 'winner' && entry.problemStatement && (
+                          <span className="text-purple-700 font-medium">
+                            {getProblemStatementText(entry.problemStatement)}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex gap-2">
                           <Button
@@ -2107,6 +2117,11 @@ if (loading) {
                             <span className="text-xs text-gray-500">#{index + 1}</span>
                           </div>
                         ))}
+                      {leaderboard.filter(entry => entry.scoreCount > 0).length < shortlistCount && (
+                        <p className="text-orange-600 text-xs">
+                          Only {leaderboard.filter(entry => entry.scoreCount > 0).length} projects have been evaluated
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2387,25 +2402,7 @@ if (loading) {
               Assign Winners for Round 2
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Winner Count Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Number of Winners
-              </label>
-              <input
-                type="number"
-                min="1"
-                max={leaderboard.length}
-                value={winnerCount}
-                onChange={(e) => setWinnerCount(parseInt(e.target.value) || 1)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Maximum: {leaderboard.length} projects
-              </p>
-            </div>
-
+          <div className="space-y-6">
             {/* Winner Selection Mode */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -2444,49 +2441,11 @@ if (loading) {
                 </label>
               </div>
             </div>
-
-            {/* Test Element */}
-            <div style={{border: '3px solid green', padding: '10px', margin: '10px 0', backgroundColor: 'yellow'}}>
-              <strong>TEST ELEMENT - IF YOU SEE THIS, THE MODAL IS RENDERING PROPERLY</strong>
-            </div>
-
-            {/* Problem Statement Filter */}
-            {console.log('🔍 Frontend - Winner modal render - availableProblemStatements:', availableProblemStatements, 'length:', availableProblemStatements.length)}
-            {console.log('🔍 Frontend - Winner modal render - summary:', summary)}
-            {console.log('🔍 Frontend - Winner modal render - leaderboard length:', leaderboard.length)}
-            {console.log('🔍 Frontend - Winner modal render - hackathonData:', hackathonData)}
-            <div style={{border: '2px solid red', padding: '10px', margin: '10px 0'}}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Problem Statement
-              </label>
-              {availableProblemStatements.length > 0 ? (
-                <select
-                  value={winnerProblemStatement}
-                  onChange={(e) => setWinnerProblemStatement(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="All">All Problem Statements</option>
-                  {availableProblemStatements.map((ps, index) => (
-                    <option key={index} value={ps}>
-                      {getProblemStatementText(ps).length > 50 ? getProblemStatementText(ps).substring(0, 50) + '...' : getProblemStatementText(ps)}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                  No problem statements available
-                </div>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Only projects from the selected problem statement will be considered for winner assignment
-              </p>
-            </div>
-
-            {/* Top N Mode */}
+            {/* Winner Count or Threshold */}
             {winnerMode === 'topN' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of projects to be winners
+                  Number of Winners
                 </label>
                 <input
                   type="number"
@@ -2501,12 +2460,10 @@ if (loading) {
                 </p>
               </div>
             )}
-
-            {/* Threshold Mode */}
             {winnerMode === 'threshold' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum score threshold for winners
+                  Minimum Score Threshold for Winners
                 </label>
                 <input
                   type="number"
@@ -2522,17 +2479,14 @@ if (loading) {
                 </p>
               </div>
             )}
-
             {/* Manual Selection Mode */}
             {winnerMode === 'manual' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select submissions to be winners
+                  Select Submissions to be Winners
                 </label>
                 <div className="space-y-2">
-                  {leaderboard
-                    .filter(entry => winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))
-                    .map((entry, index) => (
+                  {leaderboard.map((entry, index) => (
                     <div key={entry._id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
                       <div className="flex items-center gap-2">
                         <input
@@ -2561,7 +2515,61 @@ if (loading) {
                 </p>
               </div>
             )}
-
+            {/* Per-winner Problem Statement Selection */}
+            <div>
+              <h4 className="text-md font-semibold text-blue-700 mb-2 mt-4">Assign Problem Statement to Each Winner</h4>
+              {(winnerMode === 'topN' || winnerMode === 'threshold') && (
+                <div className="space-y-2">
+                  {leaderboard
+                    .filter(entry => entry.scoreCount > 0 && (winnerMode === 'topN'
+                      ? leaderboard.filter(e => e.scoreCount > 0).findIndex(e => e._id === entry._id) < winnerCount
+                      : entry.averageScore >= winnerThreshold))
+                    .slice(0, winnerMode === 'topN' ? winnerCount : undefined)
+                    .map((entry, idx) => (
+                      <div key={entry._id} className="flex items-center gap-2 mb-2">
+                        <span className="font-medium w-48 truncate">{entry.projectTitle}</span>
+                        <select
+                          value={winnerProblemStatementMap[entry._id] || 'All'}
+                          onChange={e => setWinnerProblemStatementMap(prev => ({ ...prev, [entry._id]: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="All">All Problem Statements</option>
+                          {availableProblemStatements.map((ps, i) => (
+                            <option key={i} value={ps}>
+                              {getProblemStatementText(ps).length > 50 ? getProblemStatementText(ps).substring(0, 50) + '...' : getProblemStatementText(ps)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                </div>
+              )}
+              {winnerMode === 'manual' && (
+                <div className="space-y-2">
+                  {selectedWinnerIds.map((id, idx) => {
+                    const entry = leaderboard.find(e => e._id === id);
+                    if (!entry) return null;
+                    return (
+                      <div key={id} className="flex items-center gap-2 mb-2">
+                        <span className="font-medium w-48 truncate">{entry.projectTitle}</span>
+                        <select
+                          value={winnerProblemStatementMap[id] || 'All'}
+                          onChange={e => setWinnerProblemStatementMap(prev => ({ ...prev, [id]: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="All">All Problem Statements</option>
+                          {availableProblemStatements.map((ps, i) => (
+                            <option key={i} value={ps}>
+                              {getProblemStatementText(ps).length > 50 ? getProblemStatementText(ps).substring(0, 50) + '...' : getProblemStatementText(ps)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
             {/* Preview Section */}
             <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
               <div className="flex items-center gap-2 mb-2">
@@ -2633,317 +2641,82 @@ if (loading) {
                 )}
               </div>
             </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm text-yellow-800">
-                  {winnerMode === 'topN' 
-                    ? `This will assign the top ${winnerCount} projects as winners for Round 2.`
-                    : winnerMode === 'threshold'
-                    ? `This will assign all projects with average score ≥ ${winnerThreshold}/10 as winners for Round 2.`
-                    : `This will assign the selected ${selectedWinnerIds.length} submissions as winners for Round 2.`
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setWinnerAssignmentModalOpen(false)}
-              disabled={assigningWinners}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={async () => {
-                setAssigningWinners(true);
-                try {
-                  const token = localStorage.getItem('token');
-                  const requestBody = {
-                    winnerCount: winnerCount,
-                    mode: winnerMode,
-                    threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
-                    winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined,
-                    problemStatement: winnerProblemStatement !== 'All' ? winnerProblemStatement : undefined
-                  };
-
-                  const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify(requestBody)
-                  });
-
-                  if (response.ok) {
-                    const data = await response.json();
-                    toast({
-                      title: data.isReassignment ? 'Winners Reassigned' : 'Winners Assigned',
-                      description: data.message,
-                      variant: 'default',
-                    });
-                    setWinnerAssignmentModalOpen(false);
-                    fetchLeaderboard(); // Refresh leaderboard to show winners
-                    if (onShortlistingComplete) {
-                      onShortlistingComplete();
-                    }
-                  } else {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Failed to assign winners');
-                  }
-                } catch (error) {
-                  console.error('Error assigning winners:', error);
-                  toast({
-                    title: 'Assign Winners Failed',
-                    description: error.message || 'Failed to assign winners',
-                    variant: 'destructive',
-                  });
-                } finally {
-                  setAssigningWinners(false);
-                }
-              }}
-              disabled={assigningWinners}
-              className="bg-gold-600 hover:bg-gold-700 text-white"
-            >
-              {assigningWinners ? 'Assigning Winners...' : 'Assign Winners'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Winner Assignment Modal */}
-      <Dialog open={winnerAssignmentModalOpen} onOpenChange={setWinnerAssignmentModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-yellow-600" />
-              Assign Winners for Round 2
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {/* Winner Selection Mode */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Winner Selection Mode
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    value="topN"
-                    checked={winnerMode === 'topN'}
-                    onChange={(e) => setWinnerMode(e.target.value)}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Top N Projects</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    value="threshold"
-                    checked={winnerMode === 'threshold'}
-                    onChange={(e) => setWinnerMode(e.target.value)}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Score Threshold</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    value="manual"
-                    checked={winnerMode === 'manual'}
-                    onChange={(e) => setWinnerMode(e.target.value)}
-                    className="text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm">Manual Selection</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Top N Mode */}
-            {winnerMode === 'topN' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of winners to assign
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={leaderboard.length}
-                  value={winnerCount}
-                  onChange={(e) => setWinnerCount(parseInt(e.target.value) || 1)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Maximum: {leaderboard.length} projects
-                </p>
-              </div>
-            )}
-
-            {/* Threshold Mode */}
-            {winnerMode === 'threshold' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum combined score threshold
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={winnerThreshold}
-                  onChange={(e) => setWinnerThreshold(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Projects with combined score ≥ {winnerThreshold}/10 will be winners
-                </p>
-              </div>
-            )}
-
-            {/* Manual Selection Mode */}
-            {winnerMode === 'manual' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select submissions to be winners
-                </label>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {leaderboard.map((entry, index) => (
-                    <div key={entry._id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedWinnerIds.includes(entry._id)}
-                          onChange={() => {
-                            if (selectedWinnerIds.includes(entry._id)) {
-                              setSelectedWinnerIds(selectedWinnerIds.filter(id => id !== entry._id));
-                            } else {
-                              setSelectedWinnerIds([...selectedWinnerIds, entry._id]);
-                            }
-                          }}
-                          className="text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="font-medium">{entry.projectTitle}</span>
-                        <span className="text-gray-500">({entry.averageScore}/10)</span>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {entry.scoreCount} evaluations
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Selected {selectedWinnerIds.length} submissions
-                </p>
-              </div>
-            )}
-
-            {/* Preview Section */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Info className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Preview</span>
-              </div>
-              <div className="text-sm text-blue-700">
-                {winnerMode === 'topN' && (
-                  <div>
-                    <p>Will assign {winnerCount} winners:</p>
-                    <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
-                      {Math.min(winnerCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be winners
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {leaderboard
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setWinnerAssignmentModalOpen(false)}
+                disabled={assigningWinners}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  setAssigningWinners(true);
+                  try {
+                    const token = localStorage.getItem('token');
+                    // Build winner list and PS mapping for all modes
+                    let winners = [];
+                    if (winnerMode === 'topN') {
+                      winners = leaderboard
                         .filter(entry => entry.scoreCount > 0)
                         .slice(0, winnerCount)
-                        .map((entry, index) => (
-                          <div key={entry._id} className="flex items-center gap-2 text-xs">
-                            <Crown className="w-4 h-4 text-yellow-600" />
-                            <span className="font-medium">{entry.projectTitle}</span>
-                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
-                            <span className="text-xs text-gray-500">#{index + 1}</span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-                {winnerMode === 'threshold' && (
-                  <div>
-                    <p>Will assign winners with combined score ≥ {winnerThreshold}/10:</p>
-                    <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length} projects meet the threshold
-                    </p>
-                    <div className="mt-2 space-y-1">
-                      {leaderboard
+                        .map(entry => ({ id: entry._id, problemStatement: winnerProblemStatementMap[entry._id] || 'All' }));
+                    } else if (winnerMode === 'threshold') {
+                      winners = leaderboard
                         .filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold)
-                        .map((entry, index) => (
-                          <div key={entry._id} className="flex items-center gap-2 text-xs">
-                            <Crown className="w-4 h-4 text-yellow-600" />
-                            <span className="font-medium">{entry.projectTitle}</span>
-                            <span className="text-yellow-600">({entry.averageScore}/10)</span>
-                          </div>
-                        ))}
-                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length === 0 && (
-                        <p className="text-orange-600 text-xs">No projects meet the threshold criteria</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {winnerMode === 'manual' && (
-                  <div>
-                    <p>Selected {selectedWinnerIds.length} submissions to be winners:</p>
-                    <div className="mt-2 space-y-1">
-                      {selectedWinnerIds.map((id, index) => {
-                        const winnerEntry = leaderboard.find(entry => entry._id === id);
-                        return (
-                          <div key={id} className="flex items-center gap-2 text-xs">
-                            <Crown className="w-4 h-4 text-yellow-600" />
-                            <span className="font-medium">{winnerEntry?.projectTitle || 'Untitled Project'}</span>
-                            <span className="text-yellow-600">({winnerEntry?.averageScore}/10)</span>
-                            <span className="text-xs text-gray-500">#{index + 1}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm text-yellow-800">
-                  {winnerMode === 'topN' 
-                    ? `This will assign the top ${winnerCount} projects as winners for Round 2.`
-                    : winnerMode === 'threshold'
-                    ? `This will assign all projects with combined score ≥ ${winnerThreshold}/10 as winners for Round 2.`
-                    : `This will assign the selected ${selectedWinnerIds.length} submissions as winners for Round 2.`
+                        .map(entry => ({ id: entry._id, problemStatement: winnerProblemStatementMap[entry._id] || 'All' }));
+                    } else if (winnerMode === 'manual') {
+                      winners = selectedWinnerIds.map(id => ({ id, problemStatement: winnerProblemStatementMap[id] || 'All' }));
+                    }
+                    const requestBody = {
+                      winnerCount: winnerCount,
+                      mode: winnerMode,
+                      threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
+                      winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined,
+                      winners, // <-- new field: array of {id, problemStatement}
+                    };
+                    const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                      },
+                      body: JSON.stringify(requestBody)
+                    });
+                    if (response.ok) {
+                      const data = await response.json();
+                      toast({
+                        title: data.isReassignment ? 'Winners Reassigned' : 'Winners Assigned',
+                        description: data.message,
+                        variant: 'default',
+                      });
+                      setWinnerAssignmentModalOpen(false);
+                      fetchLeaderboard();
+                      if (onShortlistingComplete) {
+                        onShortlistingComplete();
+                      }
+                    } else {
+                      const error = await response.json();
+                      throw new Error(error.message || 'Failed to assign winners');
+                    }
+                  } catch (error) {
+                    console.error('Error assigning winners:', error);
+                    toast({
+                      title: 'Assign Winners Failed',
+                      description: error.message || 'Failed to assign winners',
+                      variant: 'destructive',
+                    });
+                  } finally {
+                    setAssigningWinners(false);
                   }
-                </span>
-              </div>
+                }}
+                disabled={assigningWinners}
+                className="bg-gold-600 hover:bg-gold-700 text-white"
+              >
+                {assigningWinners ? 'Assigning Winners...' : 'Assign Winners'}
+              </Button>
             </div>
-          </div>
-
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setWinnerAssignmentModalOpen(false)}
-              disabled={assigningWinners}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAssignWinners}
-              disabled={assigningWinners}
-              className="bg-gold-600 hover:bg-gold-700 text-white"
-            >
-              {assigningWinners ? 'Assigning Winners...' : 'Assign Winners'}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -3010,6 +2783,11 @@ if (loading) {
                           <div className="text-sm text-gray-600">
                             <span className="font-medium">Leader:</span> {winner.leaderName}
                           </div>
+                          {winner.problemStatement && (
+                            <div className="text-sm text-purple-700 font-semibold mt-1">
+                              <span className="font-medium">Problem Statement:</span> {getProblemStatementText(winner.problemStatement)}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">

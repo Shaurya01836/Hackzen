@@ -3405,7 +3405,7 @@ exports.getLeaderboard = async (req, res) => {
 
       return {
         _id: submission._id,
-        projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+        projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,
@@ -3416,6 +3416,8 @@ exports.getLeaderboard = async (req, res) => {
         status: finalStatus, // Use the corrected status
         roundIndex: submission.roundIndex,
         problemStatement: submission.problemStatement, // Add problem statement field
+        pptScore: typeof submission.pptScore === 'number' ? submission.pptScore : null, // Add pptScore
+        projectScore: typeof submission.projectScore === 'number' ? submission.projectScore : null, // Add projectScore
         // Final round specific fields
         previousRoundScore: isFinalRound && hasPreviousRounds ? Math.round(previousRoundScore * 10) / 10 : null,
         currentRoundScore: isFinalRound && hasPreviousRounds ? Math.round(currentRoundScore * 10) / 10 : null,
@@ -5733,6 +5735,13 @@ exports.assignWinners = async (req, res) => {
       const submission = await Submission.findById(winner._id);
       if (submission) {
         submission.status = 'winner';
+        // Find the problemStatement for this winner (if provided)
+        if (req.body.winners && Array.isArray(req.body.winners)) {
+          const found = req.body.winners.find(w => w.id === String(submission._id));
+          if (found && found.problemStatement) {
+            submission.problemStatement = found.problemStatement;
+          }
+        }
         return submission.save();
       }
     });
@@ -5788,15 +5797,26 @@ exports.assignWinners = async (req, res) => {
       message: isReassignment 
         ? `Successfully reassigned ${winners.length} winners (replaced ${existingWinners.length} previous winners). Emails can be sent manually.`
         : `Successfully assigned ${winners.length} winners. Emails can be sent manually.`,
-      winners: winners.map(winner => ({
-        _id: winner._id,
-        projectTitle: winner.projectTitle,
-        teamName: winner.teamName,
-        leaderName: winner.leaderName,
-        pptScore: winner.pptScore,
-        projectScore: winner.projectScore,
-        combinedScore: winner.combinedScore
-      })),
+      winners: winners.map(winner => {
+        // Find the problemStatement for this winner (if provided)
+        let problemStatement = undefined;
+        if (req.body.winners && Array.isArray(req.body.winners)) {
+          const found = req.body.winners.find(w => w.id === String(winner._id));
+          if (found && found.problemStatement) {
+            problemStatement = found.problemStatement;
+          }
+        }
+        return {
+          _id: winner._id,
+          projectTitle: winner.projectTitle,
+          teamName: winner.teamName,
+          leaderName: winner.leaderName,
+          pptScore: winner.pptScore,
+          projectScore: winner.projectScore,
+          combinedScore: winner.combinedScore,
+          problemStatement, // <-- add this
+        };
+      }),
       mode,
       winnerCount: winners.length,
       isReassignment,
@@ -6095,7 +6115,8 @@ exports.getWinners = async (req, res) => {
         status: submission.status,
         roundIndex: submission.roundIndex,
         submittedAt: submission.submittedAt,
-        evaluations: submissionScoresList.length
+        evaluations: submissionScoresList.length,
+        problemStatement: submission.problemStatement // <-- add this line
       };
     });
 
@@ -6217,7 +6238,7 @@ exports.getWinners = async (req, res) => {
         position,
         positionText,
         positionColor,
-       projectTitle: submission.projectTitle || submission.title || 'Untitled Project',
+       projectTitle: submission.projectId?.title || submission.projectTitle || submission.title || 'Untitled Project',
         teamName: submission.teamName || submission.teamId?.name || 'No Team',
         leaderName: submission.submittedBy?.name || submission.submittedBy?.email || 'Unknown',
         pptFile: submission.pptFile,
@@ -6226,7 +6247,8 @@ exports.getWinners = async (req, res) => {
         scoreCount,
         totalScore: Math.round(totalScore * 10) / 10,
         status: submission.status,
-        roundIndex: submission.roundIndex
+        roundIndex: submission.roundIndex,
+        problemStatement: submission.problemStatement // <-- add this line
       };
     });
 
