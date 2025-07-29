@@ -30,6 +30,7 @@ const UserSchema = new Schema({
   bio: String,
   website: String,
   linkedin: String,
+  age: String, // Add age field for registration auto-fill
 
   // Comprehensive Profile Information for Hackathon Management
   gender: {

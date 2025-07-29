@@ -61,12 +61,18 @@ exports.createProject = async (req, res) => {
 
 
 // Get all projects
-// Get all projects
 exports.getAllProjects = async (req, res) => {
   try {
     const projects = await Project.find()
       .populate("submittedBy", "name profileImage role") // 👈 key line
-      .populate("hackathon", "title")
+      .populate("hackathon", "title description images prizePool registrationDeadline startDate endDate status difficultyLevel")
+      .populate({
+        path: 'team',
+        populate: [
+          { path: 'members', select: 'name profileImage email' },
+          { path: 'leader', select: 'name profileImage email' }
+        ]
+      })
       .sort({ createdAt: -1 });
 
     res.json(projects);
@@ -94,7 +100,14 @@ exports.getMyProjects = async (req, res) => {
 exports.getProjectsByHackathon = async (req, res) => {
   try {
     const projects = await Project.find({ hackathon: req.params.hackathonId, status: "submitted" })
-      .populate("submittedBy", "name profileImage role"); // ✅ Add this
+      .populate("submittedBy", "name profileImage role")
+      .populate({
+        path: 'team',
+        populate: [
+          { path: 'members', select: 'name profileImage email' },
+          { path: 'leader', select: 'name profileImage email' }
+        ]
+      });
     res.json(projects);
   } catch (err) {
     console.error("Error fetching projects:", err);

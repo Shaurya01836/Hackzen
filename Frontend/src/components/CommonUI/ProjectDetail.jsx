@@ -74,7 +74,7 @@ export function ProjectDetail({
   const [isLiked, setIsLiked] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [fullHackathon, setFullHackathon] = useState(
-    typeof project.hackathon === "object" && project.hackathon && project.hackathon.images
+    typeof project.hackathon === "object" && project.hackathon && project.hackathon.title
       ? project.hackathon
       : null
   );
@@ -96,6 +96,15 @@ export function ProjectDetail({
       console.log('[ProjectDetail] submission._id:', submission._id);
     }
   }, [submission]);
+
+  // Update fullHackathon when project changes
+  useEffect(() => {
+    if (project.hackathon && typeof project.hackathon === "object" && project.hackathon.title) {
+      setFullHackathon(project.hackathon);
+    } else {
+      setFullHackathon(null);
+    }
+  }, [project.hackathon]);
 
   
 
@@ -675,7 +684,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
               <div className="border-t border-gray-200 my-4 w-full" />
               {/* Project meta info */}
               <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
-                {project.hackathon && (
+                {project.hackathon && project.hackathon.title && (
                   <span className="flex items-center gap-1">
                     <Award className="w-4 h-4 text-yellow-500" />
                     {project.hackathon.title}
@@ -738,7 +747,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
       <div className="max-w-7xl mx-auto px-6 pt-4">
         <div className="border-t border-gray-200 mb-4 w-full" />
         <Tabs defaultValue="overview" className="w-full">
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-start mb-8">
             <TabsList className="grid w-full max-w-md grid-cols-3 rounded-xl">
               <TabsTrigger value="overview" className="flex items-center gap-2">
                 <Play className="w-4 h-4" /> Overview
@@ -758,6 +767,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
               )}
             </TabsList>
           </div>
+          <div className="border-t border-gray-200 mb-6 w-full" />
           {/* Wrap the grid and sidebar in a single parent div to fix JSX error */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <div className="lg:col-span-3">
@@ -916,7 +926,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                 <TabsContent value="hackathon" className="space-y-8 pb-10">
                   <section>
                     {fullHackathon ? (
-                      <div className="flex justify-center">
+                      <div className="flex justify-start">
                         <HackathonCard
                           hackathon={{
                             id: fullHackathon._id,
@@ -951,7 +961,13 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                         />
                       </div>
                     ) : (
-                      <div className="text-center text-gray-400 mt-8">No hackathon linked.</div>
+                      <div className="text-center text-gray-400 mt-8">
+                        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Award className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <p className="text-lg font-medium mb-2">No Hackathon Linked</p>
+                        <p className="text-sm">This project was not submitted to any hackathon.</p>
+                      </div>
                     )}
                   </section>
                 </TabsContent>
@@ -961,10 +977,30 @@ if (project.type && project.type.toLowerCase() === "ppt") {
   <TabsContent value="team" className="space-y-8 pb-10">
     <section>
       <div className="max-w-4xl mx-auto px-8">
+        {/* Team Description */}
+        {project.team && project.team.description && (
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-blue-600 rounded-full mr-3"></span>
+              Team Description
+            </h3>
+            <Card className="shadow-none hover:shadow-none">
+              <CardContent className="p-6">
+                <p className="text-gray-700 leading-relaxed">
+                  {project.team.description}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Team Leader Section */}
         {project?.submittedBy && (
           <div className="mb-8">
-           
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-green-600 rounded-full mr-3"></span>
+              Team Leader
+            </h3>
             <Card className="shadow-none hover:shadow-none">
               <a
                 href={`/dashboard/profile/${project.submittedBy._id}`}
@@ -1053,7 +1089,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className="text-base font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
-                            {member.name}
+                            {member.name || "Unknown Member"}
                           </h4>
                           <p className="text-sm text-gray-600">Team Member</p>
                         </div>
@@ -1071,7 +1107,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
         )}
 
         {/* Empty State */}
-        {project.team && project.team.members && project.team.members.filter((member) => member._id !== project.submittedBy?._id).length === 0 && (
+        {(!project.team || !project.team.members || project.team.members.filter((member) => member._id !== project.submittedBy?._id).length === 0) && (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1090,7 +1126,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
             </div>
             {/* Sidebar */}
             <div className="lg:col-span-1 space-y-6">
-              {(project.team && project.team.length > 0) && (
+              {(project.team && project.team.members && project.team.members.length > 0) && (
                 <Card className="bg-white/50">
                   <CardHeader>
                     <CardTitle className="text-sm text-gray-500">
@@ -1099,7 +1135,7 @@ if (project.type && project.type.toLowerCase() === "ppt") {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-3">
-                      {project.team.map((member) => (
+                      {project.team.members.map((member) => (
                         <div key={member._id} className="flex items-center gap-3">
                           <Avatar className="w-10 h-10">
                             <AvatarImage

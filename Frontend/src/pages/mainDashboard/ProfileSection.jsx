@@ -120,6 +120,7 @@ export function ProfileSection({ viewUserId }) {
     bannerImage: "",
     // New fields from CompleteProfile
     gender: "prefer-not-to-say",
+    age: "",
     userType: "",
     domain: "",
     course: "",
@@ -158,6 +159,7 @@ export function ProfileSection({ viewUserId }) {
     location: "",
     bio: "",
     gender: "",
+    age: "",
     userType: "",
     domain: "",
     course: "",
@@ -400,6 +402,7 @@ export function ProfileSection({ viewUserId }) {
         bannerImage: data.bannerImage || "",
         // New fields from CompleteProfile
         gender: data.gender || "prefer-not-to-say",
+        age: data.age || "",
         userType: data.userType || "",
         domain: data.domain || "",
         course: data.course || "",
@@ -774,6 +777,20 @@ export function ProfileSection({ viewUserId }) {
                       <option value="female">Female</option>
                       <option value="other">Other</option>
                     </select>
+                  </div>
+                  <div>
+                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
+                      Age
+                    </Label>
+                    <input
+                      type="number"
+                      value={inlineForm.age || ""}
+                      onChange={(e) =>
+                        handleInlineChange("age", e.target.value)
+                      }
+                      placeholder="Enter your age"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+                    />
                   </div>
                   <div>
                     <Label className="text-sm text-gray-700 font-semibold mb-2 block">
@@ -2292,6 +2309,7 @@ export function ProfileSection({ viewUserId }) {
       bannerImage: editForm.bannerImage || selectedBanner,
       // New fields from CompleteProfile
       gender: editForm.gender,
+      age: editForm.age,
       userType: editForm.userType,
       domain: editForm.domain,
       course: editForm.course,
@@ -2601,6 +2619,7 @@ export function ProfileSection({ viewUserId }) {
       location: user?.location || "",
       bio: user?.bio || "",
       gender: user?.gender || "prefer-not-to-say",
+      age: user?.age || "",
       userType: user?.userType || "",
       domain: user?.domain || "",
       course: user?.course || "",
@@ -2657,6 +2676,7 @@ export function ProfileSection({ viewUserId }) {
           location: inlineForm.location,
           bio: inlineForm.bio,
           gender: inlineForm.gender,
+          age: inlineForm.age,
           userType: inlineForm.userType,
           domain: inlineForm.domain,
           course: inlineForm.course,
@@ -2689,6 +2709,7 @@ export function ProfileSection({ viewUserId }) {
           location: inlineForm.location,
           bio: inlineForm.bio,
           gender: inlineForm.gender,
+          age: inlineForm.age,
           userType: inlineForm.userType,
           domain: inlineForm.domain,
         };

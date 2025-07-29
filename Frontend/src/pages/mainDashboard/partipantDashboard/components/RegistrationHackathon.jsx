@@ -108,8 +108,8 @@ export function HackathonRegistration({ hackathon, onBack, onSuccess, editMode =
             fullName: profileData.name || user.name || "",
             email: profileData.email || user.email || "",
             phone: profileData.phone || "",
-            age: "", // Age not stored in profile
-            gender: profileData.gender || "",
+            age: profileData.age || "", // Now age can be auto-filled from user profile
+            gender: profileData.gender ? profileData.gender.charAt(0).toUpperCase() + profileData.gender.slice(1) : "",
             collegeOrCompany: profileData.collegeName || profileData.companyName || "",
             degreeOrRole: profileData.course || profileData.jobTitle || "",
             yearOfStudyOrExperience: profileData.currentYear || profileData.yearsOfExperience || "",

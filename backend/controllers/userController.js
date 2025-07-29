@@ -276,7 +276,7 @@ const updateUser = async (req, res) => {
       "name", "phone", "location", "bio", "website", "github",
       "githubUsername", "linkedin", "profileImage", "bannerImage",
       // New fields from CompleteProfile
-      "gender", "userType", "domain", "course", "courseDuration", 
+      "gender", "age", "userType", "domain", "course", "courseDuration", 
       "collegeName", "country", "city", "courseSpecialization",
       "companyName", "jobTitle", "yearsOfExperience", "currentYear",
       "skills", "interests", "twitter", "instagram", "portfolio",
