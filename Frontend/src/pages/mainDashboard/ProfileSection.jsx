@@ -1926,42 +1926,18 @@ export function ProfileSection({ viewUserId }) {
 
       {/* Save + Cancel Actions */}
       <div className="flex flex-col sm:flex-row gap-3 justify-start">
-        <AlertDialog
-          open={showConfirmDialog}
-          onOpenChange={setShowConfirmDialog}
+        <Button
+          onClick={async () => {
+            toast({ title: "Saving changes...", description: "Your profile is being updated." });
+            setPendingSave(true);
+            await handleSaveChanges();
+            setPendingSave(false);
+          }}
+          className="flex items-center gap-2 w-full sm:w-auto"
         >
-          <AlertDialogTrigger asChild>
-            <Button
-              onClick={handleSaveClick}
-              className="flex items-center gap-2 w-full sm:w-auto"
-            >
-              <Save className="w-4 h-4" />
-              Save Changes
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Are you sure you want to save changes?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                This will update your profile information. You can't undo this
-                action.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={pendingSave}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmSave}
-                disabled={pendingSave}
-              >
-                {pendingSave ? "Saving..." : "Yes, Save"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          <Save className="w-4 h-4" />
+          Save Changes
+        </Button>
         <Button
           variant="outline"
           className="w-full sm:w-auto"
@@ -2549,17 +2525,6 @@ export function ProfileSection({ viewUserId }) {
       console.error("Error removing profile image:", error);
       toast({ title: "Failed to remove profile image", description: "Could not remove your profile image. Please try again." });
     }
-  };
-
-  const handleSaveClick = () => {
-    setShowConfirmDialog(true);
-  };
-
-  const handleConfirmSave = async () => {
-    setPendingSave(true);
-    await handleSaveChanges();
-    setPendingSave(false);
-    setShowConfirmDialog(false);
   };
 
   return (
