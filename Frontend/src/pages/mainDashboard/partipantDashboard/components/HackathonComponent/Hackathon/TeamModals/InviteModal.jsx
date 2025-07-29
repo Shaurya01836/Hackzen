@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Input } from "../../../../../../../components/CommonUI/input";
 import { Button } from "../../../../../../../components/CommonUI/button";
 import BaseModal from "./BaseModal";
-import { Copy } from "lucide-react";
+import { Copy, X } from "lucide-react"; 
 import { useToast } from "../../../../../../../hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
@@ -130,7 +130,19 @@ export default function InviteModal({ onInvite, team, hackathon, project, show, 
 
   return (
     <BaseModal
-      title="Invite Team Member"
+      title={
+        <div className="flex items-center justify-between w-full">
+          <span>Invite Team Member</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleClose}
+            className="h-6 w-6 p-0 hover:bg-gray-100"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      }
       description="Enter the email address of the person you want to invite to your team. They will receive an email and, if they already have an account, an in-app notification."
       open={show}
       onOpenChange={handleClose}

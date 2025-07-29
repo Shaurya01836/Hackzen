@@ -16,7 +16,7 @@ import {
 } from '../../../../../../components/DashboardUI/alert-dialog';
 import ReactDOM from "react-dom";
 import EditTeamNameModal from "./TeamModals/EditTeamNameModal";
-import { Edit } from "lucide-react";
+import { Edit, X } from "lucide-react"; // Added X import
 import { useAuth } from "../../../../../../context/AuthContext";
 
 export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, roundIndex, onSuccess, autoSelectProjectId, editingSubmission, projectSubmissions = [], setEditingSubmission }) {
@@ -152,6 +152,15 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     const returnUrl = encodeURIComponent(`/dashboard/hackathons/${hackathonId}?returnTo=hackathon-timeline`);
     navigate(`/dashboard/my-hackathons?createProject=1&hackathonId=${hackathonId}&returnUrl=${returnUrl}`);
     if (onOpenChange) onOpenChange(false); // Close modal
+  };
+
+  const handleClose = () => {
+    setSelectedProject("");
+    setSelectedProblem("");
+    setSubmitting(false);
+    setShowSubmitConfirm(false);
+    setPendingSubmit(false);
+    if (onOpenChange) onOpenChange(false);
   };
 
   const handleSubmit = async () => {
@@ -403,8 +412,20 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
     <>
       <BaseModal
         open={open}
-        onOpenChange={onOpenChange}
-        title="Submit Project for this Round"
+        onOpenChange={handleClose}
+        title={
+          <div className="flex items-center justify-between w-full">
+            <span>Submit Project for this Round</span>
+            <button
+              type="button"
+              onClick={handleClose}
+              className="h-6 w-6 p-0 flex items-center justify-center hover:bg-gray-100 rounded"
+              disabled={submitting}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        }
         description="Choose a project to submit for this round. You can select an existing project or create a new one."
         content={
           <div className="flex flex-col gap-4 mt-2">
@@ -585,4 +606,4 @@ export default function ProjectSubmissionModal({ open, onOpenChange, hackathon, 
       )}
     </>
   );
-} 
+}

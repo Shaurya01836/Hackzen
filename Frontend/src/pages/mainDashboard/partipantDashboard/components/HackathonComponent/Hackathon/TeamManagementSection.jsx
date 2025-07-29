@@ -392,7 +392,7 @@ export default function TeamManagementSection({
                                     <h5 className="font-medium text-gray-900">{team.leader.name}</h5>
                                     <p className="text-sm text-gray-600">{team.leader.email}</p>
                                   </div>
-                                  <Badge className="bg-indigo-100 text-indigo-700 text-xs">
+                                  <Badge variant="outline">
                                     Leader
                                   </Badge>
                                 </div>

@@ -3,7 +3,7 @@ import BaseModal from "./TeamModals/BaseModal";
 import { uploadPPTFile, savePPTSubmission } from '../../../../../../lib/api';
 import { useToast } from '../../../../../../hooks/use-toast';
 import EditTeamNameModal from "./TeamModals/EditTeamNameModal";
-import { Edit } from "lucide-react";
+import { Edit, X } from "lucide-react"; // Added X import
 import { useAuth } from '../../../../../../context/AuthContext';
 
 export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, roundIndex, onSuccess, hackathon, editingSubmission }) {
@@ -29,9 +29,6 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
       setFile(null);
     }
   }, [open, editingSubmission]);
-
-  // Reset file and problem when modal closes
-  // (already handled above)
 
   // Fetch user's team for this hackathon
   const fetchTeam = async () => {
@@ -110,6 +107,12 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
     }
   };
 
+  const handleClose = () => {
+    setFile(null);
+    setSelectedProblem("");
+    if (onOpenChange) onOpenChange(false);
+  };
+
   const showProblemDropdown = hackathon?.problemStatements && hackathon.problemStatements.length > 0;
 
   // Helper to get download link for existing PPT
@@ -132,8 +135,20 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
   return (
     <BaseModal
       open={open}
-      onOpenChange={onOpenChange}
-      title={isEditMode ? "Edit PPT Submission" : "Submit PPT for this Round"}
+      onOpenChange={handleClose}
+      title={
+        <div className="flex items-center justify-between w-full">
+          <span>{isEditMode ? "Edit PPT Submission" : "Submit PPT for this Round"}</span>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="h-6 w-6 p-0 flex items-center justify-center hover:bg-gray-100 rounded"
+            disabled={uploading}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      }
       description={isEditMode ? "Update your .pptx file or problem statement. Only one submission allowed per round." : "Upload your .pptx file. Only one submission allowed per round."}
       content={
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 mt-2">
@@ -224,4 +239,4 @@ export default function PPTSubmissionModal({ open, onOpenChange, hackathonId, ro
       }
     />
   );
-} 
+}
