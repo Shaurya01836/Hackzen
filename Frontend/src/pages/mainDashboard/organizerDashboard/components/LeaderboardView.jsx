@@ -43,6 +43,9 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [selectedProblemStatement, setSelectedProblemStatement] = useState('All');
   const [availableProblemStatements, setAvailableProblemStatements] = useState([]);
   
+  // Shortlisting Problem Statement Filter State
+  const [shortlistProblemStatement, setShortlistProblemStatement] = useState('All');
+  
   // Round 2 Winner Assignment States
   const [winnerAssignmentModalOpen, setWinnerAssignmentModalOpen] = useState(false);
   const [assigningWinners, setAssigningWinners] = useState(false);
@@ -51,6 +54,22 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
   const [winnerThreshold, setWinnerThreshold] = useState(7.0);
   const [selectedWinnerIds, setSelectedWinnerIds] = useState([]);
   const [hasWinners, setHasWinners] = useState(false);
+  
+  // Winner Assignment Problem Statement Filter State
+  const [winnerProblemStatement, setWinnerProblemStatement] = useState('All');
+  
+  // Hackathon data state
+  const [hackathonData, setHackathonData] = useState(null);
+  
+  // Reset winner problem statement when modal opens
+  useEffect(() => {
+    if (winnerAssignmentModalOpen) {
+      setWinnerProblemStatement('All');
+      console.log('🔍 Frontend - Winner modal opened, reset problem statement to All');
+      console.log('🔍 Frontend - Winner modal opened - availableProblemStatements:', availableProblemStatements);
+      console.log('🔍 Frontend - Winner modal opened - hackathonData:', hackathonData);
+    }
+  }, [winnerAssignmentModalOpen, availableProblemStatements, hackathonData]);
   
   // Winners Display States
   const [winnersDisplayModalOpen, setWinnersDisplayModalOpen] = useState(false);
@@ -65,6 +84,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     if (hackathonId) {
       fetchLeaderboard();
       checkAutoProgress();
+      fetchHackathonData();
     }
   }, [hackathonId, selectedRound]);
 
@@ -118,7 +138,7 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       } else if (!hasWinnerSubmissions && hasWinners) {
         console.log('🔍 Frontend - Setting hasWinners to false');
         setHasWinners(false);
-      }
+       }
     }
   }, [leaderboard]);
 
@@ -143,6 +163,28 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
       }
     } catch (error) {
       console.error('Error checking auto-progress:', error);
+    }
+  };
+
+  const fetchHackathonData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/hackathons/${hackathonId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const hackathonData = await response.json();
+        console.log('🔍 Frontend - Hackathon data fetched:', hackathonData);
+        console.log('🔍 Frontend - Problem statements in hackathon data:', hackathonData.problemStatements);
+        setHackathonData(hackathonData);
+        setSummary(prev => ({
+          ...prev,
+          hackathon: hackathonData
+        }));
+      }
+    } catch (error) {
+      console.error('🔍 Frontend - Error fetching hackathon data:', error);
     }
   };
 
@@ -184,6 +226,14 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
         
         setLeaderboard(filteredLeaderboard);
         setSummary(data.summary);
+        
+        // Store hackathon data for problem statements
+        if (data.hackathon) {
+          setSummary(prev => ({
+            ...prev,
+            hackathon: data.hackathon
+          }));
+        }
         
         // Update available rounds based on hackathon data
         if (data.hackathon && data.hackathon.rounds && data.hackathon.rounds.length > 0) {
@@ -284,8 +334,8 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     try {
       const token = localStorage.getItem('token');
       const requestBody = shortlistMode === 'topN' 
-        ? { shortlistCount, mode: 'topN' }
-        : { shortlistThreshold, mode: 'threshold' };
+        ? { shortlistCount, mode: 'topN', problemStatement: shortlistProblemStatement }
+        : { shortlistThreshold, mode: 'threshold', problemStatement: shortlistProblemStatement };
 
       const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/shortlist`, {
         method: 'POST',
@@ -467,7 +517,8 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
         winnerCount: winnerCount,
         mode: winnerMode,
         threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
-        winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
+        winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined,
+        problemStatement: winnerProblemStatement !== 'All' ? winnerProblemStatement : undefined
       };
 
       const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
@@ -552,11 +603,40 @@ export default function LeaderboardView({ hackathonId, roundIndex = 0, onShortli
     return getProblemStatementText(entry.problemStatement) === getProblemStatementText(problemStatement);
   };
 
-  // Extract available problem statements from leaderboard entries
+  // Extract available problem statements from leaderboard entries and hackathon data
   useEffect(() => {
+    console.log('🔍 Frontend - useEffect triggered - leaderboard length:', leaderboard.length, 'summary:', summary, 'hackathonData:', hackathonData);
+    
     const problemStatements = [...new Set(leaderboard.map(entry => entry.problemStatement).filter(ps => ps))];
-    setAvailableProblemStatements(problemStatements);
-  }, [leaderboard]);
+    console.log('🔍 Frontend - Available problem statements from leaderboard:', problemStatements);
+    console.log('🔍 Frontend - Leaderboard entries with problem statements:', leaderboard.filter(entry => entry.problemStatement).map(entry => ({
+      projectTitle: entry.projectTitle,
+      problemStatement: entry.problemStatement
+    })));
+    
+    // Get problem statements from hackathon data as fallback
+    let allProblemStatements = [...problemStatements];
+    
+    // Try to get from hackathonData first
+    if (hackathonData?.problemStatements) {
+      const hackathonPS = hackathonData.problemStatements.map(ps => 
+        typeof ps === 'string' ? ps : ps.statement
+      );
+      console.log('🔍 Frontend - Problem statements from hackathonData:', hackathonPS);
+      allProblemStatements = [...new Set([...problemStatements, ...hackathonPS])];
+    } else if (summary?.hackathon?.problemStatements) {
+      const hackathonPS = summary.hackathon.problemStatements.map(ps => 
+        typeof ps === 'string' ? ps : ps.statement
+      );
+      console.log('🔍 Frontend - Problem statements from summary.hackathon:', hackathonPS);
+      allProblemStatements = [...new Set([...problemStatements, ...hackathonPS])];
+    } else {
+      console.log('🔍 Frontend - No hackathon problem statements found in either source');
+    }
+    
+    console.log('🔍 Frontend - Final available problem statements:', allProblemStatements);
+    setAvailableProblemStatements(allProblemStatements);
+  }, [leaderboard, summary, hackathonData]);
 
   const filteredLeaderboard = leaderboard
     .filter(entry => {
@@ -796,7 +876,10 @@ if (loading) {
                   {!hasWinners ? (
                     <>
                       <Button
-                        onClick={() => setWinnerAssignmentModalOpen(true)}
+                        onClick={() => {
+                          setWinnerProblemStatement('All');
+                          setWinnerAssignmentModalOpen(true);
+                        }}
                         className={`${
                           summary.evaluatedSubmissions > 0 
                             ? 'bg-yellow-600 hover:bg-yellow-700 text-white' 
@@ -824,7 +907,10 @@ if (loading) {
                   ) : (
                     <>
                       <Button
-                        onClick={() => setWinnerAssignmentModalOpen(true)}
+                        onClick={() => {
+                          setWinnerProblemStatement('All');
+                          setWinnerAssignmentModalOpen(true);
+                        }}
                         variant="outline"
                         className="text-yellow-600 border-yellow-200 hover:bg-yellow-50"
                         disabled={assigningWinners}
@@ -1617,6 +1703,33 @@ if (loading) {
               </div>
             </div>
 
+            {/* Problem Statement Filter for Shortlisting */}
+            {availableProblemStatements.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Problem Statement
+                </label>
+                <select
+                  value={shortlistProblemStatement}
+                  onChange={(e) => setShortlistProblemStatement(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="All">All Problem Statements</option>
+                  {availableProblemStatements.map((ps, index) => (
+                    <option key={index} value={ps}>
+                      {ps.length > 40 ? ps.substring(0, 40) + '...' : ps}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {shortlistProblemStatement === 'All' 
+                    ? 'Shortlist from all problem statements'
+                    : `Shortlist only from "${shortlistProblemStatement.substring(0, 30)}..."`
+                  }
+                </p>
+              </div>
+            )}
+
             {/* Top N Mode */}
             {shortlistMode === 'topN' && (
               <div>
@@ -1686,12 +1799,15 @@ if (loading) {
                   <div>
                     <p>Will shortlist the top {shortlistCount} projects:</p>
                     <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
-                      {Math.min(shortlistCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be shortlisted
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement))).length} projects evaluated, 
+                      {Math.min(shortlistCount, leaderboard.filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement))).length)} will be shortlisted
+                      {shortlistProblemStatement !== 'All' && (
+                        <span className="text-green-600"> (filtered by PS)</span>
+                      )}
                     </p>
                     <div className="mt-2 space-y-1">
                       {leaderboard
-                        .filter(entry => entry.scoreCount > 0)
+                        .filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement)))
                         .slice(0, shortlistCount)
                         .map((entry, index) => (
                           <div key={entry._id} className="flex items-center gap-2 text-xs">
@@ -1875,6 +1991,33 @@ if (loading) {
               </div>
             </div>
 
+            {/* Problem Statement Filter for Edit Shortlisting */}
+            {availableProblemStatements.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filter by Problem Statement
+                </label>
+                <select
+                  value={shortlistProblemStatement}
+                  onChange={(e) => setShortlistProblemStatement(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="All">All Problem Statements</option>
+                  {availableProblemStatements.map((ps, index) => (
+                    <option key={index} value={ps}>
+                      {ps.length > 40 ? ps.substring(0, 40) + '...' : ps}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {shortlistProblemStatement === 'All' 
+                    ? 'Shortlist from all problem statements'
+                    : `Shortlist only from "${shortlistProblemStatement.substring(0, 30)}..."`
+                  }
+                </p>
+              </div>
+            )}
+
             {/* Top N Mode */}
             {shortlistMode === 'topN' && (
               <div>
@@ -1944,12 +2087,15 @@ if (loading) {
                   <div>
                     <p>Will shortlist the top {shortlistCount} projects:</p>
                     <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
-                      {Math.min(shortlistCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be shortlisted
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement))).length} projects evaluated, 
+                      {Math.min(shortlistCount, leaderboard.filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement))).length)} will be shortlisted
+                      {shortlistProblemStatement !== 'All' && (
+                        <span className="text-green-600"> (filtered by PS)</span>
+                      )}
                     </p>
                     <div className="mt-2 space-y-1">
                       {leaderboard
-                        .filter(entry => entry.scoreCount > 0)
+                        .filter(entry => entry.scoreCount > 0 && (shortlistProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, shortlistProblemStatement)))
                         .slice(0, shortlistCount)
                         .map((entry, index) => (
                           <div key={entry._id} className="flex items-center gap-2 text-xs">
@@ -2299,6 +2445,43 @@ if (loading) {
               </div>
             </div>
 
+            {/* Test Element */}
+            <div style={{border: '3px solid green', padding: '10px', margin: '10px 0', backgroundColor: 'yellow'}}>
+              <strong>TEST ELEMENT - IF YOU SEE THIS, THE MODAL IS RENDERING PROPERLY</strong>
+            </div>
+
+            {/* Problem Statement Filter */}
+            {console.log('🔍 Frontend - Winner modal render - availableProblemStatements:', availableProblemStatements, 'length:', availableProblemStatements.length)}
+            {console.log('🔍 Frontend - Winner modal render - summary:', summary)}
+            {console.log('🔍 Frontend - Winner modal render - leaderboard length:', leaderboard.length)}
+            {console.log('🔍 Frontend - Winner modal render - hackathonData:', hackathonData)}
+            <div style={{border: '2px solid red', padding: '10px', margin: '10px 0'}}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Filter by Problem Statement
+              </label>
+              {availableProblemStatements.length > 0 ? (
+                <select
+                  value={winnerProblemStatement}
+                  onChange={(e) => setWinnerProblemStatement(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="All">All Problem Statements</option>
+                  {availableProblemStatements.map((ps, index) => (
+                    <option key={index} value={ps}>
+                      {getProblemStatementText(ps).length > 50 ? getProblemStatementText(ps).substring(0, 50) + '...' : getProblemStatementText(ps)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                  No problem statements available
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Only projects from the selected problem statement will be considered for winner assignment
+              </p>
+            </div>
+
             {/* Top N Mode */}
             {winnerMode === 'topN' && (
               <div>
@@ -2347,7 +2530,9 @@ if (loading) {
                   Select submissions to be winners
                 </label>
                 <div className="space-y-2">
-                  {leaderboard.map((entry, index) => (
+                  {leaderboard
+                    .filter(entry => winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))
+                    .map((entry, index) => (
                     <div key={entry._id} className="flex items-center justify-between p-2 border border-gray-200 rounded-md">
                       <div className="flex items-center gap-2">
                         <input
@@ -2388,12 +2573,12 @@ if (loading) {
                   <div>
                     <p>Will assign {winnerCount} winners:</p>
                     <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0).length} projects evaluated, 
-                      {Math.min(winnerCount, leaderboard.filter(entry => entry.scoreCount > 0).length)} will be winners
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))).length} projects evaluated, 
+                      {Math.min(winnerCount, leaderboard.filter(entry => entry.scoreCount > 0 && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))).length)} will be winners
                     </p>
                     <div className="mt-2 space-y-1">
                       {leaderboard
-                        .filter(entry => entry.scoreCount > 0)
+                        .filter(entry => entry.scoreCount > 0 && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement)))
                         .slice(0, winnerCount)
                         .map((entry, index) => (
                           <div key={entry._id} className="flex items-center gap-2 text-xs">
@@ -2410,11 +2595,11 @@ if (loading) {
                   <div>
                     <p>Will assign winners with score ≥ {winnerThreshold}/10:</p>
                     <p className="text-xs text-blue-600 mb-2">
-                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length} projects meet the threshold
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))).length} projects meet the threshold
                     </p>
                     <div className="mt-2 space-y-1">
                       {leaderboard
-                        .filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold)
+                        .filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement)))
                         .map((entry, index) => (
                           <div key={entry._id} className="flex items-center gap-2 text-xs">
                             <Star className="w-4 h-4 text-yellow-600" />
@@ -2422,7 +2607,7 @@ if (loading) {
                             <span className="text-yellow-600">({entry.averageScore}/10)</span>
                           </div>
                         ))}
-                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold).length === 0 && (
+                      {leaderboard.filter(entry => entry.scoreCount > 0 && entry.averageScore >= winnerThreshold && (winnerProblemStatement === 'All' || hasSubmittedToProblemStatement(entry, winnerProblemStatement))).length === 0 && (
                         <p className="text-orange-600 text-xs">No projects meet the threshold criteria</p>
                       )}
                     </div>
@@ -2481,7 +2666,8 @@ if (loading) {
                     winnerCount: winnerCount,
                     mode: winnerMode,
                     threshold: winnerMode === 'threshold' ? winnerThreshold : undefined,
-                    winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined
+                    winnerIds: winnerMode === 'manual' ? selectedWinnerIds : undefined,
+                    problemStatement: winnerProblemStatement !== 'All' ? winnerProblemStatement : undefined
                   };
 
                   const response = await fetch(`/api/judge-management/hackathons/${hackathonId}/rounds/${selectedRound}/assign-winners`, {
@@ -2920,6 +3106,7 @@ if (loading) {
             <Button
               onClick={() => {
                 setWinnersDisplayModalOpen(false);
+                setWinnerProblemStatement('All');
                 setWinnerAssignmentModalOpen(true);
               }}
               className="bg-yellow-600 hover:bg-yellow-700 text-white"

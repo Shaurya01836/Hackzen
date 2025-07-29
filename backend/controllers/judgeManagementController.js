@@ -771,130 +771,130 @@ exports.unassignScopeFromJudge = async (req, res) => {
 
 // Set assignment mode for a round or problem statement
 exports.setAssignmentMode = async (req, res) => {
-  try {
-    const { hackathonId, type, index } = req.params; // type: 'round' or 'problemStatement', index: array index
-    const { mode } = req.body; // 'open' or 'assigned'
+  try {
+    const { hackathonId, type, index } = req.params; // type: 'round' or 'problemStatement', index: array index
+    const { mode } = req.body; // 'open' or 'assigned'
 
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
-    if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can set assignment mode' });
-    }
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can set assignment mode' });
+    }
 
-    if (type === 'round') {
-      if (!hackathon.rounds[index]) return res.status(404).json({ message: 'Round not found' });
-      hackathon.rounds[index].assignmentMode = mode;
-      // If switching to open, clear assignedTeams for all judge assignments for this round
-      if (mode === 'open') {
-        const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
-        for (const a of assignments) {
-          if (a.assignedRounds && a.assignedRounds.some(r => r.roundIndex === Number(index))) {
-            a.assignedTeams = [];
-            await a.save();
-          }
-        }
-      }
-    } else if (type === 'problemStatement') {
-      if (!hackathon.problemStatements[index]) return res.status(404).json({ message: 'Problem statement not found' });
-      hackathon.problemStatements[index].assignmentMode = mode;
-      // If switching to open, clear assignedTeams for all judge assignments for this PS
-      if (mode === 'open') {
-        const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
-        for (const a of assignments) {
-          if (a.assignedProblemStatements && a.assignedProblemStatements.some(ps => ps.problemStatementId === hackathon.problemStatements[index]._id.toString())) {
-            a.assignedTeams = [];
-            await a.save();
-          }
-        }
-      }
-    } else {
-      return res.status(400).json({ message: 'Invalid type' });
-    }
+    if (type === 'round') {
+      if (!hackathon.rounds[index]) return res.status(404).json({ message: 'Round not found' });
+      hackathon.rounds[index].assignmentMode = mode;
+      // If switching to open, clear assignedTeams for all judge assignments for this round
+      if (mode === 'open') {
+        const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
+        for (const a of assignments) {
+          if (a.assignedRounds && a.assignedRounds.some(r => r.roundIndex === Number(index))) {
+            a.assignedTeams = [];
+            await a.save();
+          }
+        }
+      }
+    } else if (type === 'problemStatement') {
+      if (!hackathon.problemStatements[index]) return res.status(404).json({ message: 'Problem statement not found' });
+      hackathon.problemStatements[index].assignmentMode = mode;
+      // If switching to open, clear assignedTeams for all judge assignments for this PS
+      if (mode === 'open') {
+        const assignments = await JudgeAssignment.find({ hackathon: hackathonId });
+        for (const a of assignments) {
+          if (a.assignedProblemStatements && a.assignedProblemStatements.some(ps => ps.problemStatementId === hackathon.problemStatements[index]._id.toString())) {
+            a.assignedTeams = [];
+            await a.save();
+          }
+        }
+      }
+    } else {
+      return res.status(400).json({ message: 'Invalid type' });
+    }
 
-    await hackathon.save();
-    res.status(200).json({ message: 'Assignment mode updated', hackathon });
-  } catch (error) {
-    console.error('Error setting assignment mode:', error);
-    res.status(500).json({ message: 'Failed to set assignment mode' });
-  }
+    await hackathon.save();
+    res.status(200).json({ message: 'Assignment mode updated', hackathon });
+  } catch (error) {
+    console.error('Error setting assignment mode:', error);
+    res.status(500).json({ message: 'Failed to set assignment mode' });
+  }
 };
 
 // Auto-distribute teams among judges
 exports.autoDistributeTeams = async (req, res) => {
-  try {
-    const { hackathonId, type, index } = req.params; // type: 'round' or 'problemStatement', index: array index
-    const { judgeAssignmentIds, teamIds, forceOverwrite } = req.body; // Added forceOverwrite
+  try {
+    const { hackathonId, type, index } = req.params; // type: 'round' or 'problemStatement', index: array index
+    const { judgeAssignmentIds, teamIds, forceOverwrite } = req.body; // Added forceOverwrite
 
-    const hackathon = await Hackathon.findById(hackathonId);
-    if (!hackathon) {
-      return res.status(404).json({ message: 'Hackathon not found' });
-    }
-    if (hackathon.organizer.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only the organizer can auto-distribute teams' });
-    }
+    const hackathon = await Hackathon.findById(hackathonId);
+    if (!hackathon) {
+      return res.status(404).json({ message: 'Hackathon not found' });
+    }
+    if (hackathon.organizer.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the organizer can auto-distribute teams' });
+    }
 
-    // Validate input
-    if (!Array.isArray(judgeAssignmentIds) || judgeAssignmentIds.length === 0) {
-      return res.status(400).json({ message: 'judgeAssignmentIds must be a non-empty array' });
-    }
-    if (!Array.isArray(teamIds) || teamIds.length === 0) {
-      return res.status(400).json({ message: 'teamIds must be a non-empty array' });
-    }
-    const validTeamIds = hackathon.teams.map(id => id.toString());
-    const invalidIds = teamIds.filter(id => !validTeamIds.includes(id));
-    if (invalidIds.length > 0) {
-      return res.status(400).json({ message: 'Some teamIds are invalid', invalidIds });
-    }
+    // Validate input
+    if (!Array.isArray(judgeAssignmentIds) || judgeAssignmentIds.length === 0) {
+      return res.status(400).json({ message: 'judgeAssignmentIds must be a non-empty array' });
+    }
+    if (!Array.isArray(teamIds) || teamIds.length === 0) {
+      return res.status(400).json({ message: 'teamIds must be a non-empty array' });
+    }
+    const validTeamIds = hackathon.teams.map(id => id.toString());
+    const invalidIds = teamIds.filter(id => !validTeamIds.includes(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({ message: 'Some teamIds are invalid', invalidIds });
+    }
 
-    // Validate judge assignments
-    const judgeAssignments = await JudgeAssignment.find({ _id: { $in: judgeAssignmentIds }, hackathon: hackathonId });
-    if (judgeAssignments.length !== judgeAssignmentIds.length) {
-      return res.status(400).json({ message: 'Some judgeAssignmentIds are invalid' });
-    }
+    // Validate judge assignments
+    const judgeAssignments = await JudgeAssignment.find({ _id: { $in: judgeAssignmentIds }, hackathon: hackathonId });
+    if (judgeAssignments.length !== judgeAssignmentIds.length) {
+      return res.status(400).json({ message: 'Some judgeAssignmentIds are invalid' });
+    }
 
-    // Prevent duplicate team assignment to multiple judges, UNLESS forceOverwrite is true
-    if (!forceOverwrite) {
-      const allAssignments = await JudgeAssignment.find({ hackathon: hackathon._id });
-      const alreadyAssigned = [];
-      for (const teamId of teamIds) {
-        for (const other of allAssignments) {
-          if (Array.isArray(other.assignedTeams) && other.assignedTeams.map(String).includes(teamId)) {
-            alreadyAssigned.push(teamId);
-          }
-        }
-      }
-      if (alreadyAssigned.length > 0) {
-        return res.status(400).json({ message: 'Some teams are already assigned to judges', alreadyAssigned });
-      }
-    } else {
-      // If forceOverwrite is true, clear all existing assignments for the selected judges
-      for (const judgeId of judgeAssignmentIds) {
-        await JudgeAssignment.findByIdAndUpdate(judgeId, { assignedTeams: [] });
-      }
-    }
+    // Prevent duplicate team assignment to multiple judges, UNLESS forceOverwrite is true
+    if (!forceOverwrite) {
+      const allAssignments = await JudgeAssignment.find({ hackathon: hackathon._id });
+      const alreadyAssigned = [];
+      for (const teamId of teamIds) {
+        for (const other of allAssignments) {
+          if (Array.isArray(other.assignedTeams) && other.assignedTeams.map(String).includes(teamId)) {
+            alreadyAssigned.push(teamId);
+          }
+        }
+      }
+      if (alreadyAssigned.length > 0) {
+        return res.status(400).json({ message: 'Some teams are already assigned to judges', alreadyAssigned });
+      }
+    } else {
+      // If forceOverwrite is true, clear all existing assignments for the selected judges
+      for (const judgeId of judgeAssignmentIds) {
+        await JudgeAssignment.findByIdAndUpdate(judgeId, { assignedTeams: [] });
+      }
+    }
 
-    // Evenly distribute teams
-    const assignments = {};
-    judgeAssignmentIds.forEach(id => assignments[id] = []);
-    let i = 0;
-    for (const teamId of teamIds) {
-      const judgeId = judgeAssignmentIds[i % judgeAssignmentIds.length];
-      assignments[judgeId].push(teamId);
-      i++;
-    }
+    // Evenly distribute teams
+    const assignments = {};
+    judgeAssignmentIds.forEach(id => assignments[id] = []);
+    let i = 0;
+    for (const teamId of teamIds) {
+      const judgeId = judgeAssignmentIds[i % judgeAssignmentIds.length];
+      assignments[judgeId].push(teamId);
+      i++;
+    }
 
-    // Update each JudgeAssignment
-    for (const judgeId of judgeAssignmentIds) {
-      await JudgeAssignment.findByIdAndUpdate(judgeId, { assignedTeams: assignments[judgeId] });
-    }
+    // Update each JudgeAssignment
+    for (const judgeId of judgeAssignmentIds) {
+      await JudgeAssignment.findByIdAndUpdate(judgeId, { assignedTeams: assignments[judgeId] });
+    }
 
-    res.status(200).json({ message: 'Teams auto-distributed among judges', assignments });
-  } catch (error) {
-    console.error('Error auto-distributing teams:', error);
-    res.status(500).json({ message: 'Failed to auto-distribute teams' });
-  }
+    res.status(200).json({ message: 'Teams auto-distributed among judges', assignments });
+  } catch (error) {
+    console.error('Error auto-distributing teams:', error);
+    res.status(500).json({ message: 'Failed to auto-distribute teams' });
+  }
 };
 
 // Assign rounds to a judge assignment (additive)
@@ -978,126 +978,126 @@ exports.assignProblemStatementsToJudge = async (req, res) => {
 // 🔧 Helper Functions
 
 function validateJudgeAssignment(judgeType, sponsorCompany, problemStatementIds, hackathonProblemStatements) {
-  // Validate judge type
-  if (!['platform', 'sponsor', 'hybrid'].includes(judgeType)) {
-    return { isValid: false, error: 'Invalid judge type' };
-  }
+  // Validate judge type
+  if (!['platform', 'sponsor', 'hybrid'].includes(judgeType)) {
+    return { isValid: false, error: 'Invalid judge type' };
+  }
 
-  // Validate sponsor company for sponsor judges
-  if (judgeType === 'sponsor' && !sponsorCompany) {
-    return { isValid: false, error: 'Sponsor company is required for sponsor judges' };
-  }
+  // Validate sponsor company for sponsor judges
+  if (judgeType === 'sponsor' && !sponsorCompany) {
+    return { isValid: false, error: 'Sponsor company is required for sponsor judges' };
+  }
 
-  // Validate problem statement assignments
-  for (const psId of problemStatementIds) {
-    const ps = hackathonProblemStatements.find(p => p._id.toString() === psId);
-    if (!ps) {
-      return { isValid: false, error: `Problem statement ${psId} not found` };
-    }
+  // Validate problem statement assignments
+  for (const psId of problemStatementIds) {
+    const ps = hackathonProblemStatements.find(p => p._id.toString() === psId);
+    if (!ps) {
+      return { isValid: false, error: `Problem statement ${psId} not found` };
+    }
 
-    // Check if judge can judge this problem statement type
-    if (ps.type === 'sponsored' && judgeType === 'platform') {
-      return { isValid: false, error: 'Platform judges cannot judge sponsored problem statements by default' };
-    }
+    // Check if judge can judge this problem statement type
+    if (ps.type === 'sponsored' && judgeType === 'platform') {
+      return { isValid: false, error: 'Platform judges cannot judge sponsored problem statements by default' };
+    }
 
-    if (ps.type === 'sponsored' && judgeType === 'sponsor' && ps.sponsorCompany !== sponsorCompany) {
-      return { isValid: false, error: 'Sponsor judges can only judge their own company\'s problem statements' };
-    }
-  }
+    if (ps.type === 'sponsored' && judgeType === 'sponsor' && ps.sponsorCompany !== sponsorCompany) {
+      return { isValid: false, error: 'Sponsor judges can only judge their own company\'s problem statements' };
+    }
+  }
 
-  return { isValid: true };
+  return { isValid: true };
 }
 
 function validateJudgeTypeChange(oldType, newType, sponsorCompany) {
-  if (newType === 'sponsor' && !sponsorCompany) {
-    return { isValid: false, error: 'Sponsor company is required for sponsor judges' };
-  }
+  if (newType === 'sponsor' && !sponsorCompany) {
+    return { isValid: false, error: 'Sponsor company is required for sponsor judges' };
+  }
 
-  return { isValid: true };
+  return { isValid: true };
 }
 
 // Helper function to send judge/mentor invite email (copied from hackathonController.js)
 async function sendRoleInviteEmail(email, role, token, hackathonData) {
-  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) return;
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.MAIL_USER,
-      pass: process.env.MAIL_PASS
-    }
-  });
-  const inviteLink = `http://localhost:5173/invite/role?token=${token}`;
-  const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
-  const roleIcon = role === 'judge' ? '⚖️' : '🎓';
-  const roleColor = role === 'judge' ? '#f59e0b' : '#10b981';
-  const emailTemplate = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, ${roleColor} 0%, #667eea 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="margin: 0; font-size: 28px;">${roleIcon} ${roleDisplay} Invitation</h1>
-        <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been invited to be a ${roleDisplay} for an amazing hackathon!</p>
-      </div>
-      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-        <h2 style="color: #333; margin-top: 0;">Hello there! 👋</h2>
-        <p style="color: #555; line-height: 1.6;">
-          You've been selected to be a <strong>${roleDisplay}</strong> for an exciting hackathon. 
-          This is a great opportunity to contribute your expertise and help shape the future of innovation!
-        </p>
-        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${roleColor};">
-          <h3 style="color: ${roleColor}; margin: 0 0 10px 0;">🏆 ${hackathonData.title}</h3>
-          <p style="color: #666; margin: 0 0 5px 0;"><strong>Role:</strong> ${roleDisplay}</p>
-          <p style="color: #666; margin: 0 0 5px 0;"><strong>Prize Pool:</strong> $${hackathonData.prizePool?.amount || 0}</p>
-          <p style="color: #666; margin: 0 0 5px 0;"><strong>Start Date:</strong> ${new Date(hackathonData.startDate).toLocaleDateString()}</p>
-          <p style="color: #666; margin: 0;"><strong>End Date:</strong> ${new Date(hackathonData.endDate).toLocaleDateString()}</p>
-        </div>
-        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <h4 style="color: #0c5460; margin: 0 0 10px 0;'>${roleDisplay} Responsibilities:</h4>
-          ${role === 'judge' ? `
-            <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
-              <li>Evaluate project submissions based on innovation, technical implementation, and presentation</li>
-              <li>Provide constructive feedback to help teams improve their projects</li>
-              <li>Participate in the final judging panel to select winners</li>
-              <li>Contribute to a fair and transparent evaluation process</li>
-            </ul>
-          ` : `
-            <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
-              <li>Provide technical guidance and mentorship to participating teams</li>
-              <li>Share your expertise and industry knowledge</li>
-              <li>Help teams overcome technical challenges and improve their projects</li>
-              <li>Support the learning and growth of hackathon participants</li>
-            </ul>
-          `}
-        </div>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${inviteLink}" style="background: linear-gradient(135deg, ${roleColor} 0%, #667eea 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
-            ${roleIcon} Accept ${roleDisplay} Role
-          </a>
-        </div>
-        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
-          <p style="color: #856404; margin: 0; font-size: 14px;">
-            <strong>Important:</strong> You'll need to be logged in to accept this invitation. 
-            If you don't have an account yet, you'll be prompted to register first.
-          </p>
-        </div>
-        <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
-          This invitation will expire in 7 days. We look forward to having you on board!
-        </p>
-      </div>
-      <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-        <p>© 2024 HackZen. All rights reserved.</p>
-      </div>
-    </div>
-  `;
-  try {
-    await transporter.sendMail({
-      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
-      to: email,
-      subject: `${roleIcon} You're invited to be a ${roleDisplay} for ${hackathonData.title}!`,
-      html: emailTemplate
-    });
-    console.log(`Role invite email sent successfully to ${email} for ${role} role`);
-  } catch (emailError) {
-    console.error('Role invite email sending failed:', emailError);
-  }
+  if (!process.env.MAIL_USER || !process.env.MAIL_PASS) return;
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS
+    }
+  });
+  const inviteLink = `http://localhost:5173/invite/role?token=${token}`;
+  const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
+  const roleIcon = role === 'judge' ? '⚖️' : '🎓';
+  const roleColor = role === 'judge' ? '#f59e0b' : '#10b981';
+  const emailTemplate = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, ${roleColor} 0%, #667eea 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="margin: 0; font-size: 28px;">${roleIcon} ${roleDisplay} Invitation</h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9;">You've been invited to be a ${roleDisplay} for an amazing hackathon!</p>
+      </div>
+      <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #333; margin-top: 0;">Hello there! 👋</h2>
+        <p style="color: #555; line-height: 1.6;">
+          You've been selected to be a <strong>${roleDisplay}</strong> for an exciting hackathon. 
+          This is a great opportunity to contribute your expertise and help shape the future of innovation!
+        </p>
+        <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${roleColor};">
+          <h3 style="color: ${roleColor}; margin: 0 0 10px 0;">🏆 ${hackathonData.title}</h3>
+          <p style="color: #666; margin: 0 0 5px 0;"><strong>Role:</strong> ${roleDisplay}</p>
+          <p style="color: #666; margin: 0 0 5px 0;"><strong>Prize Pool:</strong> $${hackathonData.prizePool?.amount || 0}</p>
+          <p style="color: #666; margin: 0 0 5px 0;"><strong>Start Date:</strong> ${new Date(hackathonData.startDate).toLocaleDateString()}</p>
+          <p style="color: #666; margin: 0;"><strong>End Date:</strong> ${new Date(hackathonData.endDate).toLocaleDateString()}</p>
+        </div>
+        <div style="background: #e8f4fd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h4 style="color: #0c5460; margin: 0 0 10px 0;'>${roleDisplay} Responsibilities:</h4>
+          ${role === 'judge' ? `
+            <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+              <li>Evaluate project submissions based on innovation, technical implementation, and presentation</li>
+              <li>Provide constructive feedback to help teams improve their projects</li>
+              <li>Participate in the final judging panel to select winners</li>
+              <li>Contribute to a fair and transparent evaluation process</li>
+            </ul>
+          ` : `
+            <ul style="color: #0c5460; margin: 0; padding-left: 20px;">
+              <li>Provide technical guidance and mentorship to participating teams</li>
+              <li>Share your expertise and industry knowledge</li>
+              <li>Help teams overcome technical challenges and improve their projects</li>
+              <li>Support the learning and growth of hackathon participants</li>
+            </ul>
+          `}
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${inviteLink}" style="background: linear-gradient(135deg, ${roleColor} 0%, #667eea 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+            ${roleIcon} Accept ${roleDisplay} Role
+          </a>
+        </div>
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+          <p style="color: #856404; margin: 0; font-size: 14px;">
+            <strong>Important:</strong> You'll need to be logged in to accept this invitation. 
+            If you don't have an account yet, you'll be prompted to register first.
+          </p>
+        </div>
+        <p style="color: #666; font-size: 14px; text-align: center; margin-top: 30px;">
+          This invitation will expire in 7 days. We look forward to having you on board!
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
+        <p>© 2024 HackZen. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+  try {
+    await transporter.sendMail({
+      from: `"HackZen Team" <${process.env.MAIL_USER}>`,
+      to: email,
+      subject: `${roleIcon} You're invited to be a ${roleDisplay} for ${hackathonData.title}!`,
+      html: emailTemplate
+    });
+    console.log(`Role invite email sent successfully to ${email} for ${role} role`);
+  } catch (emailError) {
+    console.error('Role invite email sending failed:', emailError);
+  }
 }
 
 // 🎯 Bulk Assign Submissions to Evaluators
@@ -1612,7 +1612,9 @@ exports.bulkAssignSubmissionsToEvaluators = async (req, res) => {
         evaluator: r.evaluatorEmail,
         assigned: r.assignedSubmissions?.length || 0,
         success: r.success
-      }))
+      })),
+      successfulAssignments: results.filter(r => r.success).length,
+      failedAssignments: results.filter(r => !r.success).length
     });
 
     res.status(200).json({
@@ -2531,6 +2533,13 @@ exports.getAssignmentOverview = async (req, res) => {
     const { hackathonId } = req.params;
     const { problemStatementId, roundIndex } = req.query; // Add query parameters for filtering
     
+    console.log('🔍 Backend - getAssignmentOverview called with:', {
+      hackathonId,
+      problemStatementId,
+      roundIndex,
+      query: req.query
+    });
+    
     const hackathon = await Hackathon.findById(hackathonId);
     if (!hackathon) {
       return res.status(404).json({ message: 'Hackathon not found' });
@@ -2620,8 +2629,8 @@ exports.getAssignmentOverview = async (req, res) => {
         submissions = allSubmissions.filter(sub => sub.pptFile);
         console.log(`🔍 Round ${roundIndexNum} (PPT) filtering: ${submissions.length} PPT submissions found`);
       } else if (roundType === 'project') {
-        // Project round: Show submissions with project IDs (no PPT files)
-        submissions = allSubmissions.filter(sub => sub.projectId && !sub.pptFile);
+        // Project round: Show submissions without PPT files (actual project submissions)
+        submissions = allSubmissions.filter(sub => !sub.pptFile && sub.roundIndex === roundIndexNum);
         console.log(`🔍 Round ${roundIndexNum} (Project) filtering: ${submissions.length} Project submissions found`);
       } else if (roundType === 'both') {
         // Both round: Show all submissions for this round (PPT and Project)
@@ -2643,8 +2652,8 @@ exports.getAssignmentOverview = async (req, res) => {
           submissions = allSubmissions.filter(sub => sub.pptFile);
           console.log(`🔍 PPT fallback: ${submissions.length} submissions found`);
         } else if (roundType === 'project') {
-          // For Project rounds, try to find any submissions with project IDs
-          submissions = allSubmissions.filter(sub => sub.projectId);
+          // For Project rounds, try to find any submissions without PPT files for this round
+          submissions = allSubmissions.filter(sub => !sub.pptFile && sub.roundIndex === roundIndexNum);
           console.log(`🔍 Project fallback: ${submissions.length} submissions found`);
         } else {
           // For other types, try roundIndex matching
@@ -2723,7 +2732,7 @@ exports.getAssignmentOverview = async (req, res) => {
               if (roundType === 'ppt') {
                 return submission.pptFile;
               } else if (roundType === 'project') {
-                return submission.projectId && !submission.pptFile;
+                return !submission.pptFile && submission.roundIndex === roundIndexNum;
               } else if (roundType === 'both') {
                 return submission.roundIndex === roundIndexNum;
               } else {
@@ -2760,7 +2769,7 @@ exports.getAssignmentOverview = async (req, res) => {
                 if (roundType === 'ppt') {
                   shouldIncludeSubmission = submission.pptFile;
                 } else if (roundType === 'project') {
-                  shouldIncludeSubmission = submission.projectId && !submission.pptFile;
+                  shouldIncludeSubmission = !submission.pptFile && submission.roundIndex === roundIndexNum;
                 } else if (roundType === 'both') {
                   shouldIncludeSubmission = submission.roundIndex === roundIndexNum;
                 } else {
@@ -2848,7 +2857,12 @@ exports.getAssignmentOverview = async (req, res) => {
     console.log('🔍 Assignment Overview - Checking unassigned submissions:', {
       totalSubmissions: submissions.length,
       submissionAssignments: Object.keys(submissionAssignments).length,
-      assignedSubmissions: Object.values(submissionAssignments).filter(assignments => assignments.length > 0).length
+      assignedSubmissions: Object.values(submissionAssignments).filter(assignments => assignments.length > 0).length,
+      submissionAssignmentsDetails: Object.entries(submissionAssignments).map(([subId, assignments]) => ({
+        submissionId: subId,
+        assignmentCount: assignments.length,
+        judges: assignments.map(a => a.judgeEmail)
+      }))
     });
     
     const unassignedSubmissions = submissions.filter(sub =>
@@ -2879,7 +2893,14 @@ exports.getAssignmentOverview = async (req, res) => {
 
     console.log('🔍 Assignment Overview - Final counts:', {
       unassignedSubmissions: unassignedSubmissions.length,
-      assignedSubmissions: submissions.filter(sub => (submissionAssignments[sub._id.toString()] || []).length > 0).length
+      assignedSubmissions: submissions.filter(sub => (submissionAssignments[sub._id.toString()] || []).length > 0).length,
+      unassignedSubmissionsDetails: unassignedSubmissions.map(sub => ({
+        _id: sub._id,
+        teamName: sub.teamName,
+        roundIndex: sub.roundIndex,
+        pptFile: sub.pptFile,
+        projectTitle: sub.projectTitle
+      }))
     });
     
     // Build assigned submissions with judge information
@@ -3435,7 +3456,8 @@ exports.getLeaderboard = async (req, res) => {
         id: hackathon._id,
         title: hackathon.title,
         roundIndex: parseInt(roundIndex),
-        rounds: hackathon.rounds || []
+        rounds: hackathon.rounds || [],
+        problemStatements: hackathon.problemStatements || []
       },
       leaderboard,
       summary: {
@@ -3459,10 +3481,10 @@ exports.getLeaderboard = async (req, res) => {
 exports.performShortlisting = async (req, res) => {
   try {
     const { hackathonId, roundIndex = 0 } = req.params;
-    const { shortlistCount, shortlistThreshold, mode, submissionIds } = req.body;
+    const { shortlistCount, shortlistThreshold, mode, submissionIds, problemStatement } = req.body;
     
     console.log('🔍 Backend - performShortlisting called with:', { 
-      hackathonId, roundIndex, shortlistCount, shortlistThreshold, mode, submissionIds 
+      hackathonId, roundIndex, shortlistCount, shortlistThreshold, mode, submissionIds, problemStatement 
     });
     
     const hackathon = await Hackathon.findById(hackathonId);
@@ -3483,13 +3505,25 @@ exports.performShortlisting = async (req, res) => {
     } else {
       // Get leaderboard data for the specified round
       // Include both submitted and shortlisted submissions to handle cases where submissions are already shortlisted
-      const submissions = await Submission.find({ 
+      let submissions = await Submission.find({ 
         hackathonId: hackathonId, 
         status: { $in: ['submitted', 'shortlisted'] },
         roundIndex: parseInt(roundIndex)
       }).populate('teamId', 'name leader')
         .populate('submittedBy', 'name email')
         .lean();
+
+      // Filter by problem statement if specified
+      if (problemStatement && problemStatement !== 'All') {
+        submissions = submissions.filter(submission => {
+          return submission.problemStatement === problemStatement;
+        });
+        console.log('🔍 Backend - Filtered submissions by problem statement:', {
+          problemStatement,
+          totalSubmissions: submissions.length,
+          filteredSubmissions: submissions.length
+        });
+      }
 
       // Get all scores for these submissions
       const Score = require('../model/ScoreModel');
@@ -5388,7 +5422,7 @@ exports.assignWinners = async (req, res) => {
     });
     
     const { hackathonId, roundIndex } = req.params; // No default - must be specified
-    const { winnerCount = 3, mode = 'topN', threshold, winnerIds } = req.body; // topN, threshold, or manual
+    const { winnerCount = 3, mode = 'topN', threshold, winnerIds, problemStatement } = req.body; // topN, threshold, or manual
     
     console.log('🔍 Backend - Parsed parameters:', { hackathonId, roundIndex, winnerCount, mode, threshold, winnerIds });
     
@@ -5434,13 +5468,24 @@ exports.assignWinners = async (req, res) => {
     console.log('🔍 Backend - Existing winners found:', existingWinners.length);
 
     // Get final round submissions with combined scores
-    const submissions = await Submission.find({ 
+    let submissions = await Submission.find({ 
       hackathonId: hackathonId, 
       roundIndex: roundIndexNum // Only final round submissions
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')
       .populate('projectId', 'title')
       .lean();
+
+    // Filter by problem statement if specified
+    if (problemStatement && problemStatement !== 'All') {
+      submissions = submissions.filter(submission => 
+        submission.problemStatement === problemStatement
+      );
+      console.log('🔍 Backend - Filtered submissions by problem statement:', {
+        problemStatement,
+        totalSubmissions: submissions.length
+      });
+    }
 
     if (submissions.length === 0) {
           console.log(`🔍 Backend - No final round (${roundIndexNum}) submissions found`);

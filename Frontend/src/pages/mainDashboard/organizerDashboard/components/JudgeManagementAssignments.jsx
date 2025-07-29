@@ -97,12 +97,12 @@ export default function JudgeManagementAssignments({
     }
   }, [stages, selectedStage]);
 
-  // Fetch assignment overview when component mounts or hackathon changes
+  // Fetch assignment overview when component mounts, hackathon changes, or selected stage changes
   useEffect(() => {
     if (hackathon?._id || hackathon?.id) {
       fetchAssignmentOverview();
     }
-  }, [hackathon?._id, hackathon?.id]);
+  }, [hackathon?._id, hackathon?.id, selectedStage]);
 
   // Refresh assignment overview periodically to ensure data is current
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function JudgeManagementAssignments({
         clearInterval(interval);
       };
     }
-  }, [hackathon?._id, hackathon?.id]);
+  }, [hackathon?._id, hackathon?.id, selectedStage]);
 
   // Fetch scores when assignment overview changes
   useEffect(() => {
@@ -143,6 +143,12 @@ export default function JudgeManagementAssignments({
         const stage = stages.find(s => s.id === selectedStage);
         if (stage && stage.roundIndex !== undefined) {
           params.append('roundIndex', stage.roundIndex.toString());
+          console.log('🔍 Frontend - Sending roundIndex:', {
+            selectedStage,
+            stageId: stage.id,
+            roundIndex: stage.roundIndex,
+            url: url + (params.toString() ? `?${params.toString()}` : '')
+          });
         }
       }
       // Note: We could add problem statement filtering here too if needed
@@ -706,13 +712,7 @@ export default function JudgeManagementAssignments({
           </div>
           <div>
             <p className="text-3xl font-bold text-orange-900">
-              {assignmentOverview?.unassignedSubmissions?.filter(submission => {
-                const stage = stages.find(s => s.id === selectedStage);
-                if (stage && stage.roundIndex !== undefined) {
-                  return submission.roundIndex === stage.roundIndex;
-                }
-                return true;
-              }).length || 0}
+              {assignmentOverview?.unassignedSubmissions?.length || 0}
             </p>
             <p className="text-sm font-medium text-orange-700">Unassigned Projects</p>
             <p className="text-xs text-orange-600 mt-1">
@@ -763,12 +763,6 @@ export default function JudgeManagementAssignments({
                     <div className="text-right">
                       <div className="text-2xl font-bold text-blue-600">
                         {assignmentOverview?.assignedSubmissions?.filter(submission => {
-                          const stage = stages.find(s => s.id === selectedStage);
-                          if (stage && stage.roundIndex !== undefined) {
-                            return submission.roundIndex === stage.roundIndex;
-                          }
-                          return true;
-                        }).filter(submission => {
                           // Apply problem statement filter for count
                           return filterSubmissionsByPS([submission], selectedAssignedPS).length > 0;
                         }).length || 0}
@@ -827,18 +821,6 @@ export default function JudgeManagementAssignments({
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                           {assignmentOverview.assignedSubmissions
-                            .filter(submission => {
-                              // Filter submissions based on current round
-                              if (selectedStage === 'r1') {
-                                // Round 1: Show only PPT submissions
-                                return submission.pptFile;
-                              } else if (selectedStage === 'r2') {
-                                // Round 2: Show only Project submissions
-                                return !submission.pptFile;
-                              }
-                              // For other stages, show all
-                              return true;
-                            })
                             .filter(submission => {
                               // Apply problem statement filter
                               return filterSubmissionsByPS([submission], selectedAssignedPS).length > 0;
