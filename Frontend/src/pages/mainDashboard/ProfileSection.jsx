@@ -142,45 +142,6 @@ export function ProfileSection({ viewUserId }) {
     teamSizePreference: "any",
     telegram: "",
   });
-  const [inlineEditing, setInlineEditing] = useState({
-    personal: false,
-    academic: false,
-    institution: false,
-    professional: false,
-    skills: false,
-    preferences: false,
-    social: false,
-    all: false,
-  });
-  const [inlineForm, setInlineForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    location: "",
-    bio: "",
-    gender: "",
-    age: "",
-    userType: "",
-    domain: "",
-    course: "",
-    courseDuration: "",
-    collegeName: "",
-    country: "",
-    city: "",
-    courseSpecialization: "",
-    companyName: "",
-    jobTitle: "",
-    yearsOfExperience: "",
-    currentYear: "",
-    skills: "",
-    interests: "",
-    twitter: "",
-    instagram: "",
-    portfolio: "",
-    preferredHackathonTypes: "",
-    teamSizePreference: "any",
-    telegram: "",
-  });
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
 
@@ -739,774 +700,287 @@ export function ProfileSection({ viewUserId }) {
         <div className="space-y-8 p-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4"></div>
-            <button
-              onClick={() => startInlineEdit("all")}
-              className="p-3 hover:bg-gray-100 rounded-xl transition-all duration-300 "
-              title="Edit All Profile Details"
-            >
-              <SquarePen className="w-5 h-5 text-gray-600" />
-            </button>
           </div>
 
-          {inlineEditing.all ? (
-            <div className="space-y-8 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-200 ">
-              {/* Personal Details */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-blue-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <UserCircle2 className="w-4 h-4 text-white" />
-                  </div>
-                  Personal Details
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
-                      Gender
-                    </Label>
-                    <select
-                      value={inlineForm.gender}
-                      onChange={(e) =>
-                        handleInlineChange("gender", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                    >
-                      <option value="prefer-not-to-say">
-                        Prefer not to say
-                      </option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
-                      Age
-                    </Label>
-                    <input
-                      type="number"
-                      value={inlineForm.age || ""}
-                      onChange={(e) =>
-                        handleInlineChange("age", e.target.value)
-                      }
-                      placeholder="Enter your age"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
-                      User Type
-                    </Label>
-                    <select
-                      value={inlineForm.userType}
-                      onChange={(e) =>
-                        handleInlineChange("userType", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white "
-                    >
-                      <option value="">Select user type</option>
-                      <option value="school">School Student</option>
-                      <option value="college">College Student</option>
-                      <option value="fresher">Fresher</option>
-                      <option value="professional">Professional</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-sm text-gray-700 font-semibold mb-2 block">
-                      Domain
-                    </Label>
-                    <select
-                      value={inlineForm.domain}
-                      onChange={(e) =>
-                        handleInlineChange("domain", e.target.value)
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white "
-                    >
-                      <option value="">Select domain</option>
-                      <option value="engineering">Engineering</option>
-                      <option value="computer-science">Computer Science</option>
-                      <option value="information-technology">
-                        Information Technology
-                      </option>
-                      <option value="data-science">Data Science</option>
-                      <option value="artificial-intelligence">
-                        Artificial Intelligence
-                      </option>
-                      <option value="machine-learning">Machine Learning</option>
-                      <option value="cybersecurity">Cybersecurity</option>
-                      <option value="web-development">Web Development</option>
-                      <option value="mobile-development">
-                        Mobile Development
-                      </option>
-                      <option value="game-development">Game Development</option>
-                      <option value="design">Design</option>
-                      <option value="business">Business</option>
-                      <option value="management">Management</option>
-                      <option value="finance">Finance</option>
-                      <option value="marketing">Marketing</option>
-                      <option value="law">Law</option>
-                      <option value="medicine">Medicine</option>
-                      <option value="pharmacy">Pharmacy</option>
-                      <option value="nursing">Nursing</option>
-                      <option value="architecture">Architecture</option>
-                      <option value="arts">Arts</option>
-                      <option value="humanities">Humanities</option>
-                      <option value="social-sciences">Social Sciences</option>
-                      <option value="education">Education</option>
-                      <option value="agriculture">Agriculture</option>
-                      <option value="environmental-science">
-                        Environmental Science
-                      </option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Academic Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Academic Information
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">Course</Label>
-                    <Input
-                      value={inlineForm.course}
-                      onChange={(e) =>
-                        handleInlineChange("course", e.target.value)
-                      }
-                      placeholder="e.g., Computer Science"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Course Duration
-                    </Label>
-                    <select
-                      value={inlineForm.courseDuration}
-                      onChange={(e) =>
-                        handleInlineChange("courseDuration", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select duration</option>
-                      <option value="1-year">1 Year</option>
-                      <option value="2-years">2 Years</option>
-                      <option value="3-years">3 Years</option>
-                      <option value="4-years">4 Years</option>
-                      <option value="5-years">5 Years</option>
-                      <option value="6-years">6 Years</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Current Year
-                    </Label>
-                    <select
-                      value={inlineForm.currentYear}
-                      onChange={(e) =>
-                        handleInlineChange("currentYear", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select year</option>
-                      <option value="1st-year">1st Year</option>
-                      <option value="2nd-year">2nd Year</option>
-                      <option value="3rd-year">3rd Year</option>
-                      <option value="4th-year">4th Year</option>
-                      <option value="final-year">Final Year</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Specialization
-                    </Label>
-                    <Input
-                      value={inlineForm.courseSpecialization}
-                      onChange={(e) =>
-                        handleInlineChange(
-                          "courseSpecialization",
-                          e.target.value
-                        )
-                      }
-                      placeholder="e.g., Software Engineering"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Institution Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Institution
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      College/University Name
-                    </Label>
-                    <Input
-                      value={inlineForm.collegeName}
-                      onChange={(e) =>
-                        handleInlineChange("collegeName", e.target.value)
-                      }
-                      placeholder="Enter your college/university name"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">Country</Label>
-                    <Input
-                      value={inlineForm.country}
-                      onChange={(e) =>
-                        handleInlineChange("country", e.target.value)
-                      }
-                      placeholder="Enter your country"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">City</Label>
-                    <Input
-                      value={inlineForm.city}
-                      onChange={(e) =>
-                        handleInlineChange("city", e.target.value)
-                      }
-                      placeholder="Enter your city"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Professional Information */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Professional Details
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Company Name
-                    </Label>
-                    <Input
-                      value={inlineForm.companyName}
-                      onChange={(e) =>
-                        handleInlineChange("companyName", e.target.value)
-                      }
-                      placeholder="Enter your company name"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">Job Title</Label>
-                    <Input
-                      value={inlineForm.jobTitle}
-                      onChange={(e) =>
-                        handleInlineChange("jobTitle", e.target.value)
-                      }
-                      placeholder="Enter your job title"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Years of Experience
-                    </Label>
-                    <select
-                      value={inlineForm.yearsOfExperience}
-                      onChange={(e) =>
-                        handleInlineChange("yearsOfExperience", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select experience</option>
-                      <option value="0-1">0-1 years</option>
-                      <option value="1-2">1-2 years</option>
-                      <option value="2-3">2-3 years</option>
-                      <option value="3-5">3-5 years</option>
-                      <option value="5-10">5-10 years</option>
-                      <option value="10+">10+ years</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Skills and Interests */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Skills & Interests
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Skills (comma separated)
-                    </Label>
-                    <Input
-                      value={inlineForm.skills}
-                      onChange={(e) =>
-                        handleInlineChange("skills", e.target.value)
-                      }
-                      placeholder="e.g., JavaScript, Python, React"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Interests (comma separated)
-                    </Label>
-                    <Input
-                      value={inlineForm.interests}
-                      onChange={(e) =>
-                        handleInlineChange("interests", e.target.value)
-                      }
-                      placeholder="e.g., AI, Web Development, Blockchain"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Hackathon Preferences */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Hackathon Preferences
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Team Size Preference
-                    </Label>
-                    <select
-                      value={inlineForm.teamSizePreference}
-                      onChange={(e) =>
-                        handleInlineChange("teamSizePreference", e.target.value)
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="any">Any</option>
-                      <option value="solo">Solo</option>
-                      <option value="2-3">2-3</option>
-                      <option value="4-5">4-5</option>
-                      <option value="6+">6+</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">
-                      Preferred Hackathon Types (comma separated)
-                    </Label>
-                    <Input
-                      value={inlineForm.preferredHackathonTypes}
-                      onChange={(e) =>
-                        handleInlineChange(
-                          "preferredHackathonTypes",
-                          e.target.value
-                        )
-                      }
-                      placeholder="e.g., web-development, ai-ml, blockchain"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Social Links */}
-              <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-700 border-b pb-2">
-                  Additional Social Links
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-gray-600">Twitter</Label>
-                    <Input
-                      value={inlineForm.twitter}
-                      onChange={(e) =>
-                        handleInlineChange("twitter", e.target.value)
-                      }
-                      placeholder="https://twitter.com/username"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">Instagram</Label>
-                    <Input
-                      value={inlineForm.instagram}
-                      onChange={(e) =>
-                        handleInlineChange("instagram", e.target.value)
-                      }
-                      placeholder="https://instagram.com/username"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">Portfolio</Label>
-                    <Input
-                      value={inlineForm.portfolio}
-                      onChange={(e) =>
-                        handleInlineChange("portfolio", e.target.value)
-                      }
-                      placeholder="https://your-portfolio.com"
-                      className="text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-600">Telegram</Label>
-                    <Input
-                      value={inlineForm.telegram || ""}
-                      onChange={(e) =>
-                        handleInlineChange("telegram", e.target.value)
-                      }
-                      placeholder="Enter your Telegram username or link"
-                      className="text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Save/Cancel Buttons */}
-              <div className="flex gap-3 pt-4 border-t border-blue-200">
-                <Button
-                  onClick={() => saveInlineEdit("all")}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <Check className="w-4 h-4" />
-                  Save All Changes
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => cancelInlineEdit("all")}
-                  className="flex items-center gap-2"
-                >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Personal Information */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <UserCircle2 className="w-4 h-4 text-white" />
-                  </div>
-                  Personal Details
-                </h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Gender
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800 capitalize">
-                      {user?.gender?.replace(/-/g, " ") || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      User Type
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800 capitalize">
-                      {user?.userType?.replace(/-/g, " ") || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Domain
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800 capitalize">
-                      {user?.domain?.replace(/-/g, " ") || "Not specified"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Academic Information */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                      />
-                    </svg>
-                  </div>
-                  Academic Details
-                </h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Course
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.course || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Course Duration
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.courseDuration || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Current Year
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800 capitalize">
-                      {user?.currentYear?.replace(/-/g, " ") || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Specialization
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.courseSpecialization || "Not specified"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Institution Information */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                  </div>
-                  Institution
-                </h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
-                    <span className="text-sm text-gray-600 font-medium">
-                      College/University
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.collegeName || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Country
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.country || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      City
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.city || "Not specified"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Professional Information */}
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
-                      />
-                    </svg>
-                  </div>
-                  Professional Details
-                </h4>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Company
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.companyName || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Job Title
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.jobTitle || "Not specified"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
-                    <span className="text-sm text-gray-600 font-medium">
-                      Experience
-                    </span>
-                    <span className="text-sm font-semibold text-gray-800">
-                      {user?.yearsOfExperience
-                        ? `${user.yearsOfExperience} years`
-                        : "Not specified"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Skills and Interests Display */}
-          {(user?.skills?.length > 0 || user?.interests?.length > 0) &&
-            !inlineEditing.all && (
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                      />
-                    </svg>
-                  </div>
-                  Skills & Interests
-                </h4>
-                <div className="grid md:grid-cols-2 gap-6">
-                  {user?.skills?.length > 0 && (
-                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
-                      <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                        </div>
-                        Skills
-                      </h5>
-                      <div className="flex flex-wrap gap-3">
-                        {user.skills.map((skill, index) => (
-                          <span
-                            key={index}
-                            className="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-full transition-all duration-200"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {user?.interests?.length > 0 && (
-                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100">
-                      <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
-                          <svg
-                            className="w-3 h-3 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                            />
-                          </svg>
-                        </div>
-                        Interests
-                      </h5>
-                      <div className="flex flex-wrap gap-3">
-                        {user.interests.map((interest, index) => (
-                          <span
-                            key={index}
-                            className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-full"
-                          >
-                            {interest}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-          {/* Hackathon Preferences Display */}
-          {!inlineEditing.all && (
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Personal Information */}
             <div className="space-y-6">
               <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <Trophy className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <UserCircle2 className="w-4 h-4 text-white" />
                 </div>
-                Hackathon Preferences
+                Personal Details
               </h4>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
                   <span className="text-sm text-gray-600 font-medium">
-                    Team Size Preference
+                    Gender
                   </span>
                   <span className="text-sm font-semibold text-gray-800 capitalize">
-                    {user?.teamSizePreference || "Any"}
+                    {user?.gender?.replace(/-/g, " ") || "Not specified"}
                   </span>
                 </div>
-                {user?.preferredHackathonTypes?.length > 0 && (
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100">
-                    <h5 className="text-base font-semibold text-gray-700 mb-4">
-                      Preferred Hackathon Types
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    User Type
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 capitalize">
+                    {user?.userType?.replace(/-/g, " ") || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Domain
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 capitalize">
+                    {user?.domain?.replace(/-/g, " ") || "Not specified"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Academic Information */}
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                    />
+                  </svg>
+                </div>
+                Academic Details
+              </h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Course
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.course || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Course Duration
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.courseDuration || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Current Year
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800 capitalize">
+                    {user?.currentYear?.replace(/-/g, " ") || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Specialization
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.courseSpecialization || "Not specified"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Institution Information */}
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    />
+                  </svg>
+                </div>
+                Institution
+              </h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+                  <span className="text-sm text-gray-600 font-medium">
+                    College/University
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.collegeName || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Country
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.country || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    City
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.city || "Not specified"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Professional Information */}
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6"
+                    />
+                  </svg>
+                </div>
+                Professional Details
+              </h4>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Company
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.companyName || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Job Title
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.jobTitle || "Not specified"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 ">
+                  <span className="text-sm text-gray-600 font-medium">
+                    Experience
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {user?.yearsOfExperience
+                      ? `${user.yearsOfExperience} years`
+                      : "Not specified"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skills and Interests Display */}
+          {(user?.skills?.length > 0 || user?.interests?.length > 0) && (
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-yellow-500 rounded-lg flex items-center justify-center">
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                </div>
+                Skills & Interests
+              </h4>
+              <div className="grid md:grid-cols-2 gap-6">
+                {user?.skills?.length > 0 && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
+                    <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                      </div>
+                      Skills
                     </h5>
                     <div className="flex flex-wrap gap-3">
-                      {user.preferredHackathonTypes.map((type, index) => (
+                      {user.skills.map((skill, index) => (
                         <span
                           key={index}
-                          className="px-4 py-2 bg-purple-100 text-purple-800 text-sm font-medium rounded-full "
+                          className="px-4 py-2 bg-blue-100 text-blue-800 text-sm font-medium rounded-full transition-all duration-200"
                         >
-                          {type.replace(/-/g, " ")}
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {user?.interests?.length > 0 && (
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-100">
+                    <h5 className="text-base font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg
+                          className="w-3 h-3 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                      </div>
+                      Interests
+                    </h5>
+                    <div className="flex flex-wrap gap-3">
+                      {user.interests.map((interest, index) => (
+                        <span
+                          key={index}
+                          className="px-4 py-2 bg-green-100 text-green-800 text-sm font-medium rounded-full"
+                        >
+                          {interest}
                         </span>
                       ))}
                     </div>
@@ -1516,18 +990,173 @@ export function ProfileSection({ viewUserId }) {
             </div>
           )}
 
+          {/* Hackathon Preferences Display */}
+          <div className="space-y-6">
+            <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+              <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+                <Trophy className="w-4 h-4 text-white" />
+              </div>
+              Hackathon Preferences
+            </h4>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-100 ">
+                <span className="text-sm text-gray-600 font-medium">
+                  Team Size Preference
+                </span>
+                <span className="text-sm font-semibold text-gray-800 capitalize">
+                  {user?.teamSizePreference || "Any"}
+                </span>
+              </div>
+              {user?.preferredHackathonTypes?.length > 0 && (
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-2xl border border-purple-100">
+                  <h5 className="text-base font-semibold text-gray-700 mb-4">
+                    Preferred Hackathon Types
+                  </h5>
+                  <div className="flex flex-wrap gap-3">
+                    {user.preferredHackathonTypes.map((type, index) => (
+                      <span
+                        key={index}
+                        className="px-4 py-2 bg-purple-100 text-purple-800 text-sm font-medium rounded-full "
+                      >
+                        {type.replace(/-/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Additional Social Links Display */}
           {(user?.twitter ||
             user?.instagram ||
             user?.portfolio ||
-            user?.telegram) &&
-            !inlineEditing.all && (
-              <div className="space-y-6">
-                <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
-                    {/* SVG icon for social */}
+            user?.telegram) && (
+            <div className="space-y-6">
+              <h4 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-pink-500 rounded-lg flex items-center justify-center">
+                  {/* SVG icon for social */}
+                  <svg
+                    className="w-4 h-4 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"
+                    />
+                  </svg>
+                </div>
+                Additional Social Links
+              </h4>
+              <div className="space-y-4">
+                {user?.twitter && (
+                  <a
+                    href={user.twitter}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100  transition-all duration-300 group"
+                  >
+                    <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center ">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 font-semibold mb-1">
+                        Twitter
+                      </p>
+                      <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
+                        Follow me on Twitter
+                      </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                  </a>
+                )}
+                {user?.instagram && (
+                  <a
+                    href={user.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-100 hover:from-pink-100 hover:to-rose-100 transition-all duration-300 group"
+                  >
+                    <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center ">
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 font-semibold mb-1">
+                        Instagram
+                      </p>
+                      <p className="text-gray-800 font-semibold text-base group-hover:text-pink-700 transition-colors">
+                        Follow me on Instagram
+                      </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-pink-500 transition-colors" />
+                  </a>
+                )}
+                {user?.portfolio && (
+                  <a
+                    href={user.portfolio}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100 hover:from-gray-100 hover:to-slate-100  transition-all duration-300 group"
+                  >
+                    <div className="w-10 h-10 bg-gray-500 rounded-xl flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 font-semibold mb-1">
+                        Portfolio
+                      </p>
+                      <p className="text-gray-800 font-semibold text-base group-hover:text-gray-700 transition-colors">
+                        View my portfolio
+                      </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                  </a>
+                )}
+                {user?.telegram && (
+                  <a
+                    href={`https://t.me/${user.telegram.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100 transition-all group"
+                  >
+                    <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center">
+                      {/* Telegram SVG icon */}
+                      <svg
+                        className="w-5 h-5 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 font-semibold mb-1">
+                        Telegram
+                      </p>
+                      <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
+                        {user.telegram.startsWith("@")
+                          ? user.telegram
+                          : `@${user.telegram}`}
+                      </p>
+                    </div>
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1536,133 +1165,14 @@ export function ProfileSection({ viewUserId }) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2"
+                        d="M17 8l4 4m0 0l-4 4m4-4H3"
                       />
                     </svg>
-                  </div>
-                  Additional Social Links
-                </h4>
-                <div className="space-y-4">
-                  {user?.twitter && (
-                    <a
-                      href={user.twitter}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100  transition-all duration-300 group"
-                    >
-                      <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center ">
-                        <svg
-                          className="w-5 h-5 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-semibold mb-1">
-                          Twitter
-                        </p>
-                        <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
-                          Follow me on Twitter
-                        </p>
-                      </div>
-                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                    </a>
-                  )}
-                  {user?.instagram && (
-                    <a
-                      href={user.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-100 hover:from-pink-100 hover:to-rose-100 transition-all duration-300 group"
-                    >
-                      <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center ">
-                        <svg
-                          className="w-5 h-5 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-semibold mb-1">
-                          Instagram
-                        </p>
-                        <p className="text-gray-800 font-semibold text-base group-hover:text-pink-700 transition-colors">
-                          Follow me on Instagram
-                        </p>
-                      </div>
-                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-pink-500 transition-colors" />
-                    </a>
-                  )}
-                  {user?.portfolio && (
-                    <a
-                      href={user.portfolio}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100 hover:from-gray-100 hover:to-slate-100  transition-all duration-300 group"
-                    >
-                      <div className="w-10 h-10 bg-gray-500 rounded-xl flex items-center justify-center">
-                        <Globe className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-semibold mb-1">
-                          Portfolio
-                        </p>
-                        <p className="text-gray-800 font-semibold text-base group-hover:text-gray-700 transition-colors">
-                          View my portfolio
-                        </p>
-                      </div>
-                      <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                    </a>
-                  )}
-                  {user?.telegram && (
-                    <a
-                      href={`https://t.me/${user.telegram.replace(/^@/, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 hover:from-blue-100 hover:to-cyan-100 transition-all group"
-                    >
-                      <div className="w-10 h-10 bg-blue-400 rounded-xl flex items-center justify-center">
-                        {/* Telegram SVG icon */}
-                        <svg
-                          className="w-5 h-5 text-white"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M9.036 16.572l-.398 3.52c.57 0 .816-.244 1.113-.537l2.664-2.537 5.522 4.04c1.012.557 1.73.264 1.98-.937l3.594-16.84c.328-1.527-.553-2.127-1.54-1.76l-21.36 8.23c-1.46.557-1.44 1.36-.25 1.72l5.46 1.705 12.66-7.98c.6-.41 1.15-.18.7.23z" />
-                        </svg>
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-500 font-semibold mb-1">
-                          Telegram
-                        </p>
-                        <p className="text-gray-800 font-semibold text-base group-hover:text-blue-700 transition-colors">
-                          {user.telegram.startsWith("@")
-                            ? user.telegram
-                            : `@${user.telegram}`}
-                        </p>
-                      </div>
-                      <svg
-                        className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 8l4 4m0 0l-4 4m4-4H3"
-                        />
-                      </svg>
-                    </a>
-                  )}
-                </div>
+                  </a>
+                )}
               </div>
-            )}
+            </div>
+          )}
         </div>
       </Card>
 
@@ -1966,6 +1476,449 @@ export function ProfileSection({ viewUserId }) {
                 setEditForm({ ...editForm, linkedin: e.target.value })
               }
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Personal Details Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserCircle2 className="w-5 h-5" />
+            Personal Details
+          </CardTitle>
+          <CardDescription>
+            Update your personal information and preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="gender">Gender</Label>
+              <select
+                id="gender"
+                value={editForm.gender}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, gender: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="prefer-not-to-say">Prefer not to say</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={editForm.age}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, age: e.target.value })
+                }
+                placeholder="Enter your age"
+              />
+            </div>
+            <div>
+              <Label htmlFor="userType">User Type</Label>
+              <select
+                id="userType"
+                value={editForm.userType}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, userType: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select user type</option>
+                <option value="school">School Student</option>
+                <option value="college">College Student</option>
+                <option value="fresher">Fresher</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="domain">Domain</Label>
+              <select
+                id="domain"
+                value={editForm.domain}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, domain: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select domain</option>
+                <option value="engineering">Engineering</option>
+                <option value="computer-science">Computer Science</option>
+                <option value="information-technology">Information Technology</option>
+                <option value="data-science">Data Science</option>
+                <option value="artificial-intelligence">Artificial Intelligence</option>
+                <option value="machine-learning">Machine Learning</option>
+                <option value="cybersecurity">Cybersecurity</option>
+                <option value="web-development">Web Development</option>
+                <option value="mobile-development">Mobile Development</option>
+                <option value="game-development">Game Development</option>
+                <option value="design">Design</option>
+                <option value="business">Business</option>
+                <option value="management">Management</option>
+                <option value="finance">Finance</option>
+                <option value="marketing">Marketing</option>
+                <option value="law">Law</option>
+                <option value="medicine">Medicine</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="nursing">Nursing</option>
+                <option value="architecture">Architecture</option>
+                <option value="arts">Arts</option>
+                <option value="humanities">Humanities</option>
+                <option value="social-sciences">Social Sciences</option>
+                <option value="education">Education</option>
+                <option value="agriculture">Agriculture</option>
+                <option value="environmental-science">Environmental Science</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Academic Details Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Academic Details
+          </CardTitle>
+          <CardDescription>
+            Update your academic information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="course">Course</Label>
+              <Input
+                id="course"
+                value={editForm.course}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, course: e.target.value })
+                }
+                placeholder="e.g., Computer Science"
+              />
+            </div>
+            <div>
+              <Label htmlFor="courseDuration">Course Duration</Label>
+              <select
+                id="courseDuration"
+                value={editForm.courseDuration}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, courseDuration: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select duration</option>
+                <option value="1-year">1 Year</option>
+                <option value="2-years">2 Years</option>
+                <option value="3-years">3 Years</option>
+                <option value="4-years">4 Years</option>
+                <option value="5-years">5 Years</option>
+                <option value="6-years">6 Years</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="currentYear">Current Year</Label>
+              <select
+                id="currentYear"
+                value={editForm.currentYear}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, currentYear: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select year</option>
+                <option value="1st-year">1st Year</option>
+                <option value="2nd-year">2nd Year</option>
+                <option value="3rd-year">3rd Year</option>
+                <option value="4th-year">4th Year</option>
+                <option value="final-year">Final Year</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="courseSpecialization">Specialization</Label>
+              <Input
+                id="courseSpecialization"
+                value={editForm.courseSpecialization}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, courseSpecialization: e.target.value })
+                }
+                placeholder="e.g., Software Engineering"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Institution Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            Institution
+          </CardTitle>
+          <CardDescription>
+            Update your institution information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="collegeName">College/University Name</Label>
+              <Input
+                id="collegeName"
+                value={editForm.collegeName}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, collegeName: e.target.value })
+                }
+                placeholder="Enter your college/university name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Input
+                id="country"
+                value={editForm.country}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, country: e.target.value })
+                }
+                placeholder="Enter your country"
+              />
+            </div>
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={editForm.city}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, city: e.target.value })
+                }
+                placeholder="Enter your city"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Professional Details Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+            </svg>
+            Professional Details
+          </CardTitle>
+          <CardDescription>
+            Update your professional information
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input
+                id="companyName"
+                value={editForm.companyName}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, companyName: e.target.value })
+                }
+                placeholder="Enter your company name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="jobTitle">Job Title</Label>
+              <Input
+                id="jobTitle"
+                value={editForm.jobTitle}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, jobTitle: e.target.value })
+                }
+                placeholder="Enter your job title"
+              />
+            </div>
+            <div>
+              <Label htmlFor="yearsOfExperience">Years of Experience</Label>
+              <select
+                id="yearsOfExperience"
+                value={editForm.yearsOfExperience}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, yearsOfExperience: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="">Select experience</option>
+                <option value="0-1">0-1 years</option>
+                <option value="1-2">1-2 years</option>
+                <option value="2-3">2-3 years</option>
+                <option value="3-5">3-5 years</option>
+                <option value="5-10">5-10 years</option>
+                <option value="10+">10+ years</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Skills and Interests Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Skills & Interests
+          </CardTitle>
+          <CardDescription>
+            Add your skills and interests
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="skills">Skills (comma separated)</Label>
+              <Input
+                id="skills"
+                value={editForm.skills}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, skills: e.target.value })
+                }
+                placeholder="e.g., JavaScript, Python, React"
+              />
+            </div>
+            <div>
+              <Label htmlFor="interests">Interests (comma separated)</Label>
+              <Input
+                id="interests"
+                value={editForm.interests}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, interests: e.target.value })
+                }
+                placeholder="e.g., AI, Web Development, Blockchain"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Hackathon Preferences Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5" />
+            Hackathon Preferences
+          </CardTitle>
+          <CardDescription>
+            Set your hackathon preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="teamSizePreference">Team Size Preference</Label>
+              <select
+                id="teamSizePreference"
+                value={editForm.teamSizePreference}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, teamSizePreference: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
+              >
+                <option value="any">Any</option>
+                <option value="solo">Solo</option>
+                <option value="2-3">2-3</option>
+                <option value="4-5">4-5</option>
+                <option value="6+">6+</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="preferredHackathonTypes">Preferred Hackathon Types (comma separated)</Label>
+              <Input
+                id="preferredHackathonTypes"
+                value={editForm.preferredHackathonTypes}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, preferredHackathonTypes: e.target.value })
+                }
+                placeholder="e.g., web-development, ai-ml, blockchain"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Additional Social Links Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+            </svg>
+            Additional Social Links
+          </CardTitle>
+          <CardDescription>
+            Add your additional social media links
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="twitter">Twitter</Label>
+              <Input
+                id="twitter"
+                value={editForm.twitter}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, twitter: e.target.value })
+                }
+                placeholder="https://twitter.com/username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="instagram">Instagram</Label>
+              <Input
+                id="instagram"
+                value={editForm.instagram}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, instagram: e.target.value })
+                }
+                placeholder="https://instagram.com/username"
+              />
+            </div>
+            <div>
+              <Label htmlFor="portfolio">Portfolio</Label>
+              <Input
+                id="portfolio"
+                value={editForm.portfolio}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, portfolio: e.target.value })
+                }
+                placeholder="https://your-portfolio.com"
+              />
+            </div>
+            <div>
+              <Label htmlFor="telegram">Telegram</Label>
+              <Input
+                id="telegram"
+                value={editForm.telegram}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, telegram: e.target.value })
+                }
+                placeholder="Enter your Telegram username or link"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -2606,190 +2559,6 @@ export function ProfileSection({ viewUserId }) {
     await handleSaveChanges();
     setPendingSave(false);
     setShowConfirmDialog(false);
-  };
-
-  // Inline editing functions
-  const startInlineEdit = (section) => {
-    setInlineEditing((prev) => ({ ...prev, [section]: true }));
-    // Initialize inline form with current user data
-    setInlineForm({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      location: user?.location || "",
-      bio: user?.bio || "",
-      gender: user?.gender || "prefer-not-to-say",
-      age: user?.age || "",
-      userType: user?.userType || "",
-      domain: user?.domain || "",
-      course: user?.course || "",
-      courseDuration: user?.courseDuration || "",
-      collegeName: user?.collegeName || "",
-      country: user?.country || "",
-      city: user?.city || "",
-      courseSpecialization: user?.courseSpecialization || "",
-      companyName: user?.companyName || "",
-      jobTitle: user?.jobTitle || "",
-      yearsOfExperience: user?.yearsOfExperience || "",
-      currentYear: user?.currentYear || "",
-      skills: user?.skills ? user.skills.join(", ") : "",
-      interests: user?.interests ? user.interests.join(", ") : "",
-      twitter: user?.twitter || "",
-      instagram: user?.instagram || "",
-      portfolio: user?.portfolio || "",
-      preferredHackathonTypes: user?.preferredHackathonTypes
-        ? user.preferredHackathonTypes.join(", ")
-        : "",
-      teamSizePreference: user?.teamSizePreference || "any",
-      telegram: user?.telegram || "",
-    });
-  };
-
-  const cancelInlineEdit = (section) => {
-    setInlineEditing((prev) => ({ ...prev, [section]: false }));
-  };
-
-  const saveInlineEdit = async (section) => {
-    if (!user?._id || !token) {
-      alert("User not logged in. Please log in again.");
-      return;
-    }
-
-    // Process array fields - convert comma-separated strings to arrays
-    const processArrayField = (field) => {
-      if (!field || typeof field !== "string") return [];
-      return field
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
-    };
-
-    // Determine which fields to update based on section
-    let updates = {};
-
-    switch (section) {
-      case "all":
-        updates = {
-          name: inlineForm.name,
-          email: inlineForm.email,
-          phone: inlineForm.phone,
-          location: inlineForm.location,
-          bio: inlineForm.bio,
-          gender: inlineForm.gender,
-          age: inlineForm.age,
-          userType: inlineForm.userType,
-          domain: inlineForm.domain,
-          course: inlineForm.course,
-          courseDuration: inlineForm.courseDuration,
-          collegeName: inlineForm.collegeName,
-          country: inlineForm.country,
-          city: inlineForm.city,
-          courseSpecialization: inlineForm.courseSpecialization,
-          companyName: inlineForm.companyName,
-          jobTitle: inlineForm.jobTitle,
-          yearsOfExperience: inlineForm.yearsOfExperience,
-          currentYear: inlineForm.currentYear,
-          skills: processArrayField(inlineForm.skills),
-          interests: processArrayField(inlineForm.interests),
-          twitter: inlineForm.twitter,
-          instagram: inlineForm.instagram,
-          portfolio: inlineForm.portfolio,
-          preferredHackathonTypes: processArrayField(
-            inlineForm.preferredHackathonTypes
-          ),
-          teamSizePreference: inlineForm.teamSizePreference,
-          telegram: inlineForm.telegram,
-        };
-        break;
-      case "personal":
-        updates = {
-          name: inlineForm.name,
-          email: inlineForm.email,
-          phone: inlineForm.phone,
-          location: inlineForm.location,
-          bio: inlineForm.bio,
-          gender: inlineForm.gender,
-          age: inlineForm.age,
-          userType: inlineForm.userType,
-          domain: inlineForm.domain,
-        };
-        break;
-      case "academic":
-        updates = {
-          course: inlineForm.course,
-          courseDuration: inlineForm.courseDuration,
-          currentYear: inlineForm.currentYear,
-          courseSpecialization: inlineForm.courseSpecialization,
-        };
-        break;
-      case "institution":
-        updates = {
-          collegeName: inlineForm.collegeName,
-          country: inlineForm.country,
-          city: inlineForm.city,
-        };
-        break;
-      case "professional":
-        updates = {
-          companyName: inlineForm.companyName,
-          jobTitle: inlineForm.jobTitle,
-          yearsOfExperience: inlineForm.yearsOfExperience,
-        };
-        break;
-      case "skills":
-        updates = {
-          skills: processArrayField(inlineForm.skills),
-          interests: processArrayField(inlineForm.interests),
-        };
-        break;
-      case "preferences":
-        updates = {
-          preferredHackathonTypes: processArrayField(
-            inlineForm.preferredHackathonTypes
-          ),
-          teamSizePreference: inlineForm.teamSizePreference,
-        };
-        break;
-      case "social":
-        updates = {
-          twitter: inlineForm.twitter,
-          instagram: inlineForm.instagram,
-          portfolio: inlineForm.portfolio,
-          telegram: inlineForm.telegram,
-        };
-        break;
-    }
-
-    try {
-      const res = await axios.put(
-        `http://localhost:3000/api/users/${user._id}`,
-        updates,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const updatedUser = res.data;
-
-      // 🔄 Sync context and localStorage
-      login(updatedUser, token);
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-
-      // Close inline editing
-      setInlineEditing((prev) => ({ ...prev, [section]: false }));
-
-      // Show success message
-      alert("Profile updated successfully!");
-    } catch (err) {
-      console.error("Error updating profile:", err);
-      alert("Failed to update profile");
-    }
-  };
-
-  const handleInlineChange = (field, value) => {
-    setInlineForm((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
