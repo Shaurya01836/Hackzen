@@ -8,12 +8,17 @@ import { Button } from "../../../../../../components/CommonUI/button";
 import { SiMoneygram } from "react-icons/si";
 
 export default function HackathonOverview({ hackathon, sectionRef, user, onShowParticipants }) {
-  // Defensive: check if arrays exist and have content
+  // Defensive: check if arrays exist and have meaningful content
   const requirements = Array.isArray(hackathon.requirements) ? hackathon.requirements : [];
   const perks = Array.isArray(hackathon.perks) ? hackathon.perks : [];
   
-  const hasRequirements = requirements.length > 0;
-  const hasPerks = perks.length > 0;
+  // Check if arrays have meaningful content (not just empty strings)
+  const hasRequirements = requirements.length > 0 && requirements.some(req => req && req.trim() !== '');
+  const hasPerks = perks.length > 0 && perks.some(perk => perk && perk.trim() !== '');
+  
+  // Filter out empty strings for display
+  const validRequirements = requirements.filter(req => req && req.trim() !== '');
+  const validPerks = perks.filter(perk => perk && perk.trim() !== '');
 
   const organizer = hackathon.organizer || '';
   const tags = Array.isArray(hackathon.tags) ? hackathon.tags : [];
@@ -138,7 +143,7 @@ export default function HackathonOverview({ hackathon, sectionRef, user, onShowP
               <div className="">
                 {hasRequirements ? (
                   <ul className="space-y-4">
-                    {requirements.map((req, index) => (
+                    {validRequirements.map((req, index) => (
                       <li key={index} className="flex items-center gap-3">                        
                         <ArrowRight className="w-5 h-5 text-indigo-500" />
                         <span className="text-gray-700 leading-relaxed">{req}</span>
@@ -171,7 +176,7 @@ export default function HackathonOverview({ hackathon, sectionRef, user, onShowP
               <div className="">
                 {hasPerks ? (
                   <ul className="space-y-4">
-                    {perks.map((perk, index) => (
+                    {validPerks.map((perk, index) => (
                       <li key={index} className="flex items-center gap-3">
                         <ArrowRight className="w-5 h-5 text-indigo-500" />
                         <span className="text-gray-700 leading-relaxed">{perk}</span>
