@@ -25,15 +25,29 @@ import {
   Star,
   Save,
   UserCircle2,
+  TrendingUp,
 } from "lucide-react";
 import AchievementsSection from "../../components/DashboardUI/AchievementsSection";
 import AchievementBadge from "../../components/DashboardUI/AchievementBadge";
+import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 
 function PublicAchievementsSection({ user }) {
-  // Gather unlocked badges only
+  // Debug: Log the badge data to see what we're receiving
+  console.log('PublicAchievementsSection - user badges:', user?.badges);
+  console.log('PublicAchievementsSection - user role:', user?.role);
+
+  // Show ALL badges from user's badges array (they are all unlocked)
   const unlockedBadges = (user?.badges || [])
-    .filter(b => b.isUnlocked || b.badge?.isUnlocked)
-    .map(b => b.badge || b); // Support both {badge: {...}} and {...}
+    .map(b => {
+      // Support both {badge: {...}} and {...} structures
+      const badge = b.badge || b;
+      return {
+        ...badge,
+        isUnlocked: true // All badges in user's badges array are unlocked
+      };
+    });
+
+  console.log('PublicAchievementsSection - unlocked badges:', unlockedBadges);
 
   if (!unlockedBadges.length) {
     return (
@@ -42,7 +56,7 @@ function PublicAchievementsSection({ user }) {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
       {unlockedBadges.map(badge => (
         <AchievementBadge
           key={badge._id || badge.name}
@@ -325,8 +339,26 @@ export default function PublicProfileView({ userId }) {
             <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
               <Star className="w-6 h-6 text-yellow-500" /> Achievements & Badges
             </h3>
-            <PublicAchievementsSection user={publicProfile} />
+            <div className="bg-white/50 rounded-2xl border border-gray-100 p-6">
+              <PublicAchievementsSection user={publicProfile} />
+            </div>
           </div>
+
+          {/* Activity Streak Section */}
+          {publicProfile.streakData && (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-3">
+                <TrendingUp className="w-6 h-6 text-green-500" /> Activity Streak
+              </h3>
+              <div className="bg-white/50 rounded-2xl border border-gray-100 p-6">
+                <StreakGraphic
+                  data={publicProfile.streakData.activityLog || []}
+                  current={publicProfile.streakData.currentStreak || 0}
+                  max={publicProfile.streakData.maxStreak || 0}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

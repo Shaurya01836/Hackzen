@@ -826,10 +826,48 @@ const completeProfile = async (req, res) => {
 const getPublicProfile = async (req, res) => {
   try {
     const user = await User.findById(req.params.id)
-      .populate('badges.badge projects')
-      .select('name profileImage bannerImage bio website github githubUsername linkedin twitter instagram portfolio skills interests badges projects');
+      .populate({
+        path: 'badges.badge',
+        select: 'name description iconUrl criteria type role rarity createdAt'
+      })
+      .populate('projects')
+      .select('name profileImage bannerImage bio website github githubUsername linkedin twitter instagram portfolio skills interests badges projects role registeredHackathonIds activityLog');
 
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Debug: Log badge data
+    console.log('getPublicProfile - user badges:', user.badges);
+    console.log('getPublicProfile - user role:', user.role);
+
+    // Calculate streak data using the same logic as getUserStreakData
+    let streakData = {
+      currentStreak: 0,
+      maxStreak: 0,
+      activityLog: []
+    };
+
+    if (user.activityLog && user.activityLog.length > 0) {
+      const sortedLog = user.activityLog.sort((a, b) => new Date(a) - new Date(b));
+      let maxStreak = 0, currentStreak = 0, prevDate = null;
+
+      sortedLog.forEach(date => {
+        const currentDate = new Date(date);
+        if (prevDate) {
+          const diff = (currentDate - prevDate) / (1000 * 60 * 60 * 24);
+          currentStreak = diff === 1 ? currentStreak + 1 : 1;
+        } else {
+          currentStreak = 1;
+        }
+        maxStreak = Math.max(maxStreak, currentStreak);
+        prevDate = currentDate;
+      });
+
+      streakData = {
+        currentStreak,
+        maxStreak,
+        activityLog: user.activityLog
+      };
+    }
 
     // Optionally, add a socialLinks array for frontend convenience
     const socialLinks = [
@@ -841,7 +879,7 @@ const getPublicProfile = async (req, res) => {
       user.portfolio
     ].filter(Boolean);
 
-    res.json({
+    const response = {
       _id: user._id,
       name: user.name,
       profileImage: user.profileImage,
@@ -858,8 +896,15 @@ const getPublicProfile = async (req, res) => {
       interests: user.interests,
       badges: user.badges,
       projects: user.projects,
+      role: user.role,
+      registeredHackathonIds: user.registeredHackathonIds || [],
+      streakData,
       socialLinks
-    });
+    };
+
+    console.log('getPublicProfile - response badges:', response.badges);
+
+    res.json(response);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
