@@ -468,7 +468,15 @@ export default function AdminPanel() {
                       >
                         Settings
                       </Link>
-                      {/* Sign Out button removed as per request */}
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 border-b border-gray-200"
+                        onClick={() => {
+                          logout();
+                          setShowProfileDropdown(false);
+                        }}
+                      >
+                        Sign Out
+                      </button>
                     </div>
                   )}
                 </div>
