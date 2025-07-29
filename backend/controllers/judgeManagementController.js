@@ -4437,10 +4437,37 @@ exports.getShortlistedSubmissions = async (req, res) => {
       return res.status(404).json({ message: 'Hackathon not found' });
     }
 
-    // Get shortlisted submissions
+    // Get shortlisted submissions based on round progress
+    let shortlistedSubmissionIds = [];
+    
+    console.log('🔍 getShortlistedSubmissions: Checking for round', roundIndex);
+    console.log('🔍 getShortlistedSubmissions: Hackathon round progress:', hackathon.roundProgress?.length || 0);
+    
+    // Check round progress for shortlisted submissions
+    if (hackathon.roundProgress) {
+      const roundProgress = hackathon.roundProgress.find(rp => rp.roundIndex === parseInt(roundIndex));
+      console.log('🔍 getShortlistedSubmissions: Found round progress:', roundProgress ? 'Yes' : 'No');
+      
+      if (roundProgress && roundProgress.shortlistedSubmissions) {
+        shortlistedSubmissionIds = roundProgress.shortlistedSubmissions;
+        console.log('🔍 getShortlistedSubmissions: Shortlisted submissions from round progress:', shortlistedSubmissionIds.length);
+      }
+    }
+    
+    // If no shortlisted submissions found in round progress, check submission status as fallback
+    if (shortlistedSubmissionIds.length === 0) {
+      const statusShortlisted = await Submission.find({
+        hackathonId: hackathonId,
+        status: 'shortlisted',
+        roundIndex: parseInt(roundIndex)
+      }).select('_id');
+      shortlistedSubmissionIds = statusShortlisted.map(s => s._id);
+    }
+    
+    // Get the actual submission details
     const shortlistedSubmissions = await Submission.find({
       hackathonId: hackathonId,
-      status: 'shortlisted',
+      _id: { $in: shortlistedSubmissionIds },
       roundIndex: parseInt(roundIndex)
     }).populate('teamId', 'name leader')
       .populate('submittedBy', 'name email')

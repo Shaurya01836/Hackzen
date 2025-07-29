@@ -179,7 +179,8 @@ function App() {
             <PrivateRoute>
               <DashboardPage />
             </PrivateRoute>
-      }/>
+          }
+        />
       </Routes>
     </>
   );

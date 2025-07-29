@@ -114,12 +114,19 @@ exports.submitProjectWithAnswers = async (req, res) => {
           console.log('🔍 Submission validation - Shortlisted teams:', roundProgress.shortlistedTeams?.length || 0);
           console.log('🔍 Submission validation - Shortlisted submissions:', roundProgress.shortlistedSubmissions?.length || 0);
           console.log('🔍 Submission validation - User team ID:', userTeam._id.toString());
+          console.log('🔍 Submission validation - User ID:', userId.toString());
           console.log('🔍 Submission validation - Shortlisted teams array:', roundProgress.shortlistedTeams);
           
           // Check team-based shortlisting
           if (roundProgress.shortlistedTeams && roundProgress.shortlistedTeams.includes(userTeam._id.toString())) {
             isShortlisted = true;
             console.log('🔍 Submission validation - User shortlisted via team');
+          }
+          
+          // Check if user is directly shortlisted (individual shortlisting)
+          if (!isShortlisted && roundProgress.shortlistedTeams && roundProgress.shortlistedTeams.includes(userId.toString())) {
+            isShortlisted = true;
+            console.log('🔍 Submission validation - User directly shortlisted (individual)');
           }
           
           // Check submission-based shortlisting
@@ -141,6 +148,32 @@ exports.submitProjectWithAnswers = async (req, res) => {
             if (hasShortlistedSubmission) {
               isShortlisted = true;
               console.log('🔍 Submission validation - User shortlisted via submission');
+            }
+          }
+        }
+        
+        // Check all round progress entries for shortlisting (not just previous round)
+        if (!isShortlisted && hackathon.roundProgress) {
+          console.log('🔍 Submission validation - Checking all round progress entries for shortlisting');
+          for (const progress of hackathon.roundProgress) {
+            console.log('🔍 Submission validation - Checking round progress:', {
+              roundIndex: progress.roundIndex,
+              shortlistedTeams: progress.shortlistedTeams?.length || 0,
+              shortlistedSubmissions: progress.shortlistedSubmissions?.length || 0
+            });
+            
+            // Check if user is directly shortlisted in any round
+            if (progress.shortlistedTeams && progress.shortlistedTeams.includes(userId.toString())) {
+              isShortlisted = true;
+              console.log('🔍 Submission validation - User shortlisted via direct shortlisting in round', progress.roundIndex);
+              break;
+            }
+            
+            // Check if team is shortlisted in any round
+            if (progress.shortlistedTeams && progress.shortlistedTeams.includes(userTeam._id.toString())) {
+              isShortlisted = true;
+              console.log('🔍 Submission validation - User shortlisted via team shortlisting in round', progress.roundIndex);
+              break;
             }
           }
         }
@@ -189,6 +222,25 @@ exports.submitProjectWithAnswers = async (req, res) => {
             if (hasShortlistedSubmission) {
               isShortlisted = true;
               console.log('🔍 Submission validation - Individual user shortlisted via submission');
+            }
+          }
+        }
+        
+        // Check all round progress entries for individual shortlisting
+        if (!isShortlisted && hackathon.roundProgress) {
+          console.log('🔍 Submission validation - Checking all round progress entries for individual shortlisting');
+          for (const progress of hackathon.roundProgress) {
+            console.log('🔍 Submission validation - Checking individual round progress:', {
+              roundIndex: progress.roundIndex,
+              shortlistedTeams: progress.shortlistedTeams?.length || 0,
+              shortlistedSubmissions: progress.shortlistedSubmissions?.length || 0
+            });
+            
+            // Check if user is directly shortlisted in any round
+            if (progress.shortlistedTeams && progress.shortlistedTeams.includes(userId.toString())) {
+              isShortlisted = true;
+              console.log('🔍 Submission validation - Individual user shortlisted via direct shortlisting in round', progress.roundIndex);
+              break;
             }
           }
         }
