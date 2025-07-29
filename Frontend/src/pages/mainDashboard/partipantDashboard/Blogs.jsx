@@ -46,6 +46,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../components/DashboardUI/dialog";
+import { FilterSidebar, FilterField, FilterToggleButton } from "../../../components/CommonUI/FilterSidebar";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "../../../components/CommonUI/select";
 import { WriteArticle } from "./components/WriteArticle";
 
 export function Blogs() {
@@ -59,6 +67,7 @@ export function Blogs() {
   const [categories, setCategories] = useState(["all"]);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
 
   const navigate = useNavigate();
   const { id: blogId } = useParams();
@@ -209,6 +218,13 @@ export function Blogs() {
       console.error("Like request failed:", error);
     }
   };
+
+  const handleClearFilters = () => {
+    setSelectedCategory("all");
+    setSearchTerm("");
+  };
+
+  const hasActiveFilters = selectedCategory !== "all" || searchTerm !== "";
 
   if (currentView === "write") {
     return (
@@ -395,7 +411,7 @@ export function Blogs() {
 
 
       {/* Content */}
-      <div className="flex-1 overflow-auto px-6 py-4">
+      <div className="flex-1 overflow-auto ">
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Search and Filters */}
           <div className="bg-white/20 backdrop-blur-sm rounded-xl px-6 pt-5 space-y-5">
@@ -410,21 +426,15 @@ export function Blogs() {
                   className="pl-12 h-12 text-base border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
-              {/* Category Dropdown */}
-              <div className="relative min-w-[200px]">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white text-gray-900 w-full"
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category === "all" ? "All Categories" : category}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Filter Toggle Button */}
+              <FilterToggleButton
+                onClick={() => setIsFilterSidebarOpen(true)}
+                hasActiveFilters={hasActiveFilters}
+                activeFiltersCount={hasActiveFilters ? 1 : 0}
+                className="bg-indigo-600 hover:bg-indigo-700"
+              >
+                Filters
+              </FilterToggleButton>
             </div>
           </div>
 
@@ -548,6 +558,43 @@ export function Blogs() {
           </div>
         </div>
       </div>
+
+      {/* Filter Sidebar */}
+      <FilterSidebar
+        isOpen={isFilterSidebarOpen}
+        onClose={() => setIsFilterSidebarOpen(false)}
+        title="Blog Filters"
+        hasActiveFilters={hasActiveFilters}
+        onClearAll={handleClearFilters}
+      >
+        <FilterField label="Category">
+          <Select
+            value={selectedCategory}
+            onValueChange={setSelectedCategory}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category === "all" ? "All Categories" : category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
+
+        <FilterField label="Search">
+          <Input
+            type="text"
+            placeholder="Search blogs, topics, or tags..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </FilterField>
+      </FilterSidebar>
     </div>
   );
 }

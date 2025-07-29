@@ -19,6 +19,7 @@ import {
   SelectItem,
   SelectValue,
 } from "../../../components/CommonUI/select";
+import { FilterSidebar, FilterField, FilterToggleButton } from "../../../components/CommonUI/FilterSidebar";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 
@@ -30,6 +31,7 @@ export function ProjectArchive() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isFilterSidebarOpen, setIsFilterSidebarOpen] = useState(false);
   const location = useLocation();
   const socketRef = useRef(null);
   const urlProjectId =
@@ -124,6 +126,13 @@ export function ProjectArchive() {
     navigate("/dashboard/project-archive");
   };
 
+  const handleClearFilters = () => {
+    setSelectedCategory("all");
+    setSearchTerm("");
+  };
+
+  const hasActiveFilters = selectedCategory !== "all" || searchTerm !== "";
+
   const renderLoadingCards = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-5">
       {[...Array(6)].map((_, i) => (
@@ -193,23 +202,14 @@ export function ProjectArchive() {
             />
           </div>
 
-          <div className="w-full md:w-64">
-            <Select
-              value={selectedCategory}
-              onValueChange={setSelectedCategory}
-            >
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <FilterToggleButton
+            onClick={() => setIsFilterSidebarOpen(true)}
+            hasActiveFilters={hasActiveFilters}
+            activeFiltersCount={hasActiveFilters ? 1 : 0}
+            className="bg-indigo-600 hover:bg-indigo-700"
+          >
+            Filters
+          </FilterToggleButton>
         </div>
 
         <Tabs value="all" className="w-full">
@@ -228,6 +228,43 @@ export function ProjectArchive() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Filter Sidebar */}
+      <FilterSidebar
+        isOpen={isFilterSidebarOpen}
+        onClose={() => setIsFilterSidebarOpen(false)}
+        title="Project Filters"
+        hasActiveFilters={hasActiveFilters}
+        onClearAll={handleClearFilters}
+      >
+        <FilterField label="Category">
+          <Select
+            value={selectedCategory}
+            onValueChange={setSelectedCategory}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterField>
+
+        <FilterField label="Search">
+          <Input
+            type="text"
+            placeholder="Search by title or tech..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </FilterField>
+      </FilterSidebar>
     </div>
   );
 }
