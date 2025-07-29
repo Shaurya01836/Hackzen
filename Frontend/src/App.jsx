@@ -30,7 +30,7 @@ import EditHackathonPage from "./pages/mainDashboard/organizerDashboard/componen
 import JudgeProjectGallery from "./pages/mainDashboard/judgeDashboard/JudgeProjectGallery";
 import AdminHackathonSubmissionsPage from "./pages/AdminDashboard/components/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./pages/AdminDashboard/components/AdminSubmissionDetailsPage";
-import PublicProfileView from "./pages/mainDashboard/PublicProfileView";
+import {PublicProfileView} from "./pages/mainDashboard/PublicProfileView";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
 import TeamsParticipantsPage from "./pages/mainDashboard/partipantDashboard/components/TeamsParticipantsPage";

@@ -48,7 +48,7 @@ import { Input } from "../../components/CommonUI/input";
 import { Label } from "../../components/CommonUI/label";
 import { Textarea } from "../../components/CommonUI/textarea";
 import { useAuth } from "../../context/AuthContext";
-import PublicProfileView from "./PublicProfileView";
+import {PublicProfileView} from "./PublicProfileView";
 import StreakGraphic from "../../components/DashboardUI/StreakGraphic";
 import TwoFASetup from "../../components/security/TwoFASetup";
 import PasswordModal from "../../components/security/PasswordModal";

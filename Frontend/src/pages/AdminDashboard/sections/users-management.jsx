@@ -27,7 +27,7 @@ import {
 import { Search, Filter, Eye, Ban, Shuffle } from "lucide-react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import PublicProfileView from "../../mainDashboard/PublicProfileView";
+import {PublicProfileView} from "../../mainDashboard/PublicProfileView";
 import { useNavigate } from "react-router-dom";
 
 export function UsersManagement() {

@@ -69,7 +69,7 @@ function PublicAchievementsSection({ user }) {
   );
 }
 
-export default function PublicProfileView({ userId }) {
+export function PublicProfileView({ userId }) {
   const [publicProfile, setPublicProfile] = useState(null);
   const [publicLoading, setPublicLoading] = useState(false);
   const [publicError, setPublicError] = useState(null);

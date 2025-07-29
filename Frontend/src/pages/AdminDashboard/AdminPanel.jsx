@@ -55,7 +55,7 @@ import AddCertificateForm from "./sections/AddCertificateForm";
 import AdminHackathonSubmissionsPage from "./components/AdminHackathonSubmissionsPage";
 import AdminSubmissionDetailsPage from "./components/AdminSubmissionDetailsPage";
 import HackathonDetailsPage from "./components/HackathonDetailsPage";
-import PublicProfileView from "../mainDashboard/PublicProfileView";
+import {PublicProfileView} from "../mainDashboard/PublicProfileView";
 import { SiMoneygram } from "react-icons/si";
 
 export default function AdminPanel() {
