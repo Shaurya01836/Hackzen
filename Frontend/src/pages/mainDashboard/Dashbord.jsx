@@ -509,7 +509,7 @@ export default function HackZenDashboard() {
                     )}
                   </div>
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white/20 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg z-50 text-sm overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-48 bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-lg z-50 text-sm overflow-hidden">
                       <Link
                         to="/dashboard/profile"
                         className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
@@ -536,6 +536,15 @@ export default function HackZenDashboard() {
                           Judge Panel
                         </Link>
                       )}
+                       {authUser?.role === 'admin' && (
+                        <Link
+                          to="/admin/dashboard"
+                          className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                          onClick={() => setShowProfileDropdown(false)}
+                        >
+                          Admin Panel
+                        </Link>
+                      )}
                       <Link
                         to="/dashboard/profile/privacy-security"
                         className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
@@ -543,7 +552,16 @@ export default function HackZenDashboard() {
                       >
                         Settings
                       </Link>
-                      {/* Sign Out button removed as per request */}
+                     <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 border-b border-gray-200"
+                        onClick={() => {
+                          logout();
+                          setShowProfileDropdown(false);
+                          navigate('/');
+                        }}
+                      >
+                        Sign Out
+                      </button>
                     </div>
                   )}
                 </div>

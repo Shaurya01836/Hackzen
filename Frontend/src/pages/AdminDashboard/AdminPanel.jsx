@@ -1,6 +1,10 @@
-import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { cn } from "../../lib/utils";
+import { useAuth } from "../../context/AuthContext";
+import NotificationBell from '../../components/DashboardUI/NotificationBell';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/DashboardUI/avatar';
+import useDropdownTimeout from '../../hooks/useDropdownTimeout';
 import {
   LayoutDashboard,
   Users,
@@ -61,6 +65,9 @@ import { SiMoneygram } from "react-icons/si";
 export default function AdminPanel() {
   const navigate = useNavigate();
   const location = useLocation();
+    const { user: authUser, logout } = useAuth();
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const { handleMouseEnter: profileEnter, handleMouseLeave: profileLeave } = useDropdownTimeout(setShowProfileDropdown);
 
   // Extract the active section from the current URL path
   const getActiveSectionFromPath = () => {
@@ -412,13 +419,75 @@ export default function AdminPanel() {
         </Sidebar>
 
         <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-4 w-px bg-gray-200" />
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>Admin</span>
-              <span>/</span>
-              <span className="capitalize">{activeSection.replace("-", " ")}</span>
+          <header className="flex h-16 shrink-0 items-center gap-2 px-4 border-b bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 justify-between">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <div className="h-4 w-px bg-gray-200" />
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>Admin</span>
+                <span>/</span>
+                <span className="capitalize">{activeSection.replace("-", " ")}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 pr-4"> {/* increased gap and added right padding */}
+              <NotificationBell />
+              {/* Profile Icon with Dropdown */}
+              {authUser && (
+                <div
+                  className="relative"
+                  onMouseEnter={profileEnter}
+                  onMouseLeave={profileLeave}
+                >
+                  <div
+                    className="w-10 h-10 rounded-full bg-[#1b0c3f] text-white flex items-center justify-center font-semibold text-sm uppercase overflow-hidden cursor-pointer mr-1"
+                    onClick={() => setShowProfileDropdown((v) => !v)}
+                    title={authUser.name || authUser.email}
+                  >
+                    {authUser.profilePic ? (
+                      <Avatar>
+                        <AvatarImage src={authUser.profilePic} alt="Profile" />
+                        <AvatarFallback>{authUser.name?.charAt(0) || authUser.email?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <span>{authUser.name?.charAt(0) || authUser.email?.charAt(0)}</span>
+                    )}
+                  </div>
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-lg z-50 text-sm overflow-hidden">
+                      <Link
+                        to="/dashboard/profile"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/admin/dashboard"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        Admin Panel
+                      </Link>
+                      <Link
+                        to="/dashboard/profile/privacy-security"
+                        className="block px-4 py-2 hover:bg-gray-100 text-gray-900 border-b border-gray-200"
+                        onClick={() => setShowProfileDropdown(false)}
+                      >
+                        Settings
+                      </Link>
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-600 border-b border-gray-200"
+                        onClick={() => {
+                          logout();
+                          setShowProfileDropdown(false);
+                        }}
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6 bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50 scrollbar-hide">{renderContent()}</main>
