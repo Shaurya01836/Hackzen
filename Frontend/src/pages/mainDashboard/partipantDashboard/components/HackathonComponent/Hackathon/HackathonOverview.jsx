@@ -8,9 +8,13 @@ import { Button } from "../../../../../../components/CommonUI/button";
 import { SiMoneygram } from "react-icons/si";
 
 export default function HackathonOverview({ hackathon, sectionRef, user, onShowParticipants }) {
-  // Defensive: default arrays and strings
+  // Defensive: check if arrays exist and have content
   const requirements = Array.isArray(hackathon.requirements) ? hackathon.requirements : [];
   const perks = Array.isArray(hackathon.perks) ? hackathon.perks : [];
+  
+  const hasRequirements = requirements.length > 0;
+  const hasPerks = perks.length > 0;
+
   const organizer = hackathon.organizer || '';
   const tags = Array.isArray(hackathon.tags) ? hackathon.tags : [];
   const teamSize = hackathon.teamSize || {};
@@ -129,52 +133,64 @@ export default function HackathonOverview({ hackathon, sectionRef, user, onShowP
             {/* Requirements Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-               
                 <h3 className="text-xl font-semibold text-gray-900">Requirements</h3>
               </div>
               <div className="">
-                <ul className="space-y-4">
-                  {requirements.length > 0 ? (
-                    requirements.map((req, index) => (
+                {hasRequirements ? (
+                  <ul className="space-y-4">
+                    {requirements.map((req, index) => (
                       <li key={index} className="flex items-center gap-3">                        
-                          <ArrowRight className="w-5 h-5 text-indigo-500" />
+                        <ArrowRight className="w-5 h-5 text-indigo-500" />
                         <span className="text-gray-700 leading-relaxed">{req}</span>
                       </li>
-                    ))
-                  ) : (
-                    <li className="flex items-start gap-3">    
-                        <ArrowRight className="w-3 h-3 text-indigo-500" />
-                      <span className="text-gray-700 leading-relaxed">Open to all skill levels</span>
-                    </li>
-                  )}
-                </ul>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex items-center gap-4 p-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                    <div className="flex-shrink-0">
+                      <AlertCircle className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-medium text-gray-600">Requirements Not Yet Defined</h4>
+                      <p className="text-sm text-gray-500 mt-1">
+                        The organizer will update the requirements soon. Stay tuned for more details!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             
             <hr />
-            {/* What You'll Need Section */}
+            {/* Perks Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-               
                 <h3 className="text-xl font-semibold text-gray-900">Perks</h3>
               </div>
               <div className="">
-                <ul className="space-y-4">
-                  {perks.length > 0 ? (
-                    perks.map((req, index) => (
+                {hasPerks ? (
+                  <ul className="space-y-4">
+                    {perks.map((perk, index) => (
                       <li key={index} className="flex items-center gap-3">
-                          <ArrowRight className="w-5 h-5 text-indigo-500" />
-                        <span className="text-gray-700 leading-relaxed">{req}</span>
+                        <ArrowRight className="w-5 h-5 text-indigo-500" />
+                        <span className="text-gray-700 leading-relaxed">{perk}</span>
                       </li>
-                    ))
-                  ) : (
-                    <li className="flex items-start gap-3">
-                        <ArrowRight className="w-3 h-3 text-indigo-500" />
-                      <span className="text-gray-700 leading-relaxed">Open to all skill levels</span>
-                    </li>
-                  )}
-                </ul>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="flex items-center gap-4 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border-2 border-dashed border-indigo-200">
+                    <div className="flex-shrink-0">
+                      <Award className="w-8 h-8 text-indigo-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-medium text-indigo-700">Exciting Perks Coming Soon!</h4>
+                      <p className="text-sm text-indigo-600 mt-1">
+                        The organizer is preparing amazing perks and benefits for participants. Check back later!
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
